@@ -8,7 +8,7 @@ import { createBag } from '../upload'
 import { printResult, exportAsJson } from '../output'
 import { verifyBagOnNetwork } from '../verify'
 
-export async function runDeploy(opts: CliOptions): Promise<void> {
+export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise<void> {
   let daemon: DaemonHandle | undefined
 
   const cleanup = () => {
@@ -27,7 +27,7 @@ export async function runDeploy(opts: CliOptions): Promise<void> {
   const createSpinner = createSpinnerFactory(isCI)
 
   try {
-    const buildDir = detectBuildDir(process.cwd(), undefined)
+    const buildDir = detectBuildDir(process.cwd(), buildDirArg)
 
     if (!opts.jsonOutput) {
       console.log()
@@ -42,15 +42,15 @@ export async function runDeploy(opts: CliOptions): Promise<void> {
       console.log()
     }
 
-    const setupSpinner = createSpinner('Checking storage-daemon...').start()
+    const setupSpinner = createSpinner.start('Checking storage-daemon...')
     ensureBinaries(opts.testnet)
     setupSpinner.succeed('storage-daemon ready')
 
-    const daemonSpinner = createSpinner('Starting storage-daemon...').start()
+    const daemonSpinner = createSpinner.start('Starting storage-daemon...')
     daemon = await startDaemon(opts.testnet)
     daemonSpinner.succeed('storage-daemon started')
 
-    const uploadSpinner = createSpinner('Uploading to TON Storage...').start()
+    const uploadSpinner = createSpinner.start('Uploading to TON Storage...')
     const result = createBag({
       buildDir,
       description: opts.desc,
@@ -59,7 +59,7 @@ export async function runDeploy(opts: CliOptions): Promise<void> {
     uploadSpinner.succeed('Upload complete')
 
     if (!opts.skipVerify) {
-      const verifySpinner = createSpinner('Verifying bag is accessible...').start()
+      const verifySpinner = createSpinner.start('Verifying bag is accessible...')
       const verification = await verifyBagOnNetwork({
         bagId: result.bagId,
         timeoutMs: 60_000,
