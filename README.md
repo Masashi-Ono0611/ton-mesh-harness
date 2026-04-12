@@ -171,8 +171,6 @@ npx ton-sovereign-deploy ./build/
 
 **最初の公開ターゲット:** Gateway 2026 (2026年5月)
 
-詳細な実装計画: [PLAN.md](./PLAN.md)
-
 ---
 
 ## CI/CD 連携 (v0.3)
