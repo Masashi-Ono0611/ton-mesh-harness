@@ -24,7 +24,7 @@ export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise
   })
 
   const isCI = opts.ciMode || process.env.CI === 'true'
-  const createSpinner = createSpinnerFactory(isCI)
+  const createSpinner = createSpinnerFactory(isCI || opts.jsonOutput)
 
   try {
     const buildDir = detectBuildDir(process.cwd(), buildDirArg)
