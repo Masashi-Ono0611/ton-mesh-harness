@@ -1,4 +1,3 @@
-import ora from 'ora'
 import chalk from 'chalk'
 import type { DaemonHandle } from '../daemon'
 import type { CliOptions } from '../types/cli'
@@ -9,15 +8,6 @@ import { createBag } from '../upload'
 import { printResult, exportAsJson } from '../output'
 import { verifyBagOnNetwork } from '../verify'
 
-export interface DeployContext {
-  buildDir: string
-  options: CliOptions
-  isCI: boolean
-}
-
-/**
- * Run the main deploy workflow
- */
 export async function runDeploy(opts: CliOptions): Promise<void> {
   let daemon: DaemonHandle | undefined
 
@@ -33,15 +23,11 @@ export async function runDeploy(opts: CliOptions): Promise<void> {
     process.exit(1)
   })
 
-  // Auto-detect CI environment
   const isCI = opts.ciMode || process.env.CI === 'true'
-
-  // Spinner factory (disabled in CI mode)
   const createSpinner = createSpinnerFactory(isCI)
 
   try {
-    const cwd = process.cwd()
-    const buildDir = detectBuildDir(cwd, undefined)
+    const buildDir = detectBuildDir(process.cwd(), undefined)
 
     if (!opts.jsonOutput) {
       console.log()
@@ -56,99 +42,47 @@ export async function runDeploy(opts: CliOptions): Promise<void> {
       console.log()
     }
 
-    // Step 1: ensure binaries
-    if (!isCI) {
-      const setupSpinner = createSpinner('Checking storage-daemon...').start()
-      ensureBinaries(opts.testnet)
-      setupSpinner.succeed('storage-daemon ready')
-    } else {
-      ensureBinaries(opts.testnet)
-    }
+    const setupSpinner = createSpinner('Checking storage-daemon...').start()
+    ensureBinaries(opts.testnet)
+    setupSpinner.succeed('storage-daemon ready')
 
-    // Step 2: start daemon
-    if (!isCI) {
-      const daemonSpinner = createSpinner('Starting storage-daemon...').start()
-      daemon = await startDaemon(opts.testnet)
-      daemonSpinner.succeed('storage-daemon started')
-    } else {
-      daemon = await startDaemon(opts.testnet)
-    }
+    const daemonSpinner = createSpinner('Starting storage-daemon...').start()
+    daemon = await startDaemon(opts.testnet)
+    daemonSpinner.succeed('storage-daemon started')
 
-    // Step 3: create bag
-    if (!isCI) {
-      const uploadSpinner = createSpinner('Uploading to TON Storage...').start()
-      const result = createBag({
-        buildDir,
-        description: opts.desc,
-        daemon,
+    const uploadSpinner = createSpinner('Uploading to TON Storage...').start()
+    const result = createBag({
+      buildDir,
+      description: opts.desc,
+      daemon,
+    })
+    uploadSpinner.succeed('Upload complete')
+
+    if (!opts.skipVerify) {
+      const verifySpinner = createSpinner('Verifying bag is accessible...').start()
+      const verification = await verifyBagOnNetwork({
+        bagId: result.bagId,
+        timeoutMs: 60_000,
+        intervalMs: 5_000,
       })
-      uploadSpinner.succeed('Upload complete')
 
-      // Step 4: stop daemon (no longer needed)
-      daemon.kill()
-      daemon = undefined
-
-      // Step 5: verify bag is accessible (unless skipped)
-      if (!opts.skipVerify) {
-        const verifySpinner = createSpinner('Verifying bag is accessible...').start()
-        const verification = await verifyBagOnNetwork({
-          bagId: result.bagId,
-          timeoutMs: 60_000,
-          intervalMs: 5_000,
-        })
-
-        if (verification.accessible) {
-          verifySpinner.succeed(`Bag accessible in ${verification.latencyMs}ms (${verification.attempts} attempts)`)
-        } else {
-          verifySpinner.warn(`Bag not yet accessible after ${verification.attempts} attempts (may take a few minutes)`)
-        }
+      if (verification.accessible) {
+        verifySpinner.succeed(`Bag accessible in ${verification.latencyMs}ms (${verification.attempts} attempts)`)
+      } else {
+        verifySpinner.warn(`Bag not yet accessible after ${verification.attempts} attempts (may take a few minutes)`)
       }
-
-      // JSON output mode
-      if (opts.jsonOutput) {
-        console.log(exportAsJson(result))
-        return
-      }
-
-      printResult(result)
-
-      // Return result for optional DNS/watch modes
-      return result
-    } else {
-      // CI mode: no spinners
-      const result = createBag({
-        buildDir,
-        description: opts.desc,
-        daemon,
-      })
-      daemon.kill()
-      daemon = undefined
-
-      // Verify bag accessibility (unless skipped)
-      if (!opts.skipVerify) {
-        const verification = await verifyBagOnNetwork({
-          bagId: result.bagId,
-          timeoutMs: 60_000,
-          intervalMs: 5_000,
-        })
-
-        if (verification.accessible) {
-          console.log(`Bag accessible in ${verification.latencyMs}ms`)
-        } else {
-          console.log(`Bag not yet accessible after ${verification.attempts} attempts`)
-        }
-      }
-
-      if (opts.jsonOutput) {
-        console.log(exportAsJson(result))
-        return
-      }
-
-      printResult(result)
-
-      return result
     }
 
+    daemon.kill()
+    daemon = undefined
+
+    if (opts.jsonOutput) {
+      console.log(exportAsJson(result))
+      return
+    }
+
+    printResult(result)
+    return result
   } catch (err: unknown) {
     cleanup()
     const message = err instanceof Error ? err.message : String(err)
