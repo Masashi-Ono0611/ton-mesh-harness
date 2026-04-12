@@ -15,7 +15,7 @@ export async function runDnsRegistration(domain: string, bagId: string): Promise
   console.log()
 
   // Resolve domain → NFT item address
-  const lookupSpinner = createSpinner(`Looking up ${domain}...`).start()
+  const lookupSpinner = createSpinner.start(`Looking up ${domain}...`)
   let nftAddress
   try {
     nftAddress = await getDomainNftAddress(domain)

@@ -23,7 +23,7 @@ program
   .option('--watch', 'Watch build directory for changes and auto-redeploy')
   .option('--debounce <ms>', 'Debounce delay in ms for watch mode (default: 2000)', '2000')
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
-    const result = await runDeploy(opts)
+    const result = await runDeploy(opts, buildDirArg)
 
     // Step 6 (optional): DNS registration
     if (opts.domain && result) {

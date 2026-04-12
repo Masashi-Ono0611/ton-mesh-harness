@@ -1,19 +1,15 @@
 import ora from 'ora'
 
-export interface SpinnerFactory {
-  start: (msg: string) => Spinner
-}
-
 export interface Spinner {
   succeed: (msg?: string) => void
   fail: (msg?: string) => void
   warn: (msg?: string) => void
 }
 
-/**
- * Create a spinner factory.
- * In CI mode, returns a dummy factory that creates no-op spinners.
- */
+export interface SpinnerFactory {
+  start: (msg: string) => Spinner
+}
+
 export function createSpinnerFactory(isCI: boolean): SpinnerFactory {
   if (isCI) {
     return {
@@ -24,5 +20,8 @@ export function createSpinnerFactory(isCI: boolean): SpinnerFactory {
       }),
     }
   }
-  return ora as unknown as SpinnerFactory
+  const originalOra = ora
+  return {
+    start: (msg: string) => originalOra(msg).start() as unknown as Spinner,
+  }
 }

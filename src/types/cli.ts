@@ -13,9 +13,3 @@ export interface DaemonContext {
   daemon: import('../daemon').DaemonHandle
   cleanup: () => void
 }
-
-export interface DeployContext {
-  buildDir: string
-  options: CliOptions
-  isCI: boolean
-}
