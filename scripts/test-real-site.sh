@@ -27,7 +27,7 @@ cat > index.html << 'HTML'
 HTML
 
 # CSS ファイル（約 100 KB）
-cat > style.css << 'CSS'
+cat > style.css << CSS
 body {
     font-family: Arial, sans-serif;
     max-width: 800px;
@@ -40,7 +40,7 @@ $(for i in {1..1000}; do echo ".class-$i { margin: ${i}px; }"; done)
 CSS
 
 # JS ファイル（約 400 KB）
-cat > app.js << 'JS'
+cat > app.js << JS
 console.log('TON Sovereign Deploy Test');
 $(for i in {1..10000}; do echo "const var$i = 'data$i';"; done)
 console.log('Loaded');

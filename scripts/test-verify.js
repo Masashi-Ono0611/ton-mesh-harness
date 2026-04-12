@@ -1,4 +1,4 @@
-import { verifyBagOnNetwork } from './dist/verify.js'
+import { verifyBagOnNetwork } from '../dist/verify.js'
 
 const bagId = '7b83d319c062cae9ed314c6838870af3b1e3df0c0ca4cc06c336395cc82b7ccf'
 
