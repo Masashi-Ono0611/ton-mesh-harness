@@ -27,7 +27,7 @@ program
 
     // Step 6 (optional): DNS registration
     if (opts.domain && result) {
-      await runDnsRegistration(opts.domain, result.bagId)
+      await runDnsRegistration(opts.domain, result.bagId, opts.testnet)
     }
 
     // Step 7: watch mode

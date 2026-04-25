@@ -1,12 +1,8 @@
-import ora from 'ora'
 import chalk from 'chalk'
 import { createSpinnerFactory } from '../utils/spinner'
 import { getDomainNftAddress, buildTonConnectDeeplink, displayTonConnectQr, pollDnsRecord } from '../dns'
 
-/**
- * Run DNS registration workflow
- */
-export async function runDnsRegistration(domain: string, bagId: string): Promise<void> {
+export async function runDnsRegistration(domain: string, bagId: string, testnet = false): Promise<void> {
   const isCI = process.env.CI === 'true'
   const createSpinner = createSpinnerFactory(isCI)
 
@@ -14,18 +10,16 @@ export async function runDnsRegistration(domain: string, bagId: string): Promise
   console.log(chalk.bold('🔗 DNS Registration'))
   console.log()
 
-  // Resolve domain → NFT item address
   const lookupSpinner = createSpinner.start(`Looking up ${domain}...`)
   let nftAddress
   try {
-    nftAddress = await getDomainNftAddress(domain)
+    nftAddress = await getDomainNftAddress(domain, testnet)
     lookupSpinner.succeed(`Found NFT: ${nftAddress.toString()}`)
   } catch (err) {
     lookupSpinner.fail()
     throw err
   }
 
-  // Build deeplink and display QR
   const deeplink = buildTonConnectDeeplink(nftAddress, bagId)
   displayTonConnectQr(deeplink, domain)
 
@@ -33,8 +27,7 @@ export async function runDnsRegistration(domain: string, bagId: string): Promise
   console.log(chalk.dim('  (Press Ctrl+C to skip DNS registration)'))
   console.log()
 
-  // Poll until DNS record appears on-chain (5 min timeout)
-  await pollDnsRecord(domain, bagId)
+  await pollDnsRecord(domain, bagId, 300_000, 10_000, testnet)
 
   console.log()
   console.log(chalk.green(`  ✅ ${domain} now points to your site!`))

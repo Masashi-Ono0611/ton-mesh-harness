@@ -5,6 +5,13 @@ import chalk from 'chalk'
 import ora from 'ora'
 import { httpsGet } from './utils/http'
 
+export const TONAPI_BASE_URL = 'https://tonapi.io'
+export const TONAPI_TESTNET_URL = 'https://testnet.tonapi.io'
+
+function tonapiBaseUrl(testnet = false): string {
+  return testnet ? TONAPI_TESTNET_URL : TONAPI_BASE_URL
+}
+
 // -----------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------
@@ -68,16 +75,17 @@ export function buildChangeDnsRecordBody(bagId: string): Cell {
 
 // -----------------------------------------------------------------------
 // TONAPI: domain → NFT item address
-// GET https://tonapi.io/v2/dns/{domain}/info
+// GET https://tonapi.io/v2/dns/{domain}/info  (mainnet)
+// GET https://testnet.tonapi.io/v2/dns/{domain}/info  (testnet)
 // -----------------------------------------------------------------------
 
 interface TonApiDnsInfo {
   item?: { address: string }
 }
 
-export async function getDomainNftAddress(domain: string): Promise<Address> {
+export async function getDomainNftAddress(domain: string, testnet = false): Promise<Address> {
   const cleanDomain = domain.endsWith('.ton') ? domain : `${domain}.ton`
-  const url = `https://tonapi.io/v2/dns/${encodeURIComponent(cleanDomain)}/info`
+  const url = `${tonapiBaseUrl(testnet)}/v2/dns/${encodeURIComponent(cleanDomain)}/info`
 
   try {
     const data = await httpsGet<TonApiDnsInfo>(url, { timeout: 10_000 })
@@ -171,9 +179,9 @@ interface TonApiDnsRecord {
   storage?: { bag_id?: string }
 }
 
-async function getDnsStorageRecord(domain: string): Promise<string | null> {
+async function getDnsStorageRecord(domain: string, testnet = false): Promise<string | null> {
   const cleanDomain = domain.endsWith('.ton') ? domain : `${domain}.ton`
-  const url = `https://tonapi.io/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`
+  const url = `${tonapiBaseUrl(testnet)}/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`
 
   try {
     const data = await httpsGet<TonApiDnsRecord>(url, { timeout: 5_000 })
@@ -188,12 +196,13 @@ export async function pollDnsRecord(
   expectedBagId: string,
   timeoutMs = 300_000,
   intervalMs = 10_000,
+  testnet = false,
 ): Promise<void> {
   const spinner = ora('Waiting for DNS record to propagate...').start()
   const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
-    const current = await getDnsStorageRecord(domain)
+    const current = await getDnsStorageRecord(domain, testnet)
     if (current === expectedBagId.toLowerCase()) {
       spinner.succeed('DNS record confirmed on-chain!')
       return
