@@ -297,6 +297,7 @@ ton-sovereign-deploy [build-dir] [options]
 | `--json-output` | JSON 出力 (v0.3) |
 | `--watch` | ファイル変更を監視して自動再デプロイ (v0.3) |
 | `--debounce <ms>` | watch モードのデバウンス遅延（デフォルト: 2000ms） |
+| `--provider [address]` | ストレージプロバイダー契約（省略で最安値を自動選択、アドレス指定で特定プロバイダー）|
 | `--skip-verify` | bag アクセス確認をスキップ（伝播には時間がかかるため） |
 
 ### CI/CD 向けオプション

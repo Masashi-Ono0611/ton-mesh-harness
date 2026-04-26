@@ -44,7 +44,7 @@ export async function fetchProviders(testnet = false): Promise<Provider[]> {
   const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/storage/providers`
   const data = await httpsGet<{ providers: TonApiProvider[] }>(url, { timeout: 10_000 })
   return data.providers
-    .filter(p => p.accept_new_contracts && p.rate_per_mb_day > 0 && p.max_span >= 3600)
+    .filter(p => p.accept_new_contracts && p.rate_per_mb_day > 10 && p.max_span >= 3600)
     .map(p => ({
       address: p.address,
       ratePerMbDay: p.rate_per_mb_day,
@@ -109,10 +109,11 @@ export function generateContractMessage(
   const keyDir = join(daemon.dbDir, 'cli-keys')
   const outFile = join(tmpdir(), `ton-contract-${randomBytes(8).toString('hex')}.boc`)
 
-  // --provider <addr>: daemon fetches terms via P2P from the provider's ADNL node.
-  // Requires network time (up to 90s on testnet). This is the only reliable path
-  // because the --rate/--max-span variant has a uint8 bug in daemon v2026.02-1
-  // (only accepts 0-255 for max-span).
+  // Use --rate + --max-span instead of --provider <addr> (P2P lookup):
+  //   - --provider <addr> requires a live ADNL connection which times out unreliably
+  //   - --rate / --max-span uint8 bug in daemon v2026.02-1 caps max-span at 255 seconds
+  //   - We cap max-span at 200 (uint8-safe) → ~3 minute minimum contract duration
+  const MAX_SPAN_SECONDS = 200  // uint8-safe cap (daemon bug: accepts 0-255 only)
   const result = spawnSync(
     paths.cli,
     [
@@ -120,9 +121,9 @@ export function generateContractMessage(
       '-I', `127.0.0.1:${daemon.cliPort}`,
       '-k', join(keyDir, 'client'),
       '-p', join(keyDir, 'server.pub'),
-      '-c', `new-contract-message ${bagId} ${outFile} --provider ${provider.address}`,
+      '-c', `new-contract-message ${bagId} ${outFile} --rate ${provider.ratePerMbDay} --max-span ${MAX_SPAN_SECONDS}`,
     ],
-    { encoding: 'utf8', timeout: 90_000 }
+    { encoding: 'utf8', timeout: 30_000 }
   )
 
   const output = (result.stderr ?? '') + (result.stdout ?? '')
@@ -136,8 +137,9 @@ export function generateContractMessage(
   try { unlinkSync(outFile) } catch { /* ignore */ }
 
   // Amount = storage cost + 0.3 TON buffer for contract deployment fees
+  // Span is capped at MAX_SPAN_SECONDS (200s) due to daemon uint8 bug
   const sizeMb = Math.max(sizeBytes / 1_000_000, 0.1)
-  const spanDays = Math.max(provider.maxSpan / 86400, 1)
+  const spanDays = MAX_SPAN_SECONDS / 86400  // ~0.00231 days
   const storageCostNano = BigInt(Math.ceil(sizeMb * provider.ratePerMbDay * spanDays))
   const bufferNano = 300_000_000n  // 0.3 TON
   const amountNano = storageCostNano + bufferNano

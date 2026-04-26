@@ -87,8 +87,9 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
   let contractMsg
   try {
     contractMsg = generateContractMessage(opts.bagId, sizeBytes, provider, opts.daemon)
+    const spanSeconds = Math.round(contractMsg.spanDays * 86400)
     msgSpinner.succeed(
-      `Contract: ${contractMsg.spanDays.toFixed(0)} days @ ` +
+      `Contract: ${spanSeconds}s (${contractMsg.spanDays.toFixed(4)} days) @ ` +
       `${contractMsg.rateTonPerGbYear.toFixed(2)} TON/GB/year`
     )
   } catch (err) {
@@ -106,9 +107,14 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
   console.log()
   console.log(chalk.bold('💸 Storage Payment — Sign to Contract'))
   console.log(chalk.dim(`  Amount: ${amountTon} TON`))
-  console.log(chalk.dim(`  Duration: ${contractMsg.spanDays.toFixed(0)} days`))
+  const spanSeconds = Math.round(contractMsg.spanDays * 86400)
+  console.log(chalk.dim(`  Duration: ${spanSeconds} seconds (~${contractMsg.spanDays.toFixed(4)} days)`))
   displayTonConnectQr(deeplink, provider.address)
 
+  console.log(chalk.bold('  TON Connect URL (open on mobile or paste in Tonkeeper):'))
+  console.log()
+  console.log(chalk.cyan(`  ${deeplink}`))
+  console.log()
   console.log(chalk.dim('  Waiting for you to sign the transaction...'))
   console.log(chalk.dim('  (Press Ctrl+C to skip provider contract)'))
   console.log()
@@ -119,7 +125,7 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
   console.log()
   if (confirmed) {
     console.log(chalk.green(`  ✅ Provider contract active! Your site is hosted 24/7.`))
-    console.log(chalk.dim(`     Duration: ${contractMsg.spanDays.toFixed(0)} days`))
+    console.log(chalk.dim(`     Duration: ${Math.round(contractMsg.spanDays * 86400)} seconds`))
   } else {
     console.log(chalk.yellow('  ⚠ Provider contract not yet confirmed.'))
     console.log(chalk.dim('    Sign the transaction in your wallet, then wait a few minutes.'))
