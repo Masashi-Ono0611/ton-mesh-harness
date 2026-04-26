@@ -28,6 +28,17 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
   console.log(chalk.bold('📦 Storage Provider Contract'))
   console.log()
 
+  // Storage provider contracts are a mainnet-only feature.
+  // Testnet "providers" listed on testnet.tonapi.io have zero overlap with
+  // mainnet and their ADNL nodes are not reachable — they are test entries only.
+  if (opts.testnet) {
+    console.log(chalk.yellow('  ⚠ --provider is not supported on testnet.'))
+    console.log(chalk.dim('    Storage provider infrastructure only runs on mainnet.'))
+    console.log(chalk.dim('    Re-run without --testnet to contract with a real provider.'))
+    console.log()
+    return
+  }
+
   // 1. Resolve provider
   const resolveSpinner = createSpinner.start(
     opts.providerArg === true

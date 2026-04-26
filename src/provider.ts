@@ -109,6 +109,10 @@ export function generateContractMessage(
   const keyDir = join(daemon.dbDir, 'cli-keys')
   const outFile = join(tmpdir(), `ton-contract-${randomBytes(8).toString('hex')}.boc`)
 
+  // --provider <addr>: daemon fetches terms via P2P from the provider's ADNL node.
+  // Requires network time (up to 90s on testnet). This is the only reliable path
+  // because the --rate/--max-span variant has a uint8 bug in daemon v2026.02-1
+  // (only accepts 0-255 for max-span).
   const result = spawnSync(
     paths.cli,
     [
@@ -118,12 +122,13 @@ export function generateContractMessage(
       '-p', join(keyDir, 'server.pub'),
       '-c', `new-contract-message ${bagId} ${outFile} --provider ${provider.address}`,
     ],
-    { encoding: 'utf8', timeout: 30_000 }
+    { encoding: 'utf8', timeout: 90_000 }
   )
 
+  const output = (result.stderr ?? '') + (result.stdout ?? '')
   if (result.status !== 0 || !readFileExists(outFile)) {
     throw new Error(
-      `Failed to generate provider contract message:\n${result.stderr ?? result.stdout}`
+      `Failed to generate provider contract message (exit ${result.status ?? 'timeout'}):\n${output}`
     )
   }
 
