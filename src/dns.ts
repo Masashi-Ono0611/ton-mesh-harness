@@ -4,13 +4,7 @@ import * as qrcode from 'qrcode-terminal'
 import chalk from 'chalk'
 import ora from 'ora'
 import { httpsGet } from './utils/http'
-
-export const TONAPI_BASE_URL = 'https://tonapi.io'
-export const TONAPI_TESTNET_URL = 'https://testnet.tonapi.io'
-
-function tonapiBaseUrl(testnet = false): string {
-  return testnet ? TONAPI_TESTNET_URL : TONAPI_BASE_URL
-}
+import { getNetworkConfig } from './network'
 
 // -----------------------------------------------------------------------
 // Types
@@ -75,8 +69,8 @@ export function buildChangeDnsRecordBody(bagId: string): Cell {
 
 // -----------------------------------------------------------------------
 // TONAPI: domain → NFT item address
-// GET https://tonapi.io/v2/dns/{domain}/info  (mainnet)
-// GET https://testnet.tonapi.io/v2/dns/{domain}/info  (testnet)
+// GET https://tonapi.io/v2/dns/{domain}  (mainnet)
+// GET https://testnet.tonapi.io/v2/dns/{domain}  (testnet)
 // -----------------------------------------------------------------------
 
 interface TonApiDnsInfo {
@@ -85,7 +79,7 @@ interface TonApiDnsInfo {
 
 export async function getDomainNftAddress(domain: string, testnet = false): Promise<Address> {
   const cleanDomain = domain.endsWith('.ton') ? domain : `${domain}.ton`
-  const url = `${tonapiBaseUrl(testnet)}/v2/dns/${encodeURIComponent(cleanDomain)}/info`
+  const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/dns/${encodeURIComponent(cleanDomain)}`
 
   try {
     const data = await httpsGet<TonApiDnsInfo>(url, { timeout: 10_000 })
@@ -181,7 +175,7 @@ interface TonApiDnsRecord {
 
 async function getDnsStorageRecord(domain: string, testnet = false): Promise<string | null> {
   const cleanDomain = domain.endsWith('.ton') ? domain : `${domain}.ton`
-  const url = `${tonapiBaseUrl(testnet)}/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`
+  const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`
 
   try {
     const data = await httpsGet<TonApiDnsRecord>(url, { timeout: 5_000 })
