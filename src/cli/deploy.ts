@@ -64,6 +64,7 @@ export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise
         bagId: result.bagId,
         timeoutMs: 60_000,
         intervalMs: 5_000,
+        testnet: opts.testnet,
       })
 
       if (verification.accessible) {

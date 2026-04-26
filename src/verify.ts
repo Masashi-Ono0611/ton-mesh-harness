@@ -1,4 +1,5 @@
 import { httpsGet } from './utils/http'
+import { getNetworkConfig } from './network'
 
 // -----------------------------------------------------------------------
 // Types
@@ -8,6 +9,7 @@ export interface VerifyOptions {
   bagId: string
   timeoutMs?: number
   intervalMs?: number
+  testnet?: boolean
 }
 
 export interface VerifyResult {
@@ -28,7 +30,7 @@ interface TonApiBagResponse {
 // -----------------------------------------------------------------------
 
 export async function verifyBagOnNetwork(opts: VerifyOptions): Promise<VerifyResult> {
-  const { bagId, timeoutMs = 60_000, intervalMs = 5_000 } = opts
+  const { bagId, timeoutMs = 60_000, intervalMs = 5_000, testnet = false } = opts
   const deadline = Date.now() + timeoutMs
   let attempts = 0
 
@@ -37,7 +39,7 @@ export async function verifyBagOnNetwork(opts: VerifyOptions): Promise<VerifyRes
     const startTime = Date.now()
 
     try {
-      const result = await checkBagStatus(bagId)
+      const result = await checkBagStatus(bagId, testnet)
       const latency = Date.now() - startTime
 
       if (result.accessible) {
@@ -78,8 +80,8 @@ interface CheckResult {
   statusCode?: number
 }
 
-async function checkBagStatus(bagId: string): Promise<CheckResult> {
-  const url = `https://tonapi.io/v2/storage/bag/${encodeURIComponent(bagId)}`
+async function checkBagStatus(bagId: string, testnet = false): Promise<CheckResult> {
+  const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/storage/bag/${encodeURIComponent(bagId)}`
 
   try {
     const data = await httpsGet<TonApiBagResponse>(url, { timeout: 10_000 })

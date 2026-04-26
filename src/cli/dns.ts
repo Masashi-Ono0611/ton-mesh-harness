@@ -27,9 +27,14 @@ export async function runDnsRegistration(domain: string, bagId: string, testnet 
   console.log(chalk.dim('  (Press Ctrl+C to skip DNS registration)'))
   console.log()
 
-  await pollDnsRecord(domain, bagId, 300_000, 10_000, testnet)
+  const confirmed = await pollDnsRecord(domain, bagId, 300_000, 10_000, testnet)
 
   console.log()
-  console.log(chalk.green(`  ✅ ${domain} now points to your site!`))
-  console.log(chalk.dim(`     https://${domain} (via TON DNS resolvers)`))
+  if (confirmed) {
+    console.log(chalk.green(`  ✅ ${domain} now points to your site!`))
+    console.log(chalk.dim(`     https://${domain} (via TON DNS resolvers)`))
+  } else {
+    console.log(chalk.yellow(`  ⚠ ${domain} DNS update not yet confirmed.`))
+    console.log(chalk.dim('    Sign the transaction in your wallet, then wait a few minutes.'))
+  }
 }

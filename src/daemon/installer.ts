@@ -3,15 +3,11 @@ import { spawnSync } from 'child_process'
 import path from 'path'
 import os from 'os'
 import { getBinaryName } from './platform'
+import { getNetworkConfig } from '../network'
 
 const TON_RELEASE_TAG = 'v2026.02-1'
 const BIN_DIR = path.join(os.homedir(), '.ton-sovereign', 'bin')
 const VERSION_FILE = path.join(BIN_DIR, '.version')
-
-const CONFIG_URLS = {
-  mainnet: 'https://ton.org/global.config.json',
-  testnet: 'https://ton.org/testnet-global.config.json',
-}
 
 export interface DaemonPaths {
   binDir: string
@@ -78,11 +74,11 @@ export function ensureBinaries(useTestnet = false): void {
   // Config JSON (download if missing)
   if (!existsSync(paths.mainnetConfig)) {
     process.stdout.write(`  Downloading mainnet config...\n`)
-    downloadFile(CONFIG_URLS.mainnet, paths.mainnetConfig)
+    downloadFile(getNetworkConfig(false).daemonConfigUrl, paths.mainnetConfig)
   }
   if (useTestnet && !existsSync(paths.testnetConfig)) {
     process.stdout.write(`  Downloading testnet config...\n`)
-    downloadFile(CONFIG_URLS.testnet, paths.testnetConfig)
+    downloadFile(getNetworkConfig(true).daemonConfigUrl, paths.testnetConfig)
   }
 }
 
