@@ -5,10 +5,15 @@ import { createSpinnerFactory } from '../utils/spinner'
 import { detectBuildDir } from '../detect'
 import { ensureBinaries, startDaemon } from '../daemon'
 import { createBag } from '../upload'
-import { printResult, exportAsJson } from '../output'
+import { printResult, exportAsJson, type DeployResult } from '../output'
 import { verifyBagOnNetwork } from '../verify'
 
-export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise<void> {
+export interface DeployReturn {
+  result: DeployResult
+  daemon?: DaemonHandle
+}
+
+export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise<DeployReturn | undefined> {
   let daemon: DaemonHandle | undefined
 
   const cleanup = () => {
@@ -74,16 +79,21 @@ export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise
       }
     }
 
+    // If --provider is specified, keep daemon alive and return it for contract generation
+    if (opts.provider) {
+      return { result, daemon }
+    }
+
     daemon.kill()
     daemon = undefined
 
     if (opts.jsonOutput) {
       console.log(exportAsJson(result))
-      return
+      return { result }
     }
 
     printResult(result)
-    return result
+    return { result }
   } catch (err: unknown) {
     cleanup()
     const message = err instanceof Error ? err.message : String(err)

@@ -1,6 +1,6 @@
 {
   "name": "ton-sovereign-deploy",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Deploy static sites to TON Storage in one command",
   "main": "./dist/cli.js",
   "bin": {

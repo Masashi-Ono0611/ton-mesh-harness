@@ -3,9 +3,10 @@ import { Command } from 'commander'
 import type { CliOptions } from './types/cli'
 import { runDeploy } from './cli/deploy'
 import { runDnsRegistration } from './cli/dns'
+import { runProviderContract } from './cli/provider'
 import { runWatchMode } from './cli/watch'
 
-const VERSION = '0.3.0'
+const VERSION = '0.4.0'
 
 const program = new Command()
 
@@ -17,23 +18,41 @@ program
   .option('--testnet', 'Use TON testnet (for testing without real TON)')
   .option('--desc <description>', 'Bag description (defaults to directory name)')
   .option('--domain <domain>', 'Register bag under this .ton domain (e.g. myprotocol.ton)')
+  .option('--provider [address]', 'Contract with a storage provider for 24/7 hosting (omit address to auto-select cheapest)')
   .option('--ci-mode', 'Disable spinners for CI environments')
   .option('--json-output', 'Output result as JSON (for CI/CD pipelines)')
   .option('--skip-verify', 'Skip bag accessibility verification')
   .option('--watch', 'Watch build directory for changes and auto-redeploy')
   .option('--debounce <ms>', 'Debounce delay in ms for watch mode (default: 2000)', '2000')
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
-    const result = await runDeploy(opts, buildDirArg)
+    const deployed = await runDeploy(opts, buildDirArg)
+    if (!deployed) return
 
-    // Step 6 (optional): DNS registration
-    if (opts.domain && result) {
+    const { result, daemon } = deployed
+
+    // Provider contract (daemon still alive when --provider is set)
+    if (opts.provider && daemon) {
+      try {
+        await runProviderContract({
+          bagId: result.bagId,
+          providerArg: opts.provider,
+          daemon,
+          testnet: opts.testnet,
+          jsonOutput: opts.jsonOutput,
+        })
+      } finally {
+        daemon.kill()
+      }
+    }
+
+    // DNS registration
+    if (opts.domain) {
       await runDnsRegistration(opts.domain, result.bagId, opts.testnet)
     }
 
-    // Step 7: watch mode
-    if (opts.watch && result) {
-      const cwd = process.cwd()
-      const buildDir = buildDirArg || cwd
+    // Watch mode
+    if (opts.watch) {
+      const buildDir = buildDirArg || process.cwd()
       await runWatchMode(buildDir, opts, result.bagId)
     }
   })

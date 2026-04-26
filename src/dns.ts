@@ -119,17 +119,35 @@ function randomHex(bytes: number): string {
   return randomBytes(bytes).toString('hex')
 }
 
-export function buildTonConnectDeeplink(nftAddress: Address, bagId: string): string {
-  const body = buildChangeDnsRecordBody(bagId)
-  const bocBase64 = body.toBoc().toString('base64')
+interface TonConnectMessageOverride {
+  amountNano: string
+  payloadBase64: string
+}
+
+export function buildTonConnectDeeplink(
+  toAddress: Address,
+  bagId: string,
+  override?: TonConnectMessageOverride,
+): string {
+  let bocBase64: string
+  let amountStr: string
+
+  if (override) {
+    bocBase64 = override.payloadBase64
+    amountStr = override.amountNano
+  } else {
+    const body = buildChangeDnsRecordBody(bagId)
+    bocBase64 = body.toBoc().toString('base64')
+    amountStr = '50000000'  // 0.05 TON for DNS gas
+  }
 
   const request: TonConnectRequest = {
     manifestUrl: MANIFEST_URL,
     items: [{ name: 'ton_addr' }],
     messages: [
       {
-        address: nftAddress.toRawString(),
-        amount: '50000000',  // 0.05 TON for gas
+        address: toAddress.toRawString(),
+        amount: amountStr,
         payload: bocBase64,
       },
     ],
@@ -146,10 +164,9 @@ export function buildTonConnectDeeplink(nftAddress: Address, bagId: string): str
 // Display deeplink + QR code in terminal
 // -----------------------------------------------------------------------
 
-export function displayTonConnectQr(deeplink: string, domain: string): void {
+export function displayTonConnectQr(deeplink: string, label: string): void {
   console.log()
-  console.log(chalk.bold('📱 TON Connect — Sign DNS Registration'))
-  console.log(chalk.dim(`  Domain: ${domain}`))
+  console.log(chalk.dim(`  → ${label}`))
   console.log()
   console.log('  Scan with your TON wallet:')
   console.log()

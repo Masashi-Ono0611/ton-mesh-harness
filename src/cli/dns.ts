@@ -21,7 +21,9 @@ export async function runDnsRegistration(domain: string, bagId: string, testnet 
   }
 
   const deeplink = buildTonConnectDeeplink(nftAddress, bagId)
-  displayTonConnectQr(deeplink, domain)
+
+  console.log(chalk.bold('📱 TON Connect — Sign DNS Registration'))
+  displayTonConnectQr(deeplink, `Domain: ${domain}`)
 
   console.log(chalk.dim('  Waiting for you to sign the transaction...'))
   console.log(chalk.dim('  (Press Ctrl+C to skip DNS registration)'))
