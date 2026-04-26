@@ -191,7 +191,7 @@ export async function pollDnsRecord(
   timeoutMs = 300_000,
   intervalMs = 10_000,
   testnet = false,
-): Promise<void> {
+): Promise<boolean> {
   const spinner = ora('Waiting for DNS record to propagate...').start()
   const deadline = Date.now() + timeoutMs
 
@@ -199,13 +199,14 @@ export async function pollDnsRecord(
     const current = await getDnsStorageRecord(domain, testnet)
     if (current === expectedBagId.toLowerCase()) {
       spinner.succeed('DNS record confirmed on-chain!')
-      return
+      return true
     }
     await sleep(intervalMs)
   }
 
   spinner.warn('DNS propagation timed out — the transaction may still be pending.')
-  console.log(chalk.dim('  Check manually: https://tonapi.io/v2/dns/' + encodeURIComponent(domain) + '/resolve'))
+  console.log(chalk.dim('  Check manually: ' + getNetworkConfig(testnet).tonapiUrl + '/v2/dns/' + encodeURIComponent(domain) + '/resolve'))
+  return false
 }
 
 function sleep(ms: number): Promise<void> {
