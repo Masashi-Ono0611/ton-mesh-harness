@@ -3,11 +3,24 @@ import { readFileSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { randomBytes } from 'crypto'
-import { Address } from '@ton/ton'
+import { Address, beginCell, Cell } from '@ton/ton'
 import { getDaemonPaths } from './daemon'
 import { getNetworkConfig } from './network'
 import { httpsGet } from './utils/http'
 import type { DaemonHandle } from './daemon'
+
+// -----------------------------------------------------------------------
+// On-chain provider contract — TL-B
+// -----------------------------------------------------------------------
+//
+// new_storage_contract#107c49ef query_id:uint64 info:(^TorrentInfo)
+//   microchunk_hash:uint256 expected_rate:Coins expected_max_span:uint32
+//   = NewStorageContract;
+//
+// Source: storage/storage-daemon/smartcont/{storage-provider,constants}.fc
+// (verified against ton-blockchain/ton @ v2026.04-1)
+
+export const OP_OFFER_STORAGE_CONTRACT = 0x107c49ef
 
 // -----------------------------------------------------------------------
 // Types
@@ -58,6 +71,59 @@ export function selectCheapestProvider(providers: Provider[]): Provider {
     throw new Error('No active storage providers found on the network.')
   }
   return providers[0]
+}
+
+// -----------------------------------------------------------------------
+// Self-generated contract message BOC
+// -----------------------------------------------------------------------
+//
+// Bypasses `storage-daemon-cli new-contract-message`, whose --max-span arg
+// is parsed as uint8 (cap 255s) due to a copy-paste bug in line 681 of
+// storage-daemon-cli.cpp. The on-chain contract takes uint32, so we build
+// the BOC ourselves and let the caller choose any span up to 2^32 - 1.
+
+export interface OfferContractArgs {
+  queryId: bigint                    // uint64, caller-chosen (e.g. unix seconds)
+  torrentInfo: Cell                  // TorrentInfo cell from `storage-daemon-cli get-meta`
+  microchunkHash: Buffer             // 32 bytes, from daemon `get … --json`
+  expectedRateNanoPerMbDay: bigint   // Coins
+  expectedMaxSpanSeconds: number     // uint32
+}
+
+/**
+ * Build the offer-storage-contract message body (the inbound message a client
+ * sends to a Storage Provider master contract).
+ *
+ * The returned Cell is the message BODY. Wrap it in an internal-message
+ * envelope (or hand it straight to TON Connect, which expects body BOCs).
+ */
+export function buildOfferStorageContractMessage(args: OfferContractArgs): Cell {
+  if (args.microchunkHash.length !== 32) {
+    throw new Error(`microchunkHash must be 32 bytes (got ${args.microchunkHash.length})`)
+  }
+  if (!Number.isInteger(args.expectedMaxSpanSeconds) || args.expectedMaxSpanSeconds < 1) {
+    throw new Error(`expectedMaxSpanSeconds must be a positive integer (got ${args.expectedMaxSpanSeconds})`)
+  }
+  if (args.expectedMaxSpanSeconds > 0xffff_ffff) {
+    throw new Error(`expectedMaxSpanSeconds exceeds uint32 max (got ${args.expectedMaxSpanSeconds})`)
+  }
+  if (args.queryId < 0n || args.queryId > 0xffff_ffff_ffff_ffffn) {
+    throw new Error(`queryId out of uint64 range (got ${args.queryId})`)
+  }
+  if (args.expectedRateNanoPerMbDay < 0n) {
+    throw new Error(`expectedRateNanoPerMbDay must be non-negative (got ${args.expectedRateNanoPerMbDay})`)
+  }
+
+  const microchunkBig = BigInt('0x' + args.microchunkHash.toString('hex'))
+
+  return beginCell()
+    .storeUint(OP_OFFER_STORAGE_CONTRACT, 32)
+    .storeUint(args.queryId, 64)
+    .storeRef(args.torrentInfo)
+    .storeUint(microchunkBig, 256)
+    .storeCoins(args.expectedRateNanoPerMbDay)
+    .storeUint(args.expectedMaxSpanSeconds, 32)
+    .endCell()
 }
 
 // -----------------------------------------------------------------------
