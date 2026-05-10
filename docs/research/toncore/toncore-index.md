@@ -1,0 +1,108 @@
+# @toncore — Telegram Channel Archive
+
+- Source: https://t.me/toncore
+- Captured at: 2026-05-10 16:10:11 JST
+- Total posts captured: 95
+- Earliest: 2024-11-06T09:06:41+00:00 (msg 1)
+- Latest:   2026-04-30T13:20:29+00:00 (msg 107)
+
+Public channel preview (`t.me/s/<channel>`) covers text + photo URLs + link previews. 
+Native videos / large files / comments are not available via this path.
+
+## Posts
+
+- [`1`](https://t.me/toncore/1) · 2024-11-06T09:06:41+00:00 · Channel created
+- [`2`](https://t.me/toncore/2) · 2024-11-15T13:27:06+00:00 · *Celebrating the birthday of TON blockchain — the first genesis block was created on 15 November 2019.*
+- [`5`](https://t.me/toncore/5) · 2025-01-22T13:44:59+00:00 · **TON Core: Overview of 2024
+- [`6`](https://t.me/toncore/6) · 2025-01-22T13:50:21+00:00 · **TON Core: Roadmap 2025 H1 **
+- [`8`](https://t.me/toncore/8) · 2025-01-24T10:52:16+00:00 · **TON - Crypto Story Of The Year **
+- [`9`](https://t.me/toncore/9) · 2025-01-26T10:01:13+00:00 · **TON Core on The Gateway**
+- [`10`](https://t.me/toncore/10) · 2025-01-26T10:01:13+00:00 · **TON Core on The Gateway**
+- [`11`](https://t.me/toncore/11) · 2025-01-26T10:09:06+00:00 · [https://www.okx.com/ru/learn/developer-stories-02-ton-makes-web3-fun](https://www.okx.com/ru/learn/developer-stories-02
+- [`12`](https://t.me/toncore/12) · 2025-01-29T10:42:37+00:00 · **TON Kernel Contest Results at CodeForces**
+- [`13`](https://t.me/toncore/13) · 2025-01-29T10:42:37+00:00 · **TON Kernel Contest at Telegram Contests
+- [`14`](https://t.me/toncore/14) · 2025-02-03T12:27:56+00:00 · **TON Core: Report for December-January
+- [`15`](https://t.me/toncore/15) · 2025-02-13T13:33:39+00:00 · **Partial Liteservers — January Highlight**
+- [`16`](https://t.me/toncore/16) · 2025-02-13T13:33:39+00:00 · **Improved Validator Telemetry — January Highlight
+- [`17`](https://t.me/toncore/17) · 2025-02-13T13:33:39+00:00 · **Validator Restore-from-Backup functionality — January Highlight
+- [`18`](https://t.me/toncore/18) · 2025-02-13T13:33:39+00:00 · **Validator support for Prometheus metrics — January Highlight
+- [`19`](https://t.me/toncore/19) · 2025-02-13T13:33:39+00:00 · **Remote validator controller** **— January Highlight
+- [`20`](https://t.me/toncore/20) · 2025-02-16T11:33:58+00:00 · **Introducing the Domain API**
+- [`21`](https://t.me/toncore/21) · 2025-02-16T11:33:58+00:00 · **Introducing the Action API**
+- [`22`](https://t.me/toncore/22) · 2025-02-16T11:33:58+00:00 · **Introducing the Emulation API**
+- [`23`](https://t.me/toncore/23) · 2025-02-16T11:34:22+00:00 · The new **Domains**, **Actions**, **Emulation** functionality in the [Toncenter API](https://toncenter.com/api/v3/index.
+- [`24`](https://t.me/toncore/24) · 2025-02-20T10:36:50+00:00 · **TON Golang SDK 1.11.0**
+- [`25`](https://t.me/toncore/25) · 2025-02-20T10:36:50+00:00 · **TON Kotlin SDK 0.4.0
+- [`26`](https://t.me/toncore/26) · 2025-02-20T10:36:50+00:00 · **Multisig Basic** **UI 1.02**
+- [`27`](https://t.me/toncore/27) · 2025-02-26T09:37:31+00:00 · **Support for extra-currencies in local ton-http-api**
+- [`28`](https://t.me/toncore/28) · 2025-02-26T09:37:31+00:00 · **Improved Metadata API**
+- [`29`](https://t.me/toncore/29) · 2025-02-28T08:58:40+00:00 · **Introducing Telegram Bots with notifications for** **TON validators and nodes
+- [`30`](https://t.me/toncore/30) · 2025-02-28T18:53:22+00:00 · Note that the functionality to run a private Telegram bot is available in MyTonCtrl version[ 2.5.0](https://github.com/t
+- [`31`](https://t.me/toncore/31) · 2025-03-06T12:13:37+00:00 · [TON Optimization Roadmap](https://gist.github.com/EmelyanenkoK/3e8435cd9235ce68ec7ad4d0e600287f)
+- [`32`](https://t.me/toncore/32) · 2025-03-06T12:13:37+00:00 · [TON/TVM Sidechains Overview](https://telegra.ph/TONTVM-Sidechains-Overview-03-06)
+- [`33`](https://t.me/toncore/33) · 2025-03-06T12:13:37+00:00 · **Reducing End-to-End Latency in TON Blockchain
+- [`34`](https://t.me/toncore/34) · 2025-03-08T10:49:24+00:00 · **TON Proxy: Introducing optional traffic micro-payments and privacy via garlic routing
+- [`35`](https://t.me/toncore/35) · 2025-03-08T12:56:23+00:00 · **TOLK 0.9**
+- [`36`](https://t.me/toncore/36) · 2025-03-08T12:56:23+00:00 · **Upcoming** **Node Update** **2025.03**
+- [`37`](https://t.me/toncore/37) · 2025-03-08T12:56:23+00:00 · **TON Core: Report for February**
+- [`38`](https://t.me/toncore/38) · 2025-03-17T11:09:44+00:00 · **TON Java SDK 0.9.2
+- [`39`](https://t.me/toncore/39) · 2025-03-17T11:09:44+00:00 · **MyLocalTon Docker 3.1**
+- [`40`](https://t.me/toncore/40) · 2025-03-26T17:56:49+00:00 · **TOLK 0.10**
+- [`41`](https://t.me/toncore/41) · 2025-03-26T18:12:55+00:00 · **tonutils-storage 0.8.0**
+- [`42`](https://t.me/toncore/42) · 2025-03-31T17:44:24+00:00 · **Introducing** **the Pending API**
+- [`43`](https://t.me/toncore/43) · 2025-03-31T17:44:24+00:00 · [**Tonscan.org**](http://Tonscan.org/)** uses** **the Toncenter API**
+- [`46`](https://t.me/toncore/46) · 2025-03-31T17:44:50+00:00 · **MyTonWallet uses the Toncenter API**
+- [`47`](https://t.me/toncore/47) · 2025-04-01T09:06:00+00:00 · **TON Core: Report for March**
+- [`48`](https://t.me/toncore/48) · 2025-04-02T14:51:41+00:00 · [**wallet.ton.org**](http://wallet.ton.org/)
+- [`49`](https://t.me/toncore/49) · 2025-04-05T16:17:59+00:00 · **TON Payment Network (Beta): added support for** **Jettons and Extra-currencies
+- [`50`](https://t.me/toncore/50) · 2025-04-05T16:17:59+00:00 · **TON Payment Network (Beta)**
+- [`51`](https://t.me/toncore/51) · 2025-04-06T18:13:12+00:00 · **Normalized message hash**
+- [`52`](https://t.me/toncore/52) · 2025-04-06T18:13:12+00:00 · **TON Core: Report for March**
+- [`53`](https://t.me/toncore/53) · 2025-04-13T10:43:08+00:00 · **TOLK 0.11**
+- [`54`](https://t.me/toncore/54) · 2025-05-05T20:44:12+00:00 · **Node Update TON 2025.04**
+- [`55`](https://t.me/toncore/55) · 2025-05-05T20:44:12+00:00 · **Progress of the “Accelerator” update**
+- [`56`](https://t.me/toncore/56) · 2025-05-05T20:44:12+00:00 · **TVM 10**
+- [`57`](https://t.me/toncore/57) · 2025-05-05T20:44:12+00:00 · **New user interface in the **[**@validators**](https://t.me/validators)** bot**
+- [`58`](https://t.me/toncore/58) · 2025-05-05T20:44:12+00:00 · **Toncenter API Updates**
+- [`59`](https://t.me/toncore/59) · 2025-05-05T20:44:12+00:00 · **TON Core: Report for April**
+- [`60`](https://t.me/toncore/60) · 2025-05-12T13:43:44+00:00 · **TOLK Programming Language** **0.12**
+- [`61`](https://t.me/toncore/61) · 2025-05-12T13:43:44+00:00 · **Progress of the TOLK Programming** **Language
+- [`62`](https://t.me/toncore/62) · 2025-06-03T17:51:12+00:00 · **TOLK Programming Language - Release Candidate (0.13)**
+- [`63`](https://t.me/toncore/63) · 2025-06-10T14:31:04+00:00 · **Streaming API - Websockets/SSE for Enterprise Plan**
+- [`64`](https://t.me/toncore/64) · 2025-06-10T14:31:12+00:00 · Previously, archive nodes stored the entire history of the blockchain. Considering that the history is already quite lar
+- [`65`](https://t.me/toncore/65) · 2025-06-10T14:31:21+00:00 · **TON Core: Report for May**
+- [`66`](https://t.me/toncore/66) · 2025-06-12T11:39:17+00:00 · **TOLK Programming Language Release-Candidate (0.99)**
+- [`67`](https://t.me/toncore/67) · 2025-07-05T17:11:18+00:00 · **Now, operations on the TON Blockchain are finalized 10 times faster under low and moderate loads** **— in 3-5 seconds*
+- [`68`](https://t.me/toncore/68) · 2025-07-07T17:38:06+00:00 · **Meet Tolk 1.0 — a new programming language for creating bulletproof smart contracts on TON
+- [`69`](https://t.me/toncore/69) · 2025-07-16T12:41:40+00:00 · **Unified TON Extension for VS Code is here!
+- [`70`](https://t.me/toncore/70) · 2025-07-25T12:56:11+00:00 · **Overview of improvements to validator and node tools
+- [`71`](https://t.me/toncore/71) · 2025-07-25T12:56:11+00:00 · **"Accelerator" Update: TON is transitioning to a new architecture
+- [`72`](https://t.me/toncore/72) · 2025-07-25T15:09:32+00:00 · **TON Payment Network technology now supports Web**
+- [`73`](https://t.me/toncore/73) · 2025-08-01T10:45:09+00:00 · **TON Core Support for BTC Teleport
+- [`74`](https://t.me/toncore/74) · 2025-08-01T10:45:38+00:00 · **Introducing the Jetton 2.0 Smart Contract
+- [`75`](https://t.me/toncore/75) · 2025-08-01T10:52:03+00:00 · **Overview of New Features in the Toncenter API
+- [`76`](https://t.me/toncore/76) · 2025-08-02T21:00:07+00:00 · **Rethinking Blockchain UX: TON Sets a New Guidelines
+- [`84`](https://t.me/toncore/84) · 2025-08-03T19:29:50+00:00 · **TON Core: Report for 2025 H1**
+- [`85`](https://t.me/toncore/85) · 2025-09-20T12:42:10+00:00 · **Tolk 1.1 Programming Language
+- [`86`](https://t.me/toncore/86) · 2025-09-20T12:57:03+00:00 · **IntelliJ TON 3.0.0**
+- [`87`](https://t.me/toncore/87) · 2025-10-29T17:46:35+00:00 · **This year, we expanded the TON Core C++ node team:**
+- [`88`](https://t.me/toncore/88) · 2025-10-29T17:46:36+00:00 · The TON Core team is working to enable transactions on the TON blockchain to be executed in less than 1 second — with no
+- [`89`](https://t.me/toncore/89) · 2025-11-01T08:09:08+00:00 · **TON x** **Chainlink**
+- [`90`](https://t.me/toncore/90) · 2025-11-18T10:26:21+00:00 · **Node Update TON 2025.10**, **TON 2025.11
+- [`91`](https://t.me/toncore/91) · 2025-11-18T10:26:22+00:00 · **Blockchain configuration updated
+- [`92`](https://t.me/toncore/92) · 2025-11-18T10:26:22+00:00 · **TVM 12**
+- [`93`](https://t.me/toncore/93) · 2025-11-18T10:26:22+00:00 · **Tolk 1.2 Programming Language
+- [`94`](https://t.me/toncore/94) · 2025-11-18T12:00:19+00:00 · **TON on Coinbase**
+- [`95`](https://t.me/toncore/95) · 2025-12-08T10:30:59+00:00 · **Major update to Tolk language documentation
+- [`96`](https://t.me/toncore/96) · 2025-12-08T10:32:07+00:00 · TON Core pinned «The TON Core team is working to enable transactions on the TON blockchain to be executed in less than 1
+- [`97`](https://t.me/toncore/97) · 2025-12-19T13:43:27+00:00 · **Node Update** **TON 2025.12**
+- [`98`](https://t.me/toncore/98) · 2026-01-09T14:13:03+00:00 · The R&D phase has been completed — research and development of the [task](https://t.me/toncore/88) of speed up operation
+- [`99`](https://t.me/toncore/99) · 2026-03-06T13:02:02+00:00 · **Progress of Sub-Second update deployment on the TON mainnet
+- [`100`](https://t.me/toncore/100) · 2026-03-13T19:18:40+00:00 · **💎*** **Blockchain Contest, Round 2**
+- [`101`](https://t.me/toncore/101) · 2026-03-28T07:18:03+00:00 · **Tolk Programming Langauge 1.3**
+- [`102`](https://t.me/toncore/102) · 2026-03-31T09:31:40+00:00 · **Sub-Second mainnet activation starts
+- [`103`](https://t.me/toncore/103) · 2026-03-31T09:32:24+00:00 · **Sub-Second for the TON Ecosystem
+- [`104`](https://t.me/toncore/104) · 2026-04-09T08:45:03+00:00 · **Sub-Second is Live**
+- [`105`](https://t.me/toncore/105) · 2026-04-18T09:37:53+00:00 · **Scheduled Closure of the Token Bridge** **V3**
+- [`106`](https://t.me/toncore/106) · 2026-04-24T19:08:55+00:00 · **Blockchain** **Fee Reduction**
+- [`107`](https://t.me/toncore/107) · 2026-04-30T13:20:29+00:00 · **Voting by validators on reducing network fees has begun**

@@ -1,0 +1,222 @@
+# @tonstatus — Telegram Channel Archive
+
+- Source: https://t.me/tonstatus
+- Captured at: 2026-05-10 16:11:45 JST
+- Total posts captured: 209
+- Earliest: 2021-11-25T23:38:35+00:00 (msg 1)
+- Latest:   2026-05-04T13:42:35+00:00 (msg 214)
+
+Public channel preview (`t.me/s/<channel>`) covers text + photo URLs + link previews. 
+Native videos / large files / comments are not available via this path.
+
+## Posts
+
+- [`1`](https://t.me/tonstatus/1) · 2021-11-25T23:38:35+00:00 · Channel created
+- [`3`](https://t.me/tonstatus/3) · 2021-12-02T16:05:11+00:00 · **TON-ETH bridge update to increase the bandwidth.**
+- [`4`](https://t.me/tonstatus/4) · 2021-12-06T11:41:57+00:00 · **We urge validators to vote for config 71!**
+- [`5`](https://t.me/tonstatus/5) · 2021-12-16T14:42:44+00:00 · Web wallet [tonwallet.me](http://tonwallet.me/) will be moved to a new domain in the near future.
+- [`6`](https://t.me/tonstatus/6) · 2021-12-16T16:03:37+00:00 · **Web wallet is now available at the new **[**wallet.ton.org**](http://wallet.ton.org/)** domain!
+- [`9`](https://t.me/tonstatus/9) · 2022-01-09T15:54:28+00:00 · If you are a developer and use [tonweb](https://github.com/toncenter/tonweb), please update to version **0.0.26**+.
+- [`10`](https://t.me/tonstatus/10) · 2022-01-12T22:01:56+00:00 · Developers, the `Content-Type: application/json` HTTP request header becomes mandatory when working with the [toncenter.
+- [`11`](https://t.me/tonstatus/11) · 2022-02-19T18:50:25+00:00 · Developers using [toncenter.com](http://toncenter.com/) and [tonweb](https://github.com/toncenter/tonweb) must obtain an
+- [`12`](https://t.me/tonstatus/12) · 2022-02-27T18:27:03+00:00 · Validator tool **mytonctrl** was transferred from repository [https://github.com/igroman787/mytonctrl](https://github.co
+- [`13`](https://t.me/tonstatus/13) · 2022-03-05T18:57:27+00:00 · Users of the [TON extension](https://chrome.google.com/webstore/detail/ton-wallet/nphplpgoakhhjchkkhmiggakijnkhfnd) for 
+- [`14`](https://t.me/tonstatus/14) · 2022-04-02T22:24:55+00:00 · On April 8, [toncenter.com](http://toncenter.com/) will be limited at **10 requests per second by IP **with API key and 
+- [`15`](https://t.me/tonstatus/15) · 2022-05-13T14:22:19+00:00 · We remind you that the recommended RAM size for the validator is 64 GB, the minimum is 32 GB. 
+- [`16`](https://t.me/tonstatus/16) · 2022-05-18T09:30:25+00:00 · Mainnet validators please update your software to [new version](https://t.me/tonblockchain/127): 
+- [`17`](https://t.me/tonstatus/17) · 2022-05-22T13:11:12+00:00 · The testnet will be restarted from scratch tomorrow on more powerful hardware to increase its stability.
+- [`18`](https://t.me/tonstatus/18) · 2022-05-25T20:54:12+00:00 · The TON testnet has been completely restarted. Testnet [config](https://ton-blockchain.github.io/testnet-global.config.j
+- [`19`](https://t.me/tonstatus/19) · 2022-06-14T14:11:16+00:00 · [Now](https://github.com/ton-blockchain/ton/commit/c00302ced4bc4bf1ee0efd672e7c91e457652430) TON master branch can be co
+- [`20`](https://t.me/tonstatus/20) · 2022-07-29T13:13:48+00:00 · Network validators, on **Aug. 2**, it is planned to set the root DNS contract in the network config by voting — all vali
+- [`21`](https://t.me/tonstatus/21) · 2022-08-02T12:31:14+00:00 · **Setting the root DNS in the network config**
+- [`22`](https://t.me/tonstatus/22) · 2022-08-04T17:18:53+00:00 · Security update of the network is scheduled on August 8. We are asking mainnet validators to schedule time for the maint
+- [`23`](https://t.me/tonstatus/23) · 2022-08-08T12:23:47+00:00 · **Mainnet validators: **
+- [`24`](https://t.me/tonstatus/24) · 2022-08-08T13:40:41+00:00 · Due to the temporary decrease in the efficiency of validators after the current elections, **we urge you to postpone the
+- [`25`](https://t.me/tonstatus/25) · 2022-08-08T17:08:11+00:00 · We found imperfections in recent TON node update. Please **postpone upgrade till special notification**.
+- [`26`](https://t.me/tonstatus/26) · 2022-08-11T14:01:11+00:00 · Everything is [ready](https://github.com/ton-blockchain/ton) to continue.
+- [`27`](https://t.me/tonstatus/27) · 2022-08-17T19:01:31+00:00 · At least 25 validators have not been updated to the previous [update](https://t.me/tonstatus/23) and therefore do not wo
+- [`28`](https://t.me/tonstatus/28) · 2022-09-06T19:03:16+00:00 · Developers, please note that there have been additions to the standards:
+- [`29`](https://t.me/tonstatus/29) · 2022-09-16T17:21:48+00:00 · **TON-Ethereum** bridge **is under maintenance **due to recent update of Ethereum network and will be resumed as soon as
+- [`30`](https://t.me/tonstatus/30) · 2022-09-20T09:44:12+00:00 · **TON-Ethereum bridge is running again! 
+- [`31`](https://t.me/tonstatus/31) · 2022-10-04T18:13:58+00:00 · **Network security update**
+- [`33`](https://t.me/tonstatus/33) · 2022-10-06T07:14:33+00:00 · **Mainnet validators: **
+- [`34`](https://t.me/tonstatus/34) · 2022-10-12T11:54:37+00:00 · A recent update to FunC introduced a bug related to the optimization of some expressions involving the bitwise NOT `~`.
+- [`35`](https://t.me/tonstatus/35) · 2022-10-27T17:47:56+00:00 · **Telegram Usernames and TON DNS
+- [`36`](https://t.me/tonstatus/36) · 2022-10-30T17:30:53+00:00 · We remind you that **tomorrow** at **12:00 UTC** all validators will need to send their vote for the DNS proposal.
+- [`37`](https://t.me/tonstatus/37) · 2022-10-31T12:00:01+00:00 · **Vote to change the root DNS smart contract**
+- [`38`](https://t.me/tonstatus/38) · 2022-11-02T11:23:54+00:00 · The voting was successfully completed, the root TON DNS smart contract was updated.
+- [`39`](https://t.me/tonstatus/39) · 2022-11-02T11:24:13+00:00 · [**t.me**](http://t.me/)** support in your applications:
+- [`40`](https://t.me/tonstatus/40) · 2022-12-01T19:46:48+00:00 · **Testnet** **came back to life**
+- [`41`](https://t.me/tonstatus/41) · 2022-12-29T15:17:22+00:00 · Update of the network is scheduled on** January 9** 2023. We are asking mainnet validators, full-node and liteserver own
+- [`42`](https://t.me/tonstatus/42) · 2023-01-08T12:47:03+00:00 · Validators: we remind you that tomorrow at **13:00 UTC** an [network update](https://t.me/tonblockchain/175) is schedule
+- [`43`](https://t.me/tonstatus/43) · 2023-01-09T13:00:02+00:00 · **Mainnet validators and lite server owners: **
+- [`44`](https://t.me/tonstatus/44) · 2023-01-23T16:02:38+00:00 · **Scheduled network update on January 31
+- [`45`](https://t.me/tonstatus/45) · 2023-01-31T12:02:12+00:00 · **Mainnet validators**
+- [`46`](https://t.me/tonstatus/46) · 2023-02-20T15:42:00+00:00 · **Mainnet validators**
+- [`47`](https://t.me/tonstatus/47) · 2023-02-21T06:34:42+00:00 · **Mainnet validators**
+- [`48`](https://t.me/tonstatus/48) · 2023-03-02T12:49:39+00:00 · **Informing: gas limit increased
+- [`49`](https://t.me/tonstatus/49) · 2023-03-03T18:19:02+00:00 · **Scheduled network update on March 7**
+- [`50`](https://t.me/tonstatus/50) · 2023-03-07T10:00:00+00:00 · **Mainnet validators and lite server owners: **
+- [`51`](https://t.me/tonstatus/51) · 2023-03-07T12:15:15+00:00 · Some validators with old `cmake` may encounter compilation errors. This issue can be resolved by **update** of `cmake` t
+- [`52`](https://t.me/tonstatus/52) · 2023-03-26T11:45:55+00:00 · **Mainnet validators**
+- [`53`](https://t.me/tonstatus/53) · 2023-03-27T21:02:14+00:00 · **Mainnet validators**
+- [`54`](https://t.me/tonstatus/54) · 2023-03-28T08:48:41+00:00 · **Mainnet validators**
+- [`55`](https://t.me/tonstatus/55) · 2023-03-30T10:39:16+00:00 · **Mainnet Validators
+- [`56`](https://t.me/tonstatus/56) · 2023-04-07T07:02:36+00:00 · **Scheduled network update on April 11**
+- [`57`](https://t.me/tonstatus/57) · 2023-04-11T13:02:06+00:00 · **Mainnet validators, lite server and DHT node owners: **
+- [`58`](https://t.me/tonstatus/58) · 2023-05-01T14:20:28+00:00 · **Mainnet validators**
+- [`59`](https://t.me/tonstatus/59) · 2023-05-09T17:57:24+00:00 · **Scheduled network update on May 10**
+- [`60`](https://t.me/tonstatus/60) · 2023-05-10T12:01:57+00:00 · **Mainnet validators**
+- [`61`](https://t.me/tonstatus/61) · 2023-05-15T15:47:14+00:00 · **Scheduled network update on May 17**
+- [`62`](https://t.me/tonstatus/62) · 2023-05-17T10:02:23+00:00 · **Mainnet validator node owners: **
+- [`63`](https://t.me/tonstatus/63) · 2023-05-17T13:12:55+00:00 · **Mainnet validator node owners:**
+- [`64`](https://t.me/tonstatus/64) · 2023-05-30T09:29:02+00:00 · **Scheduled network update on June 1**
+- [`65`](https://t.me/tonstatus/65) · 2023-06-01T09:22:09+00:00 · **Mainnet validator node owners: **
+- [`66`](https://t.me/tonstatus/66) · 2023-06-15T18:08:13+00:00 · **Mainnet Validators
+- [`67`](https://t.me/tonstatus/67) · 2023-06-17T11:12:40+00:00 · **Mainnet full node** **and lite server owners **
+- [`68`](https://t.me/tonstatus/68) · 2023-08-08T06:41:29+00:00 · **Scheduled network update on August 10**
+- [`69`](https://t.me/tonstatus/69) · 2023-08-10T09:01:33+00:00 · **Mainnet full node** **and lite server owners **
+- [`70`](https://t.me/tonstatus/70) · 2023-08-16T15:08:48+00:00 · **TON** **dapps developers
+- [`71`](https://t.me/tonstatus/71) · 2023-10-20T13:14:01+00:00 · **Scheduled network update on October 25**
+- [`72`](https://t.me/tonstatus/72) · 2023-10-25T08:59:14+00:00 · **Mainnet full node** **and** **lite server owners **
+- [`73`](https://t.me/tonstatus/73) · 2023-11-26T13:28:04+00:00 · **Scheduled network update on November 30**
+- [`74`](https://t.me/tonstatus/74) · 2023-11-30T11:59:01+00:00 · **Mainnet full node** **and** **lite server owners **
+- [`75`](https://t.me/tonstatus/75) · 2023-12-05T12:58:37+00:00 · **Mainnet Validators**
+- [`76`](https://t.me/tonstatus/76) · 2023-12-06T19:05:42+00:00 · **Mainnet Validators**
+- [`77`](https://t.me/tonstatus/77) · 2023-12-07T10:00:16+00:00 · **Mainnet Validators**
+- [`78`](https://t.me/tonstatus/78) · 2023-12-08T10:34:37+00:00 · Mainnet validators, get ready to update your software today at **12:00 UTC**.
+- [`79`](https://t.me/tonstatus/79) · 2023-12-08T12:00:50+00:00 · **Mainnet validators
+- [`80`](https://t.me/tonstatus/80) · 2023-12-09T12:36:20+00:00 · **Critical bug detected and fixed thanks to bug bounty
+- [`81`](https://t.me/tonstatus/81) · 2023-12-12T12:48:46+00:00 · **TON coped with minting activity!**
+- [`82`](https://t.me/tonstatus/82) · 2023-12-14T11:30:55+00:00 · **Mainnet full node** **and** **lite server owners **
+- [`83`](https://t.me/tonstatus/83) · 2023-12-18T11:26:48+00:00 · **Reminder
+- [`84`](https://t.me/tonstatus/84) · 2023-12-19T09:02:21+00:00 · **Mainnet Validators
+- [`85`](https://t.me/tonstatus/85) · 2023-12-19T11:43:32+00:00 · **New hardware requirements**
+- [`86`](https://t.me/tonstatus/86) · 2023-12-19T11:43:55+00:00 · **Guidelines for API clients**
+- [`87`](https://t.me/tonstatus/87) · 2024-01-11T11:36:49+00:00 · **BSC Bridge Mantainance**
+- [`88`](https://t.me/tonstatus/88) · 2024-01-15T16:00:52+00:00 · Recently a highload wallet of [@wallet](https://t.me/wallet) in mainnet was stuck because current gas limit (1M) is not 
+- [`89`](https://t.me/tonstatus/89) · 2024-01-15T16:00:52+00:00 · **Scheduled network update on January 18**
+- [`90`](https://t.me/tonstatus/90) · 2024-01-18T08:59:06+00:00 · **Mainnet full node and lite server owners**
+- [`91`](https://t.me/tonstatus/91) · 2024-01-19T13:46:15+00:00 · **Scheduled network update on January 26**
+- [`92`](https://t.me/tonstatus/92) · 2024-01-26T09:02:13+00:00 · **Mainnet full node and lite server owners**
+- [`93`](https://t.me/tonstatus/93) · 2024-01-30T06:24:49+00:00 · **Mainnet Validators**
+- [`94`](https://t.me/tonstatus/94) · 2024-02-01T15:42:38+00:00 · **Mainnet Validators**
+- [`95`](https://t.me/tonstatus/95) · 2024-02-04T15:29:17+00:00 · **The TON-BNB Smart Chain **[**bridge**](https://bridge.ton.org/)** is back on track
+- [`96`](https://t.me/tonstatus/96) · 2024-02-15T18:48:01+00:00 · **Scheduled network update on February 21**
+- [`97`](https://t.me/tonstatus/97) · 2024-02-20T08:23:27+00:00 · Network update is moved to February 26 at 10:00 UTC.
+- [`98`](https://t.me/tonstatus/98) · 2024-02-26T10:02:15+00:00 · **Mainnet Validators and Liteserver owners**
+- [`99`](https://t.me/tonstatus/99) · 2024-03-07T12:53:02+00:00 · **Scheduled network update on March 13**
+- [`100`](https://t.me/tonstatus/100) · 2024-03-13T09:01:55+00:00 · **Mainnet Validators and Liteserver owners
+- [`101`](https://t.me/tonstatus/101) · 2024-03-15T07:42:31+00:00 · **Mainnet Validators**
+- [`102`](https://t.me/tonstatus/102) · 2024-04-08T17:07:43+00:00 · **ATTENTION FOR VALIDATORS — ACTION REQUIRED**
+- [`103`](https://t.me/tonstatus/103) · 2024-04-10T12:18:33+00:00 · **Scheduled network update on April 16**
+- [`104`](https://t.me/tonstatus/104) · 2024-04-16T11:01:16+00:00 · **Mainnet Validators and Liteserver owners
+- [`105`](https://t.me/tonstatus/105) · 2024-04-16T14:06:00+00:00 · **Mainnet Validators**
+- [`106`](https://t.me/tonstatus/106) · 2024-04-18T09:44:40+00:00 · **Mainnet Validators**
+- [`107`](https://t.me/tonstatus/107) · 2024-05-15T11:32:34+00:00 · **Mainnet Validators and Liteserver owners**
+- [`108`](https://t.me/tonstatus/108) · 2024-05-25T14:13:29+00:00 · **Liteserver owners
+- [`109`](https://t.me/tonstatus/109) · 2024-06-03T16:00:53+00:00 · **Scheduled network update on June 10**
+- [`110`](https://t.me/tonstatus/110) · 2024-06-09T15:02:01+00:00 · **Reminder
+- [`111`](https://t.me/tonstatus/111) · 2024-06-10T09:01:48+00:00 · **Mainnet Validators and Liteserver owners**
+- [`112`](https://t.me/tonstatus/112) · 2024-06-29T06:59:45+00:00 · **Mainnet Validators Urgent Action Required **
+- [`113`](https://t.me/tonstatus/113) · 2024-07-01T14:18:25+00:00 · **Reminder Mainnet Validators**
+- [`114`](https://t.me/tonstatus/114) · 2024-07-02T08:01:43+00:00 · **Mainnet validators**
+- [`115`](https://t.me/tonstatus/115) · 2024-07-03T15:13:08+00:00 · **Mainnet validators**
+- [`116`](https://t.me/tonstatus/116) · 2024-07-03T15:13:08+00:00 · **Сritical vulnerability in OpenSSH**
+- [`117`](https://t.me/tonstatus/117) · 2024-07-27T19:34:47+00:00 · **Validation slots**
+- [`118`](https://t.me/tonstatus/118) · 2024-08-05T15:11:02+00:00 · **Scheduled network update on August 12**
+- [`119`](https://t.me/tonstatus/119) · 2024-08-12T08:59:38+00:00 · **Mainnet Validators and Liteserver owners**
+- [`120`](https://t.me/tonstatus/120) · 2024-08-14T13:15:50+00:00 · **Validators require 128Gb RAM**
+- [`121`](https://t.me/tonstatus/121) · 2024-08-15T14:36:11+00:00 · **Mainnet Validators**
+- [`123`](https://t.me/tonstatus/123) · 2024-08-21T08:01:38+00:00 · **Mainnet validators**
+- [`124`](https://t.me/tonstatus/124) · 2024-08-26T12:34:10+00:00 · **Mainnet validators**
+- [`125`](https://t.me/tonstatus/125) · 2024-08-28T01:21:04+00:00 · **Mainnet validator**
+- [`126`](https://t.me/tonstatus/126) · 2024-08-28T02:00:52+00:00 · List of top 100 validators of current round
+- [`127`](https://t.me/tonstatus/127) · 2024-08-28T03:50:44+00:00 · **Mainnet validators with index <100**
+- [`128`](https://t.me/tonstatus/128) · 2024-08-28T04:39:18+00:00 · **Mainnet validators with index <100**
+- [`129`](https://t.me/tonstatus/129) · 2024-08-28T06:21:40+00:00 · **Mainnet validators**
+- [`130`](https://t.me/tonstatus/130) · 2024-08-28T17:39:05+00:00 · **URGENT** **- Mainnet validators**
+- [`131`](https://t.me/tonstatus/131) · 2024-08-28T19:20:31+00:00 · **URGENT - Mainnet validators**
+- [`132`](https://t.me/tonstatus/132) · 2024-08-29T14:59:46+00:00 · Dear TON Validators,
+- [`133`](https://t.me/tonstatus/133) · 2024-08-29T15:19:13+00:00 · **Important Instructions for TON Validators**
+- [`134`](https://t.me/tonstatus/134) · 2024-09-02T16:54:40+00:00 · **ANNOUNCEMENT: DECENTRALISED SYSTEM OF PENALTIES FOR POORLY PERFORMING VALIDATORS
+- [`135`](https://t.me/tonstatus/135) · 2024-09-04T12:52:32+00:00 · **Tool for assessing the effectiveness of validators
+- [`136`](https://t.me/tonstatus/136) · 2024-09-05T12:16:00+00:00 · **APIs for validation and effectiveness of validators**
+- [`137`](https://t.me/tonstatus/137) · 2024-09-06T08:21:34+00:00 · **Mainnet validators
+- [`138`](https://t.me/tonstatus/138) · 2024-09-11T09:03:10+00:00 · **Mainnet Validators**
+- [`139`](https://t.me/tonstatus/139) · 2024-09-13T18:19:32+00:00 · Block production in the shard 0x9000000000000000 has stopped. The other shards are working normally. The core team is in
+- [`140`](https://t.me/tonstatus/140) · 2024-09-13T18:42:36+00:00 · Block production in the shard has recovered. The situation is currently under review.
+- [`141`](https://t.me/tonstatus/141) · 2024-09-14T09:21:32+00:00 · The network is experiencing performance issues. Transactions may take longer than usual to complete. A fix is being work
+- [`142`](https://t.me/tonstatus/142) · 2024-09-14T10:55:58+00:00 · Found a bug in node that caused performance issues overnight and today. Some validators have been updated, which solved 
+- [`143`](https://t.me/tonstatus/143) · 2024-09-25T17:11:26+00:00 · Dear TON Validator
+- [`144`](https://t.me/tonstatus/144) · 2024-10-19T10:10:18+00:00 · **Mainnet validators and liteserver owners
+- [`145`](https://t.me/tonstatus/145) · 2024-10-28T09:59:02+00:00 · **Mainnet Validators and Liteserver Owners**
+- [`146`](https://t.me/tonstatus/146) · 2024-11-04T05:39:48+00:00 · **QoS maintenance**
+- [`147`](https://t.me/tonstatus/147) · 2024-12-09T13:51:55+00:00 · **Mainnet validators and liteserver owners**
+- [`148`](https://t.me/tonstatus/148) · 2024-12-17T11:01:38+00:00 · **Mainnet Validators and Liteserver Owners**
+- [`149`](https://t.me/tonstatus/149) · 2025-01-30T09:45:00+00:00 · **Mainnet validators and liteserver owners**
+- [`150`](https://t.me/tonstatus/150) · 2025-02-06T09:00:02+00:00 · **Mainnet Validators and Liteserver Owners**
+- [`151`](https://t.me/tonstatus/151) · 2025-02-08T13:20:51+00:00 · **Upgrade rate in mainnet reached 95%**, with 67% weight achieved during the first day of upgrade!
+- [`152`](https://t.me/tonstatus/152) · 2025-02-08T13:22:20+00:00 · **Self hosted ton indexer owners and operators**
+- [`153`](https://t.me/tonstatus/153) · 2025-02-10T09:49:55+00:00 · **Mainnet validators**
+- [`154`](https://t.me/tonstatus/154) · 2025-02-14T11:33:47+00:00 · **Mainnet validators**
+- [`155`](https://t.me/tonstatus/155) · 2025-03-04T10:05:37+00:00 · **Mainnet validators**
+- [`156`](https://t.me/tonstatus/156) · 2025-03-11T08:59:30+00:00 · **Mainnet Validators **
+- [`157`](https://t.me/tonstatus/157) · 2025-03-13T17:49:38+00:00 · **Upgrade rate in mainnet reached 90%
+- [`158`](https://t.me/tonstatus/158) · 2025-03-13T17:49:38+00:00 · Recent and upcoming TON optimizations open the possibility of reducing network fees in the near future without reducing 
+- [`159`](https://t.me/tonstatus/159) · 2025-04-25T18:13:19+00:00 · **Mainnet validators**
+- [`160`](https://t.me/tonstatus/160) · 2025-04-30T08:59:02+00:00 · **Mainnet Validators **
+- [`161`](https://t.me/tonstatus/161) · 2025-05-01T11:10:15+00:00 · **Mainnet Validators**
+- [`162`](https://t.me/tonstatus/162) · 2025-05-05T08:03:49+00:00 · **Mainnet validators**
+- [`163`](https://t.me/tonstatus/163) · 2025-06-01T12:51:52+00:00 · **Block creation has been suspended on the TON mainnet**
+- [`164`](https://t.me/tonstatus/164) · 2025-06-01T13:32:32+00:00 · **Block production has been restored**
+- [`165`](https://t.me/tonstatus/165) · 2025-06-23T18:51:50+00:00 · **Mainnet validators and node owners**
+- [`166`](https://t.me/tonstatus/166) · 2025-06-30T10:01:57+00:00 · **Mainnet Validators and node owners**
+- [`167`](https://t.me/tonstatus/167) · 2025-07-01T07:34:44+00:00 · **Upgrade rate in mainnet reached 90%
+- [`168`](https://t.me/tonstatus/168) · 2025-07-01T07:34:45+00:00 · **Mainnet Validators**
+- [`169`](https://t.me/tonstatus/169) · 2025-07-01T12:02:37+00:00 · **Liteserver node owners and service providers**
+- [`170`](https://t.me/tonstatus/170) · 2025-07-03T10:25:57+00:00 · **Mainnet validators**
+- [`171`](https://t.me/tonstatus/171) · 2025-07-05T17:17:01+00:00 · **Mainnet validators**
+- [`172`](https://t.me/tonstatus/172) · 2025-07-21T18:20:36+00:00 · **Mainnet validators**
+- [`173`](https://t.me/tonstatus/173) · 2025-07-28T11:03:55+00:00 · **Mainnet Validators**
+- [`174`](https://t.me/tonstatus/174) · 2025-08-24T11:46:59+00:00 · **Update on Validator Quality of Service API**
+- [`175`](https://t.me/tonstatus/175) · 2025-09-05T09:59:50+00:00 · **Mainnet validators**
+- [`176`](https://t.me/tonstatus/176) · 2025-09-16T12:03:09+00:00 · **Mainnet validators**
+- [`177`](https://t.me/tonstatus/177) · 2025-10-06T06:56:44+00:00 · **Mainnet validators**
+- [`178`](https://t.me/tonstatus/178) · 2025-10-08T11:50:15+00:00 · This update is also **mandatory** for **Liteservers** **and full node operators**.
+- [`179`](https://t.me/tonstatus/179) · 2025-10-13T08:04:31+00:00 · **Mainnet Validators and node owners**
+- [`180`](https://t.me/tonstatus/180) · 2025-10-13T08:11:04+00:00 · **Liteserver node owners and service providers**
+- [`181`](https://t.me/tonstatus/181) · 2025-10-29T14:45:23+00:00 · **Mainnet validators and node owners**
+- [`182`](https://t.me/tonstatus/182) · 2025-11-05T08:04:35+00:00 · **Mainnet Validators
+- [`183`](https://t.me/tonstatus/183) · 2025-11-07T07:24:05+00:00 · **Upgrade rate in mainnet reached 97%
+- [`184`](https://t.me/tonstatus/184) · 2025-11-07T07:24:55+00:00 · **Mainnet validators**
+- [`185`](https://t.me/tonstatus/185) · 2025-11-12T09:59:01+00:00 · **Mainnet validators**
+- [`186`](https://t.me/tonstatus/186) · 2025-12-04T06:59:33+00:00 · **Mainnet validators and node owners**
+- [`187`](https://t.me/tonstatus/187) · 2025-12-15T08:49:17+00:00 · **Mainnet Validators and Node Owners**
+- [`188`](https://t.me/tonstatus/188) · 2025-12-15T08:49:17+00:00 · If you are running on-premises Toncenter APIs you will need to ensure that those components are upgraded **alongside** w
+- [`189`](https://t.me/tonstatus/189) · 2026-02-05T13:33:59+00:00 · **Mainnet validators and node owners**
+- [`190`](https://t.me/tonstatus/190) · 2026-02-12T07:57:26+00:00 · **Mainnet Validators and Node Owners**
+- [`191`](https://t.me/tonstatus/191) · 2026-02-12T07:57:26+00:00 · If you are running on-premises Toncenter APIs you will need to ensure that those components are upgraded **alongside** w
+- [`192`](https://t.me/tonstatus/192) · 2026-02-23T14:00:23+00:00 · **Mainnet validators and node owners**
+- [`193`](https://t.me/tonstatus/193) · 2026-02-24T07:59:43+00:00 · **Mainnet Validators and Node Owners**
+- [`194`](https://t.me/tonstatus/194) · 2026-03-19T13:20:48+00:00 · **Mainnet validators and node owners**
+- [`195`](https://t.me/tonstatus/195) · 2026-03-31T07:57:34+00:00 · **Mainnet Node Software Update** **[**[v2026.03](https://github.com/ton-blockchain/ton/releases/tag/v2026.03)**]**
+- [`196`](https://t.me/tonstatus/196) · 2026-03-31T13:02:30+00:00 · **Sub-Second mainnet activation timeline for validators**
+- [`197`](https://t.me/tonstatus/197) · 2026-04-01T09:55:10+00:00 · **Mainnet validators**
+- [`198`](https://t.me/tonstatus/198) · 2026-04-02T07:59:02+00:00 · **Mainnet Validators**
+- [`199`](https://t.me/tonstatus/199) · 2026-04-03T06:34:07+00:00 · **Mainnet validators**
+- [`200`](https://t.me/tonstatus/200) · 2026-04-04T04:49:18+00:00 · **New port configuration instruction for validators**
+- [`201`](https://t.me/tonstatus/201) · 2026-04-06T10:49:23+00:00 · **Mainnet Validators**
+- [`202`](https://t.me/tonstatus/202) · 2026-04-07T14:19:53+00:00 · **Mainnet validators**
+- [`203`](https://t.me/tonstatus/203) · 2026-04-08T12:57:33+00:00 · **Mainnet Validator Software Update** **[**[v2026.04](https://github.com/ton-blockchain/ton/releases/tag/v2026.04)**]**
+- [`204`](https://t.me/tonstatus/204) · 2026-04-09T06:20:52+00:00 · **Catchain 2.0 activation**
+- [`205`](https://t.me/tonstatus/205) · 2026-04-09T08:12:49+00:00 · **Sub-Second is Live**
+- [`206`](https://t.me/tonstatus/206) · 2026-04-20T20:43:09+00:00 · **Scheduled Closure of the Token Bridge** **V3**
+- [`207`](https://t.me/tonstatus/207) · 2026-04-20T20:43:30+00:00 · **Lite Server and Full Node operators
+- [`208`](https://t.me/tonstatus/208) · 2026-04-22T12:35:35+00:00 · **Liteserver Synchronization Instability**
+- [`209`](https://t.me/tonstatus/209) · 2026-04-28T12:15:05+00:00 · **Mainnet Validator Software Update** **[**[v2026.04-1](https://github.com/ton-blockchain/ton/releases/tag/v2026.04-1)**
+- [`210`](https://t.me/tonstatus/210) · 2026-04-29T18:04:18+00:00 · **Mainnet Validators**
+- [`211`](https://t.me/tonstatus/211) · 2026-04-30T13:11:50+00:00 · **Mainnet validators**
+- [`212`](https://t.me/tonstatus/212) · 2026-05-01T11:19:55+00:00 · **Mainnet validators**
+- [`213`](https://t.me/tonstatus/213) · 2026-05-02T11:10:56+00:00 · **Mainnet Validators**
+- [`214`](https://t.me/tonstatus/214) · 2026-05-04T13:42:35+00:00 · **Clarification for TON Node Operators

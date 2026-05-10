@@ -1,0 +1,402 @@
+# @durov — Telegram Channel Archive
+
+- Source: https://t.me/durov
+- Captured at: 2026-05-10 16:11:01 JST
+- Total posts captured: 389
+- Earliest: 2015-10-28T18:20:58+00:00 (msg 1)
+- Latest:   2026-05-09T22:24:14+00:00 (msg 507)
+
+Public channel preview (`t.me/s/<channel>`) covers text + photo URLs + link previews. 
+Native videos / large files / comments are not available via this path.
+
+## Posts
+
+- [`1`](https://t.me/durov/1) · 2015-10-28T18:20:58+00:00 · Channel created
+- [`6`](https://t.me/durov/6) · 2015-10-28T18:32:12+00:00 · (no text)
+- [`7`](https://t.me/durov/7) · 2015-10-28T18:32:16+00:00 · (no text)
+- [`8`](https://t.me/durov/8) · 2015-10-28T18:33:16+00:00 · (no text)
+- [`10`](https://t.me/durov/10) · 2015-10-28T18:48:55+00:00 · (no text)
+- [`11`](https://t.me/durov/11) · 2015-10-28T18:49:32+00:00 · (no text)
+- [`16`](https://t.me/durov/16) · 2015-10-28T18:52:40+00:00 · (no text)
+- [`31`](https://t.me/durov/31) · 2015-10-30T21:25:34+00:00 · (no text)
+- [`32`](https://t.me/durov/32) · 2015-10-30T21:34:14+00:00 · As some of you might have guessed, apart from jogging bathing and rowing we did some work this week. Lots of [@telegram]
+- [`33`](https://t.me/durov/33) · 2015-10-30T21:53:15+00:00 · Also, the ability for users to add a small bio to their profiles in Telegram seems to be a decent idea. It should be 100
+- [`37`](https://t.me/durov/37) · 2015-10-31T19:41:48+00:00 · I wonder who lit up all the candles in the cemetery **🎃***
+- [`39`](https://t.me/durov/39) · 2015-11-04T16:35:05+00:00 · Finally some good news for our Iranian users.
+- [`40`](https://t.me/durov/40) · 2016-04-14T21:34:18+00:00 · Here are 50+ great Telegram sticker sets for you. Made by winners of the sticker competition I held earlier this year. E
+- [`41`](https://t.me/durov/41) · 2016-06-27T12:36:31+00:00 · (no text)
+- [`42`](https://t.me/durov/42) · 2016-08-02T20:25:01+00:00 · Some media reported on a “massive” hacker attack on Telegram in Iran. Here's what really happened: 
+- [`43`](https://t.me/durov/43) · 2016-10-09T18:53:49+00:00 · This October we are working on new features for [@telegram](https://t.me/telegram) from a castle in Umbria, Italy.
+- [`44`](https://t.me/durov/44) · 2016-10-09T18:55:11+00:00 · (no text)
+- [`45`](https://t.me/durov/45) · 2016-10-09T18:55:19+00:00 · (no text)
+- [`46`](https://t.me/durov/46) · 2016-11-09T16:34:36+00:00 · Trusting a US-based company for secure communication was naive before today. But starting today, it is pure madness.
+- [`47`](https://t.me/durov/47) · 2017-03-21T18:45:22+00:00 · Happy Equinox / Nowruz (which this year are just 1 day apart)!
+- [`48`](https://t.me/durov/48) · 2017-04-01T10:16:47+00:00 · Happy April Fools' Day! **🤡*** Check out the trending stickers tab, featuring Mr. Trump, Marilyn Monroe and (more import
+- [`49`](https://t.me/durov/49) · 2017-04-18T19:13:29+00:00 · As you may have heard, we have recently launched encrypted voice calls for Telegram. They are super-easy to use and impr
+- [`50`](https://t.me/durov/50) · 2017-07-16T01:04:29+00:00 · **Some thoughts on Indonesia**
+- [`51`](https://t.me/durov/51) · 2017-07-23T01:15:40+00:00 · There’s a weird rumor being spread in Iran about Telegram moving servers there. The idea of a privacy-oriented messaging
+- [`52`](https://t.me/durov/52) · 2017-07-23T15:17:31+00:00 · As I promised above, I’m posting more details about how relying on third party CDN caching nodes can securely increase d
+- [`53`](https://t.me/durov/53) · 2017-07-30T12:25:52+00:00 · Since some journalists don’t read my Telegram channel (a shame!), I made a Telegraph story about rumors on Telegram movi
+- [`54`](https://t.me/durov/54) · 2017-08-02T18:57:41+00:00 · I haven’t realized how many dedicated users we had in Indonesia until yesterday. I’m still excited by the warm reception
+- [`55`](https://t.me/durov/55) · 2017-08-10T15:35:29+00:00 · **What is Instant View and Why It's Important**
+- [`56`](https://t.me/durov/56) · 2017-08-14T16:19:32+00:00 · We launched Telegram for iOS exactly 4 years ago, on the 14th of August, 2013. It’s been an amazing 4 years, mostly beca
+- [`57`](https://t.me/durov/57) · 2017-08-14T16:20:50+00:00 · Speaking of Telegram's superior technology, a user recently asked me why Telegram “isn’t end-to-end encrypted by default
+- [`58`](https://t.me/durov/58) · 2017-08-27T15:01:03+00:00 · **New Rules for Alternative Telegram Clients**
+- [`59`](https://t.me/durov/59) · 2017-09-08T14:45:51+00:00 · If you haven’t read it yet, here’s the full story about the US agencies’ attempts to infiltrate Telegram last year:  [ht
+- [`60`](https://t.me/durov/60) · 2017-09-14T15:36:11+00:00 · **On the September 13th Connection Issues**
+- [`61`](https://t.me/durov/61) · 2017-09-26T22:21:47+00:00 · **Why I Can't Visit Iran and Russia**
+- [`62`](https://t.me/durov/62) · 2017-09-27T14:53:12+00:00 · **Disruptions, China and Principles**
+- [`63`](https://t.me/durov/63) · 2017-09-28T18:42:22+00:00 · **Why Charges Against Us in Iran And Russia Don’t Matter**
+- [`64`](https://t.me/durov/64) · 2017-10-10T20:53:28+00:00 · An epic Telegram update is coming today. Along with some cool new features such as Live Locations and the new Music Play
+- [`65`](https://t.me/durov/65) · 2017-10-10T20:58:06+00:00 · In other – more personal – news, I’ve turned 33 today. 
+- [`66`](https://t.me/durov/66) · 2017-10-29T12:15:59+00:00 · You already know Telegram has your back when it comes to privacy. Another human right we feel passionately about is the 
+- [`67`](https://t.me/durov/67) · 2017-12-12T14:59:58+00:00 · A Bloomberg correspondent spotted me in Dubai and asked a few questions re Telegram and Bitcoin [https://www.bloomberg.c
+- [`68`](https://t.me/durov/68) · 2017-12-21T20:37:09+00:00 · Happy Winter Solstice! May your wishes come true **✨*****🌟***
+- [`69`](https://t.me/durov/69) · 2017-12-31T14:50:36+00:00 · Happy New Year, everyone! **🎉***
+- [`70`](https://t.me/durov/70) · 2018-02-13T14:41:45+00:00 · The Kaspersky antivirus company claimed today they found a “0-day vulnerability on Telegram for Windows”, which affected
+- [`71`](https://t.me/durov/71) · 2018-02-13T14:41:51+00:00 · **▶️*** **Our two cents:**
+- [`72`](https://t.me/durov/72) · 2018-02-14T14:37:09+00:00 · Happy Valentine's Day! I see some good art in trending stickers, be sure to check it out.
+- [`73`](https://t.me/durov/73) · 2018-02-14T14:37:13+00:00 · (no text)
+- [`74`](https://t.me/durov/74) · 2018-03-28T16:18:59+00:00 · This week, over 700,000 new users are signing up for Telegram each day. The annual user growth of Telegram surpassed 70%
+- [`75`](https://t.me/durov/75) · 2018-03-29T12:48:12+00:00 · Every service growing too fast is bound to experience growing pains; unfortunately, Telegram is no exception, although w
+- [`76`](https://t.me/durov/76) · 2018-04-13T11:39:37+00:00 · The power that local governments have over IT corporations is based on money. At any given moment, a government can cras
+- [`77`](https://t.me/durov/77) · 2018-04-17T13:32:59+00:00 · For the last 24 hours Telegram has been under a ban by internet providers in Russia. The reason is our refusal to provid
+- [`79`](https://t.me/durov/79) · 2018-04-17T13:34:54+00:00 · (no text)
+- [`80`](https://t.me/durov/80) · 2018-04-22T14:18:51+00:00 · For 7 days Russia has been trying to ban Telegram on its territory – with no luck so far. I’m thrilled we were able to s
+- [`81`](https://t.me/durov/81) · 2018-04-22T16:00:01+00:00 · (no text)
+- [`82`](https://t.me/durov/82) · 2018-04-22T17:12:48+00:00 · Thank you for the support, Russia! This could become a Sunday tradition. Please don’t forget to clean up **✈️*****👍🏽***
+- [`83`](https://t.me/durov/83) · 2018-04-30T17:48:32+00:00 · Moscow today.
+- [`86`](https://t.me/durov/86) · 2018-04-30T17:51:01+00:00 · Thank you, each and every one of the 12,000+ people who stood up to support the freedom of internet and Telegram today i
+- [`87`](https://t.me/durov/87) · 2018-05-31T09:22:21+00:00 · Unfortunately, some Telegram features, such as stickers, don’t work correctly under iOS 11.4 that was just released – ev
+- [`88`](https://t.me/durov/88) · 2018-06-01T20:50:09+00:00 · **🎉*** Amazing news – Apple has just successfully reviewed our latest update for Telegram iOS, and we were able to ship 
+- [`89`](https://t.me/durov/89) · 2018-06-30T09:59:02+00:00 · Cycling around Saimaa for 370km got us to Kummakivi, the balancing rock. This 7-meter long stone was left standing here 
+- [`90`](https://t.me/durov/90) · 2018-07-15T17:32:42+00:00 · Although I normally don't watch football matches, I am very happy to hear France has won the World Cup **⚽***
+- [`91`](https://t.me/durov/91) · 2018-09-18T19:54:15+00:00 · As you might have heard, for the last couple of years we’ve been quietly rebuilding Telegram for iOS from scratch with S
+- [`92`](https://t.me/durov/92) · 2018-10-01T19:18:53+00:00 · Some tech media reported that the Telegram Desktop app wasn’t secure because it “leaked IP addresses” when used to accep
+- [`93`](https://t.me/durov/93) · 2018-10-17T15:15:41+00:00 · Last week at Telegram was intense – we’ve been busy polishing the rough spots in our [new iOS app](https://t.me/durov/91
+- [`94`](https://t.me/durov/94) · 2018-10-31T15:08:25+00:00 · My motto is “Never be afraid”. Even when an app's icons are trying to scare you. Happy Halloween! **🎃***
+- [`95`](https://t.me/durov/95) · 2019-01-17T06:56:04+00:00 · 2018 was a great year for Telegram, but 2019 is going to be by far the most important one in our company's history.
+- [`96`](https://t.me/durov/96) · 2019-02-01T14:43:25+00:00 · Yesterday we shipped the fourth major update of Telegram in the last 2 months. This time we radically improved chat back
+- [`97`](https://t.me/durov/97) · 2019-02-01T14:43:39+00:00 · (no text)
+- [`98`](https://t.me/durov/98) · 2019-02-04T17:16:45+00:00 · We’ve just started Instant View 2.0 Competition – our crowdsourcing contest with a prize fund of $300,000, ending on the
+- [`99`](https://t.me/durov/99) · 2019-02-26T16:06:19+00:00 · Happy to announce the arrival of auto-playing videos on Telegram for iOS and Android. It's flavored with improved auto-d
+- [`100`](https://t.me/durov/100) · 2019-02-26T16:06:57+00:00 · (no text)
+- [`101`](https://t.me/durov/101) · 2019-03-14T08:35:50+00:00 · I see 3 million new users signed up for Telegram within the last 24 hours. 
+- [`102`](https://t.me/durov/102) · 2019-03-24T19:47:02+00:00 · It’s been 23 years since I first used a private messaging service, and 16 years since I first built my own. The number o
+- [`103`](https://t.me/durov/103) · 2019-03-27T08:35:39+00:00 · (no text)
+- [`104`](https://t.me/durov/104) · 2019-05-15T21:12:51+00:00 · I don’t like to focus on competitors. But since people keep asking me about WhatsApp, I have just written this post. It 
+- [`105`](https://t.me/durov/105) · 2019-05-25T15:36:14+00:00 · Today the Russian authorities tried to hack 4 journalists covering the Ekaterinburg protests. Fortunately, all those att
+- [`106`](https://t.me/durov/106) · 2019-06-06T14:14:34+00:00 · Those of you who follow my posts know that I’m a big believer in self-restraint. In the last [15 years](https://t.me/dur
+- [`107`](https://t.me/durov/107) · 2019-08-14T15:34:26+00:00 · Telegram turns 6 years today. Throughout these years, Telegram stood up for freedom and privacy. We defended what we bel
+- [`108`](https://t.me/durov/108) · 2019-08-14T15:34:35+00:00 · **🥳***
+- [`109`](https://t.me/durov/109) · 2019-11-20T16:12:07+00:00 · In May, I predicted that backdoors in WhatsApp would keep getting discovered, and one serious security issue would follo
+- [`110`](https://t.me/durov/110) · 2019-11-23T16:21:37+00:00 · Telegram keeps growing at a rate of ~50% annually in DAU. This extraordinary growth, unfortunately, still comes with cer
+- [`111`](https://t.me/durov/111) · 2019-11-26T14:15:23+00:00 · For the past several years, [we’ve been fighting](https://t.me/ISISwatch) the spread of terrorist content on Telegram. W
+- [`112`](https://t.me/durov/112) · 2020-01-21T14:47:44+00:00 · iCloud is now officially a surveillance tool. Apps that are relying on it to store your private messages (such as WhatsA
+- [`113`](https://t.me/durov/113) · 2020-01-30T17:33:14+00:00 · Recent events showed once again that all WhatsApp users are at risk. My thoughts  – [https://telegra.ph/Why-Using-WhatsA
+- [`114`](https://t.me/durov/114) · 2020-04-21T15:48:51+00:00 · This month we have verified and promoted **17 **official news sources, representing **Ministries of Health** in **17 cou
+- [`116`](https://t.me/durov/116) · 2020-05-12T16:51:56+00:00 · Today is a sad day for us here at Telegram. We are announcing the discontinuation of our blockchain project. Below is a 
+- [`117`](https://t.me/durov/117) · 2020-06-21T23:31:35+00:00 · In April 2018, Russia’s telecom regulator Roskomnadzor blocked Telegram on the country’s territory. We knew it was comin
+- [`118`](https://t.me/durov/118) · 2020-06-25T18:19:55+00:00 · An update regarding the US court proceedings involving Telegram, which I [described in May](https://te.legra.ph/What-Was
+- [`119`](https://t.me/durov/119) · 2020-07-16T15:26:03+00:00 · Telegram is among the top 10 most downloaded and most used apps in the world. 
+- [`120`](https://t.me/durov/120) · 2020-07-22T13:08:41+00:00 · [https://decrypt.co/36296/sec-wrong-to-go-after-telegram-crypto-mom-hester-peirce](https://decrypt.co/36296/sec-wrong-to
+- [`121`](https://t.me/durov/121) · 2020-07-28T15:55:21+00:00 · I hope you all liked the [latest Telegram update](https://t.me/telegram/133) – our 8th major update this year. This new 
+- [`122`](https://t.me/durov/122) · 2020-07-28T15:57:13+00:00 · **7 Reasons Every iPhone User Should Be Worried About the App Store’s 30% Tax** 
+- [`123`](https://t.me/durov/123) · 2020-08-05T13:29:10+00:00 · I can understand why Donald Trump threatens to [ban TikTok](https://www.bbc.com/news/business-53633315) unless its US as
+- [`124`](https://t.me/durov/124) · 2020-08-11T15:36:50+00:00 · [#telegram_office_posters](?q=%23telegram_office_posters)
+- [`125`](https://t.me/durov/125) · 2020-08-11T15:37:05+00:00 · [#telegram_office_posters](?q=%23telegram_office_posters)
+- [`126`](https://t.me/durov/126) · 2020-09-30T16:51:05+00:00 · Today we are adding native support for comments in channels. So once you update Telegram, you’ll be able to leave commen
+- [`127`](https://t.me/durov/127) · 2020-09-30T18:15:25+00:00 · Another new feature in today’s update is search filters. You can see the search tabs when tapping on the search icon/fie
+- [`128`](https://t.me/durov/128) · 2020-09-30T18:43:31+00:00 · Lastly, we have introduced Anonymous Admins for groups today. This is a handy feature for celebrities and generally for 
+- [`129`](https://t.me/durov/129) · 2020-09-30T21:52:02+00:00 · We try to launch a major Telegram update every month, but sometimes we are late. I designed this poster for our office w
+- [`130`](https://t.me/durov/130) · 2020-09-30T22:35:17+00:00 · Every major update of Telegram also brings you hundreds of professional animated stickers. These stickers are featured i
+- [`131`](https://t.me/durov/131) · 2020-09-30T22:35:29+00:00 · (no text)
+- [`133`](https://t.me/durov/133) · 2020-10-03T23:58:52+00:00 · Last night Telegram was down for about an hour in Europe due to hardware malfunctioning. Some iOS users who tried to acc
+- [`134`](https://t.me/durov/134) · 2020-10-04T20:49:01+00:00 · Some users asked whether comments will become the default mode for channels. While we think it’s fun to comment on chann
+- [`135`](https://t.me/durov/135) · 2020-10-08T12:42:21+00:00 · Apple is requesting that we shut down 3 channels used by the people of Belarus to expose the identities of their oppress
+- [`136`](https://t.me/durov/136) · 2020-10-09T16:24:53+00:00 · Apple released a [statement](https://www.gazeta.ru/tech/news/2020/10/09/n_15056407.shtml) saying they didn't want us to 
+- [`137`](https://t.me/durov/137) · 2020-10-10T06:00:04+00:00 · As I’m turning 36, some people ask how I manage to look younger than my age. I’ve asked the same question of many people
+- [`138`](https://t.me/durov/138) · 2020-10-12T12:20:22+00:00 · Thanks to everyone for the birthday wishes. The celebration inspired me to create another one of our [#telegram_office_p
+- [`139`](https://t.me/durov/139) · 2020-10-31T14:14:35+00:00 · Happy Halloween everyone! **🎃***
+- [`140`](https://t.me/durov/140) · 2020-11-20T10:47:50+00:00 · Just tried an iPhone 12 Pro – what an incredibly clunky piece of hardware. It looks and feels like an oversized version 
+- [`141`](https://t.me/durov/141) · 2020-12-04T11:19:44+00:00 · My new post:
+- [`142`](https://t.me/durov/142) · 2020-12-23T07:52:17+00:00 · As Telegram approaches 500 million active users, many of you are asking the question – who is going to pay to support th
+- [`143`](https://t.me/durov/143) · 2020-12-23T15:31:00+00:00 · Today marks one of the most important product updates in the history of Telegram – Voice Chats **🎙***
+- [`144`](https://t.me/durov/144) · 2020-12-31T15:45:34+00:00 · **🎇***
+- [`145`](https://t.me/durov/145) · 2021-01-08T18:33:00+00:00 · I hear Facebook has an entire department devoted to figuring out why Telegram is so popular. Imagine dozens of employees
+- [`146`](https://t.me/durov/146) · 2021-01-10T17:21:58+00:00 · I’ve been taking part in the discussion in the comments and answering questions. Here are some of the responses:
+- [`147`](https://t.me/durov/147) · 2021-01-12T14:19:36+00:00 · In the first week of January, Telegram surpassed 500 million monthly active users. After that it kept growing: 25 millio
+- [`148`](https://t.me/durov/148) · 2021-01-14T10:02:29+00:00 · Since my [last post](https://t.me/durov/147), the already massive influx of new users to Telegram has only accelerated. 
+- [`149`](https://t.me/durov/149) · 2021-01-18T19:28:09+00:00 · For the last two weeks, the world has been following the events in the United States with concern. While the US represen
+- [`150`](https://t.me/durov/150) · 2021-01-29T10:25:47+00:00 · Some users wanted a way to move their chat history from WhatsApp over to Telegram. Two weeks ago I realized this should 
+- [`151`](https://t.me/durov/151) · 2021-02-01T17:04:44+00:00 · The "capitalism <-> socialism" opposition seems outdated. I prefer to think in terms of "centralization vs decentralizat
+- [`152`](https://t.me/durov/152) · 2021-02-08T18:31:37+00:00 · Telegram became the most downloaded mobile app in the world in January 2021.
+- [`153`](https://t.me/durov/153) · 2021-02-11T13:49:04+00:00 · **Why users shouldn’t worry about ads on Telegram**
+- [`154`](https://t.me/durov/154) · 2021-03-19T14:19:34+00:00 · With [today’s update](https://telegram.org/blog/voice-chats-on-steroids), we're giving every Telegram user the power to 
+- [`155`](https://t.me/durov/155) · 2021-03-23T14:31:35+00:00 · **🎉*** More good news – I am happy to share that Telegram has raised over $1 billion by selling bonds (a form of debt) t
+- [`156`](https://t.me/durov/156) · 2021-04-03T13:02:02+00:00 · **🎂*** My Mom’s turning 70 today. She is the main reason I am who I am today. In school I was a self-willed kid that oft
+- [`157`](https://t.me/durov/157) · 2021-04-03T13:03:51+00:00 · My Mom Albina a few decades ago and myself in the early 90s. Do I look like Mom?
+- [`159`](https://t.me/durov/159) · 2021-04-28T10:50:54+00:00 · Really excited about the recently launched web versions of Telegram [https://webk.telegram.org](https://webk.telegram.or
+- [`160`](https://t.me/durov/160) · 2021-04-28T10:58:33+00:00 · **📹*** Speaking of video calls, we will be adding a video dimension to our voice chats in May, making Telegram a powerfu
+- [`161`](https://t.me/durov/161) · 2021-05-19T15:37:18+00:00 · The New York Times [uncovered](https://www.nytimes.com/2021/05/17/technology/apple-china-censorship-data.html) that Appl
+- [`162`](https://t.me/durov/162) · 2021-07-21T17:01:06+00:00 · The phones of 50,000 individuals, including human rights activists and journalists, have been [targeted by surveillance 
+- [`163`](https://t.me/durov/163) · 2021-07-29T16:58:31+00:00 · Every few decades there is a drastic change in how we view important societal and scientific problems. What used to be a
+- [`164`](https://t.me/durov/164) · 2021-08-14T16:58:07+00:00 · **🎂*****8️⃣*** It’s hard to believe it’s been 8 years since Telegram first appeared in the App Store. 
+- [`165`](https://t.me/durov/165) · 2021-08-30T16:00:55+00:00 · We generally assume that the world is becoming a better place every year. But when it comes to individual freedoms, the 
+- [`166`](https://t.me/durov/166) · 2021-09-04T15:59:22+00:00 · The mind is our most powerful tool. There's nothing it can't do. According to numerous studies, it actively generates ne
+- [`167`](https://t.me/durov/167) · 2021-09-19T21:05:28+00:00 · Another major Telegram update is out now after having been finally approved by Apple. It is packed with unique features 
+- [`168`](https://t.me/durov/168) · 2021-09-25T20:21:12+00:00 · I wrote a detailed [post](https://telegra.ph/Why-Telegram-had-to-follow-Apple-and-Google-when-they-suspended-a-voting-ap
+- [`169`](https://t.me/durov/169) · 2021-09-28T19:13:31+00:00 · On Telegram, people can publicly express reasonable concerns about vaccines. Large Telegram channels are one of the few 
+- [`170`](https://t.me/durov/170) · 2021-10-05T16:31:10+00:00 · Yesterday Telegram experienced a record increase in user registration and activity.
+- [`171`](https://t.me/durov/171) · 2021-10-10T18:12:16+00:00 · **🎂*** As I am turning 37, I put together a list of 3 undervalued and 7 overvalued things in life. 
+- [`172`](https://t.me/durov/172) · 2021-11-18T16:14:05+00:00 · Telegram is launching [Sponsored Messages](https://promote.telegram.org/) – a tool that allows anyone to promote their c
+- [`173`](https://t.me/durov/173) · 2021-12-14T14:40:11+00:00 · **🥇***Telegram is the fastest growing mobile app in 2021, leading this year’s Top Breakout Chart by [Appannie](https://w
+- [`174`](https://t.me/durov/174) · 2021-12-21T17:34:56+00:00 · Happy Winter Solstice (or "Yule" or "Yalda") – the father of all winter holidays! **🌟*****✨*****💫*****❄️***
+- [`175`](https://t.me/durov/175) · 2021-12-23T10:07:01+00:00 · When Telegram [said goodbye](https://telegra.ph/What-Was-TON-And-Why-It-Is-Over-05-12) to TON last year, I expressed the
+- [`176`](https://t.me/durov/176) · 2021-12-28T12:13:11+00:00 · A [recent report](https://therecord.media/fbi-document-shows-what-data-can-be-obtained-from-encrypted-messaging-apps/) h
+- [`177`](https://t.me/durov/177) · 2021-12-31T16:05:15+00:00 · **🥳*****✨*** 2021 was a phenomenal year for Telegram. It became the [most downloaded app in the world](https://t.me/duro
+- [`178`](https://t.me/durov/178) · 2022-02-03T14:17:24+00:00 · Messages on WhatsApp were left open to potential attackers for years, as detailed in recent leaks about Boldend – a US c
+- [`179`](https://t.me/durov/179) · 2022-03-07T17:19:03+00:00 · If you follow my posts, you know that on my [Mom's side](https://t.me/durov/156), I trace my family line from Kyiv. Her 
+- [`180`](https://t.me/durov/180) · 2022-03-18T22:20:41+00:00 · It seems that we had an issue with emails going between our [telegram.org](http://telegram.org/) corporate addresses and
+- [`181`](https://t.me/durov/181) · 2022-04-18T18:29:55+00:00 · Telegram shipped another historic update this past weekend. In addition to features that redefine the boundaries of what
+- [`182`](https://t.me/durov/182) · 2022-04-27T18:28:17+00:00 · In 2022, Telegram is again among the top 5 most downloaded apps in the world (just like in 2021). Of these top 5 most po
+- [`183`](https://t.me/durov/183) · 2022-05-11T14:28:32+00:00 · The world is on the brink of a [global food crisis](https://theprint.in/world/german-development-minister-says-world-may
+- [`184`](https://t.me/durov/184) · 2022-05-18T14:39:03+00:00 · The media often calls me a billionaire, but, unlike most billionaires, I don't own jets, yachts, cars or houses.   
+- [`185`](https://t.me/durov/185) · 2022-06-10T15:40:54+00:00 · Since the day Telegram was launched almost 9 years ago, we've been giving our users more features and resources than any
+- [`186`](https://t.me/durov/186) · 2022-06-13T14:59:35+00:00 · [Telegram Web](https://web.telegram.org/) provides an extraordinary experience on desktops, but it also works great on m
+- [`189`](https://t.me/durov/189) · 2022-06-21T19:02:23+00:00 · Happy Solstice! **☀️*****✨***
+- [`190`](https://t.me/durov/190) · 2022-08-10T17:16:47+00:00 · I love my work. What could be more exciting than improving the way hundreds of millions of people communicate? Members o
+- [`191`](https://t.me/durov/191) · 2022-08-12T16:14:42+00:00 · After extensive media coverage of my previous post, Apple got back to us with a demand to water down our pending Telegra
+- [`192`](https://t.me/durov/192) · 2022-08-12T16:14:47+00:00 · It was an interesting engineering challenge to ensure that hundreds of vector-based emoji with smooth animations could s
+- [`193`](https://t.me/durov/193) · 2022-08-14T16:15:22+00:00 · **🔥*****🔥*****🔥*****🔥***
+- [`195`](https://t.me/durov/195) · 2022-08-29T14:20:39+00:00 · Until recently, 70% of all Telegram usernames had been reserved in inactive channels by cybersquatters from Iran. This c
+- [`196`](https://t.me/durov/196) · 2022-10-05T21:12:17+00:00 · Hackers could have full access (!) to everything on the phones of WhatsApp users. 
+- [`197`](https://t.me/durov/197) · 2022-10-10T14:59:31+00:00 · Thanks for the birthday wishes. However, I decided to cancel turning 38 due to the uneasy times in the world **😭***
+- [`198`](https://t.me/durov/198) · 2022-10-27T16:42:50+00:00 · As [promised](https://t.me/durov/194), we've launched the ability to buy Telegram usernames on a dedicated platform – [F
+- [`199`](https://t.me/durov/199) · 2022-10-28T13:26:41+00:00 · Some content creators started using third-party payment bots to sell access to individual posts in their Telegram channe
+- [`200`](https://t.me/durov/200) · 2022-10-31T14:34:11+00:00 · **👨‍💻*** We prepared some Halloween surprises for you, but it seems someone doesn’t want us to celebrate. Telegram's lat
+- [`201`](https://t.me/durov/201) · 2022-11-05T14:57:14+00:00 · I feel particularly excited about [today’s Telegram update](https://telegram.org/blog/topics-in-groups-collectible-usern
+- [`202`](https://t.me/durov/202) · 2022-11-30T14:50:33+00:00 · The blockchain industry was built on the promise of decentralization, but ended up being concentrated in the hands of a 
+- [`203`](https://t.me/durov/203) · 2022-12-06T14:42:12+00:00 · It has been a year since Telegram started its monetization, but the results have already exceeded our expectations. 
+- [`204`](https://t.me/durov/204) · 2022-12-10T21:05:20+00:00 · **🇦🇷*****⚽️*****🏆*****🤷‍♀️***
+- [`205`](https://t.me/durov/205) · 2022-12-31T16:20:21+00:00 · 2022 has been a successful year for Telegram. Telegram reached 700 million active users and solidified its position as o
+- [`206`](https://t.me/durov/206) · 2023-02-18T12:24:12+00:00 · **🏆*** In the last 5 years, Telegram surpassed Facebook Messenger to become the most popular cloud-based messaging app. 
+- [`207`](https://t.me/durov/207) · 2023-04-01T10:13:55+00:00 · Happy April Fool's day! **🤡***
+- [`209`](https://t.me/durov/209) · 2023-04-27T19:13:50+00:00 · Telegram's mission is to preserve privacy and freedom of speech around the world. 
+- [`211`](https://t.me/durov/211) · 2023-05-01T10:58:17+00:00 · Last week we launched a feature that adds an entire new dimension to Telegram. It allows users to share entire collectio
+- [`212`](https://t.me/durov/212) · 2023-06-26T19:30:44+00:00 · We at Telegram have been very lucky to be able to define the messaging trends for the past decade. 
+- [`213`](https://t.me/durov/213) · 2023-06-26T19:56:18+00:00 · For years, our users have been asking us to implement Stories in Telegram. More than half of all feature requests that w
+- [`214`](https://t.me/durov/214) · 2023-06-26T19:56:53+00:00 · [More about Telegram Stories](https://t.me/durov/213)
+- [`215`](https://t.me/durov/215) · 2023-07-18T14:33:36+00:00 · Every day, over 2.5 million new users sign up for Telegram, and earlier this year we’ve surpassed 800 million monthly ac
+- [`216`](https://t.me/durov/216) · 2023-08-13T22:14:26+00:00 · **🥳*** Today Telegram turns 10 years old.
+- [`217`](https://t.me/durov/217) · 2023-08-13T22:32:52+00:00 · (no text)
+- [`218`](https://t.me/durov/218) · 2023-08-14T15:20:19+00:00 · **🎈*** This is what Telegram for iOS would look like today if its design hadn't evolved since its launch on the 14th of 
+- [`219`](https://t.me/durov/219) · 2023-08-14T16:07:04+00:00 · **➕*** Jokes aside, this is what Telegram beta looked like in late 2012. Note the ability to add photos in profile pages
+- [`224`](https://t.me/durov/224) · 2023-08-14T20:28:48+00:00 · **🕯*** Happy **🥳*** birthday, Telegram!
+- [`225`](https://t.me/durov/225) · 2023-09-14T16:58:28+00:00 · Years ago, we built [TON](https://ton.org/) – a scalable and fast blockchain technology. TON was designed to serve hundr
+- [`226`](https://t.me/durov/226) · 2023-09-16T17:35:42+00:00 · **🔍***This month we changed how searching public channels and groups works on Telegram.
+- [`227`](https://t.me/durov/227) · 2023-09-22T15:25:02+00:00 · The day has come. Telegram channels can now [post Stories!](https://telegram.org/blog/channel-stories)
+- [`228`](https://t.me/durov/228) · 2023-10-08T17:24:57+00:00 · Hundreds of thousands are signing up for Telegram from Israel and the Palestinian Territories. 
+- [`229`](https://t.me/durov/229) · 2023-10-09T20:15:15+00:00 · Some people are wishing me a happy "birthday" today.
+- [`230`](https://t.me/durov/230) · 2023-10-13T14:55:32+00:00 · Every day, Telegram's moderators and AI tools remove millions of obviously harmful content from our public platform. How
+- [`231`](https://t.me/durov/231) · 2023-10-30T16:43:34+00:00 · **🔤*****🔠*****🔤*****🔤*****❗️***Update Telegram to the latest version to see how replies and link previews should work in
+- [`232`](https://t.me/durov/232) · 2023-11-03T14:15:27+00:00 · **🚀*** TON set the record for the fastest blockchain in the world!
+- [`233`](https://t.me/durov/233) · 2023-11-03T14:30:06+00:00 · **💳***TON outperforms other systems by a margin in transactions per second (TPS). Source — 
+- [`234`](https://t.me/durov/234) · 2023-11-06T17:04:22+00:00 · Now every channel on Telegram can host FAIR giveaways. 
+- [`235`](https://t.me/durov/235) · 2023-11-06T17:51:55+00:00 · (no text)
+- [`236`](https://t.me/durov/236) · 2023-11-06T17:51:55+00:00 · (no text)
+- [`237`](https://t.me/durov/237) · 2023-11-06T18:25:18+00:00 · **👉***Announcing a $200,000 giveaway! **🪙***
+- [`238`](https://t.me/durov/238) · 2023-11-13T16:04:24+00:00 · (no text)
+- [`239`](https://t.me/durov/239) · 2023-11-14T18:24:59+00:00 · Telegram for VisionOS **😎***
+- [`240`](https://t.me/durov/240) · 2023-12-01T13:53:35+00:00 · **🎆*** A major Telegram update with **11** new features is out, just **4** weeks after the previous one. 
+- [`241`](https://t.me/durov/241) · 2023-12-08T13:11:32+00:00 · **✨*** Launched less than one and a half years ago, Telegram Premium has become the fastest-growing paid subscription in
+- [`242`](https://t.me/durov/242) · 2023-12-24T18:06:56+00:00 · **🍭***Merry Christmas, Telegrammers! The newest Telegram update lets you celebrate in style and congratulate your loved 
+- [`243`](https://t.me/durov/243) · 2023-12-31T15:35:20+00:00 · **🎆*** I wish all our users peace, happiness, prosperity and inspiration in the new year. I have a very good feeling abo
+- [`244`](https://t.me/durov/244) · 2024-01-09T14:01:49+00:00 · **🚀*** **5 million** users are now subscribed to Telegram Premium — just 1 month (!) after [we reached](https://t.me/dur
+- [`245`](https://t.me/durov/245) · 2024-01-18T17:42:13+00:00 · **📹*** We've made some great improvements to video message recording on iOS. Now, you can enjoy clearer video quality, s
+- [`246`](https://t.me/durov/246) · 2024-02-03T08:51:45+00:00 · The **Saved Messages** feature launched by Telegram [7 years](https://telegram.org/blog/albums-saved-messages) ago has s
+- [`247`](https://t.me/durov/247) · 2024-02-28T12:14:51+00:00 · **😝*** Next month, channel owners on Telegram can start receiving financial rewards from their work. 
+- [`248`](https://t.me/durov/248) · 2024-02-29T08:44:37+00:00 · (no text)
+- [`249`](https://t.me/durov/249) · 2024-02-29T08:44:37+00:00 · (no text)
+- [`250`](https://t.me/durov/250) · 2024-02-29T09:37:24+00:00 · After my [last post,](https://t.me/durov/247) some people expressed concern that, as a result of ad sales exclusively fo
+- [`251`](https://t.me/durov/251) · 2024-02-29T14:06:35+00:00 · (no text)
+- [`252`](https://t.me/durov/252) · 2024-02-29T15:35:01+00:00 · (no text)
+- [`253`](https://t.me/durov/253) · 2024-02-29T15:46:07+00:00 · 10,000 subscribers of mine are now happily enjoying their Telegram Premium thanks to this giveaway I prepaid on [Fragmen
+- [`254`](https://t.me/durov/254) · 2024-02-29T16:08:17+00:00 · This February, we redefined many-to-many communication by adding [9 new features for group chats.](https://telegram.org/
+- [`255`](https://t.me/durov/255) · 2024-03-05T17:05:36+00:00 · Millions of people have been signing up and sharing content on Telegram in the last hour while Instagram and Facebook we
+- [`256`](https://t.me/durov/256) · 2024-03-06T13:58:58+00:00 · **👨‍💻*** This week we launched the first batch of Telegram Business features. Users can now convert their personal Teleg
+- [`257`](https://t.me/durov/257) · 2024-03-13T14:48:18+00:00 · All large social media apps are easy targets for criticism due to the content they host. I can’t recall any major social
+- [`258`](https://t.me/durov/258) · 2024-03-18T17:55:12+00:00 · **💰*** Last week, we issued $330M worth of bonds to ensure Telegram can keep expanding at an accelerated speed.
+- [`259`](https://t.me/durov/259) · 2024-03-31T19:36:49+00:00 · **🍿*** Big Telegram update with 8+ new features is out.
+- [`260`](https://t.me/durov/260) · 2024-04-10T18:24:40+00:00 · **9️⃣*****0️⃣*****0️⃣*** Telegram reached 900 million monthly users. 
+- [`261`](https://t.me/durov/261) · 2024-04-15T12:08:41+00:00 · **🎨*** Our newest update lets you [make your own stickers](https://telegram.org/blog/sticker-maker) right here on Telegr
+- [`262`](https://t.me/durov/262) · 2024-04-16T11:03:58+00:00 · **📺*** As a leader of a politically neutral platform, it is my responsibility to speak to journalists representing diffe
+- [`263`](https://t.me/durov/263) · 2024-04-17T08:24:13+00:00 · **🐥*****🐥*** The full version of my interview with Tucker is out [https://www.youtube.com/watch?v=1Ut6RouSs0w](https://w
+- [`264`](https://t.me/durov/264) · 2024-04-22T10:10:23+00:00 · **🏅***Telegram is the #1 most downloaded mobile app in China on Android, according to Google Play. Access to Telegram re
+- [`265`](https://t.me/durov/265) · 2024-04-23T09:06:00+00:00 · **🤑*** A tech blogger, [Pavel Fedorov](https://t.me/pashtozavr/1588), just earned $80,000+ in TON **🤑*** from selling hi
+- [`266`](https://t.me/durov/266) · 2024-04-24T14:27:49+00:00 · **💡*** In February 2022, I [suggested](https://t.me/durov_russia/40) to restrict Telegram channels in Russia and Ukraine
+- [`267`](https://t.me/durov/267) · 2024-04-26T09:50:36+00:00 · **🚀*** This month we [added 17 new features.](https://telegram.org/blog/my-profile-and-15-more) These are not just minor
+- [`270`](https://t.me/durov/270) · 2024-04-30T10:11:50+00:00 · While reviewing our [design contest submissions](https://contest.com/design-2024), I was inspired by a [message effects]
+- [`271`](https://t.me/durov/271) · 2024-04-30T14:50:52+00:00 · (no text)
+- [`272`](https://t.me/durov/272) · 2024-05-02T09:54:57+00:00 · **🇺🇦***Interestingly, most people [voted](https://t.me/durov/271) for Ukrainian to be the subject of my new post. So her
+- [`273`](https://t.me/durov/273) · 2024-05-03T10:11:55+00:00 · **✨*****✨*** Being mindful about what kind of information we consume is just as important for our wellbeing as what food
+- [`274`](https://t.me/durov/274) · 2024-05-08T15:31:31+00:00 · **🤫*** A story [shared](https://x.com/jack/status/1787895769183268948) by Jack Dorsey, the founder of Twitter, uncovered
+- [`275`](https://t.me/durov/275) · 2024-05-17T09:46:08+00:00 · **💎*** [Notcoin,](https://t.me/notcoin_bot) a miniapp on Telegram, reached 35M active users in just a few months. 
+- [`277`](https://t.me/durov/277) · 2024-05-17T15:16:29+00:00 · **🪙*** Half a million Notcoin users [gifted me](https://t.me/notcoin/546) $6.8 million worth of Notcoin! 
+- [`278`](https://t.me/durov/278) · 2024-06-03T15:29:15+00:00 · **🆕*** Last week brought us another [big Telegram update](https://telegram.org/blog/message-effects-and-more) that inclu
+- [`279`](https://t.me/durov/279) · 2024-06-04T14:13:48+00:00 · **💎*** The $6 million worth of Notcoin [donated to me](https://t.me/durov/277) 2 weeks ago has increased in price 4 time
+- [`280`](https://t.me/durov/280) · 2024-06-06T15:57:50+00:00 · Big day today, we’re launching [Telegram Stars](https://telegram.org/blog/telegram-stars) **⭐️*** – a way to pay for dig
+- [`281`](https://t.me/durov/281) · 2024-06-07T15:32:28+00:00 · **🧠*** Last week, Microsoft [introduced](https://techcrunch.com/2024/05/29/telegram-microsoft-copilot-ai-chatbot/) its [
+- [`282`](https://t.me/durov/282) · 2024-06-09T17:42:31+00:00 · **💔*** My phone got “unlocked” by the Dubai heat **🫠***
+- [`283`](https://t.me/durov/283) · 2024-06-10T09:51:25+00:00 · **🥲*** It’s getting warmer in Dubai, and my friends are leaving for fancy places like the south of France. As a French c
+- [`284`](https://t.me/durov/284) · 2024-06-23T13:09:52+00:00 · **🇰🇬*** I loved the people and nature of Kyrgyzstan — a real hidden gem of Central Asia. The weather was great, and ther
+- [`294`](https://t.me/durov/294) · 2024-06-24T16:00:27+00:00 · **🆒*** The [TapSwap mini app](https://t.me/tapswap_bot) has taken Telegram by storm and now has 56 million users **😲***
+- [`295`](https://t.me/durov/295) · 2024-06-30T06:48:04+00:00 · **🇺🇿*** This week I visited Uzbekistan – and thoroughly enjoyed it **👍***
+- [`305`](https://t.me/durov/305) · 2024-07-02T16:47:57+00:00 · **🍷*** The recent Telegram update revolutionizes how people interact with mini apps. Now people can collapse apps and sw
+- [`306`](https://t.me/durov/306) · 2024-07-03T16:54:02+00:00 · **🤑*** The duck picture for the [latest Telegram update](https://telegram.org/blog/mini-app-bar-paid-media-and-more) is 
+- [`307`](https://t.me/durov/307) · 2024-07-04T15:15:37+00:00 · **🐹*** [Hamster Kombat](https://t.me/hamster_kombat_bot) has become the latest Internet phenomenon everyone's talking ab
+- [`326`](https://t.me/durov/326) · 2024-07-14T19:05:04+00:00 · **🇰🇿*** I recently returned from Kazakhstan — the economic powerhouse of Central Asia. I visited majestic Astana, vibran
+- [`336`](https://t.me/durov/336) · 2024-07-19T13:14:29+00:00 · **⚡️*** 2024 will go down in history as the year when hundreds of millions of people became familiar with blockchain. We
+- [`337`](https://t.me/durov/337) · 2024-07-22T20:10:59+00:00 · **👑*****9️⃣*****5️⃣*****0️⃣*****👑*** Telegram reached **950 **million monthly active users — up from **900** million in 
+- [`338`](https://t.me/durov/338) · 2024-07-23T18:23:38+00:00 · **🐱*** Despite the fact that I am clearly a dog person, Telegram hosts the largest cat-lover community in the world — [C
+- [`339`](https://t.me/durov/339) · 2024-07-29T19:59:20+00:00 · **🤯*** I was just told that I have over 100 biological kids. How is this possible for a guy who has never been married a
+- [`340`](https://t.me/durov/340) · 2024-07-31T21:11:09+00:00 · **🚩*** Big day! Today we introduce the Telegram Browser and Mini App Store, plus many other innovations **✨*****🍬***
+- [`341`](https://t.me/durov/341) · 2024-08-14T12:10:52+00:00 · **1️⃣*****1️⃣*** When I turned 11 in 1995, I made a promise to myself to become smarter, stronger and freer every day. T
+- [`342`](https://t.me/durov/342) · 2024-09-05T20:45:47+00:00 · **❤️*** Thanks everyone for your support and love!
+- [`343`](https://t.me/durov/343) · 2024-09-06T13:52:50+00:00 · **🎉*** Telegram has reached 10 million paid subscribers. 10 million people are now enjoying Telegram Premium! 
+- [`345`](https://t.me/durov/345) · 2024-09-23T13:09:39+00:00 · **🔎*** Search on Telegram is more powerful than in other messaging apps because it allows users to find public channels 
+- [`346`](https://t.me/durov/346) · 2024-10-02T09:11:32+00:00 · **📰*** My previous post may have seemed to announce a major shift in how Telegram works. But in reality, little has chan
+- [`347`](https://t.me/durov/347) · 2024-10-04T16:03:57+00:00 · **🔜*** While we patiently wait for Google to approve the latest Telegram update, let’s take a break for some nostalgia *
+- [`348`](https://t.me/durov/348) · 2024-10-05T18:15:19+00:00 · **🥳*** The holiday season (which includes my birthday **😏***) is just around the corner, and today [we are launching](ht
+- [`349`](https://t.me/durov/349) · 2024-10-06T11:30:43+00:00 · **🏷*** Yesterday we introduced two limited-edition gifts. Both have now sold out. The entire supply of **🍭***500,000 lol
+- [`350`](https://t.me/durov/350) · 2024-10-06T12:22:46+00:00 · **🫡*****📊*** And here’s another poll. 
+- [`351`](https://t.me/durov/351) · 2024-10-06T14:42:03+00:00 · [#lifestories](?q=%23lifestories)
+- [`352`](https://t.me/durov/352) · 2024-10-08T19:52:12+00:00 · **🔥*** I love the Telegram team. Just yesterday, I suggested 10 improvements to our apps. We had mockups ready the same 
+- [`353`](https://t.me/durov/353) · 2024-10-10T00:12:57+00:00 · **➕*** Turning **40** today. Exactly **18** years ago I launched my first large project and grew it from zero to **100,0
+- [`355`](https://t.me/durov/355) · 2024-10-10T15:56:29+00:00 · [#lifestories](?q=%23lifestories) **🐶*** 
+- [`356`](https://t.me/durov/356) · 2024-10-10T23:02:26+00:00 · **4️⃣*****0️⃣*** To celebrate my 40th birthday today, we’ve added 3 new limited edition gifts — **🎂*****🗓*** **🕯***
+- [`357`](https://t.me/durov/357) · 2024-10-14T16:35:44+00:00 · **🏷*** Telegram has launched the most affordable way for businesses to authenticate their customers’ phone numbers — jus
+- [`358`](https://t.me/durov/358) · 2024-10-17T16:35:43+00:00 · My favorite eatery in Paris suggests I get some inexpensive lawyers **😄***
+- [`359`](https://t.me/durov/359) · 2024-10-23T14:41:22+00:00 · **😎*** If I had to give one piece of advice to people in their 20s who want to build something great, it would be: “*Nev
+- [`361`](https://t.me/durov/361) · 2024-10-31T16:57:27+00:00 · **👀*** **Big day today — Telegram has taken its first step toward becoming a video platform ****📺*****
+- [`362`](https://t.me/durov/362) · 2024-11-02T16:28:41+00:00 · **🔜*** Telegram is about to introduce **10 new features** for Mini Apps, enabling developers to create dozens of new kin
+- [`372`](https://t.me/durov/372) · 2024-11-14T20:02:16+00:00 · **💰*** Ten days ago, a developer launched a mini app that has already generated $500,000 in revenue. He built it in just
+- [`373`](https://t.me/durov/373) · 2024-11-18T18:44:19+00:00 · **🙃*** This is [the biggest update in the history of Mini Apps:](https://telegram.org/blog/fullscreen-miniapps-and-more)
+- [`382`](https://t.me/durov/382) · 2024-11-27T22:15:49+00:00 · **⭐️*** The [@Major](https://t.me/Major) mini app is one of my favorite success stories in the Telegram ecosystem. Launc
+- [`383`](https://t.me/durov/383) · 2024-12-12T20:53:12+00:00 · **🧑‍💻*** Over the past few years, our moderation team has been working tirelessly to keep Telegram safe. Each month they
+- [`384`](https://t.me/durov/384) · 2024-12-16T20:51:48+00:00 · **🤝*** The [Affiliate Platform](https://telegram.org/blog/affiliate-programs-ai-sticker-search) we launched this month i
+- [`385`](https://t.me/durov/385) · 2024-12-20T21:07:02+00:00 · **🔍*** Earlier this month, we launched AI-powered sticker search. We added search tags to all 40,000+ stickers created b
+- [`386`](https://t.me/durov/386) · 2024-12-23T11:47:14+00:00 · **🔮*** As I [predicted,](https://t.me/durov/243) 2024 turned out to be a very good year for Telegram. For the first time
+- [`387`](https://t.me/durov/387) · 2024-12-31T15:03:57+00:00 · **🍌*** Access to certain Russian media has been restricted in the EU under DSA/sanctions laws **🇪🇺***
+- [`388`](https://t.me/durov/388) · 2024-12-31T15:30:49+00:00 · **🆒*** We planned an epic New Year’s Eve update with unique gifts for our users. Unfortunately, it’s been stuck in Apple
+- [`389`](https://t.me/durov/389) · 2025-01-01T18:11:37+00:00 · **🐵*** Humans are hardwired to copy others by evolution — for a good reason. Mimicking those around us has been the most
+- [`390`](https://t.me/durov/390) · 2025-01-03T19:11:57+00:00 · **🎁*** Launched just three months ago, Telegram gifts have become an internet sensation. This holiday season alone, Tele
+- [`391`](https://t.me/durov/391) · 2025-01-08T15:34:09+00:00 · **🧐*** I’m proud that Telegram has supported freedom of speech long before it became politically safe to do so. Our valu
+- [`392`](https://t.me/durov/392) · 2025-01-14T20:14:00+00:00 · **🏆*** Telegram and TON Core just launched a [new contest](https://t.me/contest/393) for developers with a generous priz
+- [`393`](https://t.me/durov/393) · 2025-01-21T20:30:07+00:00 · **🤝*** We agreed with the TON Foundation to make TON the exclusive blockchain partner of Telegram. TON will be our block
+- [`394`](https://t.me/durov/394) · 2025-01-29T14:36:33+00:00 · **⭐*** Happy Chinese New Year!
+- [`395`](https://t.me/durov/395) · 2025-02-12T18:26:37+00:00 · Telegram’s third [major update](https://telegram.org/blog/AI-sticker-search-video-improvements) this year is out. With i
+- [`396`](https://t.me/durov/396) · 2025-02-12T18:42:58+00:00 · And don’t miss the new AI-powered [sticker search!](https://telegram.org/blog/AI-sticker-search-video-improvements#ai-po
+- [`397`](https://t.me/durov/397) · 2025-02-14T00:04:01+00:00 · Over the past 5 weeks, thousands of users asked us to add new [gifts](https://telegram.org/blog/gifts-verification-platf
+- [`398`](https://t.me/durov/398) · 2025-02-14T00:28:13+00:00 · It took 6 minutes for this entire collection to sell out. People paid over $200 for each of the 2000 hearts. $400,000 in
+- [`399`](https://t.me/durov/399) · 2025-02-14T00:54:54+00:00 · 15,000 Loot Bags costing about $50 each sold in 24 minutes, $750,000 total. Once minted, they turn into insanely beautif
+- [`400`](https://t.me/durov/400) · 2025-02-14T01:25:56+00:00 · In just one hour, all the rings are gone **⛔️***
+- [`401`](https://t.me/durov/401) · 2025-02-14T11:15:34+00:00 · All nine Valentine’s gifts sold out within a few hours, totaling over $5M.
+- [`402`](https://t.me/durov/402) · 2025-02-28T14:29:06+00:00 · **#️⃣*** I [wrote](https://t.me/durov/372) about [MemHash](https://t.me/memhash) earlier — a mini app single-handedly bu
+- [`403`](https://t.me/durov/403) · 2025-03-17T10:35:37+00:00 · **📰*** As you may have heard, I’ve returned to Dubai after spending several months in France due to an investigation rel
+- [`404`](https://t.me/durov/404) · 2025-03-19T14:35:32+00:00 · **🏆*** Telegram now has significantly over **1 billion** monthly active users, becoming the **second most popular messag
+- [`405`](https://t.me/durov/405) · 2025-03-26T14:46:20+00:00 · **📈*** **Good month for The Open Network: **the biggest names in venture capital invested over **$400M** into **TON** an
+- [`406`](https://t.me/durov/406) · 2025-03-26T19:11:32+00:00 · **💭*** This is what the brightest minds of Silicon Valley are saying about **The Open Network.**
+- [`407`](https://t.me/durov/407) · 2025-03-31T14:44:08+00:00 · **📈*** **Telegram bonds are trading at all-time highs (adjusted for the federal funds rate).**
+- [`408`](https://t.me/durov/408) · 2025-04-17T15:22:48+00:00 · **📰*** Yesterday, a French newspaper claimed that my detainment in France last summer ‘finally’ forced Telegram to compl
+- [`409`](https://t.me/durov/409) · 2025-04-20T07:26:41+00:00 · **🎁*****🎁*** Happy Easter — the day of Freedom and Rebirth! **🎁***
+- [`410`](https://t.me/durov/410) · 2025-04-21T09:31:18+00:00 · **😲*** Last month, **France nearly banned encryption**. A law requiring messaging apps to implement a backdoor for polic
+- [`411`](https://t.me/durov/411) · 2025-05-01T19:42:40+00:00 · **🎆*** The sky over Dubai has never looked as good as it did today! **🔵***
+- [`412`](https://t.me/durov/412) · 2025-05-03T17:38:42+00:00 · **📞*** Telegram's latest update brings you [ultra-secure group calls.](https://telegram.org/blog/group-calls-made-easy) 
+- [`413`](https://t.me/durov/413) · 2025-05-09T15:13:26+00:00 · **🎁*** We’ve just launched the [Telegram Gift Marketplace,](https://telegram.org/blog/gift-marketplace-and-more) so you 
+- [`414`](https://t.me/durov/414) · 2025-05-15T13:47:45+00:00 · **📼*** **We’ve just launched our first-ever contest for content creators.** The goal is simple: create a viral video sho
+- [`417`](https://t.me/durov/417) · 2025-05-18T13:28:03+00:00 · Channel name was changed to «Pavel Durov»
+- [`418`](https://t.me/durov/418) · 2025-05-18T13:32:35+00:00 · A Western European government (guess which **🥖***) approached Telegram, asking us to silence conservative voices in Roma
+- [`419`](https://t.me/durov/419) · 2025-05-24T07:58:56+00:00 · **🔼*** **Telegram climbed up** in the rankings of the world’s most downloaded apps in Q1 2025, while all Meta apps (WA, 
+- [`420`](https://t.me/durov/420) · 2025-05-27T20:23:48+00:00 · **🎉*** Telegram Premium now has over 15 million paid subscribers. The number has doubled in just one year. Thank you for
+- [`421`](https://t.me/durov/421) · 2025-05-28T10:15:41+00:00 · **🇦🇪***  I’ll be in Dubai the first week of June — good news ahead.
+- [`422`](https://t.me/durov/422) · 2025-05-28T12:27:45+00:00 · **🔥*** This summer, Telegram users will gain access to the best AI technology on the market. Elon Musk and I have agreed
+- [`423`](https://t.me/durov/423) · 2025-05-29T16:13:41+00:00 · **🏆*** Telegram has successfully issued **$1.7B** in **5-year** bonds at a **9%** interest rate, maturing in **June 2030
+- [`426`](https://t.me/durov/426) · 2025-06-04T13:35:32+00:00 · Meet **Threaded Chats** — a simple yet powerful way to organize conversations by topic or sender. Already available in l
+- [`427`](https://t.me/durov/427) · 2025-06-05T11:52:55+00:00 · **🎙*****✂️*** Trimming voice messages — today on Telegram. In a few years, everywhere else with the exact same UI **🥇***
+- [`428`](https://t.me/durov/428) · 2025-06-05T12:26:21+00:00 · **🆒*** In case you missed it — the latest [Telegram update](https://telegram.org/blog/direct-to-channel-trim-voice-and-m
+- [`429`](https://t.me/durov/429) · 2025-06-09T15:37:47+00:00 · **📈*** Telegram Collectible Gifts **went up** in price **several times** in the past **30 days ****🆙***
+- [`430`](https://t.me/durov/430) · 2025-06-16T18:21:04+00:00 · **🎙*** A week ago, Tucker Carlson published [an interview with me](https://www.youtube.com/watch?v=bxFQvOyTolg) about wh
+- [`431`](https://t.me/durov/431) · 2025-06-23T15:40:38+00:00 · **👨‍💻*** Telegram’s looking for an Android dev — who’ll earn **$1M / year** after tax. **🧻***
+- [`432`](https://t.me/durov/432) · 2025-07-04T19:05:49+00:00 · **🗽*** The Independence Day gifts sold out within minutes. It took just **45 seconds** for all 15,000 **🎁*** Crystal Eag
+- [`433`](https://t.me/durov/433) · 2025-07-09T23:17:36+00:00 · **🎁*** [@SnoopDogg](https://t.me/SnoopDogg)’s digital collectibles drop on Telegram sold out in just 30 minutes today, g
+- [`434`](https://t.me/durov/434) · 2025-07-10T18:29:28+00:00 · **↗️*** If you want to reach your full potential and maintain clarity of mind, stay away from addictive substances. My s
+- [`435`](https://t.me/durov/435) · 2025-07-11T23:05:07+00:00 · **➕*** If you’re a student choosing what to focus on, pick MATH. It will teach you to relentlessly rely on your own brai
+- [`436`](https://t.me/durov/436) · 2025-07-21T13:57:02+00:00 · **👑*** Rare Telegram gifts, numbers, and usernames — once bought for just a few dollars — can now sell for over $100,000
+- [`437`](https://t.me/durov/437) · 2025-07-21T14:33:23+00:00 · **💡*** If you can’t contact me directly due to the paywall, feel free to reach out to our support team at [@notoscam](ht
+- [`438`](https://t.me/durov/438) · 2025-07-30T13:18:05+00:00 · **🪙*** A TON early adopter [bought](https://t.me/TON_Cabal/1954) the [@crypto](https://t.me/crypto) username on Telegram
+- [`439`](https://t.me/durov/439) · 2025-08-01T23:02:34+00:00 · **🍬***  My girlfriend is turning **2️⃣*****5️⃣*** today.
+- [`440`](https://t.me/durov/440) · 2025-08-05T17:20:38+00:00 · **🏆*** Yesterday marked a **historic milestone**: for the first time, investors [gained access](https://finance.yahoo.co
+- [`441`](https://t.me/durov/441) · 2025-08-11T19:14:39+00:00 · **📣*** Following my post 20 days ago, users have sent us hundreds of reports about scams and blackmail. **👮‍♂️***
+- [`442`](https://t.me/durov/442) · 2025-08-12T20:11:55+00:00 · **🪙*** Good week for TON. Verb, a **NASDAQ**-listed company that has chosen **TON** as its primary asset, has successful
+- [`443`](https://t.me/durov/443) · 2025-08-14T10:37:45+00:00 · **👨‍🏫*** A month ago, my father — a leading expert in Ancient Roman literature — turned 80. I asked what advice I should
+- [`444`](https://t.me/durov/444) · 2025-08-14T10:39:38+00:00 · **1️⃣*****2️⃣*** As Telegram turns 12 today, I want it to keep following my father’s advice — and:
+- [`445`](https://t.me/durov/445) · 2025-08-14T20:01:56+00:00 · **🍬*** To celebrate Telegram’s birthday and the summer holiday season, we’re dropping some limited-edition gifts within 
+- [`446`](https://t.me/durov/446) · 2025-08-14T22:16:32+00:00 · **🕶*****🕶*****🕶*****🕶*** Telegram’s birthday/summer gifts sold out in under **3 minutes**, grossing over **$11M**. 
+- [`447`](https://t.me/durov/447) · 2025-08-24T17:50:37+00:00 · **➕*** One year ago, the French police detained me for 4 days because some people I’d never heard of used Telegram to co
+- [`448`](https://t.me/durov/448) · 2025-08-27T16:46:28+00:00 · **🏎*** NFTs are back — reimagined. **18 Telegram gifts** bought for just **$57** a few months ago were traded for a **$3
+- [`449`](https://t.me/durov/449) · 2025-09-12T15:55:47+00:00 · [@charliekirk](https://t.me/charliekirk)’s death is an assault on free speech. He fought for open debate, and enemies of
+- [`450`](https://t.me/durov/450) · 2025-09-18T10:16:45+00:00 · Growth in the last 30 days **😺***
+- [`451`](https://t.me/durov/451) · 2025-09-28T11:31:03+00:00 · **🇲🇩*** About a year ago, while I was stuck in Paris, the French intelligence services reached out to me through an inte
+- [`452`](https://t.me/durov/452) · 2025-10-09T22:16:10+00:00 · I’m turning 41, but I don’t feel like celebrating.
+- [`453`](https://t.me/durov/453) · 2025-10-10T19:02:21+00:00 · The new Telegram update is here — with 12 features added in one month:
+- [`454`](https://t.me/durov/454) · 2025-10-14T17:08:09+00:00 · **🇪🇺*** Telegram sent this message to all its users in France regarding Chat Control. People must know the names of thos
+- [`455`](https://t.me/durov/455) · 2025-10-31T14:12:20+00:00 · **🕷*** Someone made a game about me escaping a French prison — and fighting off all sorts of shady characters along the 
+- [`457`](https://t.me/durov/457) · 2025-11-15T16:06:11+00:00 · **😋*** We’re starting to test new Telegram features such as live-streaming in Stories and auctions for gifts. 
+- [`458`](https://t.me/durov/458) · 2025-11-15T16:19:16+00:00 · A demo of how auctions for rare gifts work **🎈***
+- [`459`](https://t.me/durov/459) · 2025-11-15T18:02:29+00:00 · **👉*** [t.me/auction/TelegramPin](http://t.me/auction/TelegramPin)
+- [`460`](https://t.me/durov/460) · 2025-11-21T20:30:20+00:00 · **💪*** [Khabib‘s](https://t.me/khabib_nurmagomedov) legendary papakhas — collectibles symbolizing **Tradition**, **Freed
+- [`461`](https://t.me/durov/461) · 2025-11-22T17:58:41+00:00 · **🏆*** [Khabib](https://t.me/khabib_nurmagomedov/127)[’s](https://t.me/khabib_nurmagomedov/127) gift auction on Telegram
+- [`462`](https://t.me/durov/462) · 2025-11-30T18:22:41+00:00 · **🐣*** It happened. Our decentralized confidential compute network, **Cocoon**, is live. The first AI requests from user
+- [`463`](https://t.me/durov/463) · 2025-12-07T13:59:36+00:00 · **🥊*** Great to see my gym buddy Petr Yan win the UFC title — with Gifts shining in the background  **🥊***
+- [`465`](https://t.me/durov/465) · 2025-12-07T18:05:26+00:00 · **▶️*** The auction is LIVE! **🥊***
+- [`466`](https://t.me/durov/466) · 2025-12-23T22:09:12+00:00 · Just sketched a logo for my sperm donorship program. Is ‘pd’ in a circle minimalist enough?
+- [`467`](https://t.me/durov/467) · 2026-01-06T17:41:53+00:00 · **🧐***Despite some FUD, Telegram has no dependence on Russian capital. Our recent $1.7B bond offering included exactly z
+- [`468`](https://t.me/durov/468) · 2026-01-07T09:55:48+00:00 · This year, I wish you less — 
+- [`469`](https://t.me/durov/469) · 2026-02-04T15:19:31+00:00 · **🇪🇸*** My message to Telegram users in Spain **❗️***
+- [`470`](https://t.me/durov/470) · 2026-02-10T17:29:43+00:00 · Russia is restricting access to Telegram in an attempt to force its citizens to switch to a state-controlled app built f
+- [`471`](https://t.me/durov/471) · 2026-02-11T09:29:39+00:00 · **🔥***Telegram for Android got its biggest redesign in 10 years. A few details to iron out, but it’s mostly complete — a
+- [`472`](https://t.me/durov/472) · 2026-02-13T12:54:29+00:00 · **😎*** Telegram built the most powerful API for chatbot and mini app developers — and made it free. 
+- [`473`](https://t.me/durov/473) · 2026-02-24T14:58:53+00:00 · **💣*** Russia has opened a criminal case against me for “aiding terrorism.” Each day, the authorities fabricate new pret
+- [`474`](https://t.me/durov/474) · 2026-03-01T21:05:45+00:00 · **🎆*** Unfortunately, I had to leave Dubai for Europe a week ago — so I’m not only missing the free fireworks from Iran,
+- [`475`](https://t.me/durov/475) · 2026-03-02T13:01:29+00:00 · **📝*** All Telegram chatbots can now stream responses to users in real time — great for AI assistants.
+- [`476`](https://t.me/durov/476) · 2026-03-23T14:44:07+00:00 · **💸*** Telegram has fully repaid the bonds we issued 5 years ago. **🎆***
+- [`477`](https://t.me/durov/477) · 2026-04-04T03:55:22+00:00 · **😎*** Telegram was banned in Russia — yet 65M Russians still use it daily via VPNs, with 50M+ sending messages every da
+- [`478`](https://t.me/durov/478) · 2026-04-05T23:36:48+00:00 · **🔄*** Your massive monthly Telegram update is out.
+- [`479`](https://t.me/durov/479) · 2026-04-07T01:21:57+00:00 · Meet the most powerful polls tech in social media. Telegram's update packs a dozen new features:
+- [`480`](https://t.me/durov/480) · 2026-04-07T22:12:03+00:00 · **✨*** Our new fully private AI Editor lets you translate and proofread your messages — or rewrite them in Tribal, Zen, 
+- [`481`](https://t.me/durov/481) · 2026-04-08T22:36:42+00:00 · **🇪🇺*** The EU is trying to justify its push for more surveillance (Chat Control) and censorship (DSA) via controlled NG
+- [`482`](https://t.me/durov/482) · 2026-04-09T14:09:27+00:00 · **🚀*** The TON blockchain just got upgraded and is now **10× faster**.
+- [`483`](https://t.me/durov/483) · 2026-04-09T21:27:05+00:00 · **🤥*** WhatsApp’s “encryption” may be the biggest consumer fraud in history — deceiving billions of users. Despite its c
+- [`485`](https://t.me/durov/485) · 2026-04-10T22:24:40+00:00 · **🚨*** Another proof that Telegram’s Secret Chats are the most secure way to communicate. The FBI [got access](https://9
+- [`486`](https://t.me/durov/486) · 2026-04-11T12:44:51+00:00 · **🔐*** We’ve upgraded Telegram’s anti-censorship protocol. Users in Russia are advised to update their apps to stay conn
+- [`487`](https://t.me/durov/487) · 2026-04-12T15:25:09+00:00 · **⚠️*** WhatsApp’s “End-to-end encryption by default” claim is a giant **consumer fraud.** 
+- [`488`](https://t.me/durov/488) · 2026-04-13T21:25:34+00:00 · **🗽*** Anyone **under 25** can win **€100,000** for an essay on **digital freedoms**. The **Youth Liberty Prize 2026** s
+- [`489`](https://t.me/durov/489) · 2026-04-15T01:20:29+00:00 · Group admins can assign tags to users — or embrace the chaos and let them assign their own. **🔥****
+- [`490`](https://t.me/durov/490) · 2026-04-15T20:18:53+00:00 · **⚡️*** You can now create agentic bots in **just 2 taps** **🤖***
+- [`491`](https://t.me/durov/491) · 2026-04-17T02:31:54+00:00 · **🇪🇺*** The EU wants to force mandatory ID checks on anyone using social media — and ban people under 18 from accessing 
+- [`493`](https://t.me/durov/493) · 2026-04-18T00:58:41+00:00 · **🎁*** Our new** Login Widget** is a **gift** to developers: they can not only quickly **authorize** users, but also req
+- [`494`](https://t.me/durov/494) · 2026-04-18T23:57:36+00:00 · **✅*** The Telegram [Login SDK](https://core.telegram.org/bots/telegram-login#native-sdks) now supports native iOS and A
+- [`495`](https://t.me/durov/495) · 2026-04-20T00:01:54+00:00 · **🇫🇷*** Macron’s France is losing legitimacy as it weaponizes criminal investigations to **suppress free speech** and **
+- [`496`](https://t.me/durov/496) · 2026-04-20T16:25:25+00:00 · This is how the EU/UK now regulates social media: 
+- [`497`](https://t.me/durov/497) · 2026-04-20T22:55:10+00:00 · France's "Agency for Secure Documents" was hacked. Names, addresses, emails, and phone numbers of **19 million people** 
+- [`498`](https://t.me/durov/498) · 2026-04-22T17:06:37+00:00 · The apartment in Russia where I lived 20 years ago received a summons for “Suspect P. V. Durov”. 
+- [`499`](https://t.me/durov/499) · 2026-04-23T17:12:59+00:00 · **⚡️*** In one week, TON fees will drop 6× — to just 0.00039 TON (~$0.0005) per transaction, fixed regardless of network
+- [`500`](https://t.me/durov/500) · 2026-04-24T19:32:04+00:00 · **41** kidnappings of crypto holders in France in **3.5** months of **2026**.
+- [`501`](https://t.me/durov/501) · 2026-05-04T14:54:43+00:00 · **⚡️*** Fees in TON have **dropped 6×** — to nearly zero. 
+- [`502`](https://t.me/durov/502) · 2026-05-05T15:46:44+00:00 · **💎*** Telegram becoming TON’s largest validator strengthens decentralization. 
+- [`503`](https://t.me/durov/503) · 2026-05-06T15:57:26+00:00 · **🏁*** TON leads Layer-1 blockchains in finality time. 
+- [`504`](https://t.me/durov/504) · 2026-05-07T16:00:22+00:00 · Huge Telegram update — 10 major new features, 200+ improvements. [https://telegram.org/blog/ai-bot-revolution-11-new-fea
+- [`505`](https://t.me/durov/505) · 2026-05-08T17:41:53+00:00 · **🫴*** TON is **#1 in annual staking rewards** among the 50 largest cryptocurrencies. 
+- [`506`](https://t.me/durov/506) · 2026-05-09T15:32:17+00:00 · **🏆*** We’ve distributed **$75,000** among the best designers who imagined a new way to communicate — Telegram Nodes ([s
+- [`507`](https://t.me/durov/507) · 2026-05-09T22:24:14+00:00 · **🥖*** The French government [is accusing](https://www.wsj.com/tech/elon-musk-summoned-to-france-to-face-criminal-charge
