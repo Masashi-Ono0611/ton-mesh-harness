@@ -38,6 +38,11 @@ export async function findFreePort(min = 7100, max = 7199): Promise<number> {
 }
 
 async function findFreeUdpPort(min = 17556, max = 17600): Promise<number> {
+  // Probe-then-spawn races a third party who may grab the port between
+  // our close() and the daemon's bind(). The daemon panics in that case
+  // and exits in <1 s, so we add an early-exit detection in waitForApi
+  // (see below) instead of trying to make the probe atomic — which would
+  // require fork-then-pass-fd-to-child plumbing we don't want.
   for (let p = min; p <= max; p++) {
     // eslint-disable-next-line no-await-in-loop
     const ok = await new Promise<boolean>((resolve) => {
@@ -201,6 +206,18 @@ async function waitForApi(
     const spawnErr = getSpawnError?.()
     if (spawnErr) {
       throw new Error(`tonutils-storage spawn failed: ${spawnErr.message}`)
+    }
+    // Early-exit if the daemon already died (e.g. lost the UDP-port race
+    // and panicked). Without this we'd burn the full timeoutMs probing a
+    // dead PID. Codex/Claude review note (W2): this was an open
+    // robustness item.
+    if (handle.process.exitCode !== null && handle.process.exitCode !== 0) {
+      throw new Error(
+        `tonutils-storage exited with code ${handle.process.exitCode} during startup. ` +
+        `Most common cause: another process bound the daemon's UDP ListenAddr ` +
+        `(likely TON Browser.app's bundled tonutils-storage) between our probe and the daemon's bind. ` +
+        `Re-run, or stop the other tonutils instance first.`,
+      )
     }
     // Each fetch needs its own timeout — Node 18+'s fetch has no default,
     // so a stuck connect would otherwise hang past the outer deadline.

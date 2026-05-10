@@ -225,15 +225,20 @@ Estimated remaining: ~1 day for steps 1–4 once we decide to ship
 them. Tracking as **B3.x** (cli surface) and **B3.y** (default pool /
 SaaS decision) in the next session.
 
-### B4 — Payment Network abstraction (groundwork only in v0.6)
+### B4 — Payment Network abstraction (groundwork shipped) ✅
 
-Tunnel rentals settle through PN micro-payments. We won't ship a PN
-integration in v0.6 — that's v0.7 — but we can keep the daemon
-abstraction layer payment-aware so v0.7 doesn't require a refactor.
+`src/payments/index.ts` defines the `PaymentNetworkClient` interface
+and exports `noopPaymentClient` for v0.6. `describePayments()` returns
+`null`, so callers omit the `TunnelConfig.Payments` section entirely.
+`status()` returns a single-line `payments: disabled (v0.7)` for CLI
+output.
 
-Concretely: thread a "payment plumbing" hook through the daemon
-spawn / connect path now, return null/no-op in v0.6, and wire the
-real `ton-payment-network` client into it in v0.7.
+When v0.7 lands a real `ton-payment-network` node, drop in a
+`TonPaymentClient` that implements the same interface — no refactor
+of the daemon spawn / connect path needed.
+
+Test coverage: `test/payments.test.ts` (3 trivial tests pinning the
+v0.6 contract).
 
 ## Out of scope for v0.6 (deferred / dropped)
 
