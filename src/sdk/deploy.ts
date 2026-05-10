@@ -14,9 +14,7 @@
  * NO `console.*` ANYWHERE IN THIS FILE — lint-enforced.
  */
 
-import { existsSync, readFileSync } from 'fs'
 import path from 'path'
-import os from 'os'
 import {
   DeployOptionsSchema,
   parseWalletInput,
@@ -33,6 +31,10 @@ import {
   tonutilsDetails,
   type TonutilsHandle,
 } from '../daemon/tonutils-process'
+import {
+  resolveTunnelConfig as resolveTunnelConfigCore,
+  TunnelConfigError,
+} from '../utils/tunnel-config'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public input shape — accepts the full DeployOptions schema, plus a legacy
@@ -110,47 +112,20 @@ let deployInFlight = false
 // Internal helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function expandTilde(p: string): string {
-  if (p === '~') return os.homedir()
-  if (p.startsWith('~/')) return path.join(os.homedir(), p.slice(2))
-  return p
-}
-
 /**
- * Validate a tunnel config path BEFORE we start the daemon. Reused from the
- * legacy CLI helper so behaviour stays consistent with v0.7. Maps bad paths
- * to `ERR_INVALID_INPUT` rather than letting them surface as a daemon
- * timeout further down.
+ * Validate a tunnel-config path BEFORE we start the daemon. Wraps the
+ * shared core and surfaces `TunnelConfigError` as `ERR_INVALID_INPUT` so
+ * bad input never reaches the daemon spawn step.
  */
 function validateTunnelConfig(rawPath: string): string {
-  const absPath = path.resolve(expandTilde(rawPath))
-  if (!existsSync(absPath)) {
-    throw new SdkError(
-      'ERR_INVALID_INPUT',
-      `--tunnel-config: file not found at ${absPath}. Pass a path to a nodes-pool.json supplied by your tunnel operator.`,
-      { severity: 'fatal' },
-    )
-  }
-  let nodeCount = 0
   try {
-    const parsed = JSON.parse(readFileSync(absPath, 'utf-8'))
-    if (Array.isArray(parsed?.NodesPool)) nodeCount = parsed.NodesPool.length
-    else if (Array.isArray(parsed?.nodes_pool)) nodeCount = parsed.nodes_pool.length
+    return resolveTunnelConfigCore(rawPath).absPath
   } catch (err) {
-    throw new SdkError(
-      'ERR_INVALID_INPUT',
-      `--tunnel-config: could not parse ${absPath} as JSON: ${err instanceof Error ? err.message : String(err)}`,
-      { severity: 'fatal' },
-    )
+    if (err instanceof TunnelConfigError) {
+      throw new SdkError('ERR_INVALID_INPUT', err.message, { severity: 'fatal' })
+    }
+    throw err
   }
-  if (nodeCount === 0) {
-    throw new SdkError(
-      'ERR_INVALID_INPUT',
-      `--tunnel-config: ${absPath} has zero NodesPool entries.`,
-      { severity: 'fatal' },
-    )
-  }
-  return absPath
 }
 
 /**
