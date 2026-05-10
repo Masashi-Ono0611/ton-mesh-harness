@@ -2,13 +2,11 @@
 // Sibling of installer.ts (TON Core daemon installer); we keep both around
 // so users can opt in to either backend via --daemon-backend.
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
-import { spawnSync } from 'child_process'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import path from 'path'
-import os from 'os'
+import { BIN_DIR, chmodExecutable, downloadFile, removeQuarantine } from './installer-utils'
 
 const TONUTILS_VERSION = 'v1.4.1'
-const BIN_DIR = path.join(os.homedir(), '.ton-sovereign', 'bin')
 const VERSION_FILE = path.join(BIN_DIR, '.tonutils-version')
 
 // xssnick/tonutils-storage release asset naming. Note: the project's asset
@@ -80,34 +78,8 @@ export function ensureTonutilsBinary(opts: EnsureTonutilsBinaryOptions = {}): vo
     process.stderr.write(`  Downloading tonutils-storage (${TONUTILS_VERSION})…\n`)
   }
   downloadFile(url, paths.daemon)
-  if (process.platform !== 'win32') {
-    spawnSync('chmod', ['+x', paths.daemon])
-  }
+  chmodExecutable(paths.daemon)
   removeQuarantine(paths.daemon)
 
   writeFileSync(paths.versionFile, TONUTILS_VERSION)
-}
-
-function downloadFile(url: string, dest: string): void {
-  const tmp = dest + '.tmp'
-  const result = spawnSync('curl', ['-fsSL', '-o', tmp, url], { stdio: 'inherit' })
-  if (result.status !== 0) {
-    throw new Error(`Failed to download ${url} (curl exit ${result.status})`)
-  }
-  // renameSync is portable across darwin/linux/win32; the previous
-  // spawnSync('mv', …) silently failed on stock Windows where `mv` is
-  // not on PATH (Codex P2).
-  renameSync(tmp, dest)
-}
-
-function removeQuarantine(filePath: string): void {
-  if (process.platform === 'darwin') {
-    spawnSync('xattr', ['-c', filePath])
-  } else if (process.platform === 'win32') {
-    spawnSync('powershell.exe', [
-      '-NoProfile', '-NonInteractive',
-      '-Command',
-      `Unblock-File -LiteralPath "${filePath}"`,
-    ])
-  }
 }

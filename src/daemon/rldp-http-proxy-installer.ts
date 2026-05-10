@@ -5,10 +5,9 @@
 // .ton domain over HTTP-over-RLDP without the user having to follow
 // `docs/v0.6/byo-rldp-http-proxy.md` manually.
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
-import { spawnSync } from 'child_process'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import path from 'path'
-import os from 'os'
+import { BIN_DIR, chmodExecutable, downloadFile, removeQuarantine } from './installer-utils'
 
 // Pin to the v2026.04-1 tag whose asset names we surveyed during planning.
 // Override via env var `RLDP_HTTP_PROXY_VERSION` if a future release shifts
@@ -17,7 +16,6 @@ const DEFAULT_VERSION = 'v2026.04-1'
 export const RLDP_HTTP_PROXY_VERSION =
   process.env.RLDP_HTTP_PROXY_VERSION?.trim() || DEFAULT_VERSION
 
-const BIN_DIR = path.join(os.homedir(), '.ton-sovereign', 'bin')
 const VERSION_FILE = path.join(BIN_DIR, '.rldp-http-proxy-version')
 
 // ton-blockchain/ton release asset naming. Surveyed against tag v2026.04-1:
@@ -85,31 +83,8 @@ export function ensureRldpHttpProxyBinary(opts: EnsureRldpHttpProxyBinaryOptions
     process.stderr.write(`  Downloading rldp-http-proxy (${RLDP_HTTP_PROXY_VERSION})…\n`)
   }
   downloadFile(url, paths.daemon)
-  if (process.platform !== 'win32') {
-    spawnSync('chmod', ['+x', paths.daemon])
-  }
+  chmodExecutable(paths.daemon)
   removeQuarantine(paths.daemon)
 
   writeFileSync(paths.versionFile, RLDP_HTTP_PROXY_VERSION)
-}
-
-function downloadFile(url: string, dest: string): void {
-  const tmp = dest + '.tmp'
-  const result = spawnSync('curl', ['-fsSL', '-o', tmp, url], { stdio: 'inherit' })
-  if (result.status !== 0) {
-    throw new Error(`Failed to download ${url} (curl exit ${result.status})`)
-  }
-  renameSync(tmp, dest)
-}
-
-function removeQuarantine(filePath: string): void {
-  if (process.platform === 'darwin') {
-    spawnSync('xattr', ['-c', filePath])
-  } else if (process.platform === 'win32') {
-    spawnSync('powershell.exe', [
-      '-NoProfile', '-NonInteractive',
-      '-Command',
-      `Unblock-File -LiteralPath "${filePath}"`,
-    ])
-  }
 }
