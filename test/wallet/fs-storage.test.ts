@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'fs'
+import { mkdtempSync, rmSync, existsSync, readFileSync, statSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { FSStorage } from '../../src/wallet/FSStorage'
@@ -56,5 +56,21 @@ describe('FSStorage', () => {
     await s.setItem('two', '2')
     const raw = readFileSync(storagePath, 'utf-8')
     expect(JSON.parse(raw)).toEqual({ one: '1', two: '2' })
+  })
+
+  it('writes the file with 0600 mode (owner-only)', async () => {
+    const s = new FSStorage(storagePath)
+    await s.setItem('secret', 'value')
+    // Lower 9 bits of st_mode are the unix permission bits.
+    const mode = statSync(storagePath).mode & 0o777
+    expect(mode).toBe(0o600)
+  })
+
+  it('keeps 0600 mode after subsequent writes', async () => {
+    const s = new FSStorage(storagePath)
+    await s.setItem('a', '1')
+    await s.setItem('b', '2')
+    const mode = statSync(storagePath).mode & 0o777
+    expect(mode).toBe(0o600)
   })
 })

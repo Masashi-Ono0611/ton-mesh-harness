@@ -21,8 +21,14 @@ export class FSStorage implements Storage {
   }
 
   private async writeObject(obj: StorageObject): Promise<void> {
-    await fs.mkdir(path.dirname(this.path), { recursive: true })
-    await fs.writeFile(this.path, JSON.stringify(obj))
+    // 0o700 on the parent dir + 0o600 on the file: the JSON contains the
+    // TonConnect bridge session, which gives the holder authority to send
+    // signed-tx requests to the user's wallet.
+    await fs.mkdir(path.dirname(this.path), { recursive: true, mode: 0o700 })
+    await fs.writeFile(this.path, JSON.stringify(obj), { mode: 0o600 })
+    // writeFile honours mode only on file creation; chmod ensures it is set
+    // on subsequent writes too (overwrite path).
+    try { await fs.chmod(this.path, 0o600) } catch { /* best-effort */ }
   }
 
   async setItem(key: string, value: string): Promise<void> {

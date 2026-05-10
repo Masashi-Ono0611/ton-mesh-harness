@@ -187,6 +187,18 @@ export function generateContractMessage(
       `Invalid span: ${spanSeconds}. Must be a positive integer ≤ 2^32 - 1 (about 136 years in seconds).`,
     )
   }
+  // Reject spans that exceed what the chosen provider advertises — otherwise
+  // the user would sign and pay 0.3 TON gas for a contract the provider's
+  // on-chain code rejects (`expected_max_span > max_span` ⇒ throw 1009).
+  // provider.maxSpan == 0 means we're using a manually-passed address whose
+  // params we couldn't resolve from TONAPI; in that case skip the check and
+  // let the user proceed at their own risk.
+  if (provider.maxSpan > 0 && spanSeconds > provider.maxSpan) {
+    throw new Error(
+      `Span ${spanSeconds}s exceeds provider's max_span (${provider.maxSpan}s). ` +
+      `Pass --span ≤ ${provider.maxSpan} or pick a different provider.`,
+    )
+  }
 
   // Step 1 — let the daemon compute the microchunk tree for us. We invoke
   // `new-contract-message` because that is the only daemon path that exposes
@@ -243,7 +255,9 @@ export function generateContractMessage(
   // Step 3 — emit our own BOC with the caller's chosen span. Uses
   // vm::std_boc_serialize-equivalent flags ({ idx: false, crc32: false }) so
   // the wire format matches what TON's network already accepts.
-  const queryId = BigInt(Math.floor(Date.now() / 1000))
+  // queryId mixes ms timestamp with 16 bits of randomness so back-to-back
+  // signs (sub-second) don't collide on chain.
+  const queryId = (BigInt(Date.now()) << 16n) | BigInt(randomBytes(2).readUInt16BE(0))
   const cell = buildOfferStorageContractMessage({
     queryId,
     torrentInfo,

@@ -3,7 +3,9 @@ import { beginCell } from '@ton/ton'
 import {
   OP_OFFER_STORAGE_CONTRACT,
   buildOfferStorageContractMessage,
+  generateContractMessage,
 } from '../src/provider'
+import type { DaemonHandle } from '../src/daemon'
 
 // Fixture: a TorrentInfo-like cell (opaque to this builder — we only embed it as a ref).
 const fakeTorrentInfo = beginCell()
@@ -159,5 +161,71 @@ describe('buildOfferStorageContractMessage — guards', () => {
         queryId: 0x1_0000_0000_0000_0000n,
       }),
     ).toThrow(/uint64/)
+  })
+})
+
+describe('generateContractMessage — span vs provider.maxSpan guard', () => {
+  // Daemon is never reached: the guard at the top of generateContractMessage
+  // fires before any daemon call.
+  const fakeDaemon = {} as unknown as DaemonHandle
+
+  it('throws when span exceeds provider.maxSpan', () => {
+    const provider = {
+      address: '0:cafe',
+      ratePerMbDay: 20,
+      maxSpan: 3600, // 1 hour
+    }
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 86_400),
+    ).toThrow(/exceeds provider's max_span/)
+  })
+
+  it('throws with helpful suggestion text', () => {
+    const provider = {
+      address: '0:cafe',
+      ratePerMbDay: 20,
+      maxSpan: 3600,
+    }
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 86_400),
+    ).toThrow(/--span ≤ 3600/)
+  })
+
+  it('accepts span equal to provider.maxSpan (boundary)', () => {
+    const provider = {
+      address: '0:cafe',
+      ratePerMbDay: 20,
+      maxSpan: 86_400,
+    }
+    // The guard should NOT throw; we only need to confirm it gets past the
+    // guard and then fails downstream (daemon CLI absent), which manifests as
+    // a different error message.
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 86_400),
+    ).not.toThrow(/exceeds provider's max_span/)
+  })
+
+  it('skips guard when provider.maxSpan is 0 (manual address fallback)', () => {
+    const provider = {
+      address: '0:cafe',
+      ratePerMbDay: 0,
+      maxSpan: 0, // sentinel — provider params unknown
+    }
+    // The guard should be bypassed; downstream will fail because no daemon,
+    // but NOT with the maxSpan error.
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 999_999),
+    ).not.toThrow(/exceeds provider's max_span/)
+  })
+
+  it('rejects span outside uint32 range before checking maxSpan', () => {
+    const provider = {
+      address: '0:cafe',
+      ratePerMbDay: 20,
+      maxSpan: 86_400,
+    }
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 0),
+    ).toThrow(/positive integer/)
   })
 })

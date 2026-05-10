@@ -8,7 +8,7 @@
 // - manifestUrl is required (no default), forcing each consumer to declare its own
 
 import qrcode from 'qrcode-terminal'
-import TonConnect, { type IStorage, type WalletInfo, type WalletInfoRemote, type SendTransactionResponse } from '@tonconnect/sdk'
+import TonConnect, { CHAIN, type IStorage, type WalletInfo, type WalletInfoRemote, type SendTransactionResponse } from '@tonconnect/sdk'
 import { Address, beginCell, Cell, type StateInit, storeStateInit } from '@ton/core'
 
 import type { SendProvider } from './SendProvider'
@@ -102,8 +102,20 @@ export class TonConnectProvider implements SendProvider {
   ): Promise<SendTransactionResponse> {
     this.ui.setActionPrompt('Sending transaction. Approve in your wallet...')
 
+    // TonConnect spec: validUntil is Unix epoch SECONDS, not ms. Blueprint's
+    // original code passed Date.now() + 5*60*1000 (ms) which produced a
+    // ~50,000-year-future timestamp — effectively a never-expiring signing
+    // request. We pin to 5 minutes from now in seconds.
+    const validUntil = Math.floor(Date.now() / 1000) + 5 * 60
+
+    // Pin the chain explicitly so the wallet refuses if it is connected to a
+    // different network — protects against signing a mainnet payment with a
+    // testnet wallet and vice versa.
+    const network = this.network === 'mainnet' ? CHAIN.MAINNET : CHAIN.TESTNET
+
     const result = await this.connector.sendTransaction({
-      validUntil: Date.now() + 5 * 60 * 1000,
+      validUntil,
+      network,
       messages: [
         {
           address: address.toString(),

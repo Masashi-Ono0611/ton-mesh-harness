@@ -133,7 +133,11 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
     throw err
   }
 
-  const payloadCell = Cell.fromBoc(Buffer.from(contractMsg.bocBase64, 'base64'))[0]
+  const cells = Cell.fromBoc(Buffer.from(contractMsg.bocBase64, 'base64'))
+  if (cells.length === 0) {
+    throw new Error('Failed to parse contract message BOC — refusing to sign with empty payload.')
+  }
+  const payloadCell = cells[0]
   try {
     await wallet.sendTransaction(
       contractMsg.providerAddress,
