@@ -23,6 +23,7 @@ interface ProviderContractOptions {
   testnet?: boolean
   jsonOutput?: boolean
   ciMode?: boolean
+  walletName?: string          // preferred wallet (case-insensitive substring); default "Tonkeeper"
   spanSeconds?: number         // contract span in seconds (uint32); defaults to provider.ts DEFAULT_SPAN_SECONDS
 }
 
@@ -123,7 +124,10 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
   console.log()
 
   const storage = new FSStorage(getTonConnectStoragePath())
-  const ui = createWalletUI({ interactive })
+  const ui = createWalletUI({
+    interactive,
+    preferByName: opts.walletName ?? 'Tonkeeper',
+  })
   const wallet = new TonConnectProvider(storage, ui, 'mainnet', TONCONNECT_MANIFEST_URL)
 
   try {

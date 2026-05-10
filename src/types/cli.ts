@@ -4,6 +4,7 @@ export interface CliOptions {
   domain?: string
   provider?: string | true   // address string = specific, true = auto-select cheapest
   span?: string              // provider contract span in seconds (uint32)
+  wallet?: string            // wallet name (case-insensitive substring); default = Tonkeeper
   ciMode?: boolean
   jsonOutput?: boolean
   skipVerify?: boolean

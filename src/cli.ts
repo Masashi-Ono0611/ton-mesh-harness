@@ -30,6 +30,7 @@ program
   .option('--domain <domain>', 'Register bag under this .ton domain (e.g. myprotocol.ton)')
   .option('--provider [address]', 'Contract with a storage provider for 24/7 hosting (omit address to auto-select cheapest)')
   .option('--span <seconds>', 'Provider contract span in seconds (default 86400 = 1 day, max 4294967295)', '86400')
+  .option('--wallet <name>', 'Preferred wallet for sign requests (case-insensitive substring of wallet name; default "Tonkeeper")', 'Tonkeeper')
   .option('--ci-mode', 'Disable spinners for CI environments')
   .option('--json-output', 'Output result as JSON (for CI/CD pipelines)')
   .option('--skip-verify', 'Skip bag accessibility verification')
@@ -55,6 +56,7 @@ program
           testnet: opts.testnet,
           jsonOutput: opts.jsonOutput,
           ciMode: opts.ciMode,
+          walletName: opts.wallet,
           spanSeconds,
         })
       } finally {
@@ -67,6 +69,7 @@ program
       await runDnsRegistration(opts.domain, result.bagId, opts.testnet, {
         jsonOutput: opts.jsonOutput,
         ciMode: opts.ciMode,
+        walletName: opts.wallet,
       })
     }
 

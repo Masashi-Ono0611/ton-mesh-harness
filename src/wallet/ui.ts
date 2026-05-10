@@ -11,11 +11,17 @@ export interface WalletUI {
 export interface WalletUIOptions {
   interactive: boolean
   defaultPick?: number
+  // Case-insensitive substring match against `display(option)`. When set and
+  // running non-interactively, the first matching option is auto-selected.
+  // Falls back to defaultPick if no match. Helps users pin a specific wallet
+  // (e.g. "Tonkeeper") even when CI mode disables the picker.
+  preferByName?: string
 }
 
 export function createWalletUI(opts: WalletUIOptions): WalletUI {
   const interactive = opts.interactive
   const defaultPick = opts.defaultPick ?? 0
+  const preferByName = opts.preferByName?.trim().toLowerCase() || undefined
 
   return {
     async choose<T>(message: string, options: T[], display: (t: T) => string): Promise<T> {
@@ -23,7 +29,18 @@ export function createWalletUI(opts: WalletUIOptions): WalletUI {
         throw new Error(`No options to choose from for "${message}"`)
       }
       if (!interactive) {
-        const idx = Math.min(defaultPick, options.length - 1)
+        let idx = Math.min(defaultPick, options.length - 1)
+        if (preferByName) {
+          const match = options.findIndex((o) => display(o).toLowerCase().includes(preferByName))
+          if (match >= 0) {
+            idx = match
+          } else {
+            const names = options.map(display).join(', ')
+            throw new Error(
+              `No option matches --wallet "${preferByName}" — available: ${names}`,
+            )
+          }
+        }
         process.stdout.write(`${message}\n  → ${display(options[idx])} (auto-selected)\n`)
         return options[idx]
       }

@@ -14,6 +14,7 @@ interface DnsRegistrationOptions {
   testnet?: boolean
   jsonOutput?: boolean
   ciMode?: boolean
+  walletName?: string  // preferred wallet (case-insensitive substring); default "Tonkeeper"
 }
 
 export async function runDnsRegistration(
@@ -51,7 +52,10 @@ export async function runDnsRegistration(
   console.log()
 
   const storage = new FSStorage(getTonConnectStoragePath())
-  const ui = createWalletUI({ interactive })
+  const ui = createWalletUI({
+    interactive,
+    preferByName: opts.walletName ?? 'Tonkeeper',
+  })
   const wallet = new TonConnectProvider(
     storage,
     ui,
