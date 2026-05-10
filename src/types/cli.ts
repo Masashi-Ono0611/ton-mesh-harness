@@ -3,6 +3,7 @@ export interface CliOptions {
   desc?: string
   domain?: string
   provider?: string | true   // address string = specific, true = auto-select cheapest
+  span?: string              // provider contract span in seconds (uint32)
   ciMode?: boolean
   jsonOutput?: boolean
   skipVerify?: boolean

@@ -8,6 +8,16 @@ import { runWatchMode } from './cli/watch'
 
 const VERSION = '0.4.0'
 
+function parseSpanFlag(raw: string | undefined): number {
+  const n = Number(raw ?? '86400')
+  if (!Number.isInteger(n) || n < 1 || n > 0xffff_ffff) {
+    throw new Error(
+      `--span must be a positive integer ≤ 4294967295 (got ${JSON.stringify(raw)})`,
+    )
+  }
+  return n
+}
+
 const program = new Command()
 
 program
@@ -19,12 +29,17 @@ program
   .option('--desc <description>', 'Bag description (defaults to directory name)')
   .option('--domain <domain>', 'Register bag under this .ton domain (e.g. myprotocol.ton)')
   .option('--provider [address]', 'Contract with a storage provider for 24/7 hosting (omit address to auto-select cheapest)')
+  .option('--span <seconds>', 'Provider contract span in seconds (default 86400 = 1 day, max 4294967295)', '86400')
   .option('--ci-mode', 'Disable spinners for CI environments')
   .option('--json-output', 'Output result as JSON (for CI/CD pipelines)')
   .option('--skip-verify', 'Skip bag accessibility verification')
   .option('--watch', 'Watch build directory for changes and auto-redeploy')
   .option('--debounce <ms>', 'Debounce delay in ms for watch mode (default: 2000)', '2000')
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
+    // Validate span up front so we fail before doing any deploy work.
+    // (Only meaningful when --provider is set; otherwise the value is ignored.)
+    const spanSeconds = opts.provider ? parseSpanFlag(opts.span) : undefined
+
     const deployed = await runDeploy(opts, buildDirArg)
     if (!deployed) return
 
@@ -39,6 +54,7 @@ program
           daemon,
           testnet: opts.testnet,
           jsonOutput: opts.jsonOutput,
+          spanSeconds,
         })
       } finally {
         daemon.kill()

@@ -18,6 +18,7 @@ interface ProviderContractOptions {
   daemon: DaemonHandle
   testnet?: boolean
   jsonOutput?: boolean
+  spanSeconds?: number         // contract span in seconds (uint32); defaults to provider.ts DEFAULT_SPAN_SECONDS
 }
 
 export async function runProviderContract(opts: ProviderContractOptions): Promise<void> {
@@ -82,11 +83,17 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
   const sizeMb = (sizeBytes / 1_000_000).toFixed(2)
   sizeSpinner.succeed(`Bag size: ${sizeMb} MB`)
 
-  // 3. Generate contract message
+  // 3. Generate contract message (self-built BOC; bypasses daemon CLI uint8 cap)
   const msgSpinner = createSpinner.start('Generating provider contract message...')
   let contractMsg
   try {
-    contractMsg = generateContractMessage(opts.bagId, sizeBytes, provider, opts.daemon)
+    contractMsg = generateContractMessage(
+      opts.bagId,
+      sizeBytes,
+      provider,
+      opts.daemon,
+      opts.spanSeconds,
+    )
     const spanSeconds = Math.round(contractMsg.spanDays * 86400)
     msgSpinner.succeed(
       `Contract: ${spanSeconds}s (${contractMsg.spanDays.toFixed(4)} days) @ ` +

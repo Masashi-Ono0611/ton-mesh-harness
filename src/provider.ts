@@ -165,21 +165,36 @@ export function getBagSizeBytes(bagId: string, daemon: DaemonHandle): number {
 // Contract message generation
 // -----------------------------------------------------------------------
 
+// Default span when caller does not provide one. 86 400 s = 1 day, a sane
+// minimum for production hosting. uint32 max (~136 years) is the upper bound.
+export const DEFAULT_SPAN_SECONDS = 86_400
+
+// Span used purely as a sample to extract microchunk_hash + TorrentInfo from
+// the daemon CLI's `new-contract-message` output. Capped at the uint8 limit
+// because that is what the (buggy) parser accepts; the value itself is
+// discarded — we re-emit the BOC ourselves with the caller's chosen span.
+const CLI_SAMPLE_SPAN = 200
+
 export function generateContractMessage(
   bagId: string,
   sizeBytes: number,
   provider: Provider,
   daemon: DaemonHandle,
+  spanSeconds: number = DEFAULT_SPAN_SECONDS,
 ): ContractMessage {
+  if (!Number.isInteger(spanSeconds) || spanSeconds < 1 || spanSeconds > 0xffff_ffff) {
+    throw new Error(
+      `Invalid span: ${spanSeconds}. Must be a positive integer ≤ 2^32 - 1 (about 136 years in seconds).`,
+    )
+  }
+
+  // Step 1 — let the daemon compute the microchunk tree for us. We invoke
+  // `new-contract-message` because that is the only daemon path that exposes
+  // microchunk_hash. The resulting BOC's span is throwaway (uint8-capped).
+  const samplePath = join(tmpdir(), `ton-contract-${randomBytes(8).toString('hex')}.boc`)
   const paths = getDaemonPaths()
   const keyDir = join(daemon.dbDir, 'cli-keys')
-  const outFile = join(tmpdir(), `ton-contract-${randomBytes(8).toString('hex')}.boc`)
 
-  // Use --rate + --max-span instead of --provider <addr> (P2P lookup):
-  //   - --provider <addr> requires a live ADNL connection which times out unreliably
-  //   - --rate / --max-span uint8 bug in daemon v2026.02-1 caps max-span at 255 seconds
-  //   - We cap max-span at 200 (uint8-safe) → ~3 minute minimum contract duration
-  const MAX_SPAN_SECONDS = 200  // uint8-safe cap (daemon bug: accepts 0-255 only)
   const result = spawnSync(
     paths.cli,
     [
@@ -187,33 +202,69 @@ export function generateContractMessage(
       '-I', `127.0.0.1:${daemon.cliPort}`,
       '-k', join(keyDir, 'client'),
       '-p', join(keyDir, 'server.pub'),
-      '-c', `new-contract-message ${bagId} ${outFile} --rate ${provider.ratePerMbDay} --max-span ${MAX_SPAN_SECONDS}`,
+      '-c',
+      `new-contract-message ${bagId} ${samplePath} --rate ${provider.ratePerMbDay} --max-span ${CLI_SAMPLE_SPAN}`,
     ],
-    { encoding: 'utf8', timeout: 30_000 }
+    { encoding: 'utf8', timeout: 30_000 },
   )
 
   const output = (result.stderr ?? '') + (result.stdout ?? '')
-  if (result.status !== 0 || !readFileExists(outFile)) {
+  if (result.status !== 0 || !readFileExists(samplePath)) {
     throw new Error(
-      `Failed to generate provider contract message (exit ${result.status ?? 'timeout'}):\n${output}`
+      `Failed to generate provider contract message (exit ${result.status ?? 'timeout'}):\n${output}`,
     )
   }
 
-  const boc = readFileSync(outFile)
-  try { unlinkSync(outFile) } catch { /* ignore */ }
+  const sampleBoc = readFileSync(samplePath)
+  try { unlinkSync(samplePath) } catch { /* ignore */ }
 
-  // Amount = storage cost + 0.3 TON buffer for contract deployment fees
-  // Span is capped at MAX_SPAN_SECONDS (200s) due to daemon uint8 bug
+  // Step 2 — parse the daemon's output to recover torrentInfo + microchunk_hash
+  // (the two values we cannot derive ourselves without re-implementing
+  // MicrochunkTree::Builder in TS). We then drop everything else.
+  const sampleCell = Cell.fromBoc(sampleBoc)[0]
+  const sampleSlice = sampleCell.beginParse()
+  const sampleOp = sampleSlice.loadUint(32)
+  if (sampleOp !== OP_OFFER_STORAGE_CONTRACT) {
+    throw new Error(
+      `Unexpected opcode 0x${sampleOp.toString(16)} from daemon — expected 0x107c49ef`,
+    )
+  }
+  sampleSlice.loadUintBig(64)                            // queryId — discarded
+  if (sampleCell.refs.length !== 1) {
+    throw new Error(`Expected 1 ref (TorrentInfo), got ${sampleCell.refs.length}`)
+  }
+  const torrentInfo = sampleCell.refs[0]
+  const microchunkBig = sampleSlice.loadUintBig(256)
+  const microchunkHash = Buffer.from(
+    microchunkBig.toString(16).padStart(64, '0'),
+    'hex',
+  )
+
+  // Step 3 — emit our own BOC with the caller's chosen span. Uses
+  // vm::std_boc_serialize-equivalent flags ({ idx: false, crc32: false }) so
+  // the wire format matches what TON's network already accepts.
+  const queryId = BigInt(Math.floor(Date.now() / 1000))
+  const cell = buildOfferStorageContractMessage({
+    queryId,
+    torrentInfo,
+    microchunkHash,
+    expectedRateNanoPerMbDay: BigInt(provider.ratePerMbDay),
+    expectedMaxSpanSeconds: spanSeconds,
+  })
+  const bocBase64 = cell.toBoc({ idx: false, crc32: false }).toString('base64')
+
+  // Step 4 — recompute the message value on the real span. Buffer of 0.3 TON
+  // covers contract deployment fees regardless of size.
   const sizeMb = Math.max(sizeBytes / 1_000_000, 0.1)
-  const spanDays = MAX_SPAN_SECONDS / 86400  // ~0.00231 days
+  const spanDays = spanSeconds / 86_400
   const storageCostNano = BigInt(Math.ceil(sizeMb * provider.ratePerMbDay * spanDays))
-  const bufferNano = 300_000_000n  // 0.3 TON
+  const bufferNano = 300_000_000n
   const amountNano = storageCostNano + bufferNano
 
   const rateTonPerGbYear = (provider.ratePerMbDay * 1000 / 1e9) * 365
 
   return {
-    bocBase64: boc.toString('base64'),
+    bocBase64,
     amountNano,
     providerAddress: Address.parse(provider.address),
     spanDays,
