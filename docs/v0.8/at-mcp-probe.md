@@ -119,10 +119,24 @@ No change from the F4 realism note already appended. Cancellation semantics are 
 
 ## Open questions for week 1+ implementation
 
-1. **Exact schema of `~/.config/ton/config.json`** — needs verification by reading `@ton/walletkit` source or running `npx -y @ton/mcp@alpha agentic_start_root_wallet_setup` and inspecting the file. ~30min follow-up at start of #5/#13 work.
-2. **Selecting the "active" wallet** — does `@ton/walletkit` expose an "active wallet" concept, or is it just a list with the first entry being default? Need to match `@ton/mcp`'s `set_active_wallet` semantics.
-3. **Sovereignty in Path 2** — using `@ton/walletkit` means reading another package's config format. If their schema breaks, our agentic path breaks. Acceptable for v0.8.0 (alpha-tracking-alpha); document as a v0.8.x stability TODO.
-4. **CHANGELOG language** — call this "agentic-wallet support via @ton/walletkit" rather than "compose with @ton/mcp" since the integration isn't actually with `@ton/mcp` directly. Saves users from a wrong mental model.
+1. **Exact schema of `~/.config/ton/config.json`** — needs verification by inspecting an actual file produced by `npx -y @ton/mcp@alpha agentic_start_root_wallet_setup`. ~30min follow-up at start of #13/#10 work. We have to *define our own zod schema* for this file (see correction below).
+2. **Selecting the "active" wallet** — `@ton/mcp`'s `set_active_wallet` writes to the config file; we need to read the same convention. Probe an actual file at week 5 to confirm field names.
+3. **Sovereignty in Path 2** — reading `@ton/mcp`'s config format means we depend on another package's on-disk schema. If their schema breaks, our agentic path breaks. Acceptable for v0.8.0 (alpha-tracking-alpha); document as a v0.8.x stability TODO. Add a runtime-version-skew warning when the loaded config has an unexpected schema version.
+4. **CHANGELOG language** — call this "agentic-wallet support via shared `~/.config/ton/config.json`" rather than "compose with @ton/mcp". Saves users from a wrong mental model.
+
+## Correction (post-F2 review, 2026-05-10)
+
+The original probe wrote: *"reuse `@ton/walletkit`'s loader"* and *"via the same loader `@ton/mcp` uses"*. **Cross-reading the `@ton/walletkit@0.0.12-alpha.3` source shows there is no agentic-config loader exported.** The package exports `TonWalletKit` (high-level wallet kit) and `Signer` (signing utility) plus types — no `loadAgenticConfig`, no `~/.config/ton` integration.
+
+Implication for [F2] #13 / [M3] #10:
+
+- We **read `~/.config/ton/config.json` ourselves** with a strict zod schema. The schema needs verification against an actual file produced by `@ton/mcp` — either by running `agentic_start_root_wallet_setup` and inspecting the result, or by reading `@ton/mcp`'s source where it writes the config.
+- We **use `@ton/walletkit`'s `Signer`** (`Signer.fromPrivateKey`, `Signer.fromMnemonic`, etc.) to sign once we have the key from the config file. `@ton/walletkit` is still pulled in as a dep — just for `Signer` and adapters, not as a config loader.
+- The "shared config file" framing of the compose model is **still correct**. The mistake was only at the API layer: we don't borrow a pre-built loader; we reimplement the read path. The runtime concept (one on-disk source of truth, two MCP servers consume it) is unchanged.
+
+This correction is encoded in:
+- `docs/v0.8/mcp-core-requirements.md` §NF6 (updated)
+- The implementation in [F2] #13 / [M3] #10 once they begin work.
 
 ## Verdict summary
 

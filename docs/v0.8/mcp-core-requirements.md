@@ -271,10 +271,12 @@ the calling agent via `may_have_published: true`.
 - `npx ton-sovereign-deploy …` produces the same human output as v0.7 (incl. `--site-auto` flow).
 - `--json-output` behavior is preserved.
 
-### NF6. Wallet config compose (filesystem-level, [P-1] verdict)
-- For `wallet.kind === "agentic"`, the SDK reads `~/.config/ton/config.json` (or `$TON_CONFIG_PATH` override) via `@ton/walletkit`. Same loader and same file `@ton/mcp` uses.
-- The SDK does NOT bundle or vendor `@ton/mcp`. `@ton/mcp` is a peer MCP server an agent may load alongside `ton-sovereign-mcp`; no inter-MCP RPC.
-- `@ton/walletkit` version pin tracks `@ton/mcp`'s pin (alpha-tracking-alpha is acceptable for v0.8.0; flag as v0.8.x stability TODO once both stabilise).
+### NF6. Wallet config compose (filesystem-level, [P-1] verdict + post-F2-review correction)
+- For `wallet.kind === "agentic"`, the SDK reads `~/.config/ton/config.json` (or `$TON_CONFIG_PATH` override) **with its own loader**, not via a `@ton/walletkit` API. The original probe assumed `@ton/walletkit` exposed a config loader; it does not (it exports `TonWalletKit` + `Signer` only). Implementation reads the config file with a strict zod schema, then instantiates `@ton/walletkit`'s `Signer` (`Signer.fromPrivateKey` / `Signer.fromMnemonic`) to sign the BOC.
+- The shared resource is the **on-disk config file** — same file `@ton/mcp` writes via `agentic_start_root_wallet_setup` / `agentic_import_wallet`. The SDK does NOT spawn or RPC into `@ton/mcp`.
+- The SDK does NOT bundle or vendor `@ton/mcp`. `@ton/mcp` is a peer MCP server an agent may load alongside `ton-sovereign-mcp`.
+- `@ton/walletkit` is a runtime dep for `Signer` and wallet adapters only. Version pin tracks `@ton/mcp`'s pin (alpha-tracking-alpha is acceptable for v0.8.0; flag as v0.8.x stability TODO once both stabilise).
+- **Schema-skew defence:** the loader emits a runtime warning when the config schema version is unrecognised, so a future `@ton/mcp` schema change fails loud rather than silent.
 
 ---
 
