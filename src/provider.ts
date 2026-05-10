@@ -161,8 +161,15 @@ export function buildOfferStorageContractMessage(args: OfferContractArgs): Cell 
 // -----------------------------------------------------------------------
 
 interface DaemonBagInfo {
-  total_size?: number
-  downloaded_size?: number
+  total_size?: number | string
+  downloaded_size?: number | string
+  files?: Array<{ size?: number | string }>
+}
+
+function parseNumericField(v: number | string | undefined): number | undefined {
+  if (v === undefined || v === null) return undefined
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) && n >= 0 ? n : undefined
 }
 
 export function getBagSizeBytes(bagId: string, daemon: DaemonHandle): number {
@@ -186,16 +193,26 @@ export function getBagSizeBytes(bagId: string, daemon: DaemonHandle): number {
     if (match) info = JSON.parse(match[0])
   } catch { /* fall through */ }
 
-  // Round 5 mainnet soak failure mode: silently returning 0 here meant the
-  // size guard in fetchProviders / generateContractMessage saw a zero-byte
-  // bag, which bizarrely matched only providers with min_size=0 (a known
-  // scam-pattern). Failing fast here is cheaper than letting the user see a
-  // 10 TON sign request before realising something is off.
-  const total = info?.total_size
+  // The daemon's JSON shape varies: completed bags expose `downloaded_size`
+  // (string), some versions a `total_size` (number), and the per-file
+  // `files[].size` (string) is always there. We try them in priority order.
+  // (Round 5 mainnet soak hit this: looking only at total_size silently
+  // returned 0, which made the size-range filter match scam providers with
+  // min_size=0. Now we fall through and only fail when nothing yields a
+  // positive number.)
+  const filesTotal = (info?.files ?? []).reduce((s, f) => {
+    const n = parseNumericField(f.size)
+    return s + (n ?? 0)
+  }, 0)
+  const total = parseNumericField(info?.total_size)
+    ?? parseNumericField(info?.downloaded_size)
+    ?? (filesTotal > 0 ? filesTotal : undefined)
+
   if (total === undefined || total <= 0) {
     throw new Error(
       `Could not read bag size for ${bagId} from storage-daemon-cli ` +
-      `(total_size=${total}). Daemon output:\n${output.slice(-500)}`,
+      `(no positive total_size / downloaded_size / files[].size). ` +
+      `Daemon output:\n${output.slice(-500)}`,
     )
   }
   return total
