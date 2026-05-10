@@ -73,6 +73,17 @@ async function ensureTonutilsConfig(
   dbDir: string,
   cfgOpts: EnsureTonutilsConfigOptions = {},
 ): Promise<void> {
+  // Defensive: NodesPoolConfigPath must be absolute or daemon's `os.Open`
+  // will resolve it relative to its CWD (the session db dir), which the
+  // user did NOT pass. Caller (resolveTunnelConfig) already absolutises;
+  // double-check here so a future caller that forgets isn't silently
+  // broken.
+  if (cfgOpts.tunnelConfigPath && !path.isAbsolute(cfgOpts.tunnelConfigPath)) {
+    throw new Error(
+      `Internal: ensureTonutilsConfig got a relative tunnelConfigPath ` +
+      `(${cfgOpts.tunnelConfigPath}). Caller must absolutise.`,
+    )
+  }
   const configPath = path.join(dbDir, 'config.json')
 
   if (!existsSync(configPath)) {
@@ -299,7 +310,11 @@ export async function tonutilsDetails(
 export async function tonutilsList(
   handle: TonutilsHandle,
 ): Promise<{ bags: TonutilsBagSummary[] }> {
-  return api(handle, '/api/v1/list')
+  // tonutils-storage returns `{}` (or `{bags: null}`) when there are no
+  // bags registered yet — depending on version. Normalise to an empty
+  // array so callers can iterate unconditionally.
+  const r = await api<{ bags?: TonutilsBagSummary[] | null }>(handle, '/api/v1/list')
+  return { bags: r.bags ?? [] }
 }
 
 export async function tonutilsRemove(
