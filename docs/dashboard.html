@@ -644,7 +644,7 @@
       <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
       <span class="label">~/projects/your-dapp · zsh</span>
     </div>
-<pre><span class="prompt">$</span> <span class="cmd">npx ton-sovereign-deploy ./dist/ --domain mydapp.ton --watch</span>
+<pre><span class="prompt">$</span> <span class="cmd">npx ton-sovereign-deploy ./dist/ --domain mydapp.ton</span>  <span class="dim"># --watch is the default since v0.6</span>
 
 📦 <span class="dim">Uploading 47 files…</span>
   <span class="ok">✓</span> index.html
@@ -1212,7 +1212,8 @@
         <tr><td><code>--ci-mode</code></td><td>Disable spinners for CI logs</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
         <tr><td><code>--json-output</code></td><td>Emit JSON instead of human-readable</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
         <tr><td><code>--skip-verify</code></td><td>Skip 60s post-upload verify</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
-        <tr><td><code>--watch</code></td><td>Watch build dir, auto-redeploy, keep daemon alive</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--watch</code></td><td>Watch build dir, auto-redeploy, keep daemon alive (<strong>default since v0.6</strong>)</td><td>v0.3</td><td><span class="chip green">Stable · default</span></td></tr>
+        <tr><td><code>--no-watch</code></td><td>One-shot deploy; exit after upload (CI-friendly)</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--debounce &lt;ms&gt;</code></td><td>Watch debounce delay (default <code>2000</code>)</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
       </tbody>
     </table>

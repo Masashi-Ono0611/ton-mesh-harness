@@ -34,12 +34,21 @@ program
   .option('--ci-mode', 'Disable spinners for CI environments')
   .option('--json-output', 'Output result as JSON (for CI/CD pipelines)')
   .option('--skip-verify', 'Skip bag accessibility verification')
-  .option('--watch', 'Watch build directory for changes and auto-redeploy')
+  // --watch is the default since v0.6 (self-host first). The daemon stays
+  // alive and the build dir is watched for changes. `--no-watch` exits as
+  // soon as the bag is uploaded (one-shot deploy).
+  .option('--watch', 'Watch build directory for changes and auto-redeploy (default: enabled)')
+  .option('--no-watch', 'Disable watch mode and exit after upload')
   .option('--debounce <ms>', 'Debounce delay in ms for watch mode (default: 2000)', '2000')
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
     // Validate span up front so we fail before doing any deploy work.
     // (Only meaningful when --provider is set; otherwise the value is ignored.)
     const spanSeconds = opts.provider ? parseSpanFlag(opts.span) : undefined
+
+    // v0.6: --watch is the default. opts.watch is undefined when neither
+    // --watch nor --no-watch was passed; commander sets it to false only
+    // when --no-watch is given explicitly. So treat undefined as true.
+    const watchEnabled = opts.watch !== false
 
     const deployed = await runDeploy(opts, buildDirArg)
     if (!deployed) return
@@ -73,8 +82,8 @@ program
       })
     }
 
-    // Watch mode
-    if (opts.watch) {
+    // Watch mode (default since v0.6 — keeps the daemon seeding the bag).
+    if (watchEnabled) {
       const buildDir = buildDirArg || process.cwd()
       await runWatchMode(buildDir, opts, result.bagId)
     }

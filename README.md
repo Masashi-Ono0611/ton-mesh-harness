@@ -309,10 +309,12 @@ ton-sovereign-deploy [build-dir] [options]
 | `--domain <domain>` | .ton ドメインに登録 (v0.2) |
 | `--ci-mode` | CI 環境向けスピナー無効化 (v0.3) |
 | `--json-output` | JSON 出力 (v0.3) |
-| `--watch` | ファイル変更を監視して自動再デプロイ (v0.3) |
+| `--watch` | ファイル変更を監視して自動再デプロイ（**v0.6 以降デフォルトで有効**） |
+| `--no-watch` | watch モードを無効化し upload 完了後に exit（CI / one-shot deploy 用）v0.6+ |
 | `--debounce <ms>` | watch モードのデバウンス遅延（デフォルト: 2000ms） |
-| `--provider [address]` | ストレージプロバイダー契約（省略で最安値を自動選択、アドレス指定で特定プロバイダー）|
+| `--provider [address]` | **experimental** — ストレージプロバイダー契約（mainnet provider 経済が現状ほぼ稼働しないため、 当面は `--watch` 既定の self-host を推奨）|
 | `--span <seconds>` | プロバイダー契約期間（秒、デフォルト 86400 = 1 日、最大 4294967295）v0.5+ |
+| `--wallet <name>` | 署名する wallet の希望名（部分一致、 デフォルト "Tonkeeper"）v0.5+ |
 | `--skip-verify` | bag アクセス確認をスキップ（伝播には時間がかかるため） |
 
 ### CI/CD 向けオプション
@@ -326,35 +328,31 @@ ton-sovereign-deploy ./build/ --json-output
 ton-sovereign-deploy ./build/ --ci-mode --json-output
 ```
 
-### 開発モード (Watch)
+### Watch モード（v0.6 以降デフォルト）
+
+**v0.6 から `--watch` が既定挙動です。** 引数なしで実行すると daemon が常駐し、 ファイル変更を監視して自動再デプロイします。
 
 ```bash
-# ファイル変更を監視して自動再デプロイ
-ton-sovereign-deploy ./build/ --watch
+# 既定挙動: watch モードで起動 (= self-host first)
+ton-sovereign-deploy ./build/
+
+# 一回限りでデプロイして即 exit したい場合 (CI 向け)
+ton-sovereign-deploy ./build/ --no-watch
 
 # デバウンス3秒（大規模プロジェクト向け）
-ton-sovereign-deploy ./build/ --watch --debounce 3000
+ton-sovereign-deploy ./build/ --debounce 3000
 ```
 
 **watch モードの動作:**
 - ファイル変更を検知すると自動的に再デプロイ
 - 連続する変更を1回のデプロイに集約（デバウンス）
-- daemon を動かし続け、ネットワークへの伝播を促進
+- **daemon が常駐し、 ADNL でネットワークに seed し続ける** ← これが「self-host」 の中身
 - Ctrl+C で停止
 
-**watch モードの推奨用途:**
-```bash
-# ターミナル1で watch モード起動
-ton-sovereign-deploy ./dist/ --watch
-
-# 別ターミナルでビルド
-npm run build
-
-# 自動的に dist/ の変更を検知して再デプロイ
-# daemon が実行中のため、ton:// URL でアクセス可能
-```
-
-**注意:** watch モードでは daemon が実行され続けるため、PC をシャットダウンすると bag にアクセスできなくなります。
+**重要:** PC をシャットダウンすると seed が止まるため、 bag にアクセスできなくなります。 実用的に常時 host したい場合の方法:
+- ノートをスリープせず常駐 ASCII（最も基本）
+- VPS / RaspberryPi / NAS で 24/7 daemon を稼働（[v0.6 のロードマップ](docs/v0.6/roadmap-draft.md)で ADNL Tunnel 統合し、 公開 IP 不要にする予定）
+- `--no-watch` で one-shot deploy → 別途常駐サーバーで bag を seed
 
 ---
 ---

@@ -1,134 +1,135 @@
-# v0.6 roadmap — early draft
+# v0.6 roadmap — confirmed direction (2026-05-10)
 
-**Status:** raw findings + direction sketch. Not approved; ready for the next
-discussion session.
+**Status:** direction locked after Round 1–7 mainnet soak + ecosystem
+research (`storage` records dominate, `sites` records virtually unused).
+We're aligning with the TON Core 2025-03 official direction (Proxy +
+ADNL Tunnel + Payment Network) and the Resistance Tools stack
+(`tonutils-storage`, `TON-Torrent`, `ton-payment-network`, all xssnick-
+authored, recently grant-funded by Pavel Durov).
 
-## What changed our picture (2026-05-10)
+## Why this revision
 
-Two complementary inputs hit on the same day:
+The first roadmap draft listed `sites` (ADNL Address) record support as
+a high-value addition. Field-checking revealed:
 
-1. **Round 1–7 mainnet soak post-mortem** (`round-postmortem.md`): the storage-
-   provider economy is empty on mainnet. Our `--provider` route is technically
-   correct but practically useless until providers come back to life.
+- `foundation.ton` resolves to `sites: []` (empty) and a populated
+  `storage` record. The Foundation itself does not use `sites`.
+- All sampled "famous" `.ton` domains (piracy.ton, manifesto.ton,
+  boards.ton, getgems.ton, scaleton.ton, etc.) return either `sites: []`
+  or no records at all on TONAPI — they are resolved through
+  Telegram/TON Browser internal paths, not through the publicly-readable
+  `.ton` DNS records.
+- `sites` records require an HTTP-over-ADNL server (`rldp-http-proxy`)
+  the daemon does not provide, so writing the record without serving it
+  produces dead URLs.
+- Conclusion: the **storage-record path we already implement is the
+  current mainstream**. No work needed there in v0.6.
 
-2. **TON Foundation's actual direction** (Pavel Durov post pointing at
-   "Resistance Tools"; xssnick repos; TON Core March-2025 announcement):
-   the future of TON-side hosting isn't more storage providers — it's
-   **TON Proxy intermediate nodes + ADNL Tunnels + the TON Payment Network
-   (Layer 2)**, all framed as a digital-resistance / DDoS-resistance / privacy
-   stack. xssnick (author of `tonutils-storage`, `TON-Torrent`,
-   `ton-payment-network`) just received a 10,000 TON personal grant from
-   Pavel Durov, signalling official backing of this stack.
+The actual mainstream gap is the **NAT-traversal layer**, which the
+ecosystem solves with ADNL Tunnel rentals paid through the Payment
+Network. That's where v0.6 should go.
 
-Together these explain why our v0.5 Lane B felt like deploying onto a ghost
-town: the ecosystem moved past "rent a storage provider for 24/7 hosting"
-into "self-host with NAT-traversal via ADNL Tunnel, and pay tunnel/storage
-operators in micropayments through the Payment Network when needed."
+## Scope of v0.6 (in priority order)
 
-## Reference repos (all xssnick or ton-blockchain, all MIT/permissive)
+### B1 — `--watch` becomes the default (this commit) ✅
 
-| Repo | Role | Latest |
-|---|---|---|
-| `xssnick/tonutils-storage` | Go storage daemon (alt to TON Core's C++ one) | v1.4.1 (2026-04-06) |
-| `xssnick/TON-Torrent` | Wails-based desktop GUI on top of `tonutils-storage`; bundles tunnel client | v1.7.2 (2025-07-16) |
-| `xssnick/ton-payment-network` | TON Payment Network (Layer 2) node implementation | active |
-| `ton-blockchain/adnl-tunnel` | Official ADNL Tunnel intermediate node (Garlic routing + PN payments) | active |
+`--watch` was an opt-in flag. Since the ecosystem reality is "self-host
+is the canonical mode", v0.6 makes `--watch` the default behaviour.
+Users get `--no-watch` to opt out for CI / one-shot deploys.
 
-Quick spec digest:
-- **adnl-tunnel** rents `address:port` to clients without public IP. Pays per
-  packet via Payment Network when `PaymentsEnabled=true`. ADNL only — not a
-  general HTTP proxy and not a VPN, on purpose.
-- **ton-payment-network** is the L2 channels layer (onchain channels + virtual
-  channels routed through hops, garlic-routed). The settlement pattern
-  storage-provider rentals would naturally pay over.
-- **tonutils-storage** + **TON-Torrent** can already use rented tunnels for
-  bag seeding when the host has no public IP. This is the "self-host but make
-  it actually work behind NAT" pattern, and is what `foundation.ton`-class
-  sites quietly rely on.
+Status: shipping in this commit.
 
-## What this implies for sovereign-deploy-kit v0.6
+What changed:
+- `src/cli.ts`: `--watch` now defaults on; `--no-watch` is the explicit opt-out
+- README + dashboard updated to describe the new default and v0.6 plan
+- `provider-contract.md` already labels `--provider` as experimental (Step A)
 
-The v0.5 pitch ("`--provider` gives you 24/7 hosting") is dishonest today.
-The pitch we *can* honour, with code we already have plus modest additions,
-is:
+### B2 — Switch the bundled daemon to `tonutils-storage` (xssnick / Go)
 
-> **"Deploy a static site to TON Storage. Self-host via the daemon we install
-> for you. Use an ADNL Tunnel when you don't have a public IP. Pay the tunnel
-> operator in TON micro-payments. Optionally point a `.ton` domain at the bag.
-> Provider-hosted 24/7 stays opt-in for the day mainnet providers come alive."**
+Today we install `storage-daemon` (TON Core, C++, v2026.02-1).
+`tonutils-storage` is the alt implementation from xssnick (recipient
+of Pavel Durov's 10K TON personal grant) and is **the daemon
+TON-Torrent and the Resistance Tools stack already run**. It:
 
-Concrete changes from v0.5:
+- has a Go binary (smaller than the 18 MB C++ build),
+- ships an HTTP API (`--api ip:port`) which is far cleaner to integrate
+  with than the C++ daemon's ADNL CLI,
+- has built-in tunnel support (paves the way to B3),
+- is actively maintained (v1.4.1 / 2026-04-06).
 
-### Mandatory in v0.6
+Plan:
+1. Read `tonutils-storage` HTTP API surface (1–2 h investigation).
+   Fail-fast if there's no equivalent of `new-contract-message` /
+   `get-meta` / `get-bag-size`.
+2. Add `tonutils-storage` as an alternate backend in `src/daemon/`
+   alongside the C++ one. New CLI flag `--daemon-backend=ton-core|tonutils`
+   for the transition; default flips to `tonutils` once smoke tests pass.
+3. Re-run the daemon parity test against `tonutils-storage`.
+4. Once stable: drop the C++ backend.
 
-1. **Reposition docs/dashboard around self-host as the canonical mode.**
-   - README + `docs/dashboard.html` lead with `--watch` and self-seeding.
-   - `--provider` stays in the option list but is annotated "experimental;
-     mainnet provider economy is currently dormant."
-   - The `op::close_contract` recovery script is documented as the relief
-     valve for users who try `--provider` and get stuck.
+Estimated work: 2–4 days. The risk is the BOC parity test — we proved
+byte-equal against `storage-daemon`'s `new-contract-message`. If
+`tonutils-storage`'s equivalent emits a different layout, we either
+adapt the parity check or rely entirely on the self-built BOC (v0.5
+already does that for the final outbound message).
 
-2. **Be honest about file-host paths.** Document that there are two `.ton`
-   record types (`storage` for bag-based and `sites` for ADNL Address-based)
-   and that real-world TON sites tend to use `sites`. We currently only write
-   the `storage` path; this is a real gap.
+Out of scope until B2 lands: provider-related code paths (already
+deprecated to "experimental").
 
-### High-value, scoped additions
+### B3 — ADNL Tunnel client integration
 
-3. **`sites` (ADNL Address) record support** — extend `--domain` to optionally
-   write a `sites` record pointing at the user's daemon ADNL identity. This is
-   the path most live `.ton` sites already use. Likely 1–2 days of work once
-   we have the daemon's ADNL identity exposed.
+Once B2 puts a tunnel-capable daemon in place, this is mostly
+configuration. Add `--tunnel-config <path>` (the same JSON shape
+TON-Torrent accepts — a list of intermediate-node URLs with their
+ADNL public keys) and pipe it into the daemon at startup.
 
-4. **ADNL Tunnel client integration (read-only first)** — let the user supply
-   a tunnel config file (the same format `TON-Torrent` accepts) to seed
-   without public IP. Marketing-wise this is the entire "deploy from a
-   laptop" story: even if the laptop is behind a router, the bag stays
-   reachable while the daemon is running.
+Marketing line we want to be able to honestly write:
 
-### Speculative / business decision
+> "Deploy a static site from your laptop. Even if you're behind NAT,
+> the ADNL Tunnel route keeps your bag reachable while the daemon runs."
 
-5. **Operate our own tunnel(s) and bundle the config.** Becomes a SaaS.
-   Pricing aligns with PN per-packet rates. Could be free up to a quota.
+Estimated work: 1–2 weeks. Most of the cost is curating a default
+tunnel pool config to bundle (so users don't have to find one
+themselves) and surfacing tunnel status in the CLI.
 
-6. **Consider `tonutils-storage` as an alt daemon backend.** Same on-chain
-   protocol, MIT-licensed, active maintenance, narrower binary, already
-   ships with tunnel support. We currently rely on TON Core's C++ daemon
-   purely because it was the official one — but xssnick's daemon is what
-   the ecosystem actually runs.
+### B4 — Payment Network abstraction (groundwork only in v0.6)
 
-7. **Payment Network integration.** Long-term: when tunnel and provider
-   payments are needed, do them through PN channels rather than per-tx
-   onchain payments.
+Tunnel rentals settle through PN micro-payments. We won't ship a PN
+integration in v0.6 — that's v0.7 — but we can keep the daemon
+abstraction layer payment-aware so v0.7 doesn't require a refactor.
 
-## Open questions for the discussion session
+Concretely: thread a "payment plumbing" hook through the daemon
+spawn / connect path now, return null/no-op in v0.6, and wire the
+real `ton-payment-network` client into it in v0.7.
 
-- Does (3) `sites` record support actually solve more user pain than (4)
-  tunnel integration? They're independent and we can do both, but order
-  matters.
-- Is (6) — switching to `tonutils-storage` as the bundled daemon — worth the
-  user-perception risk of "you ship an unofficial daemon"? Counter:
-  TON-Torrent already does this and got a 10,000 TON grant from Pavel.
-- Does (5) — operating tunnels ourselves — turn this from a tool into a
-  service, and is that a story we want?
-- Where does v0.6 want to land tonally — same "censorship-resistant deploy
-  in one command" pitch, or "digital-resistance toolkit" framing aligned
-  with the Resistance Tools positioning?
+## Out of scope for v0.6 (deferred / dropped)
 
-## Order of decision (proposed)
+- ❌ **`sites` record support** — empirical evidence says it's not in use
+  (foundation.ton, all sampled .ton domains)
+- ❌ **`rldp-http-proxy` bundling** — not needed without sites support
+- ❌ **Building or operating a storage provider ourselves** — economics
+  are wrong while no one else is doing it
+- ❌ **Full Payment Network integration** — pushed to v0.7
 
-1. Lock the **canonical mode** (Mandatory item 1) — docs and dashboard
-   rewrite. Cheap, removes the dishonesty, can ship in a single PR.
-2. Decide between (3) and (4) for the next code lane in v0.6, or commit to
-   both with sequencing.
-3. Park (5)/(7) as exploratory until a real user pulls on them.
-4. Run (6) as a side-by-side experiment if we touch the daemon layer
-   anyway.
+## Decision criteria (recap)
 
-## Out of scope for v0.6
+- B1 ships in this commit. If even our own smoke shows surprises (e.g.
+  CI users expected one-shot-by-default), revert is one config flip.
+- B2 ships only after we've confirmed `tonutils-storage` exposes the
+  meta endpoints we need (`get`, `get-meta` equivalents). If it doesn't,
+  B2 stays speculative and we revisit.
+- B3 sequencing depends on B2; do not start until tonutils backend is
+  stable.
+- B4 is design-only, not user-facing.
 
-- Building our own provider that competes with the dead ones. The economics
-  don't work as a side-quest.
-- Reinventing the Resistance Tools desktop UI. xssnick already shipped that;
-  we are a CLI for builders.
-- Telegram Mini App distribution. Adjacent but a different product surface.
+## Open questions (still)
+
+- For B2, do we double-bundle (offer both daemons via `--daemon-backend=`)
+  or hard-cut? Default direction: double-bundle in v0.6, hard-cut to
+  tonutils in v0.7.
+- For B3, do we ship our own tunnel pool config or just teach users to
+  paste one? Default direction: bundle a curated minimal config (1–2
+  community-run intermediate nodes) and document how to swap.
+- For docs: do we keep the dashboard's "Resistance Tools stack" framing
+  as the headline, or push it as a sub-headline? Going with sub-headline
+  for now since the primary user is still the DeFi-UI builder.
