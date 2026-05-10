@@ -122,6 +122,7 @@ program
         await runWatchModeTonutils(deployed, {
           debounce: opts.debounce,
           jsonOutput: opts.jsonOutput,
+          domain: opts.domain,
         })
       } else {
         daemon.kill()

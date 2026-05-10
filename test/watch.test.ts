@@ -9,27 +9,28 @@ vi.mock('chokidar', () => ({
 }))
 
 describe('watchBuildDir', () => {
-  let onChangeCallback: ((path: string) => void) | null = null
+  // The watcher now subscribes to chokidar's `all` event so add/unlink
+  // (not just `change`) trigger the redeploy callback. The mock keeps
+  // hold of that handler and we invoke it with a synthesized event.
+  let allCallback: ((event: string, path: string) => void) | null = null
   let mockClose: vi.Mock
 
+  // Adapter that lets each test trigger the watcher exactly the way
+  // chokidar does, without each test having to know about the event arg.
+  const fire = (filePath: string, event: string = 'change') => {
+    if (allCallback) allCallback(event, filePath)
+  }
+
   beforeEach(async () => {
-    // Get mocked module
     const chokidar = await import('chokidar')
-
-    // Create fresh close mock
     mockClose = vi.fn()
-
-    // Reset watch mock to return our custom watcher
     vi.mocked(chokidar.default).watch.mockReturnValue({
       on: vi.fn((event: string, callback: any) => {
-        if (event === 'change') {
-          onChangeCallback = callback
-        }
+        if (event === 'all') allCallback = callback
         return { close: mockClose }
       }),
       close: mockClose,
     } as any)
-
     vi.clearAllMocks()
   })
 
@@ -42,16 +43,10 @@ describe('watchBuildDir', () => {
       debounceMs: 100,
     })
 
-    // Simulate file change
-    expect(onChangeCallback).toBeTruthy()
-    if (onChangeCallback) {
-      onChangeCallback('/test/build/index.html')
-
-      // Wait for debounce
-      await new Promise((resolve) => setTimeout(resolve, 150))
-
-      expect(onChange).toHaveBeenCalledTimes(1)
-    }
+    expect(allCallback).toBeTruthy()
+    fire('/test/build/index.html')
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 
   it('should debounce rapid changes into single call', async () => {
@@ -63,19 +58,12 @@ describe('watchBuildDir', () => {
       debounceMs: 100,
     })
 
-    expect(onChangeCallback).toBeTruthy()
-    if (onChangeCallback) {
-      // Trigger multiple rapid changes
-      onChangeCallback('/test/build/file1.js')
-      onChangeCallback('/test/build/file2.js')
-      onChangeCallback('/test/build/file3.js')
-
-      // Wait for debounce + grace period
-      await new Promise((resolve) => setTimeout(resolve, 200))
-
-      // Should only call onChange once (debounced)
-      expect(onChange).toHaveBeenCalledTimes(1)
-    }
+    expect(allCallback).toBeTruthy()
+    fire('/test/build/file1.js', 'add')
+    fire('/test/build/file2.js', 'change')
+    fire('/test/build/file3.js', 'unlink')
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 
   it('should use 2000ms default debounce', async () => {
@@ -86,18 +74,12 @@ describe('watchBuildDir', () => {
       onChange,
     })
 
-    expect(onChangeCallback).toBeTruthy()
-    if (onChangeCallback) {
-      onChangeCallback('/test/build/index.html')
-
-      // Before debounce period
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      expect(onChange).not.toHaveBeenCalled()
-
-      // After debounce period
-      await new Promise((resolve) => setTimeout(resolve, 2100))
-      expect(onChange).toHaveBeenCalledTimes(1)
-    }
+    expect(allCallback).toBeTruthy()
+    fire('/test/build/index.html')
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(onChange).not.toHaveBeenCalled()
+    await new Promise((resolve) => setTimeout(resolve, 2100))
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 
   it('should return cleanup function that closes watcher', () => {
@@ -121,14 +103,20 @@ describe('watchBuildDir', () => {
       debounceMs: 100,
     })
 
-    expect(onChangeCallback).toBeTruthy()
-    if (onChangeCallback) {
-      // Should not throw
-      onChangeCallback('/test/build/index.html')
+    expect(allCallback).toBeTruthy()
+    fire('/test/build/index.html')
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
 
-      await new Promise((resolve) => setTimeout(resolve, 150))
-
-      expect(onChange).toHaveBeenCalledTimes(1)
-    }
+  it('ignores chokidar housekeeping events (ready, raw, error)', async () => {
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    watchBuildDir({ buildDir: '/test/build', onChange, debounceMs: 50 })
+    expect(allCallback).toBeTruthy()
+    // 'ready' / 'raw' must not trigger redeploy
+    fire('/anything', 'ready')
+    fire('/anything', 'raw')
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(onChange).not.toHaveBeenCalled()
   })
 })

@@ -3,6 +3,7 @@
 // path stays in deploy.ts for users who pass --daemon-backend=ton-core.
 
 import path from 'path'
+import os from 'os'
 import { existsSync, readFileSync } from 'fs'
 import chalk from 'chalk'
 import type { CliOptions } from '../types/cli'
@@ -29,13 +30,30 @@ export interface TonutilsDeployOptions {
   tunnelConfigPath?: string  // absolute or relative path to nodes-pool.json
 }
 
-interface ResolvedTunnel {
+export interface ResolvedTunnel {
   absPath: string
   nodeCount: number  // best-effort count of intermediate nodes in the pool
 }
 
-function resolveTunnelConfig(rawPath: string): ResolvedTunnel {
-  const absPath = path.resolve(rawPath)
+// Node's path.resolve() does NOT expand `~` to $HOME — passing
+// `--tunnel-config ~/foo.json` would resolve relative to CWD and look
+// for a literal "~/foo.json" subdirectory. Common UX trap, so we expand
+// here. This is the only place users pass paths into the CLI in v0.6.
+function expandTilde(p: string): string {
+  if (p === '~') return os.homedir()
+  if (p.startsWith('~/')) return path.join(os.homedir(), p.slice(2))
+  return p
+}
+
+/**
+ * Validate a `--tunnel-config <path>` argument and report the absolute
+ * path + node count back to the caller for display.
+ *
+ * Exported so the unit tests exercise the live implementation rather
+ * than a copy that drifts.
+ */
+export function resolveTunnelConfig(rawPath: string): ResolvedTunnel {
+  const absPath = path.resolve(expandTilde(rawPath))
   if (!existsSync(absPath)) {
     throw new Error(
       `--tunnel-config: file not found at ${absPath}. ` +
@@ -81,23 +99,28 @@ export async function runDeployTonutils(
   const isCI = opts.ciMode || process.env.CI === 'true'
   const createSpinner = createSpinnerFactory({ silent: !!opts.jsonOutput, plain: isCI })
 
-  // tonutils-storage uses mainnet network config out of the box. Pretending
-  // testnet works on this backend would silently send to mainnet — refuse
-  // up front so the user picks a supported combination.
-  if (opts.testnet) {
-    throw new Error(
-      `--testnet is not supported on the tonutils-storage backend in v0.6. ` +
-      `Use --daemon-backend=ton-core for testnet, or drop --testnet for mainnet self-host.`,
-    )
-  }
-
-  // Validate the tunnel config (if any) BEFORE we download a daemon binary
-  // — fail fast on user-input problems.
-  const tunnel = deployOpts.tunnelConfigPath
-    ? resolveTunnelConfig(deployOpts.tunnelConfigPath)
-    : undefined
-
   try {
+    // Both checks intentionally live INSIDE the try so their errors are
+    // routed through the same JSON-vs-human surfacing path as everything
+    // else (Codex M1-CO3 caught that --tunnel-config errors were
+    // bypassing the `--json-output` formatter).
+
+    // tonutils-storage uses mainnet network config out of the box.
+    // Pretending testnet works on this backend would silently send to
+    // mainnet — refuse up front.
+    if (opts.testnet) {
+      throw new Error(
+        `--testnet is not supported on the tonutils-storage backend in v0.6. ` +
+        `Use --daemon-backend=ton-core for testnet, or drop --testnet for mainnet self-host.`,
+      )
+    }
+
+    // Validate the tunnel config (if any) before we download a daemon
+    // binary — fail fast on user-input problems.
+    const tunnel = deployOpts.tunnelConfigPath
+      ? resolveTunnelConfig(deployOpts.tunnelConfigPath)
+      : undefined
+
     const buildDir = detectBuildDir(process.cwd(), buildDirArg)
     const description = opts.desc ?? path.basename(buildDir)
 
@@ -166,7 +189,7 @@ export async function runDeployTonutils(
 
 export async function runWatchModeTonutils(
   deployed: TonutilsDeployReturn,
-  opts: { debounce?: string; jsonOutput?: boolean },
+  opts: { debounce?: string; jsonOutput?: boolean; domain?: string },
 ): Promise<void> {
   const { daemon, buildDir, description, result: initial } = deployed
 
@@ -176,6 +199,20 @@ export async function runWatchModeTonutils(
     console.log(chalk.dim(`  Build dir: ${buildDir}`))
     console.log(chalk.dim(`  Initial bag: ${initial.bagId}`))
     console.log(chalk.dim('  daemon will re-create the bag on file changes (same content ⇒ same id)'))
+    if (opts.domain) {
+      // Codex M1-CO1: re-deploys on change yield a new bag id; the DNS
+      // record we wrote earlier still points at `initial.bagId`. Until
+      // we wire DNS updates into the redeploy loop, just be honest.
+      console.log(chalk.yellow(
+        `  ⚠ ${opts.domain} keeps pointing at the initial bag (${initial.bagId.slice(0, 12)}…).`,
+      ))
+      console.log(chalk.dim(
+        '    Re-running --domain on every change would require a wallet sign per change.',
+      ))
+      console.log(chalk.dim(
+        '    For now: stop watch mode and re-run with --domain when you want to publish updates.',
+      ))
+    }
     console.log(chalk.dim('  Press Ctrl+C to stop'))
     console.log()
   }

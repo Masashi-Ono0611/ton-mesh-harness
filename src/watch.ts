@@ -26,15 +26,18 @@ export function watchBuildDir(opts: WatchOptions): () => void {
 
   let debounceTimer: NodeJS.Timeout | null = null
 
-  watcher.on('change', (path) => {
-    console.log(chalk.dim(`File changed: ${path}`))
+  // We need add/change/unlink (and addDir/unlinkDir for completeness).
+  // Subscribing only to `change` — as the previous implementation did —
+  // misses the case where a build emits new files, deletes old ones, or
+  // uses atomic rename writes (chokidar reports those as add/unlink, not
+  // change). Codex M1-CO2 caught this on the v0.6 watch path.
+  const onAnyEvent = (event: string, filePath: string) => {
+    // chokidar's `all` callback fires for ready / raw too — only act on
+    // the events that actually mean "build artifacts moved".
+    if (!['add', 'change', 'unlink', 'addDir', 'unlinkDir'].includes(event)) return
+    console.log(chalk.dim(`${event}: ${filePath}`))
 
-    // Clear existing timer (debounce)
-    if (debounceTimer) {
-      clearTimeout(debounceTimer)
-    }
-
-    // Set new timer
+    if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(async () => {
       try {
         await onChange()
@@ -44,7 +47,9 @@ export function watchBuildDir(opts: WatchOptions): () => void {
         debounceTimer = null
       }
     }, debounceMs)
-  })
+  }
+
+  watcher.on('all', onAnyEvent)
 
   watcher.on('error', (error) => {
     console.error('Watcher error:', error)
