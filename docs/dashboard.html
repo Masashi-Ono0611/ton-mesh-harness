@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sovereign Deploy Kit — Product & Roadmap</title>
+<style>
+  :root {
+    /* Telegram night-mode + TON brand palette */
+    --bg: #17212B;
+    --bg-2: #0E1621;
+    --surface: #1E2C3A;
+    --surface-2: #243447;
+    --surface-hi: #2B3D52;
+    --border: #2C3E54;
+    --border-soft: #243447;
+
+    --text: #F5F5F5;
+    --text-dim: #93A4B7;
+    --text-mute: #6E7E8E;
+
+    --ton: #0098EA;       /* TON brand blue */
+    --ton-2: #45AEF5;     /* lighter accent */
+    --ton-deep: #0078BD;
+    --tg: #2AABEE;        /* Telegram blue */
+
+    --green: #4FC08D;
+    --yellow: #E2A93C;
+    --red: #E55353;
+    --purple: #A78BFA;
+    --orange: #F2994A;
+    --pending: #2C3E54;
+
+    /* Layer accents */
+    --done: #4FC08D;
+    --active: #0098EA;
+    --next: #45AEF5;
+    --soon: #A78BFA;
+    --later: #6E7E8E;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #FFFFFF;
+      --bg-2: #F4F7FB;
+      --surface: #FFFFFF;
+      --surface-2: #F4F7FB;
+      --surface-hi: #E7EFF7;
+      --border: #DCE5EE;
+      --border-soft: #EAF0F6;
+
+      --text: #0E1621;
+      --text-dim: #586878;
+      --text-mute: #8A9AAB;
+
+      --ton: #0098EA;
+      --ton-2: #45AEF5;
+      --ton-deep: #0078BD;
+      --tg: #229ED9;
+
+      --green: #2A9D6A;
+      --yellow: #B07A14;
+      --red: #C3392F;
+      --purple: #7C5CE6;
+      --orange: #C76D1E;
+      --pending: #E0E7EF;
+
+      --done: #2A9D6A;
+      --active: #0098EA;
+      --next: #45AEF5;
+      --soon: #7C5CE6;
+      --later: #8A9AAB;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 36px 24px;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", "Segoe UI", "Helvetica Neue", "Hiragino Sans", sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.55;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+
+  /* === Header === */
+  header.hero {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    align-items: baseline; justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .diamond {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--ton) 0%, var(--ton-2) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: white;
+    box-shadow: 0 6px 20px rgba(0, 152, 234, 0.35);
+    flex-shrink: 0;
+  }
+  h1 {
+    margin: 0; font-size: 26px; font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.18;
+  }
+  h1 .accent { color: var(--ton); font-weight: 700; }
+  .tagline {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 4px;
+    letter-spacing: -0.005em;
+  }
+  .meta {
+    color: var(--text-dim); font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.6;
+    text-align: right;
+  }
+  .meta strong { color: var(--text); font-weight: 600; }
+  .meta code {
+    background: var(--surface-2); padding: 1px 6px; border-radius: 3px;
+    font-size: 11.5px; border: 1px solid var(--border);
+  }
+
+  /* === Concept hero === */
+  .concept-hero {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(0, 152, 234, 0.16), transparent 55%),
+      radial-gradient(circle at 100% 0%, rgba(69, 174, 245, 0.10), transparent 55%),
+      radial-gradient(circle at 50% 100%, rgba(167, 139, 250, 0.08), transparent 60%),
+      var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    margin-bottom: 32px;
+  }
+  .concept-headline {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .concept-headline .tldr {
+    display: inline-block;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.2em;
+    color: var(--ton); background: rgba(0, 152, 234, 0.14);
+    padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 18px;
+    border: 1px solid rgba(0, 152, 234, 0.30);
+    text-transform: uppercase;
+  }
+  .concept-headline h2 {
+    margin: 0; font-size: 32px; font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text); line-height: 1.15;
+  }
+  .concept-headline .punch {
+    display: block;
+    font-size: 16px; font-weight: 500;
+    color: var(--text-dim);
+    margin-top: 14px;
+    letter-spacing: -0.005em;
+  }
+  .concept-headline p {
+    margin: 20px auto 0; max-width: 740px;
+    font-size: 14.5px; color: var(--text); line-height: 1.7;
+  }
+  .concept-headline strong { color: var(--ton); font-weight: 600; }
+
+  /* CLI mock terminal */
+  .terminal {
+    margin: 28px auto 0; max-width: 720px; text-align: left;
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  }
+  .terminal .titlebar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 14px; background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .terminal .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .terminal .dot.r { background: #ff5f57; }
+  .terminal .dot.y { background: #febc2e; }
+  .terminal .dot.g { background: #28c840; }
+  .terminal .titlebar .label {
+    margin-left: 12px; font-size: 11.5px; color: var(--text-mute);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  .terminal pre {
+    margin: 0; padding: 18px 20px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; color: var(--text); line-height: 1.7;
+    overflow-x: auto;
+  }
+  .terminal .prompt { color: var(--ton); }
+  .terminal .cmd { color: var(--text); }
+  .terminal .ok { color: var(--green); }
+  .terminal .dim { color: var(--text-mute); }
+  .terminal .url { color: var(--ton-2); }
+  .terminal .warn { color: var(--yellow); }
+
+  /* === Concept 3-card grid === */
+  .concept-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 760px) { .concept-grid { grid-template-columns: 1fr; } }
+  .concept-card {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px;
+  }
+  .concept-card .icon-row {
+    font-size: 24px; margin-bottom: 12px; line-height: 1;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .concept-card .icon-row .arrow { color: var(--ton); font-size: 16px; }
+  .concept-card h3 {
+    margin: 0 0 10px; font-size: 11px; font-weight: 700;
+    color: var(--text-mute); letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .concept-card .lead {
+    margin: 0 0 14px; font-size: 14px; color: var(--text);
+    line-height: 1.6; letter-spacing: -0.005em;
+  }
+  .concept-card .lead strong { color: var(--ton); font-weight: 600; }
+  .concept-card .item-list {
+    list-style: none; padding: 0; margin: 0;
+    font-size: 12.5px; color: var(--text-dim);
+  }
+  .concept-card .item-list li {
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.55;
+  }
+  .concept-card .item-list li:last-child { border-bottom: 0; }
+  .concept-card .item-list li code {
+    background: var(--surface); padding: 1px 5px; border-radius: 3px;
+    font-size: 11.5px; border: 1px solid var(--border); color: var(--ton-2);
+  }
+
+  /* === Before / After === */
+  .compare {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px;
+    align-items: stretch;
+    margin: 0;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px;
+  }
+  @media (max-width: 760px) {
+    .compare { grid-template-columns: 1fr; }
+    .compare .arrow-cell { transform: rotate(90deg); justify-self: center; }
+  }
+  .compare .panel {
+    padding: 18px;
+    background: var(--surface); border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .compare .panel .panel-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--text-mute);
+    margin-bottom: 10px;
+  }
+  .compare .panel.after .panel-label { color: var(--green); }
+  .compare .panel .panel-title {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    margin-bottom: 14px; letter-spacing: -0.01em;
+  }
+  .compare .panel .panel-flow {
+    font-size: 12.5px; color: var(--text-dim); line-height: 1.85;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  .compare .panel .panel-flow strong { color: var(--text); font-weight: 600; }
+  .compare .arrow-cell {
+    color: var(--ton); font-size: 26px; font-weight: 400;
+    align-self: center;
+  }
+
+  /* === Phase ribbon === */
+  .phases {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 760px) { .phases { grid-template-columns: repeat(2, 1fr); } }
+  .phase {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+    position: relative; overflow: hidden;
+    transition: border-color 0.15s ease;
+  }
+  .phase.done { border-color: var(--done); }
+  .phase.next { border-color: var(--active); }
+  .phase.soon { border-color: var(--soon); }
+  .phase.later { border-color: var(--later); border-style: dashed; }
+  .phase .num {
+    font-size: 10.5px; color: var(--text-mute);
+    letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700;
+  }
+  .phase .name {
+    font-weight: 600; font-size: 14px; margin: 6px 0 6px;
+    letter-spacing: -0.005em;
+  }
+  .phase .when {
+    font-size: 11.5px; color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .phase .status {
+    display: inline-block; padding: 3px 9px; border-radius: 999px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    margin-top: 10px; text-transform: uppercase;
+  }
+  .phase.done .status { background: rgba(79, 192, 141, 0.14); color: var(--done); }
+  .phase.next .status { background: rgba(0, 152, 234, 0.14); color: var(--active); }
+  .phase.soon .status { background: rgba(167, 139, 250, 0.14); color: var(--soon); }
+  .phase.later .status { background: rgba(110, 126, 142, 0.14); color: var(--later); }
+
+  /* === Card grid === */
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px 24px;
+  }
+  .card.span-12 { grid-column: span 12; }
+  .card.span-8 { grid-column: span 8; }
+  .card.span-6 { grid-column: span 6; }
+  .card.span-4 { grid-column: span 4; }
+  @media (max-width: 920px) {
+    .card.span-8, .card.span-6, .card.span-4 { grid-column: span 12; }
+  }
+  .card h2 {
+    margin: 0 0 18px; font-size: 15.5px; font-weight: 700;
+    letter-spacing: -0.005em;
+    color: var(--text); display: flex; align-items: center; gap: 10px;
+  }
+  .card h2 .pill {
+    font-size: 10.5px; padding: 3px 10px; border-radius: 999px;
+    background: var(--surface-2); color: var(--text-dim);
+    font-weight: 600; letter-spacing: 0.04em;
+    border: 1px solid var(--border);
+  }
+
+  /* === Status chip === */
+  .chip {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px; border-radius: 5px;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.06em; line-height: 1.5;
+    text-transform: uppercase;
+  }
+  .chip.green { background: rgba(79, 192, 141, 0.14); color: var(--green); }
+  .chip.yellow { background: rgba(226, 169, 60, 0.14); color: var(--yellow); }
+  .chip.red { background: rgba(229, 83, 83, 0.14); color: var(--red); }
+  .chip.gray { background: rgba(110, 126, 142, 0.14); color: var(--text-mute); }
+  .chip.purple { background: rgba(167, 139, 250, 0.14); color: var(--purple); }
+  .chip.blue { background: rgba(0, 152, 234, 0.14); color: var(--ton); }
+  .chip.tg { background: rgba(42, 171, 238, 0.14); color: var(--tg); }
+
+  /* === KV list === */
+  .kv {
+    display: grid; grid-template-columns: minmax(140px, max-content) 1fr;
+    gap: 8px 16px; font-size: 13px; margin: 0;
+  }
+  .kv dt { color: var(--text-dim); font-weight: 500; }
+  .kv dd {
+    margin: 0; color: var(--text); font-variant-numeric: tabular-nums;
+    word-break: break-word;
+  }
+  .kv dd code {
+    background: var(--surface-2); padding: 1px 6px; border-radius: 3px;
+    font-size: 12px; border: 1px solid var(--border); color: var(--ton-2);
+  }
+
+  /* === Checklist === */
+  .check { list-style: none; padding: 0; margin: 0; }
+  .check li {
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 12px; font-size: 13px; line-height: 1.55;
+  }
+  .check li:last-child { border-bottom: 0; }
+  .check li::before {
+    content: "✓"; color: var(--green); font-weight: 700;
+    flex-shrink: 0; width: 14px; font-size: 12px;
+  }
+  .check li.warn::before { content: "⚠"; color: var(--yellow); }
+  .check li.fail::before { content: "✗"; color: var(--red); }
+  .check li.pending::before { content: "○"; color: var(--text-mute); font-weight: 400; }
+  .check li code {
+    background: var(--surface-2); padding: 1px 6px; border-radius: 3px;
+    font-size: 11.5px; border: 1px solid var(--border); color: var(--ton-2);
+  }
+
+  /* === Table === */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td {
+    text-align: left; padding: 11px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    color: var(--text-mute); font-weight: 700;
+    font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.12em; padding-bottom: 12px;
+  }
+  td { color: var(--text); }
+  td code {
+    background: var(--surface-2); padding: 1px 6px; border-radius: 3px;
+    font-size: 11.5px; border: 1px solid var(--border); color: var(--ton-2);
+  }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr { transition: background 0.12s ease; }
+  tbody tr:hover { background: var(--surface-2); }
+
+  /* === Architecture box === */
+  .arch {
+    background: var(--bg-2); border-radius: 10px;
+    padding: 22px; border: 1px solid var(--border);
+  }
+  .arch svg {
+    width: 100%; height: auto; max-height: 380px; display: block;
+  }
+
+  /* === Note === */
+  .note {
+    font-size: 12px; color: var(--text-mute);
+    margin-top: 14px; line-height: 1.65;
+  }
+  .note strong { color: var(--text-dim); }
+  .note code {
+    background: var(--surface-2); padding: 1px 6px; border-radius: 3px;
+    font-size: 11.5px; border: 1px solid var(--border); color: var(--ton-2);
+  }
+
+  /* === Phase divider === */
+  .phase-divider {
+    grid-column: 1 / -1;
+    margin: 20px 0 4px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .phase-divider h3 {
+    margin: 0; font-size: 12.5px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--text-dim); font-weight: 700;
+  }
+  .phase-divider .badge {
+    font-size: 10.5px; padding: 3px 10px; border-radius: 999px; font-weight: 700;
+    background: var(--surface-2); color: var(--text-mute);
+    letter-spacing: 0.06em; border: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+
+  /* === Bar (progress) === */
+  .barchart { display: flex; flex-direction: column; gap: 9px; }
+  .bar-row {
+    display: grid; grid-template-columns: 200px 1fr 80px;
+    gap: 12px; align-items: center; font-size: 12.5px;
+  }
+  .bar-row .bar-label {
+    color: var(--text-dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bar-row .bar-track {
+    background: var(--surface-2); height: 10px;
+    border-radius: 6px; overflow: hidden;
+    position: relative; border: 1px solid var(--border);
+  }
+  .bar-row .bar-fill { height: 100%; border-radius: 6px; }
+  .bar-row .bar-fill.done { background: linear-gradient(90deg, var(--ton-deep), var(--ton)); }
+  .bar-row .bar-fill.partial { background: linear-gradient(90deg, var(--ton), var(--ton-2)); opacity: 0.85; }
+  .bar-row .bar-fill.pending {
+    background: repeating-linear-gradient(45deg, var(--pending), var(--pending) 4px, transparent 4px, transparent 8px);
+  }
+  .bar-row .bar-value {
+    color: var(--text-mute); text-align: right;
+    font-variant-numeric: tabular-nums; font-size: 11.5px;
+  }
+
+  /* === Issue card === */
+  .issues { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 760px) { .issues { grid-template-columns: 1fr; } }
+  .issue {
+    border-radius: 10px; padding: 14px 16px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-left: 3px solid var(--yellow);
+  }
+  .issue.crit { border-left-color: var(--red); }
+  .issue.idea { border-left-color: var(--ton); }
+  .issue.minor { border-left-color: var(--text-mute); }
+  .issue .iname {
+    font-weight: 700; font-size: 13.5px;
+    margin-bottom: 6px; letter-spacing: -0.005em;
+  }
+  .issue .idesc {
+    font-size: 12.5px; color: var(--text-dim);
+    line-height: 1.6; margin-bottom: 8px;
+  }
+  .issue .imeta {
+    font-size: 11px; color: var(--text-mute);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: 0.01em;
+  }
+  .issue .imeta code {
+    background: var(--surface); padding: 1px 5px; border-radius: 3px;
+    font-size: 10.5px; border: 1px solid var(--border); color: var(--ton-2);
+  }
+
+  /* === Verdict / next-steps === */
+  .verdicts {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  }
+  @media (max-width: 760px) { .verdicts { grid-template-columns: 1fr; } }
+  .verdict-card {
+    border-radius: 10px; padding: 16px 18px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    font-size: 12.5px;
+    position: relative;
+  }
+  .verdict-card .vname {
+    font-weight: 700; font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .verdict-card.ship .vname { color: var(--ton); }
+  .verdict-card.harden .vname { color: var(--purple); }
+  .verdict-card.grow .vname { color: var(--green); }
+  .verdict-card ul {
+    margin: 0; padding-left: 18px;
+    color: var(--text-dim); line-height: 1.7;
+  }
+  .verdict-card li { margin: 4px 0; }
+  .verdict-card li code {
+    background: var(--surface); padding: 1px 5px; border-radius: 3px;
+    font-size: 11px; border: 1px solid var(--border); color: var(--ton-2);
+  }
+
+  /* === Quote === */
+  blockquote.q {
+    margin: 0 0 14px; padding: 11px 16px;
+    border-left: 2px solid var(--ton);
+    background: var(--surface-2);
+    font-size: 13px; color: var(--text);
+    border-radius: 0 6px 6px 0;
+    line-height: 1.6;
+  }
+  blockquote.q:last-child { margin-bottom: 0; }
+  blockquote.q cite {
+    display: block; margin-top: 6px; font-style: normal;
+    color: var(--text-mute); font-size: 11.5px;
+  }
+
+  /* === Footer === */
+  footer {
+    margin-top: 44px; padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-mute); font-size: 12px;
+    line-height: 1.6;
+  }
+  footer a { color: var(--ton); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  .links {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 14px;
+  }
+  .links a {
+    color: var(--text-dim); text-decoration: none;
+    padding: 6px 13px; font-size: 12px; font-weight: 600;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px;
+    transition: color 0.12s ease, border-color 0.12s ease;
+  }
+  .links a:hover { color: var(--ton); border-color: var(--ton); }
+
+  /* === Concept outcome stripes === */
+  .concept-outcomes {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 760px) { .concept-outcomes { grid-template-columns: 1fr; } }
+  .outcome-stripe {
+    padding: 14px 18px; border-radius: 10px;
+    border: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 12px;
+    font-size: 12.5px;
+    background: var(--surface);
+  }
+  .outcome-stripe .icon { font-size: 18px; flex-shrink: 0; line-height: 1.3; }
+  .outcome-stripe.tg { border-color: rgba(0, 152, 234, 0.4); background: rgba(0, 152, 234, 0.05); }
+  .outcome-stripe.purple { border-color: rgba(167, 139, 250, 0.35); background: rgba(167, 139, 250, 0.05); }
+  .outcome-stripe.green { border-color: rgba(79, 192, 141, 0.35); background: rgba(79, 192, 141, 0.05); }
+  .outcome-stripe .label {
+    font-weight: 700; letter-spacing: 0.14em; margin-right: 6px; font-size: 11px;
+    text-transform: uppercase; display: block; margin-bottom: 3px;
+  }
+  .outcome-stripe.tg .label { color: var(--ton); }
+  .outcome-stripe.purple .label { color: var(--purple); }
+  .outcome-stripe.green .label { color: var(--green); }
+  .outcome-stripe .desc { color: var(--text-dim); line-height: 1.6; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- =================== Header =================== -->
+<header class="hero">
+  <div class="brand">
+    <div class="diamond">💎</div>
+    <div>
+      <h1>Sovereign <span class="accent">Deploy Kit</span></h1>
+      <div class="tagline">Static sites. One command. Censorship-resistant on TON.</div>
+    </div>
+  </div>
+  <div class="meta">
+    <strong>v0.4.0</strong> · main @ <code>8857ba4</code><br>
+    Updated 2026-05-10 · <code>ton-projects/sovereign-deploy-kit</code>
+  </div>
+</header>
+
+<!-- =================== Concept hero =================== -->
+<section class="concept-hero">
+  <div class="concept-headline">
+    <div class="tldr">What is this · TL;DR</div>
+    <h2>The frontend can&rsquo;t be taken down if there&rsquo;s no server to take down.</h2>
+    <span class="punch">A CLI that ships any static build to TON Storage and a <code style="background:rgba(0,152,234,0.14);padding:2px 7px;border-radius:4px;color:var(--ton);font-size:14px;border:1px solid rgba(0,152,234,0.25);">.ton</code> domain — in a single command, with zero infra setup.</span>
+    <p>
+      DeFi UIs keep getting silenced — Tornado Cash, Uniswap, 1inch, Balancer.
+      The contracts live on; the websites die because they sit on
+      <strong>regular servers and regular DNS</strong>. TON already solved this with
+      <strong>Storage</strong>, <strong>DNS</strong>, and <strong>storage providers</strong> —
+      but the workflow used to need three tools and a wallet dance.
+      Sovereign Deploy Kit collapses it into <code style="background:var(--surface-2);padding:1px 6px;border-radius:3px;color:var(--ton-2);font-size:13px;border:1px solid var(--border);">npx ton-sovereign-deploy</code>.
+    </p>
+  </div>
+
+  <!-- Terminal preview -->
+  <div class="terminal">
+    <div class="titlebar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="label">~/projects/your-dapp · zsh</span>
+    </div>
+<pre><span class="prompt">$</span> <span class="cmd">npx ton-sovereign-deploy ./dist/ --domain mydapp.ton --provider</span>
+
+📦 <span class="dim">Uploading 47 files…</span>
+  <span class="ok">✓</span> index.html
+  <span class="ok">✓</span> assets/main.js  <span class="dim">(1.2 MB)</span>
+  <span class="ok">✓</span> assets/style.css
+  <span class="dim">… 44 more files</span>
+
+<span class="ok">✅ TON Storage (ADNL):</span>  <span class="url">ton://bag-a3f9c82e1b4d…</span>
+📦 <span class="dim">Bag ID:</span> a3f9c82e1b4d…
+
+💸 <span class="cmd">Storage Payment — Sign to Contract</span>
+   Provider: 0:ca5f6e597d3eab8a4e…
+   Amount:   0.3000 TON
+   <span class="dim">[QR code displayed in terminal]</span>
+   <span class="dim">→ Open Tonkeeper, sign, return.</span>
+
+🌐 <span class="ok">DNS registered:</span> <span class="url">https://mydapp.ton</span>
+
+<span class="warn">Note:</span> ton.run gateway returns 404 until propagation completes.</pre>
+  </div>
+</section>
+
+<!-- =================== 3 questions === -->
+<section class="concept-hero" style="padding: 28px 32px; margin-bottom: 28px;">
+  <div class="concept-grid">
+
+    <div class="concept-card">
+      <div class="icon-row">🛡️ <span class="arrow">→</span> 🌐</div>
+      <h3>Q1. Why does this exist?</h3>
+      <p class="lead">DeFi UIs are <strong>routinely censored</strong> at the frontend layer. The contract survives, the user&rsquo;s entry point doesn&rsquo;t.</p>
+      <ul class="item-list">
+        <li>Tornado Cash — frontend <strong>removed</strong> by OFAC</li>
+        <li>Uniswap — token-level UI <strong>geofenced</strong></li>
+        <li>1inch · Balancer — <strong>domain takedowns</strong></li>
+        <li>Root cause: regular DNS + regular hosting</li>
+      </ul>
+    </div>
+
+    <div class="concept-card">
+      <div class="icon-row">⚡</div>
+      <h3>Q2. What does it do?</h3>
+      <p class="lead">One command, three layers of TON&rsquo;s native infra wired together — <strong>no manual setup</strong>.</p>
+      <ul class="item-list">
+        <li>Bag upload via auto-installed <code>storage-daemon</code></li>
+        <li><code>.ton</code> DNS via TON Connect (QR + deeplink)</li>
+        <li>24/7 hosting via storage <strong>provider contract</strong></li>
+        <li>Vite · Next.js export · CRA build dirs auto-detected</li>
+      </ul>
+    </div>
+
+    <div class="concept-card">
+      <div class="icon-row">🎯</div>
+      <h3>Q3. Who is it for?</h3>
+      <p class="lead">Builders whose <strong>frontend takedown</strong> would matter — not just &ldquo;web3 curious.&rdquo;</p>
+      <ul class="item-list">
+        <li>DeFi protocol teams hardening UI delivery</li>
+        <li>TON-native dApps wanting <code>.ton</code> as canonical</li>
+        <li>Censorship-exposed apps — journalism, privacy, DAO UIs</li>
+        <li>First public target: <strong>Gateway 2026 (May)</strong></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Before / After -->
+  <div class="compare">
+    <div class="panel before">
+      <div class="panel-label">Before — centralized stack</div>
+      <div class="panel-title">🧱 Vercel + DNS registrar</div>
+      <div class="panel-flow">
+        <strong>build</strong><br>
+        ↓<br>
+        push to S3 / Vercel / Netlify<br>
+        ↓<br>
+        DNS registrar (subpoenable)<br>
+        ↓<br>
+        <span style="color:var(--text-mute);">single point of failure × 2</span>
+      </div>
+    </div>
+    <div class="arrow-cell">→</div>
+    <div class="panel after">
+      <div class="panel-label">After — sovereign stack</div>
+      <div class="panel-title">💎 TON Storage + .ton DNS</div>
+      <div class="panel-flow">
+        <strong>build</strong><br>
+        ↓<br>
+        TON Storage <span style="color:var(--text-mute);">(content-addressed, immutable)</span><br>
+        ↓<br>
+        <code style="background:var(--surface);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">.ton</code> DNS <span style="color:var(--text-mute);">(on-chain, owner-signed)</span><br>
+        ↓<br>
+        <span style="color:var(--green);">no DNS to seize, no host to subpoena</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================== Phase ribbon =================== -->
+<section class="phases">
+  <div class="phase done">
+    <div class="num">v0.1</div>
+    <div class="name">Storage Upload</div>
+    <div class="when">Mar 2026</div>
+    <span class="status">✅ Shipped</span>
+  </div>
+  <div class="phase done">
+    <div class="num">v0.2</div>
+    <div class="name">.ton DNS</div>
+    <div class="when">Apr 2026</div>
+    <span class="status">✅ Shipped</span>
+  </div>
+  <div class="phase done">
+    <div class="num">v0.3</div>
+    <div class="name">CI · Win · Watch</div>
+    <div class="when">Apr 2026</div>
+    <span class="status">✅ Shipped</span>
+  </div>
+  <div class="phase done">
+    <div class="num">v0.4</div>
+    <div class="name">Provider Contract</div>
+    <div class="when">May 2026</div>
+    <span class="status">✅ Shipped</span>
+  </div>
+  <div class="phase next">
+    <div class="num">v0.5</div>
+    <div class="name">Hardening &amp; Visibility</div>
+    <div class="when">May → Jun 2026</div>
+    <span class="status">▶ Next</span>
+  </div>
+</section>
+
+<!-- =================== Main grid =================== -->
+<section class="grid">
+
+  <!-- Project summary -->
+  <div class="card span-4">
+    <h2>At a glance</h2>
+    <dl class="kv">
+      <dt>Package</dt><dd><code>ton-sovereign-deploy</code></dd>
+      <dt>Current version</dt><dd>v0.4.0</dd>
+      <dt>Language</dt><dd>TypeScript · ESM · Node ≥ 18</dd>
+      <dt>OS support</dt><dd>macOS · Linux · Windows</dd>
+      <dt>Lines of code</dt><dd>~2,300 (src)</dd>
+      <dt>License</dt><dd>MIT</dd>
+      <dt>Author</dt><dd>masashi.ono</dd>
+      <dt>Repository</dt><dd><code>Masashi-Ono0611/sovereign-deploy-kit</code></dd>
+    </dl>
+  </div>
+
+  <!-- Ship status -->
+  <div class="card span-4">
+    <h2>Status snapshot</h2>
+    <ul class="check">
+      <li>v0.1 — Storage upload, auto daemon DL</li>
+      <li>v0.2 — <code>.ton</code> DNS via TON Connect</li>
+      <li>v0.3 — verify · Actions · Windows · <code>--watch</code></li>
+      <li>v0.4 — <code>--provider</code> 24/7 hosting contract</li>
+      <li class="warn"><code>--max-span</code> pinned to 200s (daemon bug)</li>
+      <li class="warn">Provider P2P (<code>--provider &lt;addr&gt;</code>) often times out</li>
+      <li class="pending">Public gateway propagation UX (ton.run 404 window)</li>
+      <li class="pending">First public launch: Gateway 2026</li>
+    </ul>
+  </div>
+
+  <!-- Decision/value -->
+  <div class="card span-4">
+    <h2>Why ship this <span class="chip blue">positioning</span></h2>
+    <table>
+      <tbody>
+        <tr><td><strong>Decentralized</strong></td><td><span class="chip green">Yes</span></td></tr>
+        <tr><td><strong>One-command</strong></td><td><span class="chip green">Yes</span></td></tr>
+        <tr><td><strong><code>.ton</code> DNS native</strong></td><td><span class="chip green">Yes</span></td></tr>
+        <tr><td><strong>CI/CD ready</strong></td><td><span class="chip green">Yes</span></td></tr>
+        <tr><td>Direct competitors</td><td><span class="chip blue">Zero</span></td></tr>
+        <tr><td>vs Vercel / Netlify</td><td>centralized → can be taken down</td></tr>
+        <tr><td>vs IPFS / Fleek</td><td>no <code>.eth</code> equivalent for TON ecosystem</td></tr>
+        <tr><td>vs raw TON CLI</td><td>multi-step, no Windows, no CI</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Architecture pipeline -->
+  <div class="card span-12">
+    <h2>The pipeline <span class="pill">build → bag → DNS → provider</span></h2>
+    <div class="arch">
+      <svg viewBox="0 0 1100 320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#93A4B7"/>
+          </marker>
+          <linearGradient id="tonGrad" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#0098EA"/>
+            <stop offset="100%" stop-color="#45AEF5"/>
+          </linearGradient>
+          <style>
+            .pbox { fill: transparent; stroke: #2C3E54; stroke-width: 1.25; rx: 8; }
+            .pbox.input { stroke: #6E7E8E; stroke-dasharray: 3 3; }
+            .pbox.cli { stroke: #0098EA; fill: rgba(0, 152, 234, 0.05); }
+            .pbox.daemon { stroke: #45AEF5; }
+            .pbox.storage { stroke: #4FC08D; fill: rgba(79, 192, 141, 0.04); }
+            .pbox.dns { stroke: #A78BFA; }
+            .pbox.provider { stroke: #E2A93C; }
+            .pbox.user { stroke: #2AABEE; fill: rgba(42, 171, 238, 0.05); }
+            .ptitle { fill: #F5F5F5; font: 600 12.5px -apple-system, "Segoe UI", sans-serif; letter-spacing: -0.005em; }
+            .psub { fill: #93A4B7; font: 11px -apple-system, sans-serif; }
+            .pcol { fill: #6E7E8E; font: 700 10px -apple-system, sans-serif; letter-spacing: 0.16em; text-transform: uppercase; }
+            .ptag { font: 700 9px -apple-system, sans-serif; letter-spacing: 0.14em; }
+            .ptag.cli { fill: #0098EA; }
+            .ptag.daemon { fill: #45AEF5; }
+            .ptag.storage { fill: #4FC08D; }
+            .ptag.dns { fill: #A78BFA; }
+            .ptag.provider { fill: #E2A93C; }
+            .ptag.user { fill: #2AABEE; }
+            .parrow { stroke: #93A4B7; stroke-width: 1.25; fill: none; marker-end: url(#arrow); }
+            .parrow.opt { stroke-dasharray: 4 3; }
+          </style>
+        </defs>
+
+        <!-- Column headers -->
+        <text class="pcol" x="80"  y="22" text-anchor="middle">Local</text>
+        <text class="pcol" x="305" y="22" text-anchor="middle">CLI process</text>
+        <text class="pcol" x="585" y="22" text-anchor="middle">TON network</text>
+        <text class="pcol" x="990" y="22" text-anchor="middle">Visitor</text>
+
+        <!-- Build dir -->
+        <rect class="pbox input" x="20" y="130" width="120" height="56"/>
+        <text class="ptitle" x="80" y="154" text-anchor="middle">./dist/</text>
+        <text class="psub"   x="80" y="172" text-anchor="middle">build output</text>
+
+        <!-- CLI -->
+        <rect class="pbox cli" x="200" y="60" width="210" height="60"/>
+        <text class="ptag cli" x="305" y="78" text-anchor="middle">CLI · COMMANDER</text>
+        <text class="ptitle"   x="305" y="96" text-anchor="middle">ton-sovereign-deploy</text>
+        <text class="psub"     x="305" y="112" text-anchor="middle">flags: --domain --provider --watch</text>
+
+        <!-- Daemon -->
+        <rect class="pbox daemon" x="200" y="140" width="210" height="60"/>
+        <text class="ptag daemon" x="305" y="158" text-anchor="middle">STORAGE-DAEMON</text>
+        <text class="ptitle"      x="305" y="176" text-anchor="middle">~/.ton-sovereign/bin</text>
+        <text class="psub"        x="305" y="192" text-anchor="middle">auto-installed · BitTorrent-like</text>
+
+        <!-- TON Connect bridge -->
+        <rect class="pbox user" x="200" y="220" width="210" height="60"/>
+        <text class="ptag user" x="305" y="238" text-anchor="middle">TON CONNECT BRIDGE</text>
+        <text class="ptitle"    x="305" y="256" text-anchor="middle">QR · tc:// deeplink</text>
+        <text class="psub"      x="305" y="272" text-anchor="middle">Tonkeeper signs</text>
+
+        <!-- TON Storage -->
+        <rect class="pbox storage" x="475" y="50" width="220" height="62"/>
+        <text class="ptag storage" x="585" y="68" text-anchor="middle">TON STORAGE · ADNL</text>
+        <text class="ptitle"       x="585" y="86" text-anchor="middle">Bag (Merkle-chunked)</text>
+        <text class="psub"         x="585" y="102" text-anchor="middle">content-addressed · immutable</text>
+
+        <!-- DNS -->
+        <rect class="pbox dns" x="475" y="130" width="220" height="62"/>
+        <text class="ptag dns" x="585" y="148" text-anchor="middle">.TON DNS · ON-CHAIN</text>
+        <text class="ptitle"   x="585" y="166" text-anchor="middle">NFT-DNS resolver</text>
+        <text class="psub"     x="585" y="182" text-anchor="middle">owner-signed updates only</text>
+
+        <!-- Provider -->
+        <rect class="pbox provider" x="475" y="210" width="220" height="62"/>
+        <text class="ptag provider" x="585" y="228" text-anchor="middle">STORAGE PROVIDER</text>
+        <text class="ptitle"        x="585" y="246" text-anchor="middle">24/7 host (paid in TON)</text>
+        <text class="psub"          x="585" y="262" text-anchor="middle">v0.4 · max-span 200s (bug)</text>
+
+        <!-- Gateways -->
+        <rect class="pbox storage" x="760" y="50" width="180" height="62"/>
+        <text class="ptag storage" x="850" y="68" text-anchor="middle">GATEWAYS</text>
+        <text class="ptitle"       x="850" y="86" text-anchor="middle">ton.run · proxies</text>
+        <text class="psub"         x="850" y="102" text-anchor="middle">propagation: min → hours</text>
+
+        <rect class="pbox dns" x="760" y="130" width="180" height="62"/>
+        <text class="ptag dns" x="850" y="148" text-anchor="middle">RESOLVE</text>
+        <text class="ptitle"   x="850" y="166" text-anchor="middle">mydapp.ton → bag</text>
+        <text class="psub"     x="850" y="182" text-anchor="middle">via TON Proxy</text>
+
+        <!-- Visitor -->
+        <rect class="pbox user" x="985" y="90" width="100" height="120"/>
+        <text class="ptag user" x="1035" y="112" text-anchor="middle">VISITOR</text>
+        <text class="ptitle"    x="1035" y="138" text-anchor="middle">Browser</text>
+        <text class="psub"      x="1035" y="156" text-anchor="middle">Tonkeeper</text>
+        <text class="psub"      x="1035" y="172" text-anchor="middle">tonweb</text>
+        <text class="psub"      x="1035" y="188" text-anchor="middle">.ton ext.</text>
+
+        <!-- Arrows: input → cli/daemon -->
+        <path class="parrow" d="M 140 158 C 170 158, 175 92, 200 92"/>
+        <path class="parrow" d="M 140 158 L 200 168"/>
+
+        <!-- cli → daemon -->
+        <path class="parrow" d="M 305 120 L 305 140"/>
+
+        <!-- cli → ton connect (when --domain or --provider) -->
+        <path class="parrow opt" d="M 305 200 L 305 220"/>
+
+        <!-- daemon → storage -->
+        <path class="parrow" d="M 410 168 C 440 168, 450 80, 475 80"/>
+
+        <!-- ton connect → DNS / provider -->
+        <path class="parrow" d="M 410 248 C 440 248, 450 162, 475 162"/>
+        <path class="parrow" d="M 410 248 L 475 248"/>
+
+        <!-- storage → gateway -->
+        <path class="parrow" d="M 695 80 L 760 80"/>
+        <!-- DNS → resolve -->
+        <path class="parrow" d="M 695 162 L 760 162"/>
+        <!-- provider keeps storage alive (loop back) -->
+        <path class="parrow opt" d="M 585 210 C 585 130, 605 115, 600 112" />
+
+        <!-- gateway/resolve → visitor -->
+        <path class="parrow" d="M 940 80 C 970 80, 980 120, 985 120"/>
+        <path class="parrow" d="M 940 162 L 985 162"/>
+      </svg>
+    </div>
+    <div class="note">
+      Solid lines = always run. Dashed = activated by <code>--domain</code> / <code>--provider</code>. The visitor never talks to a centralized server — only TON gateways or a <code>.ton</code> resolver. Once a bag is signed by a provider, the operator&rsquo;s laptop can go offline.
+    </div>
+  </div>
+
+  <!-- Roadmap detail -->
+  <div class="card span-12">
+    <h2>Roadmap <span class="chip blue">v0.1 → v0.5</span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:60px">Ver</th>
+          <th>Theme</th>
+          <th style="width:140px">Status</th>
+          <th style="width:140px">Window</th>
+          <th>Headline capability</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>v0.1</strong></td>
+          <td>TON Storage upload</td>
+          <td><span class="chip green">Shipped</span></td>
+          <td>Mar 2026</td>
+          <td>One-shot bag upload · auto-detected build dir · auto daemon install</td>
+        </tr>
+        <tr>
+          <td><strong>v0.2</strong></td>
+          <td><code>.ton</code> DNS registration</td>
+          <td><span class="chip green">Shipped</span></td>
+          <td>Apr 2026</td>
+          <td>TON Connect deeplink + QR · TONAPI ownership check · on-chain DNS poll</td>
+        </tr>
+        <tr>
+          <td><strong>v0.3</strong></td>
+          <td>Polish: CI · Win · watch</td>
+          <td><span class="chip green">Shipped</span></td>
+          <td>Apr 2026</td>
+          <td>GitHub Actions template · <code>--ci-mode</code> · <code>--json-output</code> · Windows · <code>--watch</code></td>
+        </tr>
+        <tr>
+          <td><strong>v0.4</strong></td>
+          <td>Storage provider contract</td>
+          <td><span class="chip green">Shipped</span></td>
+          <td>May 2026</td>
+          <td><code>--provider</code> auto-selects cheapest · BOC-based contract · 24/7 hosting</td>
+        </tr>
+        <tr>
+          <td><strong>v0.5</strong></td>
+          <td>Hardening &amp; visibility</td>
+          <td><span class="chip blue">Next</span></td>
+          <td>May → Jun 2026</td>
+          <td>Propagation monitor · multi-provider · daemon upgrade unlocking <code>--max-span</code></td>
+        </tr>
+        <tr>
+          <td><strong>v0.6+</strong></td>
+          <td>Distribution</td>
+          <td><span class="chip purple">Soon</span></td>
+          <td>Jun &nbsp;2026 +</td>
+          <td>Public launch (Gateway 2026) · template gallery · provider directory UI</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Progress bars -->
+  <div class="card span-6">
+    <h2>Capability completeness</h2>
+    <div class="barchart">
+      <div class="bar-row">
+        <span class="bar-label">Storage upload</span>
+        <span class="bar-track"><span class="bar-fill done" style="width: 100%"></span></span>
+        <span class="bar-value">100%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label"><code>.ton</code> DNS registration</span>
+        <span class="bar-track"><span class="bar-fill done" style="width: 100%"></span></span>
+        <span class="bar-value">100%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">CI · Windows · Watch</span>
+        <span class="bar-track"><span class="bar-fill done" style="width: 100%"></span></span>
+        <span class="bar-value">100%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Provider contract (signing)</span>
+        <span class="bar-track"><span class="bar-fill done" style="width: 100%"></span></span>
+        <span class="bar-value">100%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Provider contract (full term)</span>
+        <span class="bar-track"><span class="bar-fill partial" style="width: 35%"></span></span>
+        <span class="bar-value">35%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Propagation visibility</span>
+        <span class="bar-track"><span class="bar-fill partial" style="width: 25%"></span></span>
+        <span class="bar-value">25%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Multi-provider redundancy</span>
+        <span class="bar-track"><span class="bar-fill pending" style="width: 100%"></span></span>
+        <span class="bar-value">0%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Public launch readiness</span>
+        <span class="bar-track"><span class="bar-fill partial" style="width: 60%"></span></span>
+        <span class="bar-value">60%</span>
+      </div>
+    </div>
+    <div class="note">
+      &ldquo;Completeness&rdquo; is judged against the v1.0 vision (a one-command, fully sovereign deploy that survives the operator&rsquo;s laptop being off). The two yellow bars are what blocks <strong>real-world</strong> 24/7 hosting.
+    </div>
+  </div>
+
+  <!-- Open issues -->
+  <div class="card span-6">
+    <h2>Known issues &amp; tracking <span class="pill">v0.5 inbox</span></h2>
+    <div class="issues">
+      <div class="issue crit">
+        <div class="iname">daemon <code>--max-span</code> uint8 bug</div>
+        <div class="idesc">
+          <code>--rate --max-span</code> only accepts 0–255 — even <code>200</code> works but <code>256</code> fails. Contract term pinned to 200s (~3 min) until the daemon ships a fix.
+        </div>
+        <div class="imeta">blocks: real-term hosting · src: <code>provider.ts</code></div>
+      </div>
+      <div class="issue crit">
+        <div class="iname">P2P timeout on <code>--provider &lt;addr&gt;</code></div>
+        <div class="idesc">
+          ADNL handshake to the provider often fails on mainnet. Workaround uses manual <code>--rate</code> + <code>--max-span 200</code>, sidestepping the P2P path.
+        </div>
+        <div class="imeta">blocks: per-provider rate negotiation</div>
+      </div>
+      <div class="issue idea">
+        <div class="iname">Public gateway propagation UX</div>
+        <div class="idesc">
+          ton.run returns 404 until the bag propagates. We show a warning, but no progress signal — needs a poll loop with peer-count + first-seen indicators.
+        </div>
+        <div class="imeta">target: v0.5 · pairs with <code>--watch</code></div>
+      </div>
+      <div class="issue idea">
+        <div class="iname">Multi-provider contract</div>
+        <div class="idesc">
+          Single-provider hosting is a SPOF. Sign N contracts in parallel for redundancy, surface aggregate health.
+        </div>
+        <div class="imeta">target: v0.5 / v0.6</div>
+      </div>
+      <div class="issue minor">
+        <div class="iname">Testnet provider gap</div>
+        <div class="idesc">
+          Testnet has 171 registered providers but zero live ADNL nodes. Already gated with an early-exit warning when <code>--testnet</code> + <code>--provider</code> are combined.
+        </div>
+        <div class="imeta">status: <span class="chip green">guarded</span></div>
+      </div>
+      <div class="issue minor">
+        <div class="iname">Windows Defender warning on first run</div>
+        <div class="idesc">
+          Initial <code>storage-daemon.exe</code> download triggers AV warnings. Documented in README; consider Authenticode signing later.
+        </div>
+        <div class="imeta">target: post v1.0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Next steps verdicts -->
+  <div class="card span-12">
+    <h2>What to do next <span class="chip blue">three lanes for v0.5</span></h2>
+    <div class="verdicts">
+      <div class="verdict-card ship">
+        <div class="vname">Lane A · Ship visibility</div>
+        <ul>
+          <li>Propagation monitor — peer count, first-seen latency, gateway health</li>
+          <li>Replace 60s verify timeout with progress UI (CLI + JSON for CI)</li>
+          <li>Add <code>doctor</code> subcommand (daemon · TONAPI · provider list)</li>
+          <li><strong>Why:</strong> the biggest support question is &ldquo;why do I get 404?&rdquo;</li>
+        </ul>
+      </div>
+      <div class="verdict-card harden">
+        <div class="vname">Lane B · Harden hosting</div>
+        <ul>
+          <li>Track upstream daemon &mdash; remove <code>max-span 200</code> pin once fixed</li>
+          <li>Multi-provider contracts (sign N, monitor M-of-N healthy)</li>
+          <li>Stabilize <code>--provider &lt;addr&gt;</code> path with retries + backoff</li>
+          <li><strong>Why:</strong> 24/7 hosting is the load-bearing claim of the project</li>
+        </ul>
+      </div>
+      <div class="verdict-card grow">
+        <div class="vname">Lane C · Grow distribution</div>
+        <ul>
+          <li>Land at <strong>Gateway 2026 (May)</strong> with one shipped DeFi UI demo</li>
+          <li>Template gallery — Vite · Next.js export · Astro · SvelteKit</li>
+          <li><code>npm publish</code> + GitHub release artifacts cleaned up</li>
+          <li><strong>Why:</strong> &ldquo;direct competitors: zero&rdquo; only matters if anyone knows</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note">
+      Recommended sequence: <strong>A → B → C</strong>. Visibility first (cheap, derisks support load), hosting hardening second (depends on daemon upstream), distribution last (only useful once the previous two are honest).
+    </div>
+  </div>
+
+  <!-- CLI options -->
+  <div class="card span-12">
+    <h2>CLI surface <span class="pill">v0.4.0</span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:240px">Flag</th>
+          <th>Purpose</th>
+          <th style="width:100px">Since</th>
+          <th style="width:120px">State</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>[build-dir]</code></td><td>Build output (auto-detected: <code>dist · build · out · public</code>)</td><td>v0.1</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--testnet</code></td><td>Use TON testnet (no real TON needed)</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--desc &lt;text&gt;</code></td><td>Bag description (defaults to dir name)</td><td>v0.1</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--domain &lt;dom&gt;</code></td><td>Register bag under a <code>.ton</code> domain</td><td>v0.2</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--provider [addr]</code></td><td>Sign storage provider contract for 24/7 hosting (no addr → cheapest)</td><td>v0.4</td><td><span class="chip yellow">Limited (200s)</span></td></tr>
+        <tr><td><code>--ci-mode</code></td><td>Disable spinners for CI logs</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--json-output</code></td><td>Emit JSON instead of human-readable</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--skip-verify</code></td><td>Skip 60s post-upload verify</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--watch</code></td><td>Watch build dir, auto-redeploy, keep daemon alive</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--debounce &lt;ms&gt;</code></td><td>Watch debounce delay (default <code>2000</code>)</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      Source: <code>src/cli.ts</code>. Three internal subcommands (<code>cli/deploy.ts</code>, <code>cli/dns.ts</code>, <code>cli/provider.ts</code>, <code>cli/watch.ts</code>) compose into the one-shot run.
+    </div>
+  </div>
+
+  <!-- Source layout -->
+  <div class="card span-6">
+    <h2>Source layout</h2>
+    <table>
+      <thead>
+        <tr><th style="width:240px">Path</th><th>Role</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>src/cli.ts</code></td><td>Commander entry · routes flags into sub-runners</td></tr>
+        <tr><td><code>src/cli/deploy.ts</code></td><td>Run daemon, upload, verify, format result</td></tr>
+        <tr><td><code>src/cli/dns.ts</code></td><td><code>--domain</code> orchestration (TON Connect)</td></tr>
+        <tr><td><code>src/cli/provider.ts</code></td><td><code>--provider</code> orchestration (BOC + poll)</td></tr>
+        <tr><td><code>src/cli/watch.ts</code></td><td>Chokidar loop, debounced redeploy</td></tr>
+        <tr><td><code>src/daemon/installer.ts</code></td><td>Auto DL <code>storage-daemon</code> per OS / arch</td></tr>
+        <tr><td><code>src/daemon/process.ts</code></td><td>Spawn / lifecycle / IPC</td></tr>
+        <tr><td><code>src/dns.ts</code></td><td>TONAPI · resolver · TON Connect deeplink</td></tr>
+        <tr><td><code>src/provider.ts</code></td><td>Provider list · cheapest pick · BOC build</td></tr>
+        <tr><td><code>src/verify.ts</code></td><td>Bag accessibility verification (TONAPI)</td></tr>
+        <tr><td><code>src/upload.ts</code></td><td>Daemon upload protocol</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Threat model / boundaries -->
+  <div class="card span-6">
+    <h2>What this does &amp; doesn&rsquo;t solve</h2>
+    <table>
+      <thead>
+        <tr><th>Threat</th><th style="width:130px">Sovereign?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Hosting provider takedown (S3, Vercel)</td><td><span class="chip green">Yes</span></td></tr>
+        <tr><td>DNS registrar seizure</td><td><span class="chip green">Yes (.ton)</span></td></tr>
+        <tr><td>OFAC frontend ban</td><td><span class="chip green">Yes</span></td></tr>
+        <tr><td>ISP-level DNS resolver block</td><td><span class="chip yellow">Partial — needs TON Proxy / browser ext</span></td></tr>
+        <tr><td>Network-level (BGP) blocking</td><td><span class="chip red">No</span></td></tr>
+        <tr><td>Smart contract bug / exploit</td><td><span class="chip red">No (orthogonal)</span></td></tr>
+        <tr><td>Operator key compromise (DNS owner)</td><td><span class="chip red">No (KYC your wallet)</span></td></tr>
+        <tr><td>Storage provider griefing (single)</td><td><span class="chip yellow">Mitigate via multi-provider (v0.5)</span></td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      The promise is &ldquo;your <strong>frontend delivery layer</strong> can&rsquo;t be silenced by a centralized intermediary.&rdquo; Smart-contract security and key custody remain the user&rsquo;s problem.
+    </div>
+  </div>
+
+  <!-- North star + outcomes -->
+  <div class="phase-divider">
+    <h3>North-star outcomes</h3>
+    <span class="badge">v1.0 readiness</span>
+  </div>
+
+  <div class="card span-12">
+    <h2>What &ldquo;done&rdquo; looks like for v1.0</h2>
+    <div class="concept-outcomes">
+      <div class="outcome-stripe tg">
+        <span class="icon">💎</span>
+        <div>
+          <span class="label">One-command sovereignty</span>
+          <span class="desc"><code>npx ton-sovereign-deploy ./dist/</code> ships a real DeFi UI to <code>.ton</code> with multi-provider hosting and zero manual provider negotiation. Operator&rsquo;s laptop can be off &mdash; the site stays up.</span>
+        </div>
+      </div>
+      <div class="outcome-stripe purple">
+        <span class="icon">🔍</span>
+        <div>
+          <span class="label">Honest visibility</span>
+          <span class="desc">Propagation, gateway health, and contract aliveness are visible from the CLI &mdash; no support guessing. JSON output is rich enough for a CI status badge.</span>
+        </div>
+      </div>
+      <div class="outcome-stripe green">
+        <span class="icon">📣</span>
+        <div>
+          <span class="label">Public proof</span>
+          <span class="desc">At least one DeFi protocol UI is shipped via the kit and surviving the &ldquo;turn off the laptop&rdquo; test. Demoed at Gateway 2026. Repo has &gt; 100 stars from real builders, not airdrop hunters.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quotes / framing -->
+  <div class="card span-6">
+    <h2>The framing</h2>
+    <blockquote class="q">
+      The contracts are still alive. It&rsquo;s the websites that are dying.
+      <cite>— Why this exists</cite>
+    </blockquote>
+    <blockquote class="q">
+      The frontend can&rsquo;t be taken down if there&rsquo;s no server to take down.
+      <cite>— Sovereign Deploy Kit, in one line</cite>
+    </blockquote>
+    <blockquote class="q">
+      Storage, DNS, and providers were already there in TON. The shape we ship is the missing <code>npx</code>.
+      <cite>— Design intent</cite>
+    </blockquote>
+  </div>
+
+  <!-- This week's loop -->
+  <div class="card span-6">
+    <h2>Resuming today <span class="chip blue">2026-05-10</span></h2>
+    <ul class="check">
+      <li>Re-read <code>docs/provider-contract.md</code> — the v0.4 known-issues block is the spec for v0.5 lane B</li>
+      <li>Open a v0.5 milestone on GitHub mirroring the three lanes (A · B · C)</li>
+      <li class="pending">Lane A · cut <code>doctor</code> subcommand scope (daemon + TONAPI + providers)</li>
+      <li class="pending">Lane A · design propagation-monitor JSON shape (compatible with <code>--json-output</code>)</li>
+      <li class="pending">Lane B · file upstream issue / track <code>--max-span</code> uint8 fix in TON daemon</li>
+      <li class="pending">Lane C · prepare a single end-to-end demo dApp for Gateway 2026</li>
+      <li>Untracked: <code>.DS_Store</code> at repo root — add to <code>.gitignore</code> if not already</li>
+    </ul>
+    <div class="note">
+      Five days of low-risk, parallelizable work — <strong>doctor + propagation monitor</strong> is the lane A wedge. None of these blocks public launch but each one materially improves the &ldquo;why didn&rsquo;t this work?&rdquo; experience.
+    </div>
+  </div>
+
+</section>
+
+<!-- =================== Footer =================== -->
+<footer>
+  <div class="links">
+    <a href="../README.md">README</a>
+    <a href="./provider-contract.md">provider-contract</a>
+    <a href="https://github.com/Masashi-Ono0611/sovereign-deploy-kit">GitHub</a>
+    <a href="https://ton.org/docs/develop/dapps/tutorials/storage-provider">TON Storage</a>
+    <a href="https://ton.org/docs/develop/dns">TON DNS</a>
+    <a href="https://tonconnect.network">TON Connect</a>
+  </div>
+  <div>
+    Generated 2026-05-10 from <code>v0.4.0</code> (<code>main</code> @ <code>8857ba4</code>). Layout takes design cues from Telegram night mode and the TON brand palette (<code>#0098EA</code>). Light mode follows automatically via <code>prefers-color-scheme</code>.
+  </div>
+</footer>
+
+</div>
+</body>
+</html>
