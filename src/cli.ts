@@ -52,7 +52,7 @@ program
   // and pipes the build dir through a local Node http server. The ADNL
   // hex is fed into the DNS site record automatically. Mutually exclusive
   // with --site-adnl. Requires public IP / port-forwarded UDP (doctor
-  // warns; v0.7 reduced scope deferred NAT traversal to v0.8).
+  // warns; v0.7 reduced scope deferred NAT traversal to v0.9).
   .option('--site-auto', 'Auto-spawn rldp-http-proxy with a freshly minted ADNL identity (v0.7+, tonutils backend, public IP needed)')
   .option('--site-public-ip <ip>', 'Override public IPv4 published in the ADNL DHT entry (v0.7+). Default: api.ipify.org probe.')
   .option('--site-udp-port <port>', 'Override UDP port for rldp-http-proxy (v0.7+). Default: free port in 17600-17699.', (v) => parseInt(v, 10))

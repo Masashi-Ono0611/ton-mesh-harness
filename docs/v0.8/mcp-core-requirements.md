@@ -1,11 +1,11 @@
-# v0.9 core requirements — MCP server contract
+# v0.8 core requirements — MCP server contract
 
-**Scope:** what 0.9.0 actually ships. Everything else from
+**Scope:** what 0.8.0 actually ships. Everything else from
 `agent-native-pivot.md` (Agentic Wallet, daemon detached, discoverability,
 typed-error refactor, registry submission, skill markdown) is deferred to
-0.9.x or later.
+0.8.x or later.
 
-The single deliverable of 0.9.0 is: **an MCP server that an AI agent can
+The single deliverable of 0.8.0 is: **an MCP server that an AI agent can
 connect to and invoke a working `deploy` tool against, with a programmatic
 SDK underneath that has no console IO.**
 
@@ -27,7 +27,7 @@ SDK underneath that has no console IO.**
 - npm keywords / README rewrite / `mcp.ton.org` registry submission.
 - Skill markdown for `ton-org/skills`.
 - Additional tools (`sovereign_status`, `sovereign_redeploy`,
-  `sovereign_stop`, etc.) — add in 0.9.x once the two-tool contract is
+  `sovereign_stop`, etc.) — add in 0.8.x once the two-tool contract is
   validated.
 - Repo split / monorepo.
 
@@ -72,7 +72,7 @@ SDK underneath that has no console IO.**
 | `dashboard_url` | string | local dashboard while daemon alive |
 | `daemon_pid` | number \| null | non-null only when `keep_alive=true` |
 | `seed_status` | `"seeding" \| "stopped"` | |
-| `next_actions` | `{ description: string }[]` | hints (e.g. "set up detached daemon" — informational only in v0.9.0) |
+| `next_actions` | `{ description: string }[]` | hints (e.g. "set up detached daemon" — informational only in v0.8.0) |
 
 **Behavior**:
 - Calls the existing `runDeployTonutils()` / `runDeploy()` path
@@ -80,7 +80,7 @@ SDK underneath that has no console IO.**
 - On `keep_alive=false`, the daemon is killed before the tool returns.
 - On `keep_alive=true`, the daemon survives the tool call. The MCP
   server tracks the spawned daemon and kills it on its own shutdown
-  (so an agent that disconnects doesn't leak a daemon). v0.9.x will
+  (so an agent that disconnects doesn't leak a daemon). v0.8.x will
   add a `sovereign_stop` tool for explicit control.
 
 #### `sovereign_check_env`
@@ -183,7 +183,7 @@ SDK underneath that has no console IO.**
 
 ---
 
-## Acceptance criteria for 0.9.0
+## Acceptance criteria for 0.8.0
 
 1. `npx ton-sovereign-mcp` boots and responds to MCP `initialize`.
 2. `tools/list` returns exactly two tools, both with valid JSON
@@ -208,10 +208,10 @@ spec-level questions:
 
 1. **`keep_alive=true` daemon ownership**: the MCP server holds the
    daemon process handle. If the agent disconnects (stdin closes),
-   the server kills the daemon. v0.9.x will add `sovereign_stop` and
+   the server kills the daemon. v0.8.x will add `sovereign_stop` and
    detached mode for true persistence.
-2. **Concurrent calls**: 0.9.0 serialises tool calls (one deploy at a
+2. **Concurrent calls**: 0.8.0 serialises tool calls (one deploy at a
    time). Concurrent calls return `ERR_BUSY` (added to the code list
-   if needed). Multi-deploy is a 0.9.x topic.
+   if needed). Multi-deploy is a 0.8.x topic.
 3. **Daemon backend default for MCP calls**: same as CLI default
    (`tonutils`), but agents can override via input.

@@ -47,7 +47,11 @@ your build directory end-to-end without manual VPS setup.
 - `findFreeUdpPort` now exported from `src/daemon/tonutils-process.ts`
   for reuse by the new proxy module.
 
-### Out of scope (deferred to v0.8)
+### Out of scope (deferred to v0.9)
+
+> **Renumbered 2026-05-10:** originally targeted v0.8. The v0.8 slot is now
+> the agent-surface track (formerly drafted as v0.9; see
+> `docs/v0.8/concept-update-2026-05-10.md`). C2 / C3 moved one slot down.
 
 - **C2 NAT traversal via tunnel** — TON Foundation's `rldp-http-proxy`
   is C++ and doesn't import `adnl-tunnel`; xssnick's tunnel only

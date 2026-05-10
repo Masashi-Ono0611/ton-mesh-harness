@@ -169,14 +169,15 @@ npx ton-sovereign-deploy ./build/
 - **README / dashboard を「self-host first」に整理** ← 本コミットで対応中
 - **Payment Network 抽象化（v0.7 以降）** ← tunnel rental / future provider rental の自動マイクロペイメント
 
-**v0.9 構想** — **agent-native pivot**: CLI 主導から、AI エージェントが自律的に発見・呼び出す MCP server + skill へ。`mcp.ton.org` / Agentic Wallets / `ton-org/skills` の整備が直近1ヶ月で揃ったタイミングを取りに行く設計。
-- 全体ビジョン: [`docs/v0.9/agent-native-pivot.md`](docs/v0.9/agent-native-pivot.md)
-- 0.9.0 が出荷する1点に絞った要件: [`docs/v0.9/mcp-core-requirements.md`](docs/v0.9/mcp-core-requirements.md)
+**v0.8 構想** — **agent-surface track** (CLI 主導と並列に開く agent 向け表面): AI エージェントが自律的に発見・呼び出す MCP server + skill。multi-channel discoverability (npm keywords / README Agent quickstart / in-repo skill / `.well-known/mcp.json`) を moat として `@ton/mcp` と compose する設計。
+- 全体ビジョン: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md)
+- 0.8.0 が出荷する1点に絞った要件: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md)
+- 2026-05-10 のコンセプト更新ログ: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md)
 - エコシステム動向の根拠: [`docs/v0.6/ecosystem-watch-2026-05.md`](docs/v0.6/ecosystem-watch-2026-05.md)
 
-**リリース:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
+**v0.9 reserve** — v0.7 から繰り延べた C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network 実クライアント。詳細: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) の C2 / C3 セクション (もとは v0.8 parked、agent-surface が v0.8 を取った 2026-05-10 の rename で v0.9 に降格)。
 
-**最初の公開ターゲット:** Gateway 2026 (2026年5月)
+**リリース:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 
 ---
 
