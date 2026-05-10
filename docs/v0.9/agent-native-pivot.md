@@ -270,7 +270,7 @@ Recommendation: (a). Short, unique enough, no clash with TON's own
 - P4 README + npm keywords land.
 - P3 + P5 may slip into 0.9.x — they're refinements, not gates.
 
-## Out-of-scope for v0.9, parked for v1.0
+## Out-of-scope for v0.9, parked for v0.8
 
 - Multi-deploy orchestration (one agent deploying many sites).
 - Remote daemon SaaS / managed hosting.
