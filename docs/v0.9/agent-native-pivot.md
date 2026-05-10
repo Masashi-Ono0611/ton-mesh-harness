@@ -1,4 +1,4 @@
-# v0.7 plan — agent-native pivot
+# v0.9 plan — agent-native pivot
 
 **Drafted:** 2026-05-10
 **Status:** Plan only. v0.6 must finish (B3.x) before any of this lands.
@@ -37,7 +37,7 @@ The kit assumes a human:
 - Approves a TonConnect QR in their wallet app
 - Keeps the daemon alive on their machine
 
-### Target (v0.7) — agent-native
+### Target (v0.9) — agent-native
 
 User asks Claude / Cursor / a custom agent:
 
@@ -62,7 +62,7 @@ The agent:
    liveness state, next-step suggestions.
 
 **The CLI stays.** Power users and CI keep using it. But the new
-primary user is an agent, and every kit decision after v0.7 is judged
+primary user is an agent, and every kit decision after v0.9 is judged
 against "does this make agent flows clearer / less error-prone?"
 
 ## Architecture: what has to change
@@ -72,7 +72,7 @@ The kit already has a partly-typed programmatic surface
 entry layer is CLI-shaped. We need to invert the layering:
 
 ```
-Today                       v0.7
+Today                       v0.9
 ─────                       ────
 cli.ts (commander)          packages/sdk/        ← pure programmatic core
   └── runDeploy*()            ├── deploy()
@@ -116,7 +116,7 @@ Refactor `cli.ts` into a thin wrapper around a new `src/sdk/` module.
   events to terminal.
 - All existing tests still pass. Add SDK unit tests.
 
-**Ships:** semver-minor (0.7.0). CLI behaviour unchanged.
+**Ships:** semver-minor (0.9.0). CLI behaviour unchanged.
 
 ### P1 — MCP server (~5 days)
 New package surface (still single repo for now): `src/mcp/`.
@@ -136,7 +136,7 @@ New package surface (still single repo for now): `src/mcp/`.
 - `bin: { ton-sovereign-mcp: ./dist/mcp.js }` so users run
   `npx ton-sovereign-mcp` from any agent that supports stdio MCP.
 
-**Ships:** 0.7.0 alongside SDK.
+**Ships:** 0.9.0 alongside SDK.
 
 ### P2 — Skill package (~2 days)
 A markdown skill following the Anthropic Claude Code skill format and
@@ -158,7 +158,7 @@ Sections required:
 PR this skill to `ton-org/skills`. Land local copy in repo regardless
 so users not going through that path still get it via npm.
 
-**Ships:** 0.7.0 in repo. PR submission separate timeline.
+**Ships:** 0.9.0 in repo. PR submission separate timeline.
 
 ### P3 — Agent-friendly signing & daemon lifecycle (~5-7 days)
 The two hard problems agents hit. Decide before P3 starts (open
@@ -176,10 +176,10 @@ questions section below). Provisional plan:
   - `detached`: daemon written as a launchd / systemd unit so it
     survives reboot. Kit ships templates.
   - `remote`: kit can SSH to a user-provided VPS, install daemon,
-    register the public IP. v0.7 ships `remote` as opt-in only —
+    register the public IP. v0.9 ships `remote` as opt-in only —
     no SaaS, no "we manage it for you".
 
-**Ships:** 0.7.x patch releases, may slip past 0.7.0.
+**Ships:** 0.9.x patch releases, may slip past 0.9.0.
 
 ### P4 — Discoverability (~2 days)
 Make agents find this without the user spelling out the package name.
@@ -195,7 +195,7 @@ Make agents find this without the user spelling out the package name.
   when running, so agents querying `localhost:<port>/.well-known/`
   find a self-description.
 
-**Ships:** 0.7.0 (keywords + README), 0.7.x for the rest.
+**Ships:** 0.9.0 (keywords + README), 0.9.x for the rest.
 
 ### P5 — Observability for agents (~2 days)
 Agents need machine-readable state.
@@ -207,7 +207,7 @@ Agents need machine-readable state.
 - Errors include `code`, `severity` (`fatal` | `recoverable`),
   `next_action_hint` (string an agent can show the user).
 
-**Ships:** 0.7.x.
+**Ships:** 0.9.x.
 
 ## Hard problems / open questions
 
@@ -215,7 +215,7 @@ These need a user decision before P3 starts. Defaults are my recommendation.
 
 ### Q1 — Signing model
 - **(a) Agentic Wallet first, TonConnect fallback** ← recommended
-- (b) TonConnect-only (delegated session); skip Agentic Wallet until v0.8
+- (b) TonConnect-only (delegated session); skip Agentic Wallet until v1.0
 - (c) Both, equal-status, user picks per call
 
 Recommendation: (a). Agentic Wallets are the announced TON-native
@@ -223,11 +223,11 @@ path for autonomous agents and the standard is fresh — early adopters
 shape the spec. TonConnect stays as the fallback so nothing breaks.
 
 ### Q2 — Daemon lifecycle for agent flows
-- **(a) Local + detached, no remote** ← recommended for v0.7.0
+- **(a) Local + detached, no remote** ← recommended for v0.9.0
 - (b) Local + detached + opt-in remote (kit SSHes to user-provided VPS)
 - (c) Local + detached + managed remote (we run a SaaS hosting service)
 
-Recommendation: (a) for v0.7.0, (b) for v0.7.x once we've seen agent
+Recommendation: (a) for v0.9.0, (b) for v0.9.x once we've seen agent
 usage. (c) is a different business model and needs its own decision.
 
 ### Q3 — Repo layout
@@ -250,7 +250,7 @@ match. Options:
 Recommendation: (a). Short, unique enough, no clash with TON's own
 `ton_*` namespace which `mcp.ton.org` will likely use.
 
-## What v0.7 explicitly does NOT do
+## What v0.9 explicitly does NOT do
 
 - ❌ No SaaS hosting plane. Daemon stays on infra the user controls.
 - ❌ No telemetry / analytics. Agent calls remain private.
@@ -259,7 +259,7 @@ Recommendation: (a). Short, unique enough, no clash with TON's own
 - ❌ No coupling to a specific agent runtime (Claude Code / Cursor /
   OpenAI Agents). MCP is the only contract.
 
-## Decision criteria for shipping 0.7.0
+## Decision criteria for shipping 0.9.0
 
 - P0 SDK refactor passes all v0.6 tests.
 - P1 MCP server boots and a Claude Code agent can deploy a sample
@@ -268,9 +268,9 @@ Recommendation: (a). Short, unique enough, no clash with TON's own
 - P2 skill is in the repo; PR to `ton-org/skills` is open (not
   necessarily merged).
 - P4 README + npm keywords land.
-- P3 + P5 may slip into 0.7.x — they're refinements, not gates.
+- P3 + P5 may slip into 0.9.x — they're refinements, not gates.
 
-## Out-of-scope for v0.7, parked for v0.8
+## Out-of-scope for v0.9, parked for v1.0
 
 - Multi-deploy orchestration (one agent deploying many sites).
 - Remote daemon SaaS / managed hosting.
