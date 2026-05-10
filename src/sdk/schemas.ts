@@ -109,8 +109,14 @@ export const DeployResultSchema = z.strictObject({
   bag_size_bytes: z.number().int().nonnegative(),
   /** Null if `domain` was null on input. */
   dns_tx_hash: z.string().nullable(),
-  /** Local dashboard URL while the daemon is alive. */
-  dashboard_url: z.string(),
+  /**
+   * The tonutils-storage daemon's local HTTP API base (e.g.
+   * `http://127.0.0.1:7100`). Renamed from `dashboard_url` in [S3] review
+   * — the daemon does not serve a dashboard HTML page; it exposes a JSON
+   * API. The kit's actual dashboard is a separate static file the CLI
+   * may open in a browser.
+   */
+  daemon_api_url: z.string(),
   /** Non-null only when `keep_alive=true`. */
   daemon_pid: z.number().int().nullable(),
   seed_status: z.enum(['seeding', 'stopped']),

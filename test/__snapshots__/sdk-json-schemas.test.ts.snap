@@ -260,6 +260,9 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
           "minimum": 0,
           "type": "integer",
         },
+        "daemon_api_url": {
+          "type": "string",
+        },
         "daemon_pid": {
           "anyOf": [
             {
@@ -269,9 +272,6 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
               "type": "null",
             },
           ],
-        },
-        "dashboard_url": {
-          "type": "string",
         },
         "dns_tx_hash": {
           "type": [
@@ -307,7 +307,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
         "bag_id",
         "bag_size_bytes",
         "dns_tx_hash",
-        "dashboard_url",
+        "daemon_api_url",
         "daemon_pid",
         "seed_status",
       ],
@@ -458,6 +458,9 @@ exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, Dep
                   "minimum": 0,
                   "type": "integer",
                 },
+                "daemon_api_url": {
+                  "type": "string",
+                },
                 "daemon_pid": {
                   "anyOf": [
                     {
@@ -467,9 +470,6 @@ exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, Dep
                       "type": "null",
                     },
                   ],
-                },
-                "dashboard_url": {
-                  "type": "string",
                 },
                 "dns_tx_hash": {
                   "type": [
@@ -505,7 +505,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, Dep
                 "bag_id",
                 "bag_size_bytes",
                 "dns_tx_hash",
-                "dashboard_url",
+                "daemon_api_url",
                 "daemon_pid",
                 "seed_status",
               ],

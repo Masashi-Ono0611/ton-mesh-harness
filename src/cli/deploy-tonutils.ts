@@ -13,13 +13,12 @@ import type { CliOptions } from '../types/cli'
 import { createSpinnerFactory } from '../utils/spinner'
 import { detectBuildDir } from '../detect'
 import {
-  startTonutilsDaemon,
   tonutilsCreate,
   type TonutilsHandle,
 } from '../daemon/tonutils-process'
 import { buildUrls, printResult, exportAsJson, type DeployResult } from '../output'
 import { watchBuildDir } from '../watch'
-import { deploy as sdkDeploy, SdkError } from '../sdk/deploy'
+import { deploy as sdkDeploy } from '../sdk/deploy'
 import type { DeployEvent, DeployResult as SdkDeployResult } from '../sdk/schemas'
 
 export interface TonutilsDeployReturn {
@@ -38,10 +37,6 @@ export interface ResolvedTunnel {
   nodeCount: number
 }
 
-// expandTilde + resolveTunnelConfig kept here as PUBLIC HELPERS — the
-// existing unit tests exercise them directly. The SDK has its own copy
-// of validateTunnelConfig() that maps failures to ERR_INVALID_INPUT;
-// these CLI-side variants throw plain Errors which cli.ts surfaces.
 function expandTilde(p: string): string {
   if (p === '~') return os.homedir()
   if (p.startsWith('~/')) return path.join(os.homedir(), p.slice(2))
@@ -80,31 +75,67 @@ export function resolveTunnelConfig(rawPath: string): ResolvedTunnel {
  * CLI adapter — drives the SDK's `deploy()` generator and renders progress
  * events as terminal output. Returns the same shape v0.7 callers expect.
  *
- * Daemon lifecycle: we ask the SDK for `keep_alive: true` so the daemon
- * survives the SDK call. The CLI then either continues into watch mode
- * (which re-uses the daemon) or kills it via the returned `daemon.kill()`.
+ * Daemon ownership: the CLI uses the SDK's internal `onDaemonReady` hook
+ * to capture the real `TonutilsHandle` the daemon-process module created.
+ * That handle (not a synthetic one) is returned so watch-mode re-uploads
+ * can call `tonutilsCreate(handle, ...)` and `handle.kill()` cleans up the
+ * temp db dir as well as the process.
  *
- * Because the SDK now owns spawn / API-wait, we don't get a proper
- * `TonutilsHandle` back — we synthesise one from the SDK result's
- * `dashboard_url` (= daemon.apiUrl) and `daemon_pid`. The synthetic handle
- * satisfies `tonutilsCreate(handle, ...)` (which only reads `apiUrl`)
- * for watch-mode re-uploads.
+ * Cancellation: the CLI installs SIGINT/SIGTERM handlers that call
+ * `controller.abort()` (NOT `process.exit()`). The SDK's abort listener
+ * kills the daemon; the for-await loop unwinds; the CLI then exits with
+ * the appropriate code. A second signal forces immediate exit (escape
+ * hatch if abort cleanup itself hangs).
  */
 export async function runDeployTonutils(
   opts: CliOptions,
   buildDirArg?: string,
   deployOpts: TonutilsDeployOptions = {},
 ): Promise<TonutilsDeployReturn | undefined> {
-  let synthHandle: TonutilsHandle | undefined
+  let capturedDaemon: TonutilsHandle | undefined
+  const controller = new AbortController()
 
-  const cleanup = () => { if (synthHandle) synthHandle.kill() }
-  process.on('SIGINT',  () => { cleanup(); process.exit(130) })
-  process.on('SIGTERM', () => { cleanup(); process.exit(143) })
-  process.on('uncaughtException', (err) => {
-    cleanup()
+  // Track signal handlers so we can remove them when this function returns
+  // — leaked handlers cause the next caller (watch mode, DNS) to fight
+  // with our deploy-phase cleanup.
+  let signalCount = 0
+  const onSignal = (exitCode: number) => () => {
+    signalCount++
+    if (signalCount === 1) {
+      // First signal: graceful abort. The SDK kills the daemon via its
+      // listener; the for-await loop unwinds; the catch below renders
+      // the cancellation; finally-block exits with the right code.
+      controller.abort()
+    } else {
+      // Second signal: hard exit (user is done waiting). Drop the daemon.
+      try {
+        capturedDaemon?.kill()
+      } catch {
+        /* ignore */
+      }
+      process.exit(exitCode)
+    }
+  }
+  const onSigint = onSignal(130)
+  const onSigterm = onSignal(143)
+  const onUncaught = (err: Error) => {
+    try {
+      capturedDaemon?.kill()
+    } catch {
+      /* ignore */
+    }
     console.error(chalk.red('\nUnexpected error:'), err.message)
     process.exit(1)
-  })
+  }
+  process.on('SIGINT', onSigint)
+  process.on('SIGTERM', onSigterm)
+  process.on('uncaughtException', onUncaught)
+
+  const removeSignalHandlers = () => {
+    process.off('SIGINT', onSigint)
+    process.off('SIGTERM', onSigterm)
+    process.off('uncaughtException', onUncaught)
+  }
 
   const isCI = opts.ciMode || process.env.CI === 'true'
   const createSpinner = createSpinnerFactory({ silent: !!opts.jsonOutput, plain: isCI })
@@ -137,10 +168,8 @@ export async function runDeployTonutils(
       console.log()
     }
 
-    // ─── Drive the SDK and render events ────────────────────────────────
     let spinner: ReturnType<typeof createSpinner.start> | undefined
     let sdkResult: SdkDeployResult | undefined
-    let daemonApiUrl: string | undefined
 
     const sdkInput = {
       source_dir: buildDir,
@@ -150,28 +179,25 @@ export async function runDeployTonutils(
     }
 
     try {
-      for await (const ev of sdkDeploy(sdkInput)) {
+      for await (const ev of sdkDeploy(sdkInput, {
+        signal: controller.signal,
+        onDaemonReady: (handle) => {
+          capturedDaemon = handle
+        },
+      })) {
         renderEvent(ev)
         if (ev.phase === 'done') sdkResult = ev.data as SdkDeployResult
       }
     } catch (err) {
-      // Spinner may still be open — close it as failed before rethrowing.
       spinner?.fail(err instanceof Error ? err.message : String(err))
       throw err
     }
 
     if (!sdkResult) throw new Error('SDK deploy() ended without a `done` event.')
-    daemonApiUrl = sdkResult.dashboard_url
-
-    // Synthesise a TonutilsHandle that watch-mode re-uploads can use.
-    // tonutilsCreate / tonutilsDetails only read `apiUrl`; the rest are
-    // stubbed. kill() uses process.kill(pid, 'SIGTERM') against the SDK's
-    // returned daemon_pid.
-    const pid = sdkResult.daemon_pid
-    if (pid === null) {
-      throw new Error('SDK returned daemon_pid: null despite keep_alive: true.')
+    if (!capturedDaemon) {
+      // onDaemonReady never fired — should never happen on the success path.
+      throw new Error('SDK deploy() succeeded but onDaemonReady was never invoked.')
     }
-    synthHandle = makeSyntheticHandle(daemonApiUrl, pid)
 
     const result: DeployResult = {
       bagId: sdkResult.bag_id,
@@ -188,9 +214,8 @@ export async function runDeployTonutils(
       printResult(result)
     }
 
-    return { result, daemon: synthHandle, buildDir, description }
+    return { result, daemon: capturedDaemon, buildDir, description }
 
-    // ─── helpers (closures over `spinner` + `createSpinner`) ────────────
     function renderEvent(ev: DeployEvent): void {
       switch (ev.phase) {
         case 'env_check':
@@ -201,8 +226,8 @@ export async function runDeployTonutils(
           spinner = createSpinner.start('Starting tonutils-storage…')
           break
         case 'bag_creating': {
-          const data = ev.data as { dashboard_url?: string } | undefined
-          const url = data?.dashboard_url ?? ''
+          const data = ev.data as { daemon_api_url?: string } | undefined
+          const url = data?.daemon_api_url ?? ''
           spinner?.succeed(
             `tonutils-storage started${url ? ` at ${url}` : ''}` +
             (tunnel ? ` (tunnelling via ${tunnel.nodeCount} node(s))` : ''),
@@ -226,43 +251,30 @@ export async function runDeployTonutils(
       }
     }
   } catch (err: unknown) {
-    cleanup()
+    // Cleanup daemon if SDK fired onDaemonReady before throwing — and
+    // SDK didn't already kill it (it does on cancellation/error finally).
+    // This is a belt-and-braces guard.
+    try {
+      capturedDaemon?.kill()
+    } catch {
+      /* ignore */
+    }
     const message = err instanceof Error ? err.message : String(err)
     if (opts.jsonOutput) {
-      console.log(JSON.stringify({ error: message, ...(err instanceof SdkError ? { code: err.code } : {}) }, null, 2))
+      // v0.7 JSON-error contract: exactly { "error": message }. SdkError
+      // codes are NOT exposed here — strict CI parsers depend on the
+      // historic shape. Code information is available via the SDK
+      // contract / MCP F5 envelope for programmatic consumers.
+      console.log(JSON.stringify({ error: message }, null, 2))
     } else {
       console.error(chalk.red('\nError:'), message)
     }
     process.exit(1)
-  }
-}
-
-/**
- * Synthetic `TonutilsHandle` for watch-mode re-uploads. The SDK owns the
- * real ChildProcess; the CLI only needs an object that satisfies
- * `tonutilsCreate(handle, ...)` (which reads `apiUrl`) and supports `kill()`.
- *
- * The `process` field is a typed-but-empty stub — watch-mode and DNS code
- * never touch it. If a future caller does, this synth handle should be
- * replaced with an SDK-exposed real handle (see [S3] follow-up TODO).
- */
-function makeSyntheticHandle(apiUrl: string, pid: number): TonutilsHandle {
-  let killed = false
-  return {
-    apiUrl,
-    dbDir: '',  // unused after spawn
-    // process is a typed slot; we never call its methods because the CLI
-    // tracks the kill via pid below.
-    process: { pid } as unknown as TonutilsHandle['process'],
-    kill: () => {
-      if (killed) return
-      killed = true
-      try {
-        process.kill(pid, 'SIGTERM')
-      } catch {
-        /* daemon already gone */
-      }
-    },
+  } finally {
+    // Always release the signal handlers we installed at function entry,
+    // so subsequent phases (DNS / site-host / watch) can install their own
+    // without our handlers firing first and exiting the process early.
+    removeSignalHandlers()
   }
 }
 
@@ -337,8 +349,3 @@ export async function runWatchModeTonutils(
   // Hold the process alive until SIGINT/SIGTERM
   await new Promise<void>(() => { /* never resolves */ })
 }
-
-// Suppress unused-import warning: startTonutilsDaemon is imported because
-// the legacy export shape kept it as part of this module's surface; if
-// no caller uses it, future cleanup can drop the re-export.
-void startTonutilsDaemon

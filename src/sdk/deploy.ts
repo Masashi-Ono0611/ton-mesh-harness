@@ -59,6 +59,19 @@ export interface DeployControl {
    * that phase — DNS write is out of scope for rc2).
    */
   signal?: AbortSignal
+
+  /**
+   * Internal hook — fires once with the live `TonutilsHandle` immediately
+   * after the daemon spawns. The CLI uses this to capture the real handle
+   * for watch-mode re-uploads (so it can call `tonutilsCreate(handle, …)`
+   * later without needing the SDK to re-spawn).
+   *
+   * MCP consumers should NOT use this hook — the MCP server has no
+   * persistent watch-mode that needs the underlying ChildProcess.
+   *
+   * @internal
+   */
+  onDaemonReady?: (handle: TonutilsHandle) => void
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -305,6 +318,18 @@ export async function* deploy(
       throw mapDaemonStartError(err)
     }
 
+    // Internal hook for the CLI to capture the live TonutilsHandle. Fires
+    // exactly once, immediately after daemon spawn. Caller (e.g. the CLI's
+    // watch-mode setup) can keep a reference for re-uploads. MCP server
+    // does not use this hook.
+    if (control.onDaemonReady) {
+      try {
+        control.onDaemonReady(daemon)
+      } catch {
+        /* hook errors are caller-side; ignore so the deploy continues */
+      }
+    }
+
     // Hook AbortSignal → daemon kill, so any in-flight HTTP call we make
     // next will reject. We ALSO checkAborted() in the immediate vicinity;
     // the listener catches abort-during-await cases the polling can't.
@@ -332,14 +357,14 @@ export async function* deploy(
     }
 
     // ─── bag_creating ────────────────────────────────────────────────────
-    // The daemon is up by this point, so we can surface its dashboard URL
-    // here. CLI renderers use this to log "tonutils-storage started at <url>"
+    // The daemon is up by this point, so we can surface its API URL here.
+    // CLI renderers use this to log "tonutils-storage started at <url>"
     // without needing the SDK to expose the daemon handle.
     currentPhase = 'bag_creating'
     yield {
       phase: 'bag_creating',
       message: `creating bag from ${opts.source_dir}`,
-      data: { source_dir: opts.source_dir, dashboard_url: daemon.apiUrl },
+      data: { source_dir: opts.source_dir, daemon_api_url: daemon.apiUrl },
     }
     checkAborted()
 
@@ -395,7 +420,7 @@ export async function* deploy(
       bag_id: created.bag_id,
       bag_size_bytes: details.size,
       dns_tx_hash: null,
-      dashboard_url: daemon.apiUrl,
+      daemon_api_url: daemon.apiUrl,
       daemon_pid: opts.keep_alive ? pid : null,
       seed_status: opts.keep_alive ? 'seeding' : 'stopped',
       next_actions: opts.domain

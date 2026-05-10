@@ -180,7 +180,7 @@ describe('SDK schemas (zod)', () => {
           bag_id: 'abc123',
           bag_size_bytes: 1024,
           dns_tx_hash: null,
-          dashboard_url: 'http://localhost:7100',
+          daemon_api_url: 'http://localhost:7100',
           daemon_pid: null,
           seed_status: 'stopped',
           next_actions: [],
