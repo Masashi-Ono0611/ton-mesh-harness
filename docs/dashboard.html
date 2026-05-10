@@ -610,11 +610,11 @@
     <div class="diamond">💎</div>
     <div>
       <h1>Sovereign <span class="accent">Deploy Kit</span></h1>
-      <div class="tagline">Static sites. One command. Censorship-resistant on TON.</div>
+      <div class="tagline">Static sites. One command. Self-hosted on the digital-resistance web.</div>
     </div>
   </div>
   <div class="meta">
-    <strong>v0.4.0 → v0.5 in progress</strong><br>
+    <strong>v0.5 shipped · v0.6 planning</strong><br>
     Updated 2026-05-10 · <code>ton-projects/sovereign-deploy-kit</code>
   </div>
 </header>
@@ -629,9 +629,12 @@
       DeFi UIs keep getting silenced — Tornado Cash, Uniswap, 1inch, Balancer.
       The contracts live on; the websites die because they sit on
       <strong>regular servers and regular DNS</strong>. TON already solved this with
-      <strong>Storage</strong>, <strong>DNS</strong>, and <strong>storage providers</strong> —
-      but the workflow used to need three tools and a wallet dance.
-      Sovereign Deploy Kit collapses it into <code style="background:var(--surface-2);padding:1px 6px;border-radius:3px;color:var(--ton-2);font-size:13px;border:1px solid var(--border);">npx ton-sovereign-deploy</code>.
+      <strong>Storage</strong>, <strong>DNS</strong>, <strong>ADNL Tunnel</strong>, and the
+      <strong>Payment Network</strong> — the same digital-resistance stack
+      <a href="https://github.com/xssnick/TON-Torrent" style="color: var(--ton); text-decoration: none;">Resistance Tools</a>
+      / <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">foundation.ton</code>
+      itself relies on. Sovereign Deploy Kit is the <code style="background:var(--surface-2);padding:1px 6px;border-radius:3px;color:var(--ton-2);font-size:13px;border:1px solid var(--border);">npx</code>-style CLI for that stack — built for engineers,
+      not GUI users.
     </p>
   </div>
 
@@ -641,7 +644,7 @@
       <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
       <span class="label">~/projects/your-dapp · zsh</span>
     </div>
-<pre><span class="prompt">$</span> <span class="cmd">npx ton-sovereign-deploy ./dist/ --domain mydapp.ton --provider</span>
+<pre><span class="prompt">$</span> <span class="cmd">npx ton-sovereign-deploy ./dist/ --domain mydapp.ton --watch</span>
 
 📦 <span class="dim">Uploading 47 files…</span>
   <span class="ok">✓</span> index.html
@@ -652,15 +655,21 @@
 <span class="ok">✅ TON Storage (ADNL):</span>  <span class="url">ton://bag-a3f9c82e1b4d…</span>
 📦 <span class="dim">Bag ID:</span> a3f9c82e1b4d…
 
-💸 <span class="cmd">Storage Payment — Sign to Contract</span>
-   Provider: 0:ca5f6e597d3eab8a4e…
-   Amount:   0.3000 TON
-   <span class="dim">[QR code displayed in terminal]</span>
-   <span class="dim">→ Open Tonkeeper, sign, return.</span>
-
 🌐 <span class="ok">DNS registered:</span> <span class="url">https://mydapp.ton</span>
 
-<span class="warn">Note:</span> ton.run gateway returns 404 until propagation completes.</pre>
+<span class="dim">watching ./dist/ — daemon stays alive to seed your bag.</span>
+<span class="dim">Press Ctrl+C to stop seeding. (Behind NAT? v0.6 ADNL Tunnel route is on the way.)</span></pre>
+  </div>
+
+  <!-- Honesty banner about provider economy -->
+  <div style="margin-top: 24px; padding: 16px 20px; border: 1px solid rgba(226, 169, 60, 0.40); background: rgba(226, 169, 60, 0.06); border-radius: 10px;">
+    <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: var(--yellow); text-transform: uppercase; margin-bottom: 8px;">⚠ Honesty about <code style="color: var(--yellow); background: rgba(226, 169, 60, 0.10); padding: 1px 5px; border-radius: 3px; font-size: 12px;">--provider</code></div>
+    <div style="font-size: 13px; color: var(--text); line-height: 1.65;">
+      v0.4 introduced <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ton-2); font-size: 12px; border: 1px solid var(--border);">--provider</code> for "24/7 hosting via storage providers". It is fully implemented and signed end-to-end on mainnet (<a href="../docs/v0.5/round-postmortem.md" style="color: var(--ton); text-decoration: none;">Round 1–7 post-mortem</a>) — but the mainnet provider economy is currently dormant: the cheapest 5 providers have <strong>never sent <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ton-2); font-size: 12px; border: 1px solid var(--border);">accept_storage_contract</code> in their entire on-chain history</strong>. Even <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ton-2); font-size: 12px; border: 1px solid var(--border);">foundation.ton</code> self-hosts. So our default mode is <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ton-2); font-size: 12px; border: 1px solid var(--border);">--watch</code>; <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ton-2); font-size: 12px; border: 1px solid var(--border);">--provider</code> stays opt-in for the day mainnet providers come alive.
+    </div>
+    <div style="margin-top: 10px; font-size: 12px; color: var(--text-mute); line-height: 1.6;">
+      If you do try <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ton-2); font-size: 11px; border: 1px solid var(--border);">--provider</code> and the contract fails to activate, run <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ton-2); font-size: 11px; border: 1px solid var(--border);">scripts/close-storage-contract.cjs &lt;contract-addr&gt;</code> — the <code style="background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ton-2); font-size: 11px; border: 1px solid var(--border);">op::close_contract</code> recovery path returns the locked balance.
+    </div>
   </div>
 </section>
 

@@ -1,6 +1,11 @@
 # ストレージプロバイダー契約 (v0.4 → v0.5)
 
-PCをオフにしてもサイトにアクセスできるようにするための手順。
+> **⚠ EXPERIMENTAL — 2026-05-10 mainnet 実証時点で、 mainnet の storage provider 経済はほぼ稼働していません。**
+> 「最安」 5 件すべて `accept_storage_contract` を 1 度も発行したことがなく、 `foundation.ton` 自身も自前 daemon で self-host しています。 当面は `--watch` での自前 host を推奨します。 詳細: [`v0.5/round-postmortem.md`](v0.5/round-postmortem.md)。
+>
+> このドキュメントは仕組みと将来再生時の動作を記録するためのものです。
+
+PCをオフにしてもサイトにアクセスできるようにするための手順（実験的）。
 
 ---
 
@@ -10,8 +15,26 @@ PCをオフにしてもサイトにアクセスできるようにするための
 PC がオフラインになると bag にアクセスできなくなる。
 
 `--provider` フラグを使うと、TON ネットワーク上のストレージプロバイダーと契約し、
-**24時間365日** bag をホストしてもらえる。対価は TON で支払う。
+**24時間365日** bag をホストしてもらえる（**設計上は**）。対価は TON で支払う。
 v0.5 から **契約期間は秒単位で自由に指定可能**（`--span`、デフォルト 1 日）。
+
+**現状の制約**（再掲）: mainnet の registered provider はほぼ全員稼働しておらず、 sign 後に `accept_storage_contract` が来ない可能性が高いです。 その場合 0.3 TON が contract に保留されますが、 後述の `op::close_contract` で全額回収できます。
+
+---
+
+## 資金救出 (`op::close_contract`)
+
+mainnet で `--provider` を使い contract が active 化しなかった場合は、 同梱スクリプトで残金を回収できます:
+
+```bash
+node scripts/close-storage-contract.cjs <storage-contract-address>
+```
+
+**メカニズム** (`storage-contract.fc` より):
+- contract が `is_active=false` の場合、 client (= あなた) または provider が `op::close_contract (0x79f937ea)` を送ると、 contract balance 全額が client に送り返され (mode 128+32)、 contract 自身が self-destruct
+- 実証 (Round 7 → close): 0.05 TON 送金 → `0.3281 TON` 着金 → contract `nonexist`。 net 損失 0.022 TON のみ
+
+スクリプトは既存の TonConnect セッション (`~/.ton-sovereign/tonconnect.json`) を再利用するため、 wallet pairing は不要です。
 
 ---
 
