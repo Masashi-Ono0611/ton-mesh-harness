@@ -1,12 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
-import { spawnSync } from 'child_process'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import path from 'path'
-import os from 'os'
 import { getBinaryName } from './platform'
 import { getNetworkConfig } from '../network'
+import { BIN_DIR, chmodExecutable, downloadFile, removeQuarantine } from './installer-utils'
 
 const TON_RELEASE_TAG = 'v2026.02-1'
-const BIN_DIR = path.join(os.homedir(), '.ton-sovereign', 'bin')
 const VERSION_FILE = path.join(BIN_DIR, '.version')
 
 export interface DaemonPaths {
@@ -55,15 +53,11 @@ export function ensureBinaries(useTestnet = false): void {
 
     process.stdout.write(`  Downloading storage-daemon (${TON_RELEASE_TAG})...\n`)
     downloadFile(`${base}/${daemonAsset}`, paths.daemon)
-    if (process.platform !== 'win32') {
-      spawnSync('chmod', ['+x', paths.daemon])
-    }
+    chmodExecutable(paths.daemon)
 
     process.stdout.write(`  Downloading storage-daemon-cli...\n`)
     downloadFile(`${base}/${cliAsset}`, paths.cli)
-    if (process.platform !== 'win32') {
-      spawnSync('chmod', ['+x', paths.cli])
-    }
+    chmodExecutable(paths.cli)
 
     removeQuarantine(paths.daemon)
     removeQuarantine(paths.cli)
@@ -79,40 +73,5 @@ export function ensureBinaries(useTestnet = false): void {
   if (useTestnet && !existsSync(paths.testnetConfig)) {
     process.stdout.write(`  Downloading testnet config...\n`)
     downloadFile(getNetworkConfig(true).daemonConfigUrl, paths.testnetConfig)
-  }
-}
-
-/**
- * Download a file from URL to destination (atomic write)
- */
-function downloadFile(url: string, dest: string): void {
-  const tmp = dest + '.tmp'
-  // curl handles redirects (-L), writes atomically via tmp file
-  const result = spawnSync('curl', ['-fsSL', '-o', tmp, url], {
-    stdio: 'inherit',
-  })
-  if (result.status !== 0) {
-    throw new Error(`Failed to download ${url} (curl exit ${result.status})`)
-  }
-  // Use Node's renameSync (portable atomic rename on the same FS) instead
-  // of `mv`, which is not on PATH on stock Windows. Same fix Codex P2
-  // flagged for the tonutils installer; applying it here for symmetry.
-  renameSync(tmp, dest)
-}
-
-/**
- * Remove quarantine flags from downloaded files
- */
-function removeQuarantine(filePath: string): void {
-  if (process.platform === 'darwin') {
-    spawnSync('xattr', ['-c', filePath])
-  } else if (process.platform === 'win32') {
-    // Windows: Unblock downloaded files using PowerShell
-    spawnSync('powershell.exe', [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command',
-      `Unblock-File -LiteralPath "${filePath}"`
-    ])
   }
 }

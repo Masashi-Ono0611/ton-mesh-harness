@@ -79,11 +79,10 @@ export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise
       }
     }
 
-    // If --provider is specified, keep daemon alive and return it for contract generation
-    if (opts.provider) {
-      return { result, daemon }
-    }
-
+    // --provider is rejected at the cli.ts gate (`opts.provider` always
+    // false here in v0.6+); the keep-daemon-alive branch is unreachable
+    // and was removed in batch 3 of the v0.8 cleanup. Re-introduce it
+    // alongside any v0.9 provider revival work.
     daemon.kill()
     daemon = undefined
 

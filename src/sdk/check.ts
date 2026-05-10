@@ -18,7 +18,7 @@ import type { CheckEnvOptions, CheckEnvResult } from './schemas'
 import { getDaemonPaths } from '../daemon/installer'
 import { getTonutilsPaths } from '../daemon/tonutils-installer'
 import { getRldpHttpProxyPaths } from '../daemon/rldp-http-proxy-installer'
-import { getTonConnectStoragePath, TONCONNECT_MANIFEST_URL } from '../wallet/constants'
+import { TONCONNECT_MANIFEST_URL } from '../wallet/constants'
 
 const UDP_PORT_TONUTILS_DEFAULT = 17555
 
@@ -138,11 +138,6 @@ function detectAgenticConfig(overridePath?: string): AgenticProbeOutcome {
 
   if (hasWallet) return { found: true, path: p }
   return { found: false, path: p, reason: 'schema_unknown' }
-}
-
-function detectTonConnectSession(): boolean {
-  const p = getTonConnectStoragePath()
-  return existsSync(p)
 }
 
 // ─── public SDK entry point ──────────────────────────────────────────────────

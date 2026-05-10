@@ -6,8 +6,6 @@
 // `TonutilsDeployReturn` shape so cli.ts callers stay regression-zero.
 
 import path from 'path'
-import os from 'os'
-import { existsSync, readFileSync } from 'fs'
 import chalk from 'chalk'
 import type { CliOptions } from '../types/cli'
 import { createSpinnerFactory } from '../utils/spinner'
@@ -20,6 +18,13 @@ import { buildUrls, printResult, exportAsJson, type DeployResult } from '../outp
 import { watchBuildDir } from '../watch'
 import { deploy as sdkDeploy } from '../sdk/deploy'
 import type { DeployEvent, DeployResult as SdkDeployResult } from '../sdk/schemas'
+import {
+  resolveTunnelConfig as resolveTunnelConfigCore,
+  TunnelConfigError,
+  type ResolvedTunnel,
+} from '../utils/tunnel-config'
+
+export type { ResolvedTunnel }
 
 export interface TonutilsDeployReturn {
   result: DeployResult
@@ -32,43 +37,18 @@ export interface TonutilsDeployOptions {
   tunnelConfigPath?: string  // absolute or relative path to nodes-pool.json
 }
 
-export interface ResolvedTunnel {
-  absPath: string
-  nodeCount: number
-}
-
-function expandTilde(p: string): string {
-  if (p === '~') return os.homedir()
-  if (p.startsWith('~/')) return path.join(os.homedir(), p.slice(2))
-  return p
-}
-
+/**
+ * Thin wrapper around the shared core that converts `TunnelConfigError`
+ * into a plain `Error` for the CLI's existing error rendering. v0.7
+ * tests + CLI consumers see the same message strings as before.
+ */
 export function resolveTunnelConfig(rawPath: string): ResolvedTunnel {
-  const absPath = path.resolve(expandTilde(rawPath))
-  if (!existsSync(absPath)) {
-    throw new Error(
-      `--tunnel-config: file not found at ${absPath}. ` +
-      `Pass a path to a nodes-pool.json supplied by your tunnel operator.`,
-    )
-  }
-  let nodeCount = 0
   try {
-    const parsed = JSON.parse(readFileSync(absPath, 'utf-8'))
-    if (Array.isArray(parsed?.NodesPool)) nodeCount = parsed.NodesPool.length
-    else if (Array.isArray(parsed?.nodes_pool)) nodeCount = parsed.nodes_pool.length
+    return resolveTunnelConfigCore(rawPath)
   } catch (err) {
-    throw new Error(
-      `--tunnel-config: could not parse ${absPath} as JSON: ` +
-      `${err instanceof Error ? err.message : String(err)}`,
-    )
+    if (err instanceof TunnelConfigError) throw new Error(err.message)
+    throw err
   }
-  if (nodeCount === 0) {
-    throw new Error(
-      `--tunnel-config: ${absPath} has zero entries in NodesPool. ` +
-      `The tunnel client needs at least one intermediate node to route through.`,
-    )
-  }
-  return { absPath, nodeCount }
 }
 
 /**
