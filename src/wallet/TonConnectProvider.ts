@@ -67,6 +67,20 @@ export class TonConnectProvider implements SendProvider {
     return Address.parse(this.connector.wallet.account.address)
   }
 
+  /**
+   * Stop the @tonconnect/sdk bridge HTTP listener (server-sent events) so
+   * the Node event loop drains and the CLI can exit after a `--no-watch`
+   * deploy. We pause rather than disconnect so the on-disk session stays
+   * paired — `connect()` next run finds it via `restoreConnection()`.
+   * Caller responsibility: invoke from a `finally` block after the last
+   * sendTransaction[Multi] call.
+   */
+  dispose(): void {
+    try {
+      this.connector.pauseConnection()
+    } catch { /* best-effort cleanup */ }
+  }
+
   private async connectWallet(): Promise<void> {
     const wallets = (await this.connector.getWallets()).filter(isRemote)
 

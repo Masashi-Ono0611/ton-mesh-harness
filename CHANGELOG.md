@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] – 2026-05-10
+
+### Fixed
+- **`--no-watch` deploy now exits cleanly after the success message.**
+  The @tonconnect/sdk bridge keeps an HTTP/SSE listener alive after
+  `sendTransaction` resolves, which kept the Node event loop running
+  even though the CLI's logical flow was done. New `dispose()` method
+  on `TonConnectProvider` calls `connector.pauseConnection()` (does
+  NOT unpair the on-disk session — `restoreConnection()` next run
+  still works). `cli/dns.ts` and `cli/provider.ts` now wrap their
+  wallet flow in try/finally and dispose at the end. Caught during
+  the v0.6.2 Tier-3.1 e2e verification on `masashi-ono0611.ton`.
+
 ## [0.6.2] – 2026-05-10
 
 Tier-3.1 mainnet soak on `masashi-ono0611.ton` produced two findings.

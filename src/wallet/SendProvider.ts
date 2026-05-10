@@ -16,4 +16,9 @@ export interface SendProvider {
     messages: Array<{ address: Address; amount: bigint; payload?: Cell; stateInit?: StateInit }>,
   ): Promise<unknown>
   address(): Address | undefined
+  /**
+   * Stop the bridge HTTP listener so the Node event loop can drain. Does
+   * NOT unpair the wallet (the next run still finds the session on disk).
+   */
+  dispose(): void
 }

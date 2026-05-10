@@ -97,40 +97,47 @@ export async function runDnsRegistration(
   )
 
   try {
-    await wallet.connect()
-  } catch (err) {
-    log(chalk.red('  ✗ Wallet connection failed.'))
-    throw err
-  }
+    try {
+      await wallet.connect()
+    } catch (err) {
+      log(chalk.red('  ✗ Wallet connection failed.'))
+      throw err
+    }
 
-  try {
-    await wallet.sendTransactionMulti(messages)
-  } catch (err) {
-    log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
-    throw err
-  }
+    try {
+      await wallet.sendTransactionMulti(messages)
+    } catch (err) {
+      log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
+      throw err
+    }
 
-  // In JSON mode we stop here: the wallet has sent the tx, the deploy JSON
-  // already emitted to stdout, and polling would only add noise. Humans
-  // see the propagation poller, CI parses the deploy JSON.
-  if (jsonMode) return
+    // In JSON mode we stop here: the wallet has sent the tx, the deploy
+    // JSON already emitted to stdout, and polling would only add noise.
+    // Humans see the propagation poller, CI parses the deploy JSON.
+    if (jsonMode) return
 
-  log()
-  log(chalk.dim('  Polling TONAPI for DNS record propagation...'))
-  const confirmedStorage = await pollDnsRecord(domain, bagId, 300_000, 10_000, testnet)
+    log()
+    log(chalk.dim('  Polling TONAPI for DNS record propagation...'))
+    const confirmedStorage = await pollDnsRecord(domain, bagId, 300_000, 10_000, testnet)
 
-  let confirmedSite = true
-  if (opts.siteAdnl) {
-    confirmedSite = await pollDnsSiteRecord(domain, opts.siteAdnl, 180_000, 10_000, testnet)
-  }
+    let confirmedSite = true
+    if (opts.siteAdnl) {
+      confirmedSite = await pollDnsSiteRecord(domain, opts.siteAdnl, 180_000, 10_000, testnet)
+    }
 
-  log()
-  if (confirmedStorage && confirmedSite) {
-    log(chalk.green(`  ✅ ${domain} now points to your site!`))
-    log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
-  } else {
-    log(chalk.yellow(`  ⚠ ${domain} DNS update not fully confirmed via TONAPI.`))
-    log(chalk.dim('    The wallet sent the transaction; the chain may still be settling, '))
-    log(chalk.dim('    or TONAPI is lagging (especially for `sites` records).'))
+    log()
+    if (confirmedStorage && confirmedSite) {
+      log(chalk.green(`  ✅ ${domain} now points to your site!`))
+      log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
+    } else {
+      log(chalk.yellow(`  ⚠ ${domain} DNS update not fully confirmed via TONAPI.`))
+      log(chalk.dim('    The wallet sent the transaction; the chain may still be settling, '))
+      log(chalk.dim('    or TONAPI is lagging (especially for `sites` records).'))
+    }
+  } finally {
+    // v0.6.3: pause the bridge listener so a `--no-watch` deploy actually
+    // exits. Without this, Node's event loop is kept alive by the SSE
+    // connection and the CLI hangs after printing the success message.
+    wallet.dispose()
   }
 }

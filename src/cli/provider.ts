@@ -156,53 +156,59 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
   const wallet = new TonConnectProvider(storage, ui, 'mainnet', TONCONNECT_MANIFEST_URL)
 
   try {
-    await wallet.connect()
-  } catch (err) {
-    console.log(chalk.red('  ✗ Wallet connection failed.'))
-    throw err
-  }
+    try {
+      await wallet.connect()
+    } catch (err) {
+      console.log(chalk.red('  ✗ Wallet connection failed.'))
+      throw err
+    }
 
-  const cells = Cell.fromBoc(Buffer.from(contractMsg.bocBase64, 'base64'))
-  if (cells.length === 0) {
-    throw new Error('Failed to parse contract message BOC — refusing to sign with empty payload.')
-  }
-  const payloadCell = cells[0]
-  try {
-    await wallet.sendTransaction(
-      contractMsg.providerAddress,
-      contractMsg.amountNano,
-      payloadCell,
+    const cells = Cell.fromBoc(Buffer.from(contractMsg.bocBase64, 'base64'))
+    if (cells.length === 0) {
+      throw new Error('Failed to parse contract message BOC — refusing to sign with empty payload.')
+    }
+    const payloadCell = cells[0]
+    try {
+      await wallet.sendTransaction(
+        contractMsg.providerAddress,
+        contractMsg.amountNano,
+        payloadCell,
+      )
+    } catch (err) {
+      console.log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
+      throw err
+    }
+
+    // 5. Keep daemon alive while the provider fetches our bag and deploys
+    //    the contract. The CLI will continue seeding via ADNL until either:
+    //      - TONAPI shows the contract active (early exit, ✅), or
+    //      - 10 minutes elapse (warn and exit)
+    //    The 5-min lower bound previously used here was too short for the
+    //    provider to find and pull the bag; 10 min gives it room without
+    //    holding the user's terminal hostage.
+    console.log()
+    console.log(chalk.dim('  Daemon staying alive while the provider fetches your bag...'))
+    console.log(chalk.dim('  (Polling TONAPI for activation — Ctrl+C is safe once you see ✅)'))
+    const confirmed = await pollProviderContract(
+      opts.bagId,
+      provider.address,
+      opts.testnet,
+      10 * 60 * 1000,
+      15 * 1000,
     )
-  } catch (err) {
-    console.log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
-    throw err
-  }
-
-  // 5. Keep daemon alive while the provider fetches our bag and deploys the
-  //    contract. The CLI will continue seeding via ADNL until either:
-  //      - TONAPI shows the contract active (early exit, ✅), or
-  //      - 10 minutes elapse (warn and exit)
-  //    The 5-min lower bound previously used here was too short for the
-  //    provider to find and pull the bag; 10 min gives it room without
-  //    holding the user's terminal hostage.
-  console.log()
-  console.log(chalk.dim('  Daemon staying alive while the provider fetches your bag...'))
-  console.log(chalk.dim('  (Polling TONAPI for activation — Ctrl+C is safe once you see ✅)'))
-  const confirmed = await pollProviderContract(
-    opts.bagId,
-    provider.address,
-    opts.testnet,
-    10 * 60 * 1000,
-    15 * 1000,
-  )
-  console.log()
-  if (confirmed) {
-    console.log(chalk.green(`  ✅ Provider contract active! Your site is hosted 24/7.`))
-    console.log(chalk.dim(`     Duration: ${spanSeconds} seconds`))
-  } else {
-    console.log(chalk.yellow('  ⚠ Provider contract not yet confirmed via TONAPI after 10 minutes.'))
-    console.log(chalk.dim('    The wallet did sign the transaction; the provider may still be working on it.'))
-    console.log(chalk.dim(`    Re-check later: curl https://tonapi.io/v2/storage/bag/${opts.bagId}`))
+    console.log()
+    if (confirmed) {
+      console.log(chalk.green(`  ✅ Provider contract active! Your site is hosted 24/7.`))
+      console.log(chalk.dim(`     Duration: ${spanSeconds} seconds`))
+    } else {
+      console.log(chalk.yellow('  ⚠ Provider contract not yet confirmed via TONAPI after 10 minutes.'))
+      console.log(chalk.dim('    The wallet did sign the transaction; the provider may still be working on it.'))
+      console.log(chalk.dim(`    Re-check later: curl https://tonapi.io/v2/storage/bag/${opts.bagId}`))
+    }
+  } finally {
+    // v0.6.3: pause the bridge listener so the CLI exits cleanly after a
+    // `--provider` run. Same fix as cli/dns.ts — see the comment there.
+    wallet.dispose()
   }
 }
 
