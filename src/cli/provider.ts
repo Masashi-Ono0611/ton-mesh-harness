@@ -1,4 +1,5 @@
 import chalk from 'chalk'
+import { Cell } from '@ton/core'
 import { createSpinnerFactory } from '../utils/spinner'
 import {
   fetchProviders,
@@ -7,9 +8,12 @@ import {
   generateContractMessage,
   type Provider,
 } from '../provider'
-import { buildTonConnectDeeplink, displayTonConnectQr } from '../dns'
 import { getNetworkConfig } from '../network'
 import { httpsGet } from '../utils/http'
+import { FSStorage } from '../wallet/FSStorage'
+import { TonConnectProvider } from '../wallet/TonConnectProvider'
+import { createWalletUI } from '../wallet/ui'
+import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
 import type { DaemonHandle } from '../daemon'
 
 interface ProviderContractOptions {
@@ -18,11 +22,13 @@ interface ProviderContractOptions {
   daemon: DaemonHandle
   testnet?: boolean
   jsonOutput?: boolean
+  ciMode?: boolean
   spanSeconds?: number         // contract span in seconds (uint32); defaults to provider.ts DEFAULT_SPAN_SECONDS
 }
 
 export async function runProviderContract(opts: ProviderContractOptions): Promise<void> {
-  const isCI = process.env.CI === 'true'
+  const isCI = process.env.CI === 'true' || opts.ciMode === true
+  const interactive = !isCI && !opts.jsonOutput
   const createSpinner = createSpinnerFactory(isCI || opts.jsonOutput)
 
   console.log()
@@ -104,38 +110,56 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
     throw err
   }
 
-  // 4. Display TON Connect QR
+  // 4. Connect a wallet via TonConnect SDK and send the transaction.
+  //    Persistent session at ~/.ton-sovereign/tonconnect.json — re-runs reuse it.
   const amountTon = (Number(contractMsg.amountNano) / 1e9).toFixed(4)
-  const deeplink = buildTonConnectDeeplink(contractMsg.providerAddress, opts.bagId, {
-    amountNano: contractMsg.amountNano.toString(),
-    payloadBase64: contractMsg.bocBase64,
-  })
+  const spanSeconds = Math.round(contractMsg.spanDays * 86400)
 
   console.log()
   console.log(chalk.bold('💸 Storage Payment — Sign to Contract'))
   console.log(chalk.dim(`  Amount: ${amountTon} TON`))
-  const spanSeconds = Math.round(contractMsg.spanDays * 86400)
   console.log(chalk.dim(`  Duration: ${spanSeconds} seconds (~${contractMsg.spanDays.toFixed(4)} days)`))
-  displayTonConnectQr(deeplink, provider.address)
-
-  console.log(chalk.bold('  TON Connect URL (open on mobile or paste in Tonkeeper):'))
-  console.log()
-  console.log(chalk.cyan(`  ${deeplink}`))
-  console.log()
-  console.log(chalk.dim('  Waiting for you to sign the transaction...'))
-  console.log(chalk.dim('  (Press Ctrl+C to skip provider contract)'))
+  console.log(chalk.dim(`  Provider: ${provider.address}`))
   console.log()
 
-  // 5. Poll for contract activation
+  const storage = new FSStorage(getTonConnectStoragePath())
+  const ui = createWalletUI({ interactive })
+  const wallet = new TonConnectProvider(storage, ui, 'mainnet', TONCONNECT_MANIFEST_URL)
+
+  try {
+    await wallet.connect()
+  } catch (err) {
+    console.log(chalk.red('  ✗ Wallet connection failed.'))
+    throw err
+  }
+
+  const payloadCell = Cell.fromBoc(Buffer.from(contractMsg.bocBase64, 'base64'))[0]
+  try {
+    await wallet.sendTransaction(
+      contractMsg.providerAddress,
+      contractMsg.amountNano,
+      payloadCell,
+    )
+  } catch (err) {
+    console.log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
+    throw err
+  }
+
+  // 5. Optional: poll TONAPI to surface "contract active" once the provider has
+  //    accepted and deployed the storage contract. This is no longer the
+  //    sign-completion gate (the wallet's response above is) — purely
+  //    confirmation. Default 5 min; increase if testing real-world propagation.
+  console.log()
+  console.log(chalk.dim('  Polling TONAPI for provider activation...'))
   const confirmed = await pollProviderContract(opts.bagId, provider.address, opts.testnet)
-
   console.log()
   if (confirmed) {
     console.log(chalk.green(`  ✅ Provider contract active! Your site is hosted 24/7.`))
-    console.log(chalk.dim(`     Duration: ${Math.round(contractMsg.spanDays * 86400)} seconds`))
+    console.log(chalk.dim(`     Duration: ${spanSeconds} seconds`))
   } else {
-    console.log(chalk.yellow('  ⚠ Provider contract not yet confirmed.'))
-    console.log(chalk.dim('    Sign the transaction in your wallet, then wait a few minutes.'))
+    console.log(chalk.yellow('  ⚠ Provider contract not yet confirmed via TONAPI.'))
+    console.log(chalk.dim('    The wallet sent the transaction; the provider may still be fetching the bag.'))
+    console.log(chalk.dim(`    Re-check later: curl https://tonapi.io/v2/storage/bag/${opts.bagId}`))
   }
 }
 

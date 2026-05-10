@@ -33,6 +33,7 @@
   "license": "MIT",
   "dependencies": {
     "@ton/ton": "^15.4.0",
+    "@tonconnect/sdk": "^3.4.1",
     "chalk": "^4.1.2",
     "chokidar": "^5.0.0",
     "commander": "^12.1.0",

@@ -1,6 +1,5 @@
-import { createHash, randomBytes } from 'crypto'
+import { createHash } from 'crypto'
 import { Address, beginCell, Cell } from '@ton/ton'
-import * as qrcode from 'qrcode-terminal'
 import chalk from 'chalk'
 import ora from 'ora'
 import { httpsGet } from './utils/http'
@@ -94,92 +93,6 @@ export async function getDomainNftAddress(domain: string, testnet = false): Prom
     }
     throw new Error(`Failed to resolve domain "${cleanDomain}": ${message}`)
   }
-}
-
-// -----------------------------------------------------------------------
-// TON Connect deeplink
-// Format: tc://?v=2&id=<HEX>&r=<URL_SAFE_JSON>&ret=back
-// -----------------------------------------------------------------------
-
-interface TonConnectRequest {
-  manifestUrl: string
-  items: Array<{ name: string }>
-  messages?: Array<{
-    address: string
-    amount: string
-    payload?: string  // base64 BoC
-  }>
-}
-
-// Manifest hosted on raw.githubusercontent.com so no server needed
-const MANIFEST_URL = 'https://raw.githubusercontent.com/ton-projects/sovereign-deploy-kit/main/tonconnect-manifest.json'
-
-// Random 32-byte client ID (hex) — used per-session to identify TON Connect bridge session
-function randomHex(bytes: number): string {
-  return randomBytes(bytes).toString('hex')
-}
-
-interface TonConnectMessageOverride {
-  amountNano: string
-  payloadBase64: string
-}
-
-export function buildTonConnectDeeplink(
-  toAddress: Address,
-  bagId: string,
-  override?: TonConnectMessageOverride,
-): string {
-  let bocBase64: string
-  let amountStr: string
-
-  if (override) {
-    bocBase64 = override.payloadBase64
-    amountStr = override.amountNano
-  } else {
-    const body = buildChangeDnsRecordBody(bagId)
-    bocBase64 = body.toBoc().toString('base64')
-    amountStr = '50000000'  // 0.05 TON for DNS gas
-  }
-
-  const request: TonConnectRequest = {
-    manifestUrl: MANIFEST_URL,
-    items: [{ name: 'ton_addr' }],
-    messages: [
-      {
-        address: toAddress.toRawString(),
-        amount: amountStr,
-        payload: bocBase64,
-      },
-    ],
-  }
-
-  const clientId = randomHex(32)
-  const requestJson = JSON.stringify(request)
-  const requestEncoded = encodeURIComponent(Buffer.from(requestJson).toString('base64'))
-
-  return `tc://?v=2&id=${clientId}&r=${requestEncoded}&ret=back`
-}
-
-// -----------------------------------------------------------------------
-// Display deeplink + QR code in terminal
-// -----------------------------------------------------------------------
-
-export function displayTonConnectQr(deeplink: string, label: string): void {
-  console.log()
-  console.log(chalk.dim(`  → ${label}`))
-  console.log()
-  console.log('  Scan with your TON wallet:')
-  console.log()
-
-  // Print QR to stdout (centered with 2-space indent)
-  qrcode.generate(deeplink, { small: true }, (qr: string) => {
-    qr.split('\n').forEach((line: string) => console.log('  ' + line))
-  })
-
-  console.log()
-  console.log(chalk.dim('  Or open this link on mobile:'))
-  console.log(chalk.cyan('  ' + deeplink))
-  console.log()
 }
 
 // -----------------------------------------------------------------------

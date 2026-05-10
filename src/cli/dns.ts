@@ -1,10 +1,30 @@
 import chalk from 'chalk'
 import { createSpinnerFactory } from '../utils/spinner'
-import { getDomainNftAddress, buildTonConnectDeeplink, displayTonConnectQr, pollDnsRecord } from '../dns'
+import { getDomainNftAddress, buildChangeDnsRecordBody, pollDnsRecord } from '../dns'
+import { FSStorage } from '../wallet/FSStorage'
+import { TonConnectProvider } from '../wallet/TonConnectProvider'
+import { createWalletUI } from '../wallet/ui'
+import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
 
-export async function runDnsRegistration(domain: string, bagId: string, testnet = false): Promise<void> {
-  const isCI = process.env.CI === 'true'
-  const createSpinner = createSpinnerFactory(isCI)
+// 0.05 TON gas for the DNS update message — matches the legacy hand-rolled
+// deeplink amount we used to embed in the request payload.
+const DNS_UPDATE_AMOUNT_NANO = 50_000_000n
+
+interface DnsRegistrationOptions {
+  testnet?: boolean
+  jsonOutput?: boolean
+  ciMode?: boolean
+}
+
+export async function runDnsRegistration(
+  domain: string,
+  bagId: string,
+  testnet = false,
+  opts: DnsRegistrationOptions = {},
+): Promise<void> {
+  const isCI = process.env.CI === 'true' || opts.ciMode === true
+  const interactive = !isCI && !opts.jsonOutput
+  const createSpinner = createSpinnerFactory(isCI || opts.jsonOutput)
 
   console.log()
   console.log(chalk.bold('🔗 DNS Registration'))
@@ -20,15 +40,41 @@ export async function runDnsRegistration(domain: string, bagId: string, testnet 
     throw err
   }
 
-  const deeplink = buildTonConnectDeeplink(nftAddress, bagId)
+  // Build the change_dns_record message body in TS, then sign it via TonConnect.
+  const payload = buildChangeDnsRecordBody(bagId)
 
-  console.log(chalk.bold('📱 TON Connect — Sign DNS Registration'))
-  displayTonConnectQr(deeplink, `Domain: ${domain}`)
-
-  console.log(chalk.dim('  Waiting for you to sign the transaction...'))
-  console.log(chalk.dim('  (Press Ctrl+C to skip DNS registration)'))
+  console.log(chalk.bold('📱 Sign DNS Registration'))
+  console.log(chalk.dim(`  Domain:  ${domain}`))
+  console.log(chalk.dim(`  NFT:     ${nftAddress.toString()}`))
+  console.log(chalk.dim(`  Bag ID:  ${bagId}`))
+  console.log(chalk.dim(`  Amount:  ${(Number(DNS_UPDATE_AMOUNT_NANO) / 1e9).toFixed(4)} TON (gas)`))
   console.log()
 
+  const storage = new FSStorage(getTonConnectStoragePath())
+  const ui = createWalletUI({ interactive })
+  const wallet = new TonConnectProvider(
+    storage,
+    ui,
+    testnet ? 'testnet' : 'mainnet',
+    TONCONNECT_MANIFEST_URL,
+  )
+
+  try {
+    await wallet.connect()
+  } catch (err) {
+    console.log(chalk.red('  ✗ Wallet connection failed.'))
+    throw err
+  }
+
+  try {
+    await wallet.sendTransaction(nftAddress, DNS_UPDATE_AMOUNT_NANO, payload)
+  } catch (err) {
+    console.log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
+    throw err
+  }
+
+  console.log()
+  console.log(chalk.dim('  Polling TONAPI for DNS record propagation...'))
   const confirmed = await pollDnsRecord(domain, bagId, 300_000, 10_000, testnet)
 
   console.log()
@@ -37,6 +83,6 @@ export async function runDnsRegistration(domain: string, bagId: string, testnet 
     console.log(chalk.dim(`     https://${domain} (via TON DNS resolvers)`))
   } else {
     console.log(chalk.yellow(`  ⚠ ${domain} DNS update not yet confirmed.`))
-    console.log(chalk.dim('    Sign the transaction in your wallet, then wait a few minutes.'))
+    console.log(chalk.dim('    The wallet sent the transaction; the chain may still be settling.'))
   }
 }

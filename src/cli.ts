@@ -54,6 +54,7 @@ program
           daemon,
           testnet: opts.testnet,
           jsonOutput: opts.jsonOutput,
+          ciMode: opts.ciMode,
           spanSeconds,
         })
       } finally {
@@ -63,7 +64,10 @@ program
 
     // DNS registration
     if (opts.domain) {
-      await runDnsRegistration(opts.domain, result.bagId, opts.testnet)
+      await runDnsRegistration(opts.domain, result.bagId, opts.testnet, {
+        jsonOutput: opts.jsonOutput,
+        ciMode: opts.ciMode,
+      })
     }
 
     // Watch mode
