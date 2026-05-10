@@ -1,10 +1,10 @@
 {
   "name": "ton-sovereign-deploy",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Sovereign one-command CLI for the TON digital-resistance stack: TON Storage + .ton DNS + ADNL Tunnel-ready, self-host first.",
   "main": "./dist/cli.js",
   "bin": {
-    "ton-sovereign-deploy": "./dist/cli.js"
+    "ton-sovereign-deploy": "dist/cli.js"
   },
   "engines": {
     "node": ">=18"

@@ -7,7 +7,7 @@ import { runDnsRegistration } from './cli/dns'
 import { runDoctor } from './cli/doctor'
 import { runWatchMode } from './cli/watch'
 
-const VERSION = '0.6.0'
+const VERSION = '0.6.1'
 
 const program = new Command()
 

@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] – 2026-05-10
+
+### Fixed
+- npm `bin` map: dropped the leading `./` from `bin[ton-sovereign-deploy]`
+  so npm doesn't strip the entry on publish (auto-correction noticed
+  during a v0.6.0 publish dry-run). v0.6.0 was tagged on git only and
+  never published to npm; v0.6.1 is the first npm release.
+
 ## [0.6.0] – 2026-05-10
 
 v0.6 reframes the project around the **TON digital-resistance stack**
