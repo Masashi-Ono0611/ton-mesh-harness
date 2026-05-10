@@ -189,7 +189,16 @@ export async function runDeployTonutils(
 
 export async function runWatchModeTonutils(
   deployed: TonutilsDeployReturn,
-  opts: { debounce?: string; jsonOutput?: boolean; domain?: string },
+  opts: {
+    debounce?: string
+    jsonOutput?: boolean
+    domain?: string
+    /**
+     * v0.7 C1: when --site-auto spawned an rldp-http-proxy, hand its
+     * handle in so watch mode kills both daemons on SIGINT.
+     */
+    proxyHandle?: { kill: () => void }
+  },
 ): Promise<void> {
   const { daemon, buildDir, description, result: initial } = deployed
 
@@ -237,6 +246,7 @@ export async function runWatchModeTonutils(
   const cleanup = () => {
     stop()
     daemon.kill()
+    opts.proxyHandle?.kill()
   }
 
   process.on('SIGINT',  () => { cleanup(); process.exit(130) })

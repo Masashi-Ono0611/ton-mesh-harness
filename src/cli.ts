@@ -5,6 +5,7 @@ import { runDeploy } from './cli/deploy'
 import { runDeployTonutils, runWatchModeTonutils } from './cli/deploy-tonutils'
 import { runDnsRegistration } from './cli/dns'
 import { runDoctor } from './cli/doctor'
+import { runSiteHost } from './cli/site-host'
 import { runWatchMode } from './cli/watch'
 
 const VERSION = '0.6.3'
@@ -46,6 +47,15 @@ program
   // mainstream .ton hosting pattern (piracy.ton, tonnet-sync-check.ton, …).
   // Auto-spawning a local rldp-http-proxy + ADNL key minting is v0.7 work.
   .option('--site-adnl <hex>', '64-hex ADNL identity to publish as the `site` (dns_adnl_address) DNS record (BYO rldp-http-proxy)')
+  // v0.7 C1: auto-spawn rldp-http-proxy. Mints a fresh ADNL identity in
+  // pure JS, downloads + spawns rldp-http-proxy bound to that identity,
+  // and pipes the build dir through a local Node http server. The ADNL
+  // hex is fed into the DNS site record automatically. Mutually exclusive
+  // with --site-adnl. Requires public IP / port-forwarded UDP (doctor
+  // warns; v0.7 reduced scope deferred NAT traversal to v0.8).
+  .option('--site-auto', 'Auto-spawn rldp-http-proxy with a freshly minted ADNL identity (v0.7+, tonutils backend, public IP needed)')
+  .option('--site-public-ip <ip>', 'Override public IPv4 published in the ADNL DHT entry (v0.7+). Default: api.ipify.org probe.')
+  .option('--site-udp-port <port>', 'Override UDP port for rldp-http-proxy (v0.7+). Default: free port in 17600-17699.', (v) => parseInt(v, 10))
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
     // Validate backend choice early.
     if (opts.daemonBackend && opts.daemonBackend !== 'tonutils' && opts.daemonBackend !== 'ton-core') {
@@ -76,6 +86,27 @@ program
       }
       // canonicalize to lowercase, no 0x prefix, for downstream consistency
       opts.siteAdnl = cleaned.toLowerCase()
+    }
+
+    // v0.7 C1: --site-auto requires --domain (same reason as --site-adnl)
+    // and is mutually exclusive with --site-adnl. tonutils backend only
+    // (legacy ton-core path doesn't compose with the v0.7 lifecycle).
+    if (opts.siteAuto) {
+      if (!opts.domain) {
+        throw new Error(`--site-auto requires --domain (the .ton domain to publish the site record under).`)
+      }
+      if (opts.siteAdnl) {
+        throw new Error(`--site-auto and --site-adnl are mutually exclusive (pick auto-spawn OR bring-your-own).`)
+      }
+      if (backend !== 'tonutils') {
+        throw new Error(`--site-auto requires --daemon-backend=tonutils (default).`)
+      }
+    }
+    if (opts.sitePublicIp && !opts.siteAuto) {
+      throw new Error(`--site-public-ip requires --site-auto.`)
+    }
+    if (opts.siteUdpPort != null && !opts.siteAuto) {
+      throw new Error(`--site-udp-port requires --site-auto.`)
     }
 
     // v0.6: --provider is temporarily disabled while the daemon backend is
@@ -114,15 +145,30 @@ program
         tunnelConfigPath: opts.tunnelConfig,
       })
       if (!deployed) return
-      const { result, daemon } = deployed
+      const { result, daemon, buildDir } = deployed
+
+      // v0.7 C1: spin up rldp-http-proxy + static server BEFORE the DNS
+      // sign so the site record points at a live identity from the
+      // moment it lands on chain.
+      let siteHost: Awaited<ReturnType<typeof runSiteHost>> | undefined
+      if (opts.siteAuto && opts.domain) {
+        siteHost = await runSiteHost({
+          buildDir,
+          domain: opts.domain,
+          publicIp: opts.sitePublicIp,
+          udpPort: opts.siteUdpPort,
+          silent: !!opts.jsonOutput,
+        })
+      }
 
       // DNS registration is daemon-agnostic (TonConnect + cell builder)
       if (opts.domain) {
+        const effectiveSiteAdnl = siteHost?.siteAdnlHex ?? opts.siteAdnl
         await runDnsRegistration(opts.domain, result.bagId, opts.testnet, {
           jsonOutput: opts.jsonOutput,
           ciMode: opts.ciMode,
           walletName: opts.wallet,
-          siteAdnl: opts.siteAdnl,
+          siteAdnl: effectiveSiteAdnl,
         })
       }
 
@@ -131,9 +177,11 @@ program
           debounce: opts.debounce,
           jsonOutput: opts.jsonOutput,
           domain: opts.domain,
+          proxyHandle: siteHost?.handle,
         })
       } else {
         daemon.kill()
+        siteHost?.handle.kill()
       }
       return
     }

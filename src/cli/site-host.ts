@@ -1,0 +1,85 @@
+// `--site auto` orchestrator: install rldp-http-proxy, mint ADNL identity,
+// spawn proxy + local static server, return a handle the caller can pass
+// into runDnsRegistration so the auto-minted hex is published as the
+// dns_adnl_address record alongside the storage record.
+//
+// Counterpart of the v0.6 BYO flow (`--site-adnl <hex>` with the user's
+// own VPS-hosted proxy). The byo path stays in tree as a fallback.
+
+import path from 'node:path'
+import os from 'node:os'
+import { writeFileSync, mkdirSync } from 'node:fs'
+import chalk from 'chalk'
+import { ensureRldpHttpProxyBinary } from '../daemon/rldp-http-proxy-installer'
+import { startRldpHttpProxy, type RldpHttpProxyHandle } from '../daemon/rldp-http-proxy-process'
+
+export interface RunSiteHostOptions {
+  buildDir: string             // absolute
+  domain: string               // e.g. "mydapp.ton"
+  publicIp?: string            // override; auto-detected if absent
+  udpPort?: number             // override; findFreeUdpPort if absent
+  silent?: boolean             // suppress banner output (--json-output)
+}
+
+export interface SiteHostResult {
+  handle: RldpHttpProxyHandle
+  /** 64-char lowercase hex ADNL identity — feed into --site-adnl. */
+  siteAdnlHex: string
+}
+
+const SITE_ADNL_TXT_PATH = path.join(os.homedir(), '.ton-sovereign', 'site-adnl.txt')
+
+/**
+ * Install + spawn rldp-http-proxy with a freshly minted ADNL identity,
+ * serving the build directory under the given .ton domain. Returns the
+ * proxy handle (for lifecycle management) and the hex form of the
+ * identity (the value the DNS site record needs).
+ */
+export async function runSiteHost(opts: RunSiteHostOptions): Promise<SiteHostResult> {
+  if (!opts.silent) {
+    console.log()
+    console.log(chalk.bold('🌐 Site host (--site auto)'))
+    console.log(chalk.dim('  Installing rldp-http-proxy if needed…'))
+  }
+  ensureRldpHttpProxyBinary({ silent: !!opts.silent })
+
+  if (!opts.silent) {
+    console.log(chalk.dim(`  Spawning rldp-http-proxy for ${opts.domain}…`))
+  }
+
+  const handle = await startRldpHttpProxy({
+    buildDir: opts.buildDir,
+    domain: opts.domain,
+    publicIp: opts.publicIp,
+    udpPort: opts.udpPort,
+    silent: !!opts.silent,
+  })
+
+  // Persist the ADNL hex so `doctor` and follow-up tooling can surface it
+  // without re-spawning the proxy. Mode 0o600 — not actually a secret
+  // (the hex IS the public ADNL identity), but the file path is conventionally
+  // owner-only and we keep parity with the keyring file mode.
+  try {
+    mkdirSync(path.dirname(SITE_ADNL_TXT_PATH), { recursive: true })
+    writeFileSync(SITE_ADNL_TXT_PATH, handle.identity.shortIdHex + '\n', { mode: 0o600 })
+  } catch { /* best-effort diagnostic — never block the deploy */ }
+
+  if (!opts.silent) {
+    console.log(chalk.green(`  ✔ Site ADNL: ${handle.identity.shortIdHex}`))
+    console.log(chalk.dim(`    encoded:    ${handle.identity.shortIdEncoded}`))
+    console.log(chalk.dim(`    public:     ${handle.publicIp}:${handle.udpPort} (UDP)`))
+    console.log(chalk.dim(`    local http: 127.0.0.1:${handle.localHttpPort} → ${opts.buildDir}`))
+    console.log()
+    console.log(chalk.yellow(
+      '  ⚠ The proxy needs UDP ' + handle.udpPort + ' reachable from the public internet. ' +
+      'Behind NAT? Set up a port-forward or run on a VPS.',
+    ))
+    console.log(chalk.dim(`    Recorded at ${SITE_ADNL_TXT_PATH}`))
+    console.log()
+  }
+
+  return {
+    handle,
+    siteAdnlHex: handle.identity.shortIdHex,
+  }
+}

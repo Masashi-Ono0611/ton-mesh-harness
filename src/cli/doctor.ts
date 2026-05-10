@@ -7,6 +7,7 @@ import os from 'os'
 import chalk from 'chalk'
 import { getDaemonPaths } from '../daemon/installer'
 import { getTonutilsPaths } from '../daemon/tonutils-installer'
+import { getRldpHttpProxyPaths } from '../daemon/rldp-http-proxy-installer'
 import { getTonConnectStoragePath, TONCONNECT_MANIFEST_URL } from '../wallet/constants'
 
 type Status = 'pass' | 'warn' | 'fail'
@@ -108,6 +109,28 @@ export async function runDoctor(): Promise<void> {
     corePaths.daemon,
     corePaths.versionFile,
   ))
+
+  // v0.7 C5.1: rldp-http-proxy binary (only used when --site-auto runs).
+  const proxyPaths = getRldpHttpProxyPaths()
+  lines.push(checkBinary(
+    'rldp-http-proxy binary',
+    proxyPaths.daemon,
+    proxyPaths.versionFile,
+  ))
+
+  // v0.7 C5.1: surface the persisted site ADNL (written by runSiteHost).
+  const siteAdnlPath = path.join(os.homedir(), '.ton-sovereign', 'site-adnl.txt')
+  if (existsSync(siteAdnlPath)) {
+    let hex: string | undefined
+    try { hex = readFileSync(siteAdnlPath, 'utf8').trim() } catch { /* ignore */ }
+    if (hex && /^[0-9a-f]{64}$/i.test(hex)) {
+      lines.push({
+        status: 'pass',
+        label: 'Site ADNL identity',
+        detail: `${hex.slice(0, 16)}… (full at ${siteAdnlPath})`,
+      })
+    }
+  }
 
   // 2. Network reachability
   const tonapiOk = await fetchOk('https://tonapi.io/v2/blockchain/masterchain-head')

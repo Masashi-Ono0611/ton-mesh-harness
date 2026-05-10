@@ -37,7 +37,7 @@ export async function findFreePort(min = 7100, max = 7199): Promise<number> {
   })
 }
 
-async function findFreeUdpPort(min = 17556, max = 17600): Promise<number> {
+export async function findFreeUdpPort(min = 17556, max = 17600): Promise<number> {
   // Probe-then-spawn races a third party who may grab the port between
   // our close() and the daemon's bind(). The daemon panics in that case
   // and exits in <1 s, so we add an early-exit detection in waitForApi
