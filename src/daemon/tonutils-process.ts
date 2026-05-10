@@ -1,0 +1,223 @@
+// tonutils-storage daemon process management + HTTP API client.
+// Counterpart of process.ts (TON Core daemon) for the xssnick / Go backend.
+
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { spawn, type ChildProcess } from 'child_process'
+import path from 'path'
+import os from 'os'
+import net from 'net'
+import dgram from 'dgram'
+import { getTonutilsPaths } from './tonutils-installer'
+
+export interface TonutilsHandle {
+  apiUrl: string                // e.g. http://127.0.0.1:8192
+  dbDir: string
+  process: ChildProcess
+  kill: () => void
+}
+
+// -----------------------------------------------------------------------
+// Spawn + ready-wait
+// -----------------------------------------------------------------------
+
+export async function findFreePort(min = 7100, max = 7199): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const tryPort = (port: number) => {
+      if (port > max) {
+        reject(new Error(`No free port found in range ${min}-${max}`))
+        return
+      }
+      const server = net.createServer()
+      server.listen(port, '127.0.0.1', () => {
+        server.close(() => resolve(port))
+      })
+      server.on('error', () => tryPort(port + 1))
+    }
+    tryPort(min)
+  })
+}
+
+async function findFreeUdpPort(min = 17556, max = 17600): Promise<number> {
+  for (let p = min; p <= max; p++) {
+    // eslint-disable-next-line no-await-in-loop
+    const ok = await new Promise<boolean>((resolve) => {
+      const s = dgram.createSocket('udp4')
+      s.once('error', () => resolve(false))
+      s.bind(p, '0.0.0.0', () => { s.close(() => resolve(true)) })
+    })
+    if (ok) return p
+  }
+  throw new Error(`No free UDP port in range ${min}-${max} for tonutils ListenAddr`)
+}
+
+// Produce a config.json with a non-default ListenAddr UDP port. The very
+// first run of tonutils-storage generates config.json (with Key + tunnel
+// data) and only then tries to listen on UDP 17555, panicking if the port
+// is busy (e.g. TON Browser.app's own daemon already runs there). We
+// exploit the order by letting it generate the file, killing the process,
+// rewriting ListenAddr to a free UDP port, then starting again.
+async function ensureTonutilsConfig(daemonPath: string, dbDir: string): Promise<void> {
+  const configPath = path.join(dbDir, 'config.json')
+
+  if (!existsSync(configPath)) {
+    // Step 1: short-lived spawn to let the daemon generate the file.
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(daemonPath, ['--db', dbDir], { stdio: 'ignore', detached: false })
+      const timer = setInterval(() => {
+        if (existsSync(configPath)) {
+          clearInterval(timer)
+          try { child.kill('SIGKILL') } catch { /* ignore */ }
+          resolve()
+        }
+      }, 200)
+      const giveUp = setTimeout(() => {
+        clearInterval(timer)
+        try { child.kill('SIGKILL') } catch { /* ignore */ }
+        reject(new Error('tonutils-storage did not produce config.json within 8 s'))
+      }, 8_000)
+      child.on('exit', () => {
+        if (existsSync(configPath)) {
+          clearTimeout(giveUp)
+          clearInterval(timer)
+          resolve()
+        }
+      })
+    })
+  }
+
+  // Step 2: rewrite ListenAddr to a free UDP port so we don't collide with
+  // any other tonutils-storage instance on the machine.
+  const cfg = JSON.parse(readFileSync(configPath, 'utf-8'))
+  const port = await findFreeUdpPort()
+  cfg.ListenAddr = `0.0.0.0:${port}`
+  writeFileSync(configPath, JSON.stringify(cfg, null, '\t'))
+}
+
+export async function startTonutilsDaemon(): Promise<TonutilsHandle> {
+  const paths = getTonutilsPaths()
+  if (!existsSync(paths.daemon)) {
+    throw new Error(`tonutils-storage binary not found at ${paths.daemon}; run ensureTonutilsBinary() first`)
+  }
+
+  const apiPort = await findFreePort(7100, 7199)
+  const sessionDir = path.join(os.tmpdir(), `ton-sovereign-tonutils-${process.pid}`)
+  const dbDir = path.join(sessionDir, 'db')
+  mkdirSync(dbDir, { recursive: true })
+
+  // Pre-stage config with a non-conflicting UDP ListenAddr.
+  await ensureTonutilsConfig(paths.daemon, dbDir)
+
+  const child = spawn(
+    paths.daemon,
+    [
+      '--api', `127.0.0.1:${apiPort}`,
+      '--db', dbDir,
+    ],
+    { stdio: 'ignore', detached: false },
+  )
+  child.on('error', (err) => {
+    throw new Error(`tonutils-storage failed to start: ${err.message}`)
+  })
+
+  const handle: TonutilsHandle = {
+    apiUrl: `http://127.0.0.1:${apiPort}`,
+    dbDir,
+    process: child,
+    kill: () => {
+      try { child.kill('SIGTERM') } catch { /* ignore */ }
+      try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
+    },
+  }
+
+  await waitForApi(handle)
+  return handle
+}
+
+async function waitForApi(handle: TonutilsHandle, timeoutMs = 30_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    try {
+      const r = await fetch(`${handle.apiUrl}/api/v1/list`, { method: 'GET' })
+      if (r.ok) return
+    } catch { /* not ready yet */ }
+    await sleep(300)
+  }
+  handle.kill()
+  throw new Error(`tonutils-storage did not accept HTTP on ${handle.apiUrl} within ${timeoutMs} ms`)
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+// -----------------------------------------------------------------------
+// HTTP API client
+// -----------------------------------------------------------------------
+
+export interface TonutilsBagSummary {
+  bag_id: string
+  description: string
+  downloaded: number
+  size: number
+  files_count: number
+  dir_name: string
+  completed: boolean
+  header_loaded: boolean
+  info_loaded: boolean
+  active: boolean
+  seeding: boolean
+}
+
+export interface TonutilsBagDetails extends TonutilsBagSummary {
+  piece_size: number
+  bag_size: number
+  merkle_hash: string             // hex; this is TorrentInfo.RootHash
+  path: string
+  files: Array<{ index: number; name: string; size: number }>
+  peers?: Array<{ addr: string; id: string }>
+}
+
+async function api<T>(handle: TonutilsHandle, path: string, init?: RequestInit): Promise<T> {
+  const r = await fetch(`${handle.apiUrl}${path}`, {
+    headers: { 'content-type': 'application/json' },
+    ...init,
+  })
+  if (!r.ok) {
+    const body = await r.text().catch(() => '')
+    throw new Error(`tonutils ${path} → HTTP ${r.status}: ${body.slice(0, 200)}`)
+  }
+  return (await r.json()) as T
+}
+
+export async function tonutilsCreate(
+  handle: TonutilsHandle,
+  args: { path: string; description: string },
+): Promise<{ bag_id: string }> {
+  return api(handle, '/api/v1/create', {
+    method: 'POST',
+    body: JSON.stringify(args),
+  })
+}
+
+export async function tonutilsDetails(
+  handle: TonutilsHandle,
+  bagId: string,
+): Promise<TonutilsBagDetails> {
+  return api(handle, `/api/v1/details?bag_id=${encodeURIComponent(bagId)}`)
+}
+
+export async function tonutilsList(
+  handle: TonutilsHandle,
+): Promise<{ bags: TonutilsBagSummary[] }> {
+  return api(handle, '/api/v1/list')
+}
+
+export async function tonutilsRemove(
+  handle: TonutilsHandle,
+  args: { bag_id: string; with_files?: boolean },
+): Promise<{ ok: boolean }> {
+  return api(handle, '/api/v1/remove', {
+    method: 'POST',
+    body: JSON.stringify({ with_files: false, ...args }),
+  })
+}

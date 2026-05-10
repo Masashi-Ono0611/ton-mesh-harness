@@ -30,7 +30,7 @@ interface ProviderContractOptions {
 export async function runProviderContract(opts: ProviderContractOptions): Promise<void> {
   const isCI = process.env.CI === 'true' || opts.ciMode === true
   const interactive = !isCI && !opts.jsonOutput
-  const createSpinner = createSpinnerFactory(isCI || opts.jsonOutput)
+  const createSpinner = createSpinnerFactory({ silent: !!opts.jsonOutput, plain: isCI })
 
   console.log()
   console.log(chalk.bold('📦 Storage Provider Contract'))

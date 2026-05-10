@@ -10,6 +10,7 @@ export interface CliOptions {
   skipVerify?: boolean
   watch?: boolean
   debounce?: string
+  daemonBackend?: 'tonutils' | 'ton-core'  // v0.6: which backend daemon to run
 }
 
 export interface DaemonContext {

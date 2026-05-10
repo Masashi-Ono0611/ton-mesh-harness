@@ -10,13 +10,29 @@ export interface SpinnerFactory {
   start: (msg: string) => Spinner
 }
 
-export function createSpinnerFactory(isCI: boolean): SpinnerFactory {
-  if (isCI) {
-    // In CI / json-output mode we don't render a spinner, but we still emit
-    // the success/failure text via plain console output so logs stay
-    // diagnosable. The previous no-op variant silently dropped messages like
-    // "Bag size: ... bytes" and "Selected provider: ...", which made a
-    // pre-sign anomaly hard to catch.
+export interface SpinnerFactoryOptions {
+  // Drop everything to /dev/null. Use when the caller's stdout must remain
+  // valid JSON (e.g. `--json-output`) — Codex C1 was about exactly this.
+  silent?: boolean
+  // Skip the animated ora spinner (CI mode); still emit success/failure
+  // text via console.log so logs stay diagnosable. The factory used to
+  // be a complete no-op in CI mode and that hid an anomaly during
+  // round-5 mainnet soak.
+  plain?: boolean
+}
+
+export function createSpinnerFactory(opts: boolean | SpinnerFactoryOptions = {}): SpinnerFactory {
+  // Back-compat: legacy callers pass a single boolean meaning "isCI".
+  // Treat true as plain (logs visible), false as full ora spinner.
+  const norm: SpinnerFactoryOptions = typeof opts === 'boolean' ? { plain: opts } : opts
+
+  if (norm.silent) {
+    return {
+      start: () => ({ succeed: () => {}, fail: () => {}, warn: () => {} }),
+    }
+  }
+
+  if (norm.plain) {
     return {
       start: (startMsg: string) => {
         if (startMsg) console.log(`  ${startMsg}`)
@@ -28,8 +44,9 @@ export function createSpinnerFactory(isCI: boolean): SpinnerFactory {
       },
     }
   }
-  const originalOra = ora
+
+  // Default: animated spinner via ora.
   return {
-    start: (msg: string) => originalOra(msg).start() as unknown as Spinner,
+    start: (msg: string) => ora(msg).start() as unknown as Spinner,
   }
 }
