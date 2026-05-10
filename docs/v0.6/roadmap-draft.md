@@ -57,24 +57,74 @@ TON-Torrent and the Resistance Tools stack already run**. It:
 - has built-in tunnel support (paves the way to B3),
 - is actively maintained (v1.4.1 / 2026-04-06).
 
-Plan:
-1. Read `tonutils-storage` HTTP API surface (1–2 h investigation).
-   Fail-fast if there's no equivalent of `new-contract-message` /
-   `get-meta` / `get-bag-size`.
-2. Add `tonutils-storage` as an alternate backend in `src/daemon/`
-   alongside the C++ one. New CLI flag `--daemon-backend=ton-core|tonutils`
-   for the transition; default flips to `tonutils` once smoke tests pass.
-3. Re-run the daemon parity test against `tonutils-storage`.
-4. Once stable: drop the C++ backend.
+#### B2 prep findings (2026-05-10)
 
-Estimated work: 2–4 days. The risk is the BOC parity test — we proved
-byte-equal against `storage-daemon`'s `new-contract-message`. If
-`tonutils-storage`'s equivalent emits a different layout, we either
-adapt the parity check or rely entirely on the self-built BOC (v0.5
-already does that for the final outbound message).
+Surveyed the tonutils-storage HTTP API and source. What we get:
 
-Out of scope until B2 lands: provider-related code paths (already
-deprecated to "experimental").
+| Capability | tonutils endpoint | Status |
+|---|---|---|
+| Create bag from a directory | `POST /api/v1/create { path, description }` → `{ bag_id }` | ✅ direct fit |
+| List bags | `GET /api/v1/list` | ✅ |
+| Bag size + completeness | `GET /api/v1/details?bag_id=…` → `size`, `bag_size`, `completed` | ✅ |
+| Bag root hash | `GET /api/v1/details` → `merkle_hash` (= `TorrentInfo.RootHash`) | ✅ |
+| Bag seeding | daemon stays alive while running | ✅ |
+| **`microchunk_hash` for `op::offer_storage_contract`** | **not exposed** | ❌ |
+
+The `merkle_hash` field is `TorrentInfo.RootHash`, not the
+`microchunk_hash` the TON Core provider master expects. xssnick's
+ecosystem uses a **different provider protocol**
+(`tonutils-storage-provider`, repo `xssnick/tonutils-storage-provider`)
+with its own opcodes and contract layout — not interoperable with the
+TON Core `op::offer_storage_contract` (0x107c49ef) we built in v0.5.
+
+#### B2 design decision
+
+Disable `--provider` in v0.6 while we migrate. Concretely:
+
+- v0.6 default backend = `tonutils-storage` (xssnick / Go)
+- v0.6 fallback `--daemon-backend=ton-core` keeps the TON Core C++
+  daemon for users who explicitly want it
+- v0.6 `--provider` returns a clear error message pointing to
+  `docs/v0.5/round-postmortem.md` regardless of backend (the mainnet
+  provider economy is dormant for both protocols anyway, so disabling
+  it costs the user nothing real)
+- v0.7 will reintroduce provider support against whichever provider
+  protocol turns out to actually have liveness (xssnick's or TON Core's)
+
+This avoids the trap of trying to maintain two non-interoperable
+provider integrations during a migration. The DNS path (`--domain`,
+`buildChangeDnsRecordBody`, TonConnect signing) is unchanged — it
+sits above the daemon and doesn't care which backend is in use.
+
+#### B2 work breakdown
+
+1. **Daemon installer**: download tonutils-storage release for the
+   user's OS/arch into `~/.ton-sovereign/bin/tonutils-storage`.
+   Target version v1.4.1.
+2. **Daemon process**: spawn with `--api 127.0.0.1:<port>` plus a
+   per-session db dir; wait for HTTP `/api/v1/list` to respond.
+3. **HTTP client**: a thin wrapper around `fetch` for the four endpoints
+   we need (`create`, `details`, `list`, `remove`).
+4. **Refactor `src/cli/deploy.ts`**: replace daemon CLI calls with
+   HTTP API calls. Remove the `getBagSizeBytes` daemon CLI path; use
+   `details.size` instead.
+5. **`--daemon-backend` flag**: add to `src/cli.ts` and route through.
+   Default `tonutils`; valid values `tonutils` | `ton-core`.
+6. **Disable `--provider` in v0.6**: throw with a helpful message that
+   links to the post-mortem. Keep the code paths (we'll need them again
+   in v0.7).
+7. **Tests**: update daemon-related mocks; the parity integration test
+   already requires `RUN_DAEMON_TESTS=1` so it stays opt-in. Add a new
+   integration test that boots tonutils, creates a tiny bag via HTTP
+   API, and reads back size + merkle hash.
+
+Estimated work: 2 days end-to-end if no surprises.
+
+Stop-points (commit at each):
+- after step 3 (HTTP client + smoke against a manually-started
+  tonutils-storage)
+- after step 5 (CLI flag works, both backends usable)
+- after step 7 (tests green)
 
 ### B3 — ADNL Tunnel client integration
 
