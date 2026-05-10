@@ -139,33 +139,40 @@ const CheckWarningSchema = z.strictObject({
   message: z.string(),
 })
 
-export const CheckEnvResultSchema = z.strictObject({
-  ready: z.boolean(),
-  node_version: z.string(),
-  disk_free_mb: z.number().int().nonnegative(),
-  udp_port_17555_free: z.boolean(),
-  /**
-   * `"tonconnect"` if the kit's TonConnect connector code is reachable
-   * (no session check). `"agentic"` if `~/.config/ton/config.json`
-   * (or `$TON_CONFIG_PATH`) exists AND has at least one wallet entry the
-   * SDK's loader can read. Possible values: `[]`, `["tonconnect"]`,
-   * `["agentic"]`, `["tonconnect","agentic"]`. Each value appears at most once.
-   */
-  wallet_signers_available: z
-    .array(z.enum(['tonconnect', 'agentic']))
-    .refine((arr) => new Set(arr).size === arr.length, {
-      message: 'wallet_signers_available must contain unique values',
+export const CheckEnvResultSchema = z
+  .strictObject({
+    ready: z.boolean(),
+    node_version: z.string(),
+    disk_free_mb: z.number().int().nonnegative(),
+    udp_port_17555_free: z.boolean(),
+    /**
+     * `"tonconnect"` if the kit's TonConnect connector code is reachable
+     * (no session check). `"agentic"` if `~/.config/ton/config.json`
+     * (or `$TON_CONFIG_PATH`) exists AND has at least one wallet entry the
+     * SDK's loader can read. Possible values: `[]`, `["tonconnect"]`,
+     * `["agentic"]`, `["tonconnect","agentic"]`. Each value appears at most once.
+     */
+    wallet_signers_available: z
+      .array(z.enum(['tonconnect', 'agentic']))
+      .refine((arr) => new Set(arr).size === arr.length, {
+        message: 'wallet_signers_available must contain unique values',
+      }),
+    daemon_backend_installed: z.strictObject({
+      tonutils: z.boolean(),
+      ton_core: z.boolean(),
     }),
-  daemon_backend_installed: z.strictObject({
-    tonutils: z.boolean(),
-    ton_core: z.boolean(),
-  }),
-  network_reachable: z.boolean(),
-  /** Null when `source_dir` was null on input. */
-  source_dir_valid: z.boolean().nullable(),
-  blocking: z.array(CheckBlockingSchema),
-  warnings: z.array(CheckWarningSchema),
-})
+    network_reachable: z.boolean(),
+    /** Null when `source_dir` was null on input. */
+    source_dir_valid: z.boolean().nullable(),
+    blocking: z.array(CheckBlockingSchema),
+    warnings: z.array(CheckWarningSchema),
+  })
+  // ready ⇔ blocking.length === 0. Enforce schema-side so consumers parsing
+  // a hand-crafted result get the same invariant the producer's checkEnv()
+  // computes internally.
+  .refine((v) => v.ready === (v.blocking.length === 0), {
+    message: 'ready must be true if and only if blocking is empty',
+  })
 
 export type CheckEnvResult = z.infer<typeof CheckEnvResultSchema>
 
@@ -223,25 +230,27 @@ const FreeFormEventData = z.record(z.string(), z.unknown()).optional()
  */
 export const DeployEventSchema = z.discriminatedUnion('phase', [
   // Specialised: awaiting_signature
-  z.object({
+  z.strictObject({
     phase: z.literal('awaiting_signature'),
     ...BaseEventFields,
     data: AwaitingSignatureDataSchema,
   }),
   // Specialised: done (DeployResult)
-  z.object({
+  z.strictObject({
     phase: z.literal('done'),
     ...BaseEventFields,
     data: DeployResultSchema,
   }),
-  // Free-form intermediate phases
-  z.object({ phase: z.literal('env_check'), ...BaseEventFields, data: FreeFormEventData }),
-  z.object({ phase: z.literal('bag_creating'), ...BaseEventFields, data: FreeFormEventData }),
-  z.object({ phase: z.literal('daemon_starting'), ...BaseEventFields, data: FreeFormEventData }),
-  z.object({ phase: z.literal('bag_uploaded'), ...BaseEventFields, data: FreeFormEventData }),
-  z.object({ phase: z.literal('dns_signing'), ...BaseEventFields, data: FreeFormEventData }),
-  z.object({ phase: z.literal('dns_confirmed'), ...BaseEventFields, data: FreeFormEventData }),
-  z.object({ phase: z.literal('verifying'), ...BaseEventFields, data: FreeFormEventData }),
+  // Free-form intermediate phases — strict at the top-level (no extra
+  // keys beyond phase/message/percent/data); `data` itself is free-form
+  // for file-level granularity, daemon ports, etc.
+  z.strictObject({ phase: z.literal('env_check'), ...BaseEventFields, data: FreeFormEventData }),
+  z.strictObject({ phase: z.literal('bag_creating'), ...BaseEventFields, data: FreeFormEventData }),
+  z.strictObject({ phase: z.literal('daemon_starting'), ...BaseEventFields, data: FreeFormEventData }),
+  z.strictObject({ phase: z.literal('bag_uploaded'), ...BaseEventFields, data: FreeFormEventData }),
+  z.strictObject({ phase: z.literal('dns_signing'), ...BaseEventFields, data: FreeFormEventData }),
+  z.strictObject({ phase: z.literal('dns_confirmed'), ...BaseEventFields, data: FreeFormEventData }),
+  z.strictObject({ phase: z.literal('verifying'), ...BaseEventFields, data: FreeFormEventData }),
 ])
 
 export type DeployEvent = z.infer<typeof DeployEventSchema>
@@ -281,9 +290,10 @@ export const ErrCodeSchema = z.enum(ERR_CODES)
 export type ErrCode = z.infer<typeof ErrCodeSchema>
 
 /**
- * F4 cancellation data — REQUIRED for `code === "ERR_CANCELLED"`,
- * REJECTED on every other code (so cancellation-shaped data can't sneak
- * onto unrelated errors).
+ * F4 cancellation data — REQUIRED for `code === "ERR_CANCELLED"`. Other codes
+ * accept a free-form `data` record (so a producer can carry diagnostic detail
+ * on any error). The discriminator below makes ERR_CANCELLED specifically
+ * REQUIRE this strict shape so a malformed cancellation payload is rejected.
  */
 const CancelledDataSchema = z.strictObject({
   phase_at_cancel: PhaseSchema,

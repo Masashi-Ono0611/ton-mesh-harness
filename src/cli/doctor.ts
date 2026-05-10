@@ -1,8 +1,12 @@
 // `ton-sovereign-deploy doctor` — pre-flight environment check.
 // Thin CLI renderer over the SDK's `checkEnv()` ([S1] / [F2] schemas).
 // All probe logic lives in src/sdk/check.ts; this file only formats output.
+//
+// v0.7 → v0.8 RENDER COMPAT: This file preserves the v0.7 line set, status
+// codes, and detail format. Three additional lines (Agentic wallet config /
+// Disk free / Node version) are appended after — additive only.
 
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, statSync } from 'fs'
 import path from 'path'
 import os from 'os'
 import chalk from 'chalk'
@@ -28,19 +32,41 @@ const COLOR: Record<Status, (s: string) => string> = {
 }
 
 function detailFromBinary(label: string, binPath: string, expectedVersionFile: string, installed: boolean): CheckLine {
+  // v0.7 detail format: `<version> · <size MB>`. Preserved exactly.
   if (!installed) {
     return { status: 'warn', label, detail: `not installed yet — will be downloaded on first deploy (${binPath})` }
   }
-  let detail = binPath
+  const size = (() => {
+    try {
+      return statSync(binPath).size
+    } catch {
+      return 0
+    }
+  })()
+  let version = 'unknown'
   if (existsSync(expectedVersionFile)) {
     try {
       const v = readFileSync(expectedVersionFile, 'utf-8').trim()
-      if (v) detail = `${v} · ${binPath}`
+      if (v) version = v
     } catch {
       /* ignore */
     }
   }
-  return { status: 'pass', label, detail }
+  return { status: 'pass', label, detail: `${version} · ${(size / 1e6).toFixed(1)} MB` }
+}
+
+async function fetchJson<T = unknown>(url: string, timeoutMs = 5_000): Promise<T | null> {
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), timeoutMs)
+  try {
+    const r = await fetch(url, { method: 'GET', signal: ac.signal })
+    if (!r.ok) return null
+    return (await r.json()) as T
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 function tonconnectSessionLine(): CheckLine {
@@ -134,15 +160,30 @@ export async function runDoctor(): Promise<void> {
     detail: result.network_reachable ? 'https://tonapi.io' : 'timed out — check connectivity',
   })
 
-  // 4. TonConnect manifest reachability (warning, not blocker)
-  const manifestWarning = result.warnings.find((w) => w.code === 'TONCONNECT_MANIFEST_UNREACHABLE')
+  // 4. v0.7-compat: TON Storage provider registry (informational; not "live")
+  // Doctor's renderer fetches this directly so the SDK doesn't gain a
+  // probe field that isn't part of the F2 contract.
+  const providers = await fetchJson<{ providers?: unknown[] }>('https://tonapi.io/v2/storage/providers')
+  if (providers && Array.isArray(providers.providers)) {
+    lines.push({
+      status: 'pass',
+      label: 'TON Storage provider registry',
+      detail: `${providers.providers.length} entries (registry only — see docs/v0.5/round-postmortem.md re: liveness)`,
+    })
+  } else {
+    lines.push({ status: 'warn', label: 'TON Storage provider registry', detail: 'could not fetch' })
+  }
+
+  // 5. v0.7-compat: TonConnect manifest reachability is `fail` not `warn`
+  // (matches the v0.7 doctor; tonconnect is required for any --domain flow).
+  const manifestUnreachable = result.warnings.some((w) => w.code === 'TONCONNECT_MANIFEST_UNREACHABLE')
   lines.push({
-    status: manifestWarning ? 'warn' : 'pass',
+    status: manifestUnreachable ? 'fail' : 'pass',
     label: 'TonConnect manifest',
-    detail: manifestWarning ? `unreachable: ${TONCONNECT_MANIFEST_URL}` : TONCONNECT_MANIFEST_URL,
+    detail: manifestUnreachable ? `unreachable: ${TONCONNECT_MANIFEST_URL}` : TONCONNECT_MANIFEST_URL,
   })
 
-  // 5. TonConnect session (optional pairing)
+  // 6. TonConnect session (optional pairing)
   lines.push(tonconnectSessionLine())
 
   // 6. Agentic wallet config (Path 2 viability)
@@ -175,20 +216,23 @@ export async function runDoctor(): Promise<void> {
     detail: homeOk ? path.join(os.homedir(), '.ton-sovereign') : 'will be created on first deploy',
   })
 
-  // 9. Disk free
-  if (result.disk_free_mb > 0) {
-    lines.push({
-      status: result.disk_free_mb < 200 ? 'warn' : 'pass',
-      label: 'Disk free (cwd)',
-      detail: `${result.disk_free_mb} MB`,
-    })
-  }
-
-  // 10. Node version (informational)
+  // 9. Disk free — always rendered. 0 means probe failed (e.g. fs.statfs not
+  // available on Node <19) → display "n/a" rather than hiding the line.
   lines.push({
-    status: 'pass',
+    status: result.disk_free_mb === 0 ? 'warn' : result.disk_free_mb < 200 ? 'warn' : 'pass',
+    label: 'Disk free (cwd)',
+    detail: result.disk_free_mb === 0 ? 'n/a (fs.statfs not available; Node <19?)' : `${result.disk_free_mb} MB`,
+  })
+
+  // 10. Node version — warn on <18 (kit declares engines.node ">=18").
+  const nodeMajor = (() => {
+    const m = result.node_version.match(/^v(\d+)/)
+    return m ? Number(m[1]) : 0
+  })()
+  lines.push({
+    status: nodeMajor < 18 ? 'fail' : 'pass',
     label: 'Node version',
-    detail: result.node_version,
+    detail: nodeMajor < 18 ? `${result.node_version} (kit requires ≥18)` : result.node_version,
   })
 
   for (const line of lines) {

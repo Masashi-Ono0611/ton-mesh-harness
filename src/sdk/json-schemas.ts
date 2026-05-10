@@ -42,12 +42,12 @@ const SCHEMA_VERSION = '0.8.0'
 
 // `zodToJsonSchema` is typed as accepting a `ZodType<any, ZodTypeDef, any>`,
 // which our complex schemas (z.discriminatedUnion of strict objects with
-// refines) don't structurally match — TS chokes trying to infer. We cast
-// `schema as any` so type inference doesn't walk the union.
+// refines) don't structurally match — tsc chokes (OOM) trying to infer.
+// We cast `schema as never` so type inference doesn't walk the union.
 //
-// This is safe at runtime: zod-to-json-schema's actual implementation
-// reads `schema._def.typeName` and switches on it, so the structural
-// argument type is too strict.
+// This is safe at runtime: zod-to-json-schema@^3.25.2's implementation
+// reads `schema._def.typeName` and switches on it, so the declared
+// parameter type is too strict for the cases we hand it.
 const toJson = (schema: unknown, name: string): JsonSchema =>
   zodToJsonSchema(schema as never, { name, target: 'jsonSchema7' }) as unknown as JsonSchema
 

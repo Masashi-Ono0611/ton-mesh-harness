@@ -82,23 +82,62 @@ async function diskFreeMb(p: string): Promise<number> {
   }
 }
 
-function detectAgenticConfig(overridePath?: string): { found: boolean; path: string } {
+/**
+ * Loose probe: a config file with at least one wallet entry that has the
+ * shape `@ton/mcp` writes (`agentic_*` setup tools produce keys with private
+ * material plus a label / mnemonic / private_key field). The probe is
+ * intentionally tolerant of unknown keys — it answers "does Path 2 have
+ * something that looks like a usable wallet?" without committing to a
+ * specific schema version.
+ *
+ * If the file exists but the shape is not recognised, we emit
+ * `AGENTIC_CONFIG_SCHEMA_UNKNOWN` so a future `@ton/mcp` schema bump
+ * fails loud rather than silently rendering "agentic available."
+ */
+type AgenticProbeOutcome =
+  | { found: true; path: string }
+  | { found: false; path: string; reason: 'missing' | 'unparseable' | 'schema_unknown' }
+
+function detectAgenticConfig(overridePath?: string): AgenticProbeOutcome {
   const p =
     overridePath ??
     process.env.TON_CONFIG_PATH ??
     path.join(os.homedir(), '.config', 'ton', 'config.json')
-  if (!existsSync(p)) return { found: false, path: p }
-  // Sanity: can we read it as JSON? (We don't enforce schema here — that's
-  // a [M3] runtime concern. Doctor only answers "does the agentic path
-  // appear viable.")
+  if (!existsSync(p)) return { found: false, path: p, reason: 'missing' }
+
+  let parsed: unknown
   try {
-    const raw = readFileSync(p, 'utf-8')
-    const parsed = JSON.parse(raw)
-    if (parsed && typeof parsed === 'object') return { found: true, path: p }
-    return { found: false, path: p }
+    parsed = JSON.parse(readFileSync(p, 'utf-8'))
   } catch {
-    return { found: false, path: p }
+    return { found: false, path: p, reason: 'unparseable' }
   }
+
+  // Look for any plausible wallet-list shape `@ton/mcp` writes:
+  //   - top-level `wallets: Array<{...}>`
+  //   - top-level array of wallets
+  //   - top-level object whose values look like wallets (keyed by label)
+  // A "plausible wallet" has at least one of: privateKey, private_key,
+  // mnemonic, secret. We don't assert the cryptographic shape — just that
+  // the entry intends to carry signing material.
+  const looksLikeWallet = (e: unknown): boolean => {
+    if (!e || typeof e !== 'object') return false
+    const o = e as Record<string, unknown>
+    return Boolean(
+      o.privateKey ?? o.private_key ?? o.mnemonic ?? o.secret ?? o.signer ?? o.address,
+    )
+  }
+  const hasWallet = (() => {
+    if (Array.isArray(parsed)) return parsed.some(looksLikeWallet)
+    if (parsed && typeof parsed === 'object') {
+      const o = parsed as Record<string, unknown>
+      if (Array.isArray(o.wallets)) return o.wallets.some(looksLikeWallet)
+      return Object.values(o).some(looksLikeWallet)
+    }
+    return false
+  })()
+
+  if (hasWallet) return { found: true, path: p }
+  return { found: false, path: p, reason: 'schema_unknown' }
 }
 
 function detectTonConnectSession(): boolean {
@@ -182,15 +221,27 @@ export async function checkEnv(opts: CheckEnvOptions = { source_dir: null }): Pr
     // session — both are true here, so always include.
     wallet_signers_available.push('tonconnect')
   }
-  // Path 2 — agentic: viable iff the config file exists AND parses as JSON.
-  // [M3] will additionally validate the schema and presence of an active
-  // wallet — doctor stops at "file appears viable."
+  // Path 2 — agentic: viable iff the config file exists AND has at least
+  // one entry that looks like a wallet. [M3] will additionally instantiate
+  // and verify the signer; doctor stops at "the file has plausible wallet
+  // shape." A `schema_unknown` outcome means the file exists but doesn't
+  // match the writer convention — surface as a warning so a future
+  // `@ton/mcp` schema change fails loud.
   const agentic = detectAgenticConfig()
   if (agentic.found) {
     wallet_signers_available.push('agentic')
+  } else if (agentic.reason === 'schema_unknown') {
+    warnings.push({
+      code: 'AGENTIC_CONFIG_SCHEMA_UNKNOWN',
+      message: `Found ${agentic.path} but it doesn't match the expected @ton/mcp wallet shape; agentic mode disabled. If you set this up via @ton/mcp@alpha, file an issue with the schema we should support.`,
+    })
+  } else if (agentic.reason === 'unparseable') {
+    warnings.push({
+      code: 'AGENTIC_CONFIG_UNPARSEABLE',
+      message: `Found ${agentic.path} but it didn't parse as JSON; agentic mode disabled.`,
+    })
   }
-  // (Note: tonconnect always-true above means duplicate paths can't happen.
-  // Schema's uniqueness refine guards the result anyway.)
+  // (Schema uniqueness refine guards against tonconnect being added twice.)
 
   // ─── UDP port probe ───────────────────────────────────────────────────────
   const udp_port_17555_free = await isUdpPortFree(UDP_PORT_TONUTILS_DEFAULT)
