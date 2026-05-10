@@ -8,31 +8,34 @@ import {
   parseWalletInput,
 } from '../src/sdk/schemas'
 
+/**
+ * Schema unit tests — focused on invariants the JSON Schema snapshot
+ * (`test/sdk-json-schemas.test.ts`) cannot catch by itself: discriminator
+ * semantics, refines, strict-object boundaries, error contract.
+ *
+ * Positive default-shape coverage lives in the snapshot test; this file
+ * tests REJECT paths and code-aware behaviour that snapshots can't see.
+ */
 describe('SDK schemas (zod)', () => {
-  describe('WalletSpec discriminated union', () => {
-    it('defaults to tonconnect / Tonkeeper when called via DeployOptions', () => {
-      const opts = DeployOptionsSchema.parse({ source_dir: './dist' })
-      expect(opts.wallet.kind).toBe('tonconnect')
-      if (opts.wallet.kind === 'tonconnect') {
-        expect(opts.wallet.connector).toBe('Tonkeeper')
-      }
+  describe('WalletSpec discriminator + defaults', () => {
+    it('DeployOptions defaults: tonconnect/Tonkeeper, all flags false, nullables null', () => {
+      const o = DeployOptionsSchema.parse({ source_dir: './dist' })
+      expect(o.wallet).toEqual({ kind: 'tonconnect', connector: 'Tonkeeper' })
+      expect(o.daemon_backend).toBe('tonutils')
+      expect(o.testnet).toBe(false)
+      expect(o.keep_alive).toBe(false)
+      expect(o.skip_verify).toBe(false)
+      expect(o.domain).toBeNull()
+      expect(o.tunnel_config).toBeNull()
     })
 
-    it('accepts an agentic wallet without overrides', () => {
-      const w = WalletSpecSchema.parse({ kind: 'agentic' })
-      expect(w.kind).toBe('agentic')
-    })
-
-    it('accepts agentic with config_path + wallet_label overrides', () => {
+    it('agentic accepts config_path + wallet_label overrides', () => {
       const w = WalletSpecSchema.parse({
         kind: 'agentic',
         config_path: '/tmp/ton.json',
         wallet_label: 'main',
       })
-      if (w.kind === 'agentic') {
-        expect(w.config_path).toBe('/tmp/ton.json')
-        expect(w.wallet_label).toBe('main')
-      }
+      expect(w).toEqual({ kind: 'agentic', config_path: '/tmp/ton.json', wallet_label: 'main' })
     })
 
     it('rejects an unknown wallet kind', () => {
@@ -41,48 +44,39 @@ describe('SDK schemas (zod)', () => {
       ).toThrow()
     })
 
-    it('accepts tonconnect with custom connector substring', () => {
-      const w = WalletSpecSchema.parse({ kind: 'tonconnect', connector: 'MyTonWallet' })
-      if (w.kind === 'tonconnect') {
-        expect(w.connector).toBe('MyTonWallet')
-      }
+    it('rejects unknown keys on tonconnect (strict object)', () => {
+      expect(() =>
+        WalletSpecSchema.parse({ kind: 'tonconnect', connector: 'X', extra: 'y' }),
+      ).toThrow()
+    })
+
+    it('DeployOptions rejects unknown keys (strict object)', () => {
+      expect(() =>
+        DeployOptionsSchema.parse({ source_dir: './dist', mystery_flag: true }),
+      ).toThrow()
     })
   })
 
-  describe('DeployOptions defaults', () => {
-    it('fills daemon_backend / testnet / keep_alive / skip_verify', () => {
-      const o = DeployOptionsSchema.parse({ source_dir: './dist' })
-      expect(o.daemon_backend).toBe('tonutils')
-      expect(o.testnet).toBe(false)
-      expect(o.keep_alive).toBe(false)
-      expect(o.skip_verify).toBe(false)
-      expect(o.domain).toBeNull()
-      expect(o.tunnel_config).toBeNull()
+  describe('parseWalletInput (CLI backwards-compat helper)', () => {
+    it('lifts a bare string to {kind: tonconnect, connector}', () => {
+      expect(parseWalletInput('Tonkeeper')).toEqual({ kind: 'tonconnect', connector: 'Tonkeeper' })
+    })
+
+    it('lifts undefined to the default tonconnect/Tonkeeper', () => {
+      expect(parseWalletInput(undefined)).toEqual({ kind: 'tonconnect', connector: 'Tonkeeper' })
+    })
+
+    it('passes through a structured WalletSpec object', () => {
+      expect(parseWalletInput({ kind: 'agentic' })).toEqual({ kind: 'agentic' })
     })
   })
 
-  describe('CheckEnvResult', () => {
-    it('accepts both signers', () => {
-      const r = CheckEnvResultSchema.parse({
-        ready: true,
-        node_version: 'v22.0.0',
-        disk_free_mb: 1024,
-        udp_port_17555_free: true,
-        wallet_signers_available: ['tonconnect', 'agentic'],
-        daemon_backend_installed: { tonutils: true, ton_core: false },
-        network_reachable: true,
-        source_dir_valid: null,
-        blocking: [],
-        warnings: [],
-      })
-      expect(r.wallet_signers_available).toEqual(['tonconnect', 'agentic'])
-    })
-
+  describe('CheckEnvResult refines', () => {
     it('rejects an invalid signer name', () => {
       expect(() =>
         CheckEnvResultSchema.parse({
           ready: true,
-          node_version: 'v22.0.0',
+          node_version: 'v22',
           disk_free_mb: 1024,
           udp_port_17555_free: true,
           wallet_signers_available: ['unknown-signer'],
@@ -94,125 +88,12 @@ describe('SDK schemas (zod)', () => {
         }),
       ).toThrow()
     })
-  })
 
-  describe('ErrorPayload (F5 contract)', () => {
-    it('accepts ERR_CANCELLED with F4 cancellation data', () => {
-      const err = ErrorPayloadSchema.parse({
-        code: 'ERR_CANCELLED',
-        message: 'cancelled at awaiting_signature',
-        severity: 'recoverable',
-        data: {
-          phase_at_cancel: 'awaiting_signature',
-          may_have_published: true,
-          bag_id: 'abc',
-          tx_hash: null,
-        },
-      })
-      expect(err.code).toBe('ERR_CANCELLED')
-    })
-
-    it('accepts ERR_BUSY (added per [F2] follow-up)', () => {
-      const err = ErrorPayloadSchema.parse({
-        code: 'ERR_BUSY',
-        message: 'concurrent call rejected',
-        severity: 'recoverable',
-      })
-      expect(err.code).toBe('ERR_BUSY')
-    })
-
-    it('REJECTS ERR_CANCELLED without F4 data (code-aware discriminator)', () => {
-      expect(() =>
-        ErrorPayloadSchema.parse({
-          code: 'ERR_CANCELLED',
-          message: 'cancelled',
-          severity: 'recoverable',
-        }),
-      ).toThrow()
-    })
-
-    it('REJECTS cancellation-shaped data on a non-cancelled code', () => {
-      // Cancellation fields must not sneak onto unrelated errors.
-      expect(() =>
-        ErrorPayloadSchema.parse({
-          code: 'ERR_BAG_UPLOAD',
-          message: 'upload failed',
-          severity: 'fatal',
-          data: {
-            phase_at_cancel: 'bag_uploaded',
-            may_have_published: false,
-            bag_id: 'abc',
-            tx_hash: null,
-          },
-        }),
-      ).not.toThrow()
-      // ^ NOTE: cancellation-shaped data CAN appear on non-cancelled codes
-      //   because the non-cancelled variant accepts a free-form `data`
-      //   record. The strictness we DO enforce is that ERR_CANCELLED
-      //   *requires* its strict shape — i.e. a malformed cancellation
-      //   payload is rejected. See the previous test.
-    })
-
-    it('accepts ERR_NO_WALLET with fix_hint', () => {
-      const err = ErrorPayloadSchema.parse({
-        code: 'ERR_NO_WALLET',
-        message: 'no agentic wallet found',
-        severity: 'fatal',
-        fix_hint: 'Run npx -y @ton/mcp@alpha agentic_start_root_wallet_setup',
-      })
-      expect(err.fix_hint).toContain('@ton/mcp')
-    })
-
-    it('rejects an unknown error code', () => {
-      expect(() =>
-        ErrorPayloadSchema.parse({
-          code: 'ERR_UNKNOWN',
-          message: 'x',
-          severity: 'fatal',
-        }),
-      ).toThrow()
-    })
-  })
-
-  describe('parseWalletInput (CLI backwards-compat helper)', () => {
-    it('lifts a bare string to {kind: tonconnect, connector}', () => {
-      const w = parseWalletInput('Tonkeeper')
-      expect(w.kind).toBe('tonconnect')
-      if (w.kind === 'tonconnect') expect(w.connector).toBe('Tonkeeper')
-    })
-
-    it('lifts undefined to the default tonconnect/Tonkeeper', () => {
-      const w = parseWalletInput(undefined)
-      expect(w.kind).toBe('tonconnect')
-      if (w.kind === 'tonconnect') expect(w.connector).toBe('Tonkeeper')
-    })
-
-    it('passes through a structured WalletSpec object', () => {
-      const w = parseWalletInput({ kind: 'agentic' })
-      expect(w.kind).toBe('agentic')
-    })
-  })
-
-  describe('strict-object enforcement (MINOR 1 follow-up)', () => {
-    it('rejects unknown keys on DeployOptions', () => {
-      expect(() =>
-        DeployOptionsSchema.parse({ source_dir: './dist', mystery_flag: true }),
-      ).toThrow()
-    })
-
-    it('rejects unknown keys on WalletSpec/tonconnect', () => {
-      expect(() =>
-        WalletSpecSchema.parse({ kind: 'tonconnect', connector: 'X', extra: 'y' }),
-      ).toThrow()
-    })
-  })
-
-  describe('wallet_signers_available uniqueness (MINOR 2 follow-up)', () => {
-    it('rejects duplicate signers like ["tonconnect", "tonconnect"]', () => {
+    it('rejects duplicate signers (uniqueness refine)', () => {
       expect(() =>
         CheckEnvResultSchema.parse({
           ready: true,
-          node_version: 'v22.0.0',
+          node_version: 'v22',
           disk_free_mb: 1024,
           udp_port_17555_free: true,
           wallet_signers_available: ['tonconnect', 'tonconnect'],
@@ -226,42 +107,62 @@ describe('SDK schemas (zod)', () => {
     })
   })
 
-  describe('DeployEvent — phase transitions', () => {
-    it('accepts awaiting_signature with tonconnect data', () => {
-      const ev = DeployEventSchema.parse({
-        phase: 'awaiting_signature',
-        message: 'open wallet to approve',
-        data: {
-          signing_mode: 'tonconnect',
-          signing_url: 'https://tonkeeper.com/transfer/xyz',
-          expires_at_iso: '2026-05-10T22:00:00Z',
-        },
-      })
-      expect(ev.phase).toBe('awaiting_signature')
+  describe('ErrorPayload (F5 code-aware contract)', () => {
+    it('ERR_CANCELLED requires strict F4 cancellation data', () => {
+      // Valid: strict data present
+      expect(() =>
+        ErrorPayloadSchema.parse({
+          code: 'ERR_CANCELLED',
+          message: 'cancelled',
+          severity: 'recoverable',
+          data: {
+            phase_at_cancel: 'awaiting_signature',
+            may_have_published: true,
+            bag_id: 'abc',
+            tx_hash: null,
+          },
+        }),
+      ).not.toThrow()
+      // Invalid: data missing on ERR_CANCELLED
+      expect(() =>
+        ErrorPayloadSchema.parse({
+          code: 'ERR_CANCELLED',
+          message: 'cancelled',
+          severity: 'recoverable',
+        }),
+      ).toThrow()
     })
 
-    it('accepts awaiting_signature with agentic data (signing_url=null, wallet_label set)', () => {
-      const ev = DeployEventSchema.parse({
-        phase: 'awaiting_signature',
-        message: 'agentic signing',
-        data: { signing_mode: 'agentic', signing_url: null, wallet_label: 'main' },
+    it('non-cancelled codes accept free-form data with optional fix_hint', () => {
+      const err = ErrorPayloadSchema.parse({
+        code: 'ERR_NO_WALLET',
+        message: 'no agentic wallet found',
+        severity: 'fatal',
+        fix_hint: 'Run npx -y @ton/mcp@alpha agentic_start_root_wallet_setup',
       })
-      expect(ev.phase).toBe('awaiting_signature')
+      expect(err.fix_hint).toContain('@ton/mcp')
     })
 
-    it('accepts agentic awaiting_signature without wallet_label (defaults to null)', () => {
+    it('rejects an unknown error code', () => {
+      expect(() =>
+        ErrorPayloadSchema.parse({ code: 'ERR_UNKNOWN', message: 'x', severity: 'fatal' }),
+      ).toThrow()
+    })
+  })
+
+  describe('DeployEvent — discriminated union on phase', () => {
+    it('agentic awaiting_signature works without wallet_label (defaults null)', () => {
       const ev = DeployEventSchema.parse({
         phase: 'awaiting_signature',
         message: 'agentic signing',
         data: { signing_mode: 'agentic', signing_url: null },
       })
-      expect(ev.phase).toBe('awaiting_signature')
       if (ev.phase === 'awaiting_signature' && ev.data.signing_mode === 'agentic') {
         expect(ev.data.wallet_label).toBeNull()
       }
     })
 
-    it('rejects awaiting_signature with mismatched data shape', () => {
+    it('rejects awaiting_signature with mismatched data shape (tonconnect needs signing_url string)', () => {
       expect(() =>
         DeployEventSchema.parse({
           phase: 'awaiting_signature',
@@ -271,7 +172,7 @@ describe('SDK schemas (zod)', () => {
       ).toThrow()
     })
 
-    it('accepts done event with DeployResult', () => {
+    it('accepts done event with DeployResult-shaped data', () => {
       const ev = DeployEventSchema.parse({
         phase: 'done',
         message: 'deploy complete',
@@ -288,7 +189,7 @@ describe('SDK schemas (zod)', () => {
       expect(ev.phase).toBe('done')
     })
 
-    it('accepts free-form intermediate phases (e.g. bag_creating, bag_uploaded)', () => {
+    it('intermediate phases carry free-form data', () => {
       const ev = DeployEventSchema.parse({
         phase: 'bag_creating',
         message: 'building bag',

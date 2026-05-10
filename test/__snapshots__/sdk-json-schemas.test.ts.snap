@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env input snapshot 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env schemas (input + output) 1`] = `
 {
   "$ref": "#/definitions/CheckEnvOptions",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -22,7 +22,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env input snapshot 1`]
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env output snapshot 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env schemas (input + output) 2`] = `
 {
   "$ref": "#/definitions/CheckEnvResult",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -139,7 +139,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env output snapshot 1`
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy input snapshot 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + output) 1`] = `
 {
   "$ref": "#/definitions/DeployOptions",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -245,7 +245,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy input snapshot 1`] = 
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy output snapshot 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + output) 2`] = `
 {
   "$ref": "#/definitions/DeployResult",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -317,7 +317,56 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy output snapshot 1`] =
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > supplementary schema: DeployEvent 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, DeployEvent, ErrorPayload) 1`] = `
+{
+  "$ref": "#/definitions/WalletSpec",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "WalletSpec": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "connector": {
+              "default": "Tonkeeper",
+              "type": "string",
+            },
+            "kind": {
+              "const": "tonconnect",
+              "type": "string",
+            },
+          },
+          "required": [
+            "kind",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "config_path": {
+              "type": "string",
+            },
+            "kind": {
+              "const": "agentic",
+              "type": "string",
+            },
+            "wallet_label": {
+              "type": "string",
+            },
+          },
+          "required": [
+            "kind",
+          ],
+          "type": "object",
+        },
+      ],
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, DeployEvent, ErrorPayload) 2`] = `
 {
   "$ref": "#/definitions/DeployEvent",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -648,7 +697,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > supplementary schema: DeployEvent 1`] 
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > supplementary schema: ErrorPayload 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, DeployEvent, ErrorPayload) 3`] = `
 {
   "$ref": "#/definitions/ErrorPayload",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -767,55 +816,6 @@ exports[`SDK JSON Schemas (V1 snapshot) > supplementary schema: ErrorPayload 1`]
             "code",
             "message",
             "severity",
-          ],
-          "type": "object",
-        },
-      ],
-    },
-  },
-}
-`;
-
-exports[`SDK JSON Schemas (V1 snapshot) > supplementary schema: WalletSpec 1`] = `
-{
-  "$ref": "#/definitions/WalletSpec",
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "definitions": {
-    "WalletSpec": {
-      "anyOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "connector": {
-              "default": "Tonkeeper",
-              "type": "string",
-            },
-            "kind": {
-              "const": "tonconnect",
-              "type": "string",
-            },
-          },
-          "required": [
-            "kind",
-          ],
-          "type": "object",
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "config_path": {
-              "type": "string",
-            },
-            "kind": {
-              "const": "agentic",
-              "type": "string",
-            },
-            "wallet_label": {
-              "type": "string",
-            },
-          },
-          "required": [
-            "kind",
           ],
           "type": "object",
         },
