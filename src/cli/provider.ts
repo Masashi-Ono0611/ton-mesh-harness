@@ -126,6 +126,21 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
   const amountTon = (Number(contractMsg.amountNano) / 1e9).toFixed(4)
   const spanSeconds = Math.round(contractMsg.spanDays * 86400)
 
+  // Belt and suspenders: refuse to send a sign request that asks for more
+  // than 1 TON. Rounds 4–5 surfaced ways for the auto-pricing to land at
+  // 10+ TON when input data was off; an explicit hard cap stops bad combos
+  // before they hit the user's wallet UI. The user can pass --provider
+  // <addr> to a known-cheap provider if they really want larger amounts.
+  const ABORT_AMOUNT_NANO = 1_000_000_000n  // 1 TON
+  if (contractMsg.amountNano > ABORT_AMOUNT_NANO) {
+    throw new Error(
+      `Refusing to request ${amountTon} TON — exceeds the 1 TON safety cap. ` +
+      `Likely cause: provider rate or bag size is anomalous (rate=` +
+      `${provider.ratePerMbDay} nano/MB/day, size=${sizeBytes} bytes). ` +
+      `Pass --provider <addr> to override or pad your bag.`,
+    )
+  }
+
   console.log()
   console.log(chalk.bold('💸 Storage Payment — Sign to Contract'))
   console.log(chalk.dim(`  Amount: ${amountTon} TON`))

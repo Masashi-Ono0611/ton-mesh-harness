@@ -63,6 +63,12 @@ export interface FetchProvidersOptions {
   sizeBytes?: number
 }
 
+// Hardcoded sane upper bound on rate. ~10_000 nano/MB/day = ~3.65 TON/GB/year
+// is well above any realistic provider price (current cheapest mainnet
+// providers sit at 20–100 nano). Anything above this is almost certainly a
+// scam entry left in the registry; our default auto-select skips them.
+const MAX_REASONABLE_RATE_NANO_PER_MB_DAY = 10_000
+
 export async function fetchProviders(
   testnet = false,
   opts: FetchProvidersOptions = {},
@@ -70,7 +76,12 @@ export async function fetchProviders(
   const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/storage/providers`
   const data = await httpsGet<{ providers: TonApiProvider[] }>(url, { timeout: 10_000 })
   return data.providers
-    .filter(p => p.accept_new_contracts && p.rate_per_mb_day > 10 && p.max_span >= 3600)
+    .filter(p =>
+      p.accept_new_contracts
+      && p.rate_per_mb_day > 10
+      && p.rate_per_mb_day <= MAX_REASONABLE_RATE_NANO_PER_MB_DAY
+      && p.max_span >= 3600,
+    )
     .filter(p => {
       if (opts.sizeBytes === undefined) return true
       return opts.sizeBytes >= p.minimal_file_size && opts.sizeBytes <= p.maximal_file_size
@@ -169,15 +180,25 @@ export function getBagSizeBytes(bagId: string, daemon: DaemonHandle): number {
     { encoding: 'utf8', timeout: 10_000 }
   )
   const output = (result.stdout ?? '') + (result.stderr ?? '')
+  let info: DaemonBagInfo | undefined
   try {
-    // daemon outputs JSON after some boilerplate — find the first '{...}'
     const match = output.match(/\{[\s\S]*\}/)
-    if (match) {
-      const info: DaemonBagInfo = JSON.parse(match[0])
-      return info.total_size ?? 0
-    }
+    if (match) info = JSON.parse(match[0])
   } catch { /* fall through */ }
-  return 0
+
+  // Round 5 mainnet soak failure mode: silently returning 0 here meant the
+  // size guard in fetchProviders / generateContractMessage saw a zero-byte
+  // bag, which bizarrely matched only providers with min_size=0 (a known
+  // scam-pattern). Failing fast here is cheaper than letting the user see a
+  // 10 TON sign request before realising something is off.
+  const total = info?.total_size
+  if (total === undefined || total <= 0) {
+    throw new Error(
+      `Could not read bag size for ${bagId} from storage-daemon-cli ` +
+      `(total_size=${total}). Daemon output:\n${output.slice(-500)}`,
+    )
+  }
+  return total
 }
 
 // -----------------------------------------------------------------------
