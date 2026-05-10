@@ -169,6 +169,11 @@ npx ton-sovereign-deploy ./build/
 - **README / dashboard を「self-host first」に整理** ← 本コミットで対応中
 - **Payment Network 抽象化（v0.7 以降）** ← tunnel rental / future provider rental の自動マイクロペイメント
 
+**v0.9 構想** — **agent-native pivot**: CLI 主導から、AI エージェントが自律的に発見・呼び出す MCP server + skill へ。`mcp.ton.org` / Agentic Wallets / `ton-org/skills` の整備が直近1ヶ月で揃ったタイミングを取りに行く設計。
+- 全体ビジョン: [`docs/v0.9/agent-native-pivot.md`](docs/v0.9/agent-native-pivot.md)
+- 0.9.0 が出荷する1点に絞った要件: [`docs/v0.9/mcp-core-requirements.md`](docs/v0.9/mcp-core-requirements.md)
+- エコシステム動向の根拠: [`docs/v0.6/ecosystem-watch-2026-05.md`](docs/v0.6/ecosystem-watch-2026-05.md)
+
 **リリース:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 
 **最初の公開ターゲット:** Gateway 2026 (2026年5月)
