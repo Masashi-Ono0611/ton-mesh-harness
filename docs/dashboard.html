@@ -614,7 +614,7 @@
     </div>
   </div>
   <div class="meta">
-    <strong>v0.4.0</strong> · main @ <code>8857ba4</code><br>
+    <strong>v0.4.0 → v0.5 in progress</strong><br>
     Updated 2026-05-10 · <code>ton-projects/sovereign-deploy-kit</code>
   </div>
 </header>
@@ -768,7 +768,33 @@
     <div class="num">v0.5</div>
     <div class="name">Hardening &amp; Visibility</div>
     <div class="when">May → Jun 2026</div>
-    <span class="status">▶ Next</span>
+    <span class="status">▶ In progress</span>
+  </div>
+</section>
+
+<!-- v0.5 in-progress callout -->
+<section class="concept-hero" style="padding: 24px 28px; margin-bottom: 28px;">
+  <div style="display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap;">
+    <div style="flex-shrink: 0; font-size: 32px; line-height: 1;">🔧</div>
+    <div style="flex: 1; min-width: 260px;">
+      <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; color: var(--ton); text-transform: uppercase; margin-bottom: 6px;">
+        v0.5 lane B · landed 2026-05-10
+      </div>
+      <div style="font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; margin-bottom: 10px;">
+        <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">--max-span</code> uint8 cap is gone — provider contracts now take any uint32 span.
+      </div>
+      <div style="font-size: 13px; color: var(--text-dim); line-height: 1.65;">
+        Instead of waiting on an upstream daemon fix, we found that the on-chain provider contract already accepts <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">expected_max_span: uint32</code> &mdash; only the daemon CLI parser was buggy.
+        We now <strong>build the offer-storage-contract BOC ourselves in TypeScript</strong>, using the daemon only to extract <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">TorrentInfo</code> and <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">microchunk_hash</code>.
+        New CLI flag: <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">--span &lt;seconds&gt;</code> (default 86 400 = 1 day, max 4 294 967 295 ≈ 136 years).
+        Verified by a byte-equal parity test against the daemon CLI&rsquo;s output, plus 11 TL-B unit tests &mdash; <strong>77/77 green</strong>.
+      </div>
+      <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <span class="chip green">no upstream dependency</span>
+        <span class="chip blue">parity proven</span>
+        <span class="chip purple">mainnet soak still pending</span>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1045,8 +1071,8 @@
       </div>
       <div class="bar-row">
         <span class="bar-label">Provider contract (full term)</span>
-        <span class="bar-track"><span class="bar-fill partial" style="width: 35%"></span></span>
-        <span class="bar-value">35%</span>
+        <span class="bar-track"><span class="bar-fill partial" style="width: 85%"></span></span>
+        <span class="bar-value">85%</span>
       </div>
       <div class="bar-row">
         <span class="bar-label">Propagation visibility</span>
@@ -1073,12 +1099,12 @@
   <div class="card span-6">
     <h2>Known issues &amp; tracking <span class="pill">v0.5 inbox</span></h2>
     <div class="issues">
-      <div class="issue crit">
-        <div class="iname">daemon <code>--max-span</code> uint8 bug</div>
+      <div class="issue idea" style="border-left-color: var(--green);">
+        <div class="iname"><span style="color: var(--green);">✓</span> daemon <code>--max-span</code> uint8 bug — <span style="color: var(--green);">routed around</span></div>
         <div class="idesc">
-          <code>--rate --max-span</code> only accepts 0–255 — even <code>200</code> works but <code>256</code> fails. Contract term pinned to 200s (~3 min) until the daemon ships a fix.
+          On-chain contract takes <code>uint32</code>; only the CLI parser was buggy. v0.5 builds the BOC in TS with <code>@ton/core</code>, taking any uint32 span (default 86400 = 1 day). Verified by byte-equal parity test against the daemon CLI&rsquo;s 200s output.
         </div>
-        <div class="imeta">blocks: real-term hosting · src: <code>provider.ts</code></div>
+        <div class="imeta">resolved: 2026-05-10 · CLI flag <code>--span</code> · <code>docs/v0.5/lane-b-self-generated-boc.md</code></div>
       </div>
       <div class="issue crit">
         <div class="iname">P2P timeout on <code>--provider &lt;addr&gt;</code></div>
@@ -1172,7 +1198,8 @@
         <tr><td><code>--testnet</code></td><td>Use TON testnet (no real TON needed)</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
         <tr><td><code>--desc &lt;text&gt;</code></td><td>Bag description (defaults to dir name)</td><td>v0.1</td><td><span class="chip green">Stable</span></td></tr>
         <tr><td><code>--domain &lt;dom&gt;</code></td><td>Register bag under a <code>.ton</code> domain</td><td>v0.2</td><td><span class="chip green">Stable</span></td></tr>
-        <tr><td><code>--provider [addr]</code></td><td>Sign storage provider contract for 24/7 hosting (no addr → cheapest)</td><td>v0.4</td><td><span class="chip yellow">Limited (200s)</span></td></tr>
+        <tr><td><code>--provider [addr]</code></td><td>Sign storage provider contract for 24/7 hosting (no addr → cheapest)</td><td>v0.4</td><td><span class="chip green">Stable</span></td></tr>
+        <tr><td><code>--span &lt;seconds&gt;</code></td><td>Provider contract span (default 86400 = 1 day, max 4294967295)</td><td>v0.5</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--ci-mode</code></td><td>Disable spinners for CI logs</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
         <tr><td><code>--json-output</code></td><td>Emit JSON instead of human-readable</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
         <tr><td><code>--skip-verify</code></td><td>Skip 60s post-upload verify</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
@@ -1285,13 +1312,13 @@
   <div class="card span-6">
     <h2>Resuming today <span class="chip blue">2026-05-10</span></h2>
     <ul class="check">
-      <li>Re-read <code>docs/provider-contract.md</code> — the v0.4 known-issues block is the spec for v0.5 lane B</li>
-      <li>Open a v0.5 milestone on GitHub mirroring the three lanes (A · B · C)</li>
+      <li>Lane B · self-generated BOC route landed (<code>--max-span</code> bypassed)</li>
+      <li>Lane B · <code>--span</code> CLI flag wired through, 77/77 tests green</li>
+      <li class="pending">Lane B · mainnet soak test: sign a real <code>--span 86400</code> contract on a small bag</li>
       <li class="pending">Lane A · cut <code>doctor</code> subcommand scope (daemon + TONAPI + providers)</li>
       <li class="pending">Lane A · design propagation-monitor JSON shape (compatible with <code>--json-output</code>)</li>
-      <li class="pending">Lane B · file upstream issue / track <code>--max-span</code> uint8 fix in TON daemon</li>
+      <li class="pending">Lane B · port <code>microchunk_hash</code> derivation to TS (drop daemon CLI dependency in BOC path)</li>
       <li class="pending">Lane C · prepare a single end-to-end demo dApp for Gateway 2026</li>
-      <li>Untracked: <code>.DS_Store</code> at repo root — add to <code>.gitignore</code> if not already</li>
     </ul>
     <div class="note">
       Five days of low-risk, parallelizable work — <strong>doctor + propagation monitor</strong> is the lane A wedge. None of these blocks public launch but each one materially improves the &ldquo;why didn&rsquo;t this work?&rdquo; experience.
