@@ -242,9 +242,14 @@ v0.6 contract).
 
 ## Out of scope for v0.6 (deferred / dropped)
 
-- ❌ **`sites` record support** — empirical evidence says it's not in use
-  (foundation.ton, all sampled .ton domains)
-- ❌ **`rldp-http-proxy` bundling** — not needed without sites support
+- ⚠ **`sites` record support** — re-classified from "out of scope" to
+  "v0.7 priority". The v0.6 dismissal was wrong; on-chain probing
+  (`scripts/dns-probe.cjs` + `docs/v0.6/sites-record-discovery.md`)
+  shows piracy.ton, tonnet-sync-check.ton and likely most other
+  Telegram-visible .ton sites use `dns_adnl_address` records. TONAPI
+  was returning `sites: []` for them, which fooled the original
+  survey. Expect a B5 milestone covering `rldp-http-proxy`
+  integration + sites-record writes.
 - ❌ **Building or operating a storage provider ourselves** — economics
   are wrong while no one else is doing it
 - ❌ **Full Payment Network integration** — pushed to v0.7
