@@ -4,6 +4,100 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0-rc1] – 2026-05-10
+
+First-useful flag-plant for the **agent-surface track**. v0.8.0-rc1 ships
+no MCP server yet — the GA tag (week 6) introduces `ton-sovereign-mcp`.
+This rc tag plants discoverability artifacts and the rescoped design docs
+that encode the [P-1 probe](docs/v0.8/at-mcp-probe.md) verdict, so an agent
+that later searches for `"deploy a static site to .ton"` can already find
+the kit (via the existing CLI). The acceptance hypothesis behind that
+discovery claim is verified by the [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26)
+(rc1 run = CLI path).
+
+### Added
+
+- **README "Agent quickstart"** section pointing at the existing
+  `npx -y ton-sovereign-deploy` CLI flow, with explicit guidance for
+  agent runtimes (Claude Code / Cursor / etc.) and a discoverability
+  caveat. The GA section sketches the future MCP server config using the
+  correct dual-bin invocation: `npx -y --package ton-sovereign-deploy ton-sovereign-mcp`.
+- **npm keywords** (`mcp`, `mcp-server`, `agent-skill`, `claude-skill`,
+  `ton-storage`, `ton-dns`, `dot-ton`, `adnl`, `static-site`, `website`,
+  `decentralized-web`, `tonconnect`, `agentic-wallet`) added to
+  `package.json` so agent / npm searches surface the kit for static-site
+  + .ton + agent-callable queries.
+- **package description rewritten** to lead with the deploy-static-site-to-.ton
+  capability and to flag the rc1 / GA scope honestly (no MCP server yet
+  at rc1; planned for GA).
+- **Concept update doc** at `docs/v0.8/concept-update-2026-05-10.md`
+  capturing the dual-track (v0.8 agent surface / v0.9 C2 NAT + C3 Payments)
+  framing, premises P1–P5' (Codex-refined), OQ#0–#7 resolutions, the
+  agency-transfer red-team test definition, and the canonical compose
+  model after the P-1 verdict.
+- **P-1 probe memo** at `docs/v0.8/at-mcp-probe.md`. Verdict: B (with
+  nuance). The original `@ton/mcp::wallet_connect` handoff doesn't exist
+  — `@ton/mcp` is agentic-wallet-first (keys at `~/.config/ton/config.json`,
+  no TonConnect tool). The workable composition is **filesystem-level**:
+  `ton-sovereign-mcp` will read the same config file via `@ton/walletkit`,
+  the lib `@ton/mcp` itself uses. `@ton/mcp` is NOT a runtime dep — it's
+  a peer MCP server an agent may load alongside `ton-sovereign-mcp`.
+
+### Changed
+
+- **`docs/v0.8/agent-native-pivot.md` rewritten** ("v0.9 plan — agent-native
+  pivot" → "v0.8 plan — agent-surface track parallel to self-host UX
+  track"). Removes the `mcp.ton.org`-as-third-party-registry claim
+  (it's a curated landing page for the official `@ton/mcp`, not a
+  registry — verified during P-1 Phase 2.75 landscape audit). Q1
+  (signing) marked DECIDED via the dual-path `WalletSpec`. P3 split
+  into P3a (signing, GA) and P3b (daemon lifecycle, deferred to 0.8.x).
+  P4 (discoverability) promoted from "deferred to 0.9.x" → "in v0.8.0",
+  with rc1/GA artifact split spelled out.
+- **`docs/v0.8/mcp-core-requirements.md` rescoped.** F2 `wallet` field
+  becomes a discriminated union (`WalletSpec`: `{kind: "tonconnect"}`
+  for human-signed | `{kind: "agentic"}` for autonomous). F4 cancellation
+  rewritten with phase-dependent semantics — daemon always killed, but
+  DNS publication is best-effort post-`awaiting_signature` (the wallet
+  may sign + broadcast even after cancellation in Path 1). New §NF6
+  documents the filesystem-level `@ton/walletkit` compose. Acceptance
+  criteria split into rc1 (week 1) and GA (week 6) tiers.
+- Directory rename: **`docs/v0.9/` → `docs/v0.8/`.** The agent-surface
+  track now occupies the v0.8 slot; the v0.7-deferred C2 NAT + C3 Payments
+  move to a v0.9 reserve slot. CHANGELOG `[0.7.0]` "Out of scope" updated
+  from "deferred to v0.8" → "deferred to v0.9" with explanatory note.
+  `src/cli.ts` C1 comment updated. README "v0.9 構想" section
+  rewritten to "v0.8 構想 (agent-surface track)" with a separate
+  "v0.9 reserve" pointer.
+
+### Out of scope (deferred to v0.8.0 GA — week 6)
+
+- The MCP server itself (`src/mcp.ts`, dual `bin` entry).
+- SDK extraction (`src/sdk/`).
+- In-repo skill markdown at `skills/sovereign-deploy.md`.
+- `templates/.well-known/mcp.json` template.
+- PR to `ton-org/skills`.
+- The MCP-path run of the [V4] red-team test.
+
+### Out of scope (deferred to v0.8.x or later)
+
+- `mcp.ton.org` registry submission — no submission flow exists today.
+- `sovereign_status`, `sovereign_redeploy`, `sovereign_stop` MCP tools —
+  validate the two-tool contract first.
+- Daemon detached / launchd / systemd / remote — orthogonal to the
+  agent-surface track.
+- Agentic Wallet integration via MCP-RPC handoff with `@ton/mcp` —
+  doesn't exist at the protocol level (P-1 verdict). The agentic flow
+  is filesystem-level, not RPC.
+- `.well-known/ton-deploy.json` provenance manifest (Codex C axis from
+  the concept update) — noted as candidate, no commitment.
+
+### Internal
+
+- 121 unit tests (carry-over from v0.7.0; no new test additions in
+  rc1 — the rc1 ship is doc + metadata only). v0.7.0 CLI behaviour is
+  unchanged; `--site-auto` continues to work.
+
 ## [0.7.0] – 2026-05-10
 
 v0.7 closes the v0.6 BYO gap: `--site-auto` now spins up

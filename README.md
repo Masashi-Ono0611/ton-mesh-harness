@@ -26,6 +26,50 @@ Press Ctrl+C to stop seeding.
 
 ---
 
+## Agent quickstart (v0.8 rc1)
+
+このツールは AI エージェントから直接呼び出せるよう設計されています。Agent runtime に "deploy a static site to .ton" のような prompt を投げたとき、kit を npm 検索 + README + skill registry 経由で見つけてもらうことを *狙っています* — ただしこれは hypothesis で、[V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。発見が外れた場合は明示的に呼び出してください:
+
+**At rc1: CLI 経由で agent から呼び出し**
+
+```jsonc
+// Agent runtime からの explicit fallback invocation:
+// (発見が成功すれば自動、失敗時は user / agent prompt にこの行を貼る)
+npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton --json-output
+```
+
+`--json-output` を付けると 1 行 1 JSON の structured output になり、agent が parse しやすくなります。
+
+**At GA (v0.8.0 GA, 予定): MCP server 経由**
+
+`ton-sovereign-mcp` は `ton-sovereign-deploy` package の dual-bin の 1 つ(別パッケージではない)。MCP client config では npm の `--package` フラグ経由で呼びます:
+
+```jsonc
+// agent runtime の MCP server config に追加:
+{
+  "mcpServers": {
+    "ton-sovereign-deploy": {
+      "command": "npx",
+      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+    }
+    // optional: 並列に @ton/mcp を load して agentic wallet ops と組み合わせる
+    // "ton": { "command": "npx", "args": ["-y", "@ton/mcp@alpha"] }
+  }
+}
+```
+
+agent は `sovereign_check_env` → `sovereign_deploy` の 2 tool を順に call します。
+
+**Wallet モード(GA)**: `wallet: {kind: "tonconnect", connector}` (default、人間が phone wallet で承認) または `wallet: {kind: "agentic", config_path?, wallet_label?}` (autonomous、`~/.config/ton/config.json` のキーで自動署名 — config を `@ton/mcp` と共有、ただし MCP-RPC ハンドオフではなく filesystem level の compose)。詳細は [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) §F2 と [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md)。
+
+**rc1 時点の wallet**: CLI のみ、TonConnect の `--wallet Tonkeeper` だけ(agentic mode は GA で `--wallet-mode agentic` として opt-in)。
+
+**Discoverability の前提**: agent が npm 検索 + skill registry でこの kit に到達できるよう README / keywords / `.well-known/mcp.json` template を整備していますが、これは **acceptance hypothesis であって fact ではありません**。rc1 の [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。失敗したら artifact 側を直して再 ship。
+
+> **Note for agents:** `--watch` モードは agent 環境で daemon を維持する責任が生まれます。short-lived agent session では `--no-watch` を使い、bag が伝播するのを別途待ってください。
+
+---
+
 ## なぜ必要か
 
 DeFi プロトコルのフロントエンドが繰り返し「強制オフライン」にされている:
@@ -169,7 +213,7 @@ npx ton-sovereign-deploy ./build/
 - **README / dashboard を「self-host first」に整理** ← 本コミットで対応中
 - **Payment Network 抽象化（v0.7 以降）** ← tunnel rental / future provider rental の自動マイクロペイメント
 
-**v0.8 構想** — **agent-surface track** (CLI 主導と並列に開く agent 向け表面): AI エージェントが自律的に発見・呼び出す MCP server + skill。multi-channel discoverability (npm keywords / README Agent quickstart / in-repo skill / `.well-known/mcp.json`) を moat として `@ton/mcp` と compose する設計。
+**v0.8 構想** — **agent-surface track** (CLI 主導と並列に開く agent 向け表面): AI エージェントが自律的に発見・呼び出す MCP server + skill。multi-channel discoverability (npm keywords / README Agent quickstart / in-repo skill / `.well-known/mcp.json`) を moat として、`@ton/mcp` と filesystem 共有 (`~/.config/ton/config.json` を `@ton/walletkit` 経由で同居) する設計。MCP-RPC ハンドオフではない。
 - 全体ビジョン: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md)
 - 0.8.0 が出荷する1点に絞った要件: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md)
 - 2026-05-10 のコンセプト更新ログ: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md)

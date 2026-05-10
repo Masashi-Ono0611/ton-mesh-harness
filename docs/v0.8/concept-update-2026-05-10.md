@@ -49,23 +49,58 @@ The Eureka behind P1/P4: `mcp.ton.org` was assumed to be the canonical TON MCP r
 
 ---
 
-## `@ton/mcp` compose handoff (assumption to verify in P-1)
+## Compose model (revised after P-1 verdict — see [`at-mcp-probe.md`](at-mcp-probe.md))
+
+> **Original assumption was wrong.** The first draft of this section assumed
+> `@ton/mcp::wallet_connect` exists and persists a TonConnect session to
+> `~/.tonconnect/<session>.json` for `ton-sovereign-mcp` to read. The
+> [P-1 probe](at-mcp-probe.md) verified that **`@ton/mcp` has no `wallet_connect`,
+> no TonConnect flow, and no on-disk TonConnect session.** It is agentic-wallet
+> first: keys persisted at `~/.config/ton/config.json`. There is no inter-MCP
+> RPC for external BOC signing.
+>
+> The revised model below is filesystem-level, not MCP-RPC.
+
+**Two orthogonal signing paths in `ton-sovereign-mcp`** (selected by the
+`wallet` discriminated-union input):
 
 ```
-1. Agent loads two MCP servers: @ton/mcp (stdio) and ton-sovereign-mcp (stdio).
-2. Agent calls @ton/mcp::wallet_connect → wallet session is established and
-   persisted to ~/.tonconnect/<session>.json (or @ton/mcp's actual cache path).
-3. Agent calls ton-sovereign-mcp::sovereign_deploy({source_dir, domain, wallet}).
-4. ton-sovereign-mcp's deploy implementation reads the same TonConnect cache
-   file (file-based session sharing, no inter-MCP RPC). If absent,
-   sovereign_deploy returns ERR_NO_WALLET with fix_hint pointing the agent at
-   @ton/mcp::wallet_connect.
-5. DNS sign request emits awaiting_signature progress; agent surfaces
-   signing_url to human.
-6. After signature, sovereign_deploy completes; bag_id + dns_tx_hash returned.
+Path 1 — Human-signed (default, v0.6/v0.7 carryover)
+─────────────────────────────────────────────────────
+wallet: {kind: "tonconnect", connector: "Tonkeeper"}
+
+Agent / human invokes ton-sovereign-mcp::sovereign_deploy(...).
+ton-sovereign-mcp uses its own TonConnect connector (already in the kit).
+QR / deep-link surfaced to the human via awaiting_signature event.
+Human approves on phone wallet. DNS tx broadcast.
+@ton/mcp is not involved at all.
+
+Path 2 — Agentic-signed (new in v0.8.0)
+───────────────────────────────────────
+wallet: {kind: "agentic", config_path?, wallet_label?}
+
+Agent invokes ton-sovereign-mcp::sovereign_deploy(...).
+ton-sovereign-mcp reads ~/.config/ton/config.json (or TON_CONFIG_PATH)
+directly via @ton/walletkit — the same lib @ton/mcp itself uses.
+Picks the active or labeled wallet. Signs the DNS-write BOC internally.
+Broadcasts via existing tonutils path.
+@ton/mcp is a peer MCP server (the agent may also load it for unrelated
+balance/swap/NFT/DNS-resolve operations), but ton-sovereign-mcp does not
+call into it via MCP-RPC. The integration is at the filesystem level.
 ```
 
-If `@ton/mcp` does not write its session to a discoverable on-disk cache, design a thin internal TonConnect connector and update `mcp-core-requirements.md` accordingly. The "compose" framing weakens but doesn't collapse.
+**`@ton/mcp` is NOT a runtime dep** of `ton-sovereign-mcp`. The peer
+relationship is "an agent may load both"; the shared resource is the
+on-disk agentic wallet config file, accessed via the shared `@ton/walletkit`
+loader.
+
+[`at-mcp-probe.md`](at-mcp-probe.md) verified the **direction** (filesystem-level
+compose at `~/.config/ton/config.json` via `@ton/walletkit`) and ruled out the
+MCP-RPC handoff. The exact `@ton/walletkit` loader export name and the precise
+`config.json` schema remain implementation open questions to verify when
+[F1] #5 / [F2] #13 / [M3] #10 begin work; the probe budget did not include
+running `@ton/walletkit` end-to-end. Allow ~30 minutes of source-reading at
+the start of those issues to confirm the API.
 
 ---
 
@@ -84,7 +119,7 @@ Acceptance criteria in `mcp-core-requirements.md` verify that artifacts ship. Th
 | Week | Track | Action |
 |---|---|---|
 | 0 | v0.8.0 | **(P-1) Verify `@ton/mcp` compose contract.** ~4h. Output: `docs/v0.8/at-mcp-probe.md` with verdict + design impact. **Gate: P0 cannot begin until this memo lands.** |
-| 1 | v0.8.0 | Tag `0.8.0-rc1`. Ship README "Agent quickstart" + npm keywords. Update `agent-native-pivot.md` ("pivot" → "agent-surface track parallel to self-host UX track"). Rescope `mcp-core-requirements.md` (compose contract section, F4 cancellation realism, drop agentic-wallet from F2, list moved-in items). Run **red-team agent test** end of week. |
+| 1 | v0.8.0 | Tag `0.8.0-rc1`. Ship README "Agent quickstart" + npm keywords. Update `agent-native-pivot.md` ("pivot" → "agent-surface track parallel to self-host UX track"). Rescope `mcp-core-requirements.md` (dual-path `WalletSpec` per [P-1](at-mcp-probe.md), F4 cancellation realism, list moved-in items). Run **red-team agent test** end of week. |
 | 2 | v0.9 | C2 NAT spike — read `adnl-tunnel-client` source, validate xssnick `tonutils-go` tunnel implementation, decide Go shim vs Node binding. Output: `docs/v0.9/c2-tunnel-spike.md`. v0.9-only week. |
 | 3 | v0.8.0 | P0 SDK extraction per `mcp-core-requirements.md` NF1. `src/sdk/{deploy,check,schemas,events}.ts`, zero `console.*` in SDK. CLI becomes adapter. v0.9 paused this week (`runDeployTonutils` is the shared seam). |
 | 4 | v0.9 | C2 NAT implementation (continuation from week 2 spike). Defer C3 (payments) until C2 has a real tunnel pool to test against. |
@@ -95,28 +130,29 @@ Beyond week 6, v0.9 C2/C3 resume in interleaved cadence. v0.8.x roadmap (Agentic
 
 ---
 
-## Edits required in existing v0.8 docs (Next Step #1, scheduled week 1)
+## Edits to existing v0.8 docs — APPLIED 2026-05-10 (D4 #24, week 1, after P-1 verdict)
 
-These edits are **planned but not yet applied**. Both files are still valid as drafts until the rescope happens.
+Originally listed as planned edits. The P-1 probe verdict refined them; the
+applied edits below reflect the dual-path model (Path 1 = TonConnect / Path 2 =
+agentic via shared `@ton/walletkit` config), not the original "drop agentic
+from F2 / delegate to @ton/mcp upstream" framing.
 
-**`docs/v0.8/agent-native-pivot.md`:**
-- Title / framing: "v0.8 plan — agent-native pivot" → "v0.8 plan — agent-surface track (parallel to self-host UX track)"
-- "Why now" #1: remove the `mcp.ton.org launched (2026-05-01) ... we want to be in that registry` claim (it's not a third-party registry)
-- "Current state vs target": clarify CLI usage continues; agent-surface is additive, not a replacement
-- Architecture section: re-frame to compose-with-`@ton/mcp` (see handoff sequence above)
-- Q1 (signing model): mark as decided — TonConnect for human-signed flows, Agentic Wallet integration is a `@ton/mcp` consumer concern, not a sovereign-deploy concern in v0.8.0
+**`docs/v0.8/agent-native-pivot.md`** (APPLIED):
+- ✅ Title: "v0.8 plan — agent-native pivot" → "v0.8 plan — agent-surface track (parallel to self-host UX track)"
+- ✅ "Why now" #1: removed `mcp.ton.org launched ... we want to be in that registry` claim (per [P-1](at-mcp-probe.md) Phase 2.75 it's a curated landing page, not a third-party registry).
+- ✅ "Current state vs target": clarified CLI usage continues; agent-surface is additive, not a replacement.
+- ✅ Architecture: rewritten around dual-path `WalletSpec` (Path 1 TonConnect / Path 2 agentic via `@ton/walletkit` config-file compose).
+- ✅ Q1 (signing): marked DECIDED — both modes first-class in v0.8.0 via discriminated union.
 
-**`docs/v0.8/mcp-core-requirements.md`:**
-- F2 `sovereign_deploy.wallet`: remove agentic-wallet implication. Document as "TonConnect connector substring" only.
-- Out-of-scope list: keep "Agentic Wallet integration" but reword from "deferred" to "delegated to @ton/mcp upstream"
-- New In-Scope section: "@ton/mcp compose contract" with the handoff sequence
-- F4 cancellation: add realistic semantics — *"After `awaiting_signature` event fires, cancellation is best-effort. The wallet may sign and broadcast even after the agent cancels."*
-- Move into v0.8.0 In Scope (was P4 deferred in `agent-native-pivot.md`):
-  - README "Agent quickstart" section
-  - npm keywords (`mcp`, `mcp-server`, `agent-skill`, `ton`, `claude-skill`)
-  - In-repo `skills/sovereign-deploy.md` (distinct from PR to `ton-org/skills`)
-  - `templates/.well-known/mcp.json` (MCP-server self-description; **NOT** a provenance manifest, distinct from rejected `.well-known/ton-deploy.json`)
-- Explicitly defer to 0.8.x: `mcp.ton.org` registry submission (no submission flow exists today)
+**`docs/v0.8/mcp-core-requirements.md`** (APPLIED):
+- ✅ F2 `sovereign_deploy.wallet`: now `WalletSpec` discriminated union (`tonconnect` | `agentic`).
+- ✅ Out-of-scope list: "Agentic Wallet integration via `@ton/mcp` MCP-RPC handoff" (precise — the handoff doesn't exist; Path 2 is in scope, just not via @ton/mcp RPC).
+- ✅ New §NF6 "Wallet config compose (filesystem-level, P-1 verdict)".
+- ✅ F4 cancellation: realistic semantics — *"After `awaiting_signature` event fires, cancellation is best-effort. The wallet may sign and broadcast even after the agent cancels."* Plus `data.may_have_published` and Path 1/2 distinction.
+- ✅ Moved into v0.8.0 In Scope:
+  - rc1: README "Agent quickstart" + npm keywords + this rescope
+  - GA: in-repo `skills/sovereign-deploy.md`, `templates/.well-known/mcp.json` (MCP-server self-description; **NOT** a provenance manifest), PR to `ton-org/skills`
+- ✅ Explicitly deferred to 0.8.x: `mcp.ton.org` registry submission (no submission flow exists today).
 
 ---
 

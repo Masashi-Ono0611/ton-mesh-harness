@@ -1,33 +1,57 @@
-# v0.8 plan — agent-native pivot
+# v0.8 plan — agent-surface track (parallel to self-host UX track)
 
-**Drafted:** 2026-05-10
-**Status:** Plan only. v0.6 must finish (B3.x) before any of this lands.
-**Goal:** Reposition the kit from "CLI a human runs" to "SDK + MCP server + skill that an AI agent autonomously discovers and invokes." The CLI continues to work — it just stops being the primary surface.
+**Drafted:** 2026-05-10 (v0.9 → v0.8 renumber, "pivot" → "agent-surface track")
+**Status:** Plan only. v0.7 is shipped (`--site-auto` lives, `runDeployTonutils` is the seam this track will refactor).
+**Goal:** Open an **agent-surface track** parallel to the v0.6/v0.7 self-host-UX track. Ship `ton-sovereign-mcp` (an MCP server an AI agent can invoke), an SDK underneath with no console IO, and the multi-channel discoverability artifacts that let an agent find the kit without being told its name. **The CLI continues to work and remains the human entry point** — agent-surface is *additive*, not a replacement.
+
+> **Renamed 2026-05-10 (concept update):** this was originally drafted as
+> v0.9 and labelled "agent-native pivot." After the [concept update](concept-update-2026-05-10.md)
+> the track is v0.8.0 (parallel, not pivot) and the v0.7-deferred C2 NAT +
+> C3 Payments now occupy the v0.9 reserve slot. The "pivot" framing is
+> retired because the CLI does not stop being the primary surface — agents
+> get their own surface, humans keep theirs.
 
 ## Why now
 
-Three things landed in the past 30 days that make this the right pivot
-window (full evidence: `docs/v0.6/ecosystem-watch-2026-05.md`):
+Multiple ecosystem signals from the past 30 days make the agent-surface
+track the right work to open right now (full evidence: `docs/v0.6/ecosystem-watch-2026-05.md`,
+verified by [P-1 probe](at-mcp-probe.md) Phase 2.75 landscape findings):
 
-1. **`mcp.ton.org` launched** (2026-05-01). MCP is now the canonical
-   way agents talk to TON. We want to be in that registry.
-2. **Agentic Wallets standard** announced same day. Solves the agent
-   signing problem we've been hand-waving.
-3. **`ton-org/skills` repo** is the curated skills directory. Listing
-   ourselves there is how agents find us via search/training corpora.
+1. **MCP-as-canonical for agent ↔ blockchain interop.** The Anthropic
+   Skills/Plugins/MCP three-tier taxonomy is settled; agents discover
+   tools via multiple channels (npm keywords, `awesome-mcp-servers`,
+   `glama.ai`, `mcpmarket.com`, `.well-known/mcp.json`, vendor skill
+   directories). **Note:** `mcp.ton.org` is *not* a third-party
+   registry — it's a landing page for the official `@ton/mcp` server.
+   Earlier drafts of this doc assumed it would be a discovery moat; the
+   [P-1 probe](at-mcp-probe.md) corrected that.
+2. **`@ton/mcp` exists and is agentic-wallet-first.** `npx -y @ton/mcp@alpha`
+   manages autonomous signing keys at `~/.config/ton/config.json`. This
+   solves the "how does an agent sign?" question for autonomous flows.
+   It does **not** do TonConnect — see Architecture below.
+3. **`ton-org/skills` repo** is the curated TON skills directory.
+   Adding `skills/sovereign-deploy.md` to it (PR at v0.8.0 GA per [D5] #25)
+   lands us in the canonical TON skill catalogue.
 4. **Bot API 10.0** (2026-05-08) added guest-bot agentic flows — the
    "agents acting on behalf of users in TG" pattern is now mainstream.
 5. **MTONGA Step 3** (Telegram becomes TON's driving force, late May)
    will likely come with new dev tools. We want our agent surface
    ready before anyone else's reference implementation lands.
 
-## Current state vs target experience
+Static-site-on-TON is **empty in agent-skill-land** (per P-1 landscape
+audit). Whoever ships the first useful + indexed + copy-pastable +
+credible-TON-aligned answer claims the canonical position.
 
-### Current (v0.6) — CLI-first
+## Current state vs additive agent-surface
+
+### Current (v0.7) — CLI for humans
 
 ```bash
+# Human-signed, BYO daemon (default)
 npx ton-sovereign-deploy ./dist --domain myprotocol.ton
-# human watches output, approves wallet sign, leaves laptop on
+
+# Self-host with auto-spawn rldp-http-proxy (v0.7 C1)
+npx ton-sovereign-deploy ./dist --domain myprotocol.ton --site-auto
 ```
 
 The kit assumes a human:
@@ -35,9 +59,11 @@ The kit assumes a human:
 - Reads the README
 - Runs the binary
 - Approves a TonConnect QR in their wallet app
-- Keeps the daemon alive on their machine
+- Keeps the daemon alive on their machine (with `--watch` or daemonised separately)
 
-### Target (v0.8) — agent-native
+This continues to work in v0.8.0 unchanged. **The agent-surface track is additive.**
+
+### Additive (v0.8) — agent-surface
 
 User asks Claude / Cursor / a custom agent:
 
@@ -45,25 +71,30 @@ User asks Claude / Cursor / a custom agent:
 > already set up."
 
 The agent:
-1. **Discovers** the kit via MCP registry / skill catalogue / npm
-   keywords — without the user naming it.
-2. **Reads** the kit's machine-readable capability declaration (input
-   schema, prerequisites, cost estimate, failure modes).
-3. **Validates** prerequisites by calling the kit's `check` tool
+1. **Discovers** the kit via npm keywords (`mcp`, `mcp-server`, `agent-skill`,
+   `ton`, `claude-skill`), README "Agent quickstart" section, in-repo
+   `skills/sovereign-deploy.md`, `templates/.well-known/mcp.json`,
+   `awesome-mcp-servers` listings, or the `ton-org/skills` PR (multi-channel
+   per the [P-1 probe](at-mcp-probe.md) landscape findings).
+2. **Reads** the kit's machine-readable capability declaration (`tools/list`
+   JSON Schema generated from zod).
+3. **Validates** prerequisites by calling `sovereign_check_env`
    (wallet present? domain owned? UDP port free? build dir healthy?).
-4. **Invokes** `deploy` via MCP, passing structured input. Receives
-   structured progress events and a structured result.
+4. **Invokes** `sovereign_deploy` via MCP, passing structured input
+   (`wallet: {kind: "tonconnect" | "agentic", ...}`). Receives structured
+   progress events and a structured result.
 5. **Handles** the "site stays live only while daemon runs" constraint
    by either:
    a) keeping the user's local daemon process supervised, or
-   b) provisioning a remote daemon (cheap VPS, Fly.io, etc.) when
-      the user opts in.
+   b) provisioning a remote daemon (cheap VPS, Fly.io, etc.) — out of
+      scope for v0.8.0 (deferred to 0.8.x).
 6. **Reports** back to the user with: bag id, .ton URL, dashboard URL,
    liveness state, next-step suggestions.
 
-**The CLI stays.** Power users and CI keep using it. But the new
-primary user is an agent, and every kit decision after v0.8 is judged
-against "does this make agent flows clearer / less error-prone?"
+**The CLI stays the human entry point.** Agents use the MCP server. The
+v0.7 CLI flow (TonConnect QR via wallet app) is unchanged for humans.
+Every kit decision after v0.8 is judged against "does this make *both*
+agent flows and human flows clearer / less error-prone?"
 
 ## Architecture: what has to change
 
@@ -72,34 +103,63 @@ The kit already has a partly-typed programmatic surface
 entry layer is CLI-shaped. We need to invert the layering:
 
 ```
-Today                       v0.8
-─────                       ────
-cli.ts (commander)          packages/sdk/        ← pure programmatic core
-  └── runDeploy*()            ├── deploy()
-       └── inline IO         ├── checkEnv()
-                             ├── status()
-                             └── events emitter (structured progress)
+Today (v0.7)                v0.8
+────────────                ────
+src/cli.ts (commander)      src/sdk/             ← pure programmatic core
+  └── runDeploy*()            ├── deploy.ts
+       └── inline IO         ├── check.ts
+                             ├── schemas.ts      ← single zod source of truth
+                             └── events.ts       ← typed progress events
 
-                            packages/cli/        ← thin wrapper, today's UX
-                            packages/mcp/        ← MCP server (stdio + http)
-                            packages/skill/      ← markdown skill for ton-org/skills
+                            src/cli/             ← thin wrapper, today's UX
+                            src/mcp.ts           ← MCP server (stdio)
+                            skills/sovereign-deploy.md   ← skill markdown
+                            templates/.well-known/mcp.json
 ```
+
+(Single repo, dual `bin` entries — `ton-sovereign-deploy` and `ton-sovereign-mcp` —
+not a monorepo split. Per OQ#3 in `concept-update-2026-05-10.md`.)
 
 Concretely:
 
 - **No console output in the SDK core.** Progress is emitted as typed
   events. The CLI subscribes and renders; the MCP server subscribes
-  and forwards as MCP `notifications/progress`.
+  and forwards as MCP `notifications/progress`. Lint-enforced (`src/sdk/`
+  has zero `console.*`).
 - **All CLI flags become a single `DeployOptions` object** with JSON
   Schema generated from it. No flag without a schema entry.
+- **Wallet is a discriminated union**, not a substring. Two signing paths
+  per the [P-1 probe verdict](at-mcp-probe.md):
+
+  ```ts
+  wallet: {kind: "tonconnect", connector: "Tonkeeper"}    // Path 1 (default)
+        | {kind: "agentic", config_path?, wallet_label?}  // Path 2 (new in v0.8.0)
+  ```
+
+  - **Path 1 (TonConnect, human-signed):** v0.6/v0.7 carryover. Wallet QR /
+    deep-link surfaced via `awaiting_signature` event with a `signing_url`.
+    `@ton/mcp` is **not** involved; this is the existing kit's TonConnect
+    connector.
+  - **Path 2 (agentic, autonomous):** the SDK reads `~/.config/ton/config.json`
+    (or `$TON_CONFIG_PATH`) directly via `@ton/walletkit` — the same loader
+    `@ton/mcp` uses. Picks the active or labeled wallet, signs the DNS-write
+    BOC internally. `@ton/mcp` is a *peer* MCP server an agent may also load
+    for unrelated wallet/swap/NFT/DNS-resolve operations, but `ton-sovereign-mcp`
+    does **not** call into it via MCP-RPC. The integration is at the filesystem
+    level (shared on-disk config), not at the protocol level.
 - **Errors are typed.** `EnvCheckError`, `WalletSignError`,
   `DaemonSpawnError`, `DnsTxError`, etc. Each has a stable `code` an
-  agent can branch on (e.g. `ERR_NO_WALLET`, `ERR_PORT_BUSY`).
-- **`check` is a first-class tool** (not just `doctor`). Returns
-  structured `{ ready: bool, missing: [...], warnings: [...] }`.
+  agent can branch on (e.g. `ERR_NO_WALLET`, `ERR_PORT_BUSY`,
+  `ERR_DNS_SIGN_REJECTED` — the latter Path 1 only).
+- **`check` is a first-class tool** (`sovereign_check_env`, not just
+  `doctor`). Returns structured `{ ready: bool, missing: [...], warnings: [...] }`.
 - **Idempotency.** Calling `deploy` twice with the same source dir +
   domain produces the same bag id and either short-circuits or
   no-ops on DNS if the record already matches.
+- **Cancellation is best-effort post-`awaiting_signature`.** See
+  `mcp-core-requirements.md` F4 for the realistic semantics — the wallet
+  may sign and broadcast even after agent cancellation in Path 1; in Path
+  2, cancellation is effective up until the broadcast moment.
 
 ## Phased shipping plan
 
@@ -121,20 +181,15 @@ Refactor `cli.ts` into a thin wrapper around a new `src/sdk/` module.
 ### P1 — MCP server (~5 days)
 New package surface (still single repo for now): `src/mcp/`.
 
-- Tools (MCP `tools/list` definitions):
-  - `sovereign_deploy` — input: source dir, domain, options. Output:
-    bag id, dns tx hash, dashboard URL, watch handle.
+- **GA tools (exactly 2, per `mcp-core-requirements.md` In Scope):**
+  - `sovereign_deploy` — input: source dir, domain, `WalletSpec`, options. Output: bag id, dns tx hash, dashboard URL, optional daemon handle.
   - `sovereign_check_env` — pre-flight readiness probe.
-  - `sovereign_status` — query an in-flight or completed deployment.
-  - `sovereign_redeploy` — trigger redeploy on an existing watch
-    handle (for agents wanting to push updates).
-  - `sovereign_stop_watch` — graceful daemon shutdown.
-- Schemas via zod → JSON Schema. Schemas double as the SDK's typing
-  source of truth.
+- **Deferred to v0.8.x** (do NOT implement at GA): `sovereign_status`, `sovereign_redeploy`, `sovereign_stop`. Validate the two-tool contract first; expand once agent usage shows the need.
+- Schemas via zod → JSON Schema. Schemas double as the SDK's typing source of truth.
 - Stdio transport first (Claude Code / Cursor compatibility). HTTP
   transport later (P4) for remote agent platforms.
-- `bin: { ton-sovereign-mcp: ./dist/mcp.js }` so users run
-  `npx ton-sovereign-mcp` from any agent that supports stdio MCP.
+- `bin: { ton-sovereign-mcp: ./dist/mcp.js }` (dual-bin in the same `ton-sovereign-deploy` npm package). MCP client config invokes via `--package`:
+  `{"command":"npx","args":["-y","--package","ton-sovereign-deploy","ton-sovereign-mcp"]}`.
 
 **Ships:** 0.8.0 alongside SDK.
 
@@ -160,42 +215,57 @@ so users not going through that path still get it via npm.
 
 **Ships:** 0.8.0 in repo. PR submission separate timeline.
 
-### P3 — Agent-friendly signing & daemon lifecycle (~5-7 days)
-The two hard problems agents hit. Decide before P3 starts (open
-questions section below). Provisional plan:
+### P3a — Agent-friendly signing (resolved by [P-1] verdict; ships at GA in v0.8.0)
 
-- **Signing**: integrate Agentic Wallet alongside TonConnect.
-  - If `opts.wallet === 'agentic'`, use the agentic-wallet SDK for
-    autonomous signing.
-  - If `opts.wallet === 'tonconnect'`, current QR flow continues
-    (agent reports the URL to the user, user approves, agent waits).
-  - Default: auto-detect (agentic wallet present? use it. else
-    TonConnect.).
-- **Daemon hosting**: add three documented modes.
+- The `wallet` field is a discriminated union (Path 1 = TonConnect human-signed,
+  Path 2 = agentic via shared `@ton/walletkit` config). Both are first-class
+  in v0.8.0. No auto-detection — the caller chooses explicitly. CLI default
+  remains TonConnect for backwards compat.
+- `@ton/mcp` is **not** imported. Path 2 reads `~/.config/ton/config.json`
+  via `@ton/walletkit` directly. See `mcp-core-requirements.md` §F2 and §NF6.
+
+**Ships:** 0.8.0 GA (week 6, alongside the MCP server).
+
+### P3b — Daemon lifecycle (deferred to v0.8.x)
+
+Three documented modes:
   - `local` (today): daemon stays alive on user's machine.
   - `detached`: daemon written as a launchd / systemd unit so it
     survives reboot. Kit ships templates.
   - `remote`: kit can SSH to a user-provided VPS, install daemon,
-    register the public IP. v0.8 ships `remote` as opt-in only —
-    no SaaS, no "we manage it for you".
+    register the public IP. Opt-in only — no SaaS, no "we manage it for you".
 
-**Ships:** 0.8.x patch releases, may slip past 0.8.0.
+**Ships:** 0.8.x patch releases (after 0.8.0 GA). Daemon lifecycle is
+orthogonal to the agent-surface track — not a v0.8.0 GA gate.
 
-### P4 — Discoverability (~2 days)
-Make agents find this without the user spelling out the package name.
+### P4 — Discoverability (PROMOTED to v0.8.0 In Scope per concept update)
 
-- npm: keywords += `mcp`, `mcp-server`, `agent-skill`, `ton`,
-  `agentic-wallet`, `claude-skill`. Description rewritten to lead with
-  "MCP server / skill for sovereign static-site publishing on TON."
-- README: new top-level **"Quickstart for agents"** section preceding
-  the human one. Code blocks an agent can copy.
-- `mcp.ton.org` registry — submit if they have a registration flow.
-  Otherwise wait for one and track in a follow-up issue.
-- A `.well-known/agent-manifest.json` route the dashboard exposes
-  when running, so agents querying `localhost:<port>/.well-known/`
-  find a self-description.
+Originally scheduled to be split across v0.8.0 (keywords + README) and v0.8.x
+(everything else). The [concept update](concept-update-2026-05-10.md) moves
+multi-channel discoverability fully into v0.8.0 — it's the moat (P4 premise).
+rc1 ([D4] #24) and GA ([D5] #25) split as follows:
 
-**Ships:** 0.8.0 (keywords + README), 0.8.x for the rest.
+**rc1 (week 1):**
+- npm keywords += `mcp`, `mcp-server`, `agent-skill`, `ton`, `claude-skill`
+- README "Agent quickstart" section near the top, pointing at the existing
+  CLI (rc1 doesn't have MCP server yet)
+
+**GA (week 6):**
+- In-repo `skills/sovereign-deploy.md` referencing the now-stable MCP tool
+  names (`sovereign_deploy`, `sovereign_check_env`)
+- `templates/.well-known/mcp.json` — MCP-server self-description for the
+  local dashboard. **Not** a provenance manifest; distinct from the
+  `.well-known/ton-deploy.json` axis from concept-update Phase 3.5 which is
+  noted as a candidate for future versions only.
+- PR to `ton-org/skills` opened referencing the in-repo skill md
+
+**Explicitly deferred to 0.8.x:**
+- `mcp.ton.org` registry submission — no submission flow exists today
+  (`mcp.ton.org` is a curated landing page for the official `@ton/mcp`,
+  not a third-party registry; see [P-1 probe](at-mcp-probe.md) Phase 2.75).
+  Revisit when a flow exists.
+
+**Ships:** rc1 + GA, both in 0.8.0.
 
 ### P5 — Observability for agents (~2 days)
 Agents need machine-readable state.
@@ -211,16 +281,18 @@ Agents need machine-readable state.
 
 ## Hard problems / open questions
 
-These need a user decision before P3 starts. Defaults are my recommendation.
+Q1 (signing) and Q3 (repo layout) are resolved. Q2 (daemon lifecycle) and Q4 (naming) below.
 
-### Q1 — Signing model
-- **(a) Agentic Wallet first, TonConnect fallback** ← recommended
-- (b) TonConnect-only (delegated session); skip Agentic Wallet until v1.0
-- (c) Both, equal-status, user picks per call
+### Q1 — Signing model — DECIDED (`(c)` resolved by [P-1] verdict)
 
-Recommendation: (a). Agentic Wallets are the announced TON-native
-path for autonomous agents and the standard is fresh — early adopters
-shape the spec. TonConnect stays as the fallback so nothing breaks.
+The original three options were `(a) Agentic Wallet first` / `(b) TonConnect-only` /
+`(c) Both, equal-status, user picks per call`.
+
+**Resolved: (c)**, with the discriminated union schema in `mcp-core-requirements.md`
+§F2. CLI default remains TonConnect (Path 1) for backwards compat with v0.6/v0.7
+users; `--wallet-mode agentic` opts in to Path 2. `@ton/mcp` is not bundled —
+Path 2 reads its config file via `@ton/walletkit`. See [P-1 probe](at-mcp-probe.md)
+for the full rationale.
 
 ### Q2 — Daemon lifecycle for agent flows
 - **(a) Local + detached, no remote** ← recommended for v0.8.0
@@ -247,8 +319,10 @@ match. Options:
 - (b) `ton_sovereign_deploy`, `ton_sovereign_check_env`
 - (c) `tsd_deploy`, `tsd_check_env`
 
-Recommendation: (a). Short, unique enough, no clash with TON's own
-`ton_*` namespace which `mcp.ton.org` will likely use.
+Recommendation: (a). Short, unique enough. `@ton/mcp` already uses
+non-prefixed verbs (`get_wallet`, `send_ton`, `resolve_dns`, ...) so a
+namespace clash is unlikely; `sovereign_*` keeps our domain explicit
+without inheriting any registry-namespace assumption.
 
 ## What v0.8 explicitly does NOT do
 

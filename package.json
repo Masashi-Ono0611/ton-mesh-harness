@@ -1,7 +1,7 @@
 {
   "name": "ton-sovereign-deploy",
-  "version": "0.7.0",
-  "description": "Sovereign one-command CLI for the TON digital-resistance stack: TON Storage + .ton DNS + ADNL Tunnel-ready, self-host first.",
+  "version": "0.8.0-rc1",
+  "description": "Sovereign one-command CLI to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first. v0.8.0 GA will add an MCP server (ton-sovereign-mcp) for agent-callable invocation; v0.8.0-rc1 ships the CLI + agent-quickstart docs only.",
   "main": "./dist/cli.js",
   "bin": {
     "ton-sovereign-deploy": "dist/cli.js"
@@ -25,10 +25,23 @@
   ],
   "keywords": [
     "ton",
+    "ton-storage",
+    "ton-dns",
+    "dot-ton",
+    "adnl",
     "blockchain",
     "deploy",
+    "static-site",
+    "website",
     "storage",
-    "censorship-resistant"
+    "decentralized-web",
+    "censorship-resistant",
+    "mcp",
+    "mcp-server",
+    "agent-skill",
+    "claude-skill",
+    "tonconnect",
+    "agentic-wallet"
   ],
   "license": "MIT",
   "dependencies": {
