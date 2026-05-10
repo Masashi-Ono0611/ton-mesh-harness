@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-import chalk from 'chalk'
 import { Command } from 'commander'
 import type { CliOptions } from './types/cli'
 import { runDeploy } from './cli/deploy'
-import { runDeployTonutils } from './cli/deploy-tonutils'
+import { runDeployTonutils, runWatchModeTonutils } from './cli/deploy-tonutils'
 import { runDnsRegistration } from './cli/dns'
 import { runProviderContract } from './cli/provider'
 import { runWatchMode } from './cli/watch'
@@ -105,22 +104,10 @@ program
       }
 
       if (watchEnabled) {
-        // tonutils daemon is already running and seeding. Hold the process
-        // alive until SIGINT/SIGTERM. Re-deploy on file change is not yet
-        // wired for this backend (see roadmap B2 follow-up); for v0.6 we
-        // simply seed the initial bag. Users who need auto-redeploy on
-        // file change can pass --daemon-backend=ton-core for now.
-        if (!opts.jsonOutput) {
-          console.log()
-          console.log(chalk.bold('👀 Seeding'))
-          console.log(chalk.dim(`  bag:       ${result.bagId}`))
-          console.log(chalk.dim(`  daemon:    ${daemon.apiUrl}`))
-          console.log(chalk.dim('  Auto-redeploy on file change is not yet wired for tonutils'))
-          console.log(chalk.dim('  in v0.6. Pass --daemon-backend=ton-core for live re-deploy.'))
-          console.log(chalk.dim('  Press Ctrl+C to stop seeding.'))
-          console.log()
-        }
-        await new Promise<void>(() => { /* hold forever */ })
+        await runWatchModeTonutils(deployed, {
+          debounce: opts.debounce,
+          jsonOutput: opts.jsonOutput,
+        })
       } else {
         daemon.kill()
       }

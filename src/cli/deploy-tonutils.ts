@@ -15,10 +15,13 @@ import {
   type TonutilsHandle,
 } from '../daemon/tonutils-process'
 import { buildUrls, printResult, exportAsJson, type DeployResult } from '../output'
+import { watchBuildDir } from '../watch'
 
 export interface TonutilsDeployReturn {
   result: DeployResult
   daemon: TonutilsHandle  // kept alive when watch mode follows; caller must kill if not
+  buildDir: string        // for watch-mode re-create
+  description: string     // for watch-mode re-create
 }
 
 export async function runDeployTonutils(
@@ -90,7 +93,7 @@ export async function runDeployTonutils(
       printResult(result)
     }
 
-    return { result, daemon }
+    return { result, daemon, buildDir, description }
   } catch (err: unknown) {
     cleanup()
     const message = err instanceof Error ? err.message : String(err)
@@ -101,4 +104,55 @@ export async function runDeployTonutils(
     }
     process.exit(1)
   }
+}
+
+// -----------------------------------------------------------------------
+// Watch-mode entry point — keeps the tonutils daemon alive and re-creates
+// the bag whenever buildDir changes. Bag ids are content-addressed, so a
+// no-op rebuild yields the same id and the daemon treats it as idempotent.
+// -----------------------------------------------------------------------
+
+export async function runWatchModeTonutils(
+  deployed: TonutilsDeployReturn,
+  opts: { debounce?: string; jsonOutput?: boolean },
+): Promise<void> {
+  const { daemon, buildDir, description, result: initial } = deployed
+
+  if (!opts.jsonOutput) {
+    console.log()
+    console.log(chalk.bold('👀 Watch mode (tonutils backend)'))
+    console.log(chalk.dim(`  Build dir: ${buildDir}`))
+    console.log(chalk.dim(`  Initial bag: ${initial.bagId}`))
+    console.log(chalk.dim('  daemon will re-create the bag on file changes (same content ⇒ same id)'))
+    console.log(chalk.dim('  Press Ctrl+C to stop'))
+    console.log()
+  }
+
+  const stop = watchBuildDir({
+    buildDir,
+    debounceMs: parseInt(opts.debounce ?? '2000', 10),
+    onChange: async () => {
+      try {
+        const r = await tonutilsCreate(daemon, { path: buildDir, description })
+        if (r.bag_id === initial.bagId) {
+          console.log(chalk.dim(`  ↻ no-op (bag id unchanged: ${r.bag_id.slice(0, 12)}…)`))
+        } else {
+          console.log(chalk.green(`  ↻ Re-deployed: ${r.bag_id}`))
+        }
+      } catch (err) {
+        console.log(chalk.yellow(`  ⚠ re-deploy failed: ${err instanceof Error ? err.message : err}`))
+      }
+    },
+  })
+
+  const cleanup = () => {
+    stop()
+    daemon.kill()
+  }
+
+  process.on('SIGINT',  () => { cleanup(); process.exit(130) })
+  process.on('SIGTERM', () => { cleanup(); process.exit(143) })
+
+  // Hold the process alive until SIGINT/SIGTERM
+  await new Promise<void>(() => { /* never resolves */ })
 }
