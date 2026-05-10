@@ -1,6 +1,9 @@
-// Tonutils-storage backend deploy path (v0.6 default).
-// Counterpart of deploy.ts for the xssnick / Go daemon. The TON Core C++
-// path stays in deploy.ts for users who pass --daemon-backend=ton-core.
+// Tonutils-storage backend deploy path.
+// v0.8 [S3]: this file is now a thin CLI adapter over the SDK's `deploy()`
+// generator (src/sdk/deploy.ts). All bag-creation logic lives in the SDK;
+// this file's job is to render progress events as terminal output (chalk +
+// ora spinners) or as `--json-output` lines, then return the same
+// `TonutilsDeployReturn` shape so cli.ts callers stay regression-zero.
 
 import path from 'path'
 import os from 'os'
@@ -9,15 +12,15 @@ import chalk from 'chalk'
 import type { CliOptions } from '../types/cli'
 import { createSpinnerFactory } from '../utils/spinner'
 import { detectBuildDir } from '../detect'
-import { ensureTonutilsBinary } from '../daemon/tonutils-installer'
 import {
   startTonutilsDaemon,
   tonutilsCreate,
-  tonutilsDetails,
   type TonutilsHandle,
 } from '../daemon/tonutils-process'
 import { buildUrls, printResult, exportAsJson, type DeployResult } from '../output'
 import { watchBuildDir } from '../watch'
+import { deploy as sdkDeploy, SdkError } from '../sdk/deploy'
+import type { DeployEvent, DeployResult as SdkDeployResult } from '../sdk/schemas'
 
 export interface TonutilsDeployReturn {
   result: DeployResult
@@ -32,26 +35,19 @@ export interface TonutilsDeployOptions {
 
 export interface ResolvedTunnel {
   absPath: string
-  nodeCount: number  // best-effort count of intermediate nodes in the pool
+  nodeCount: number
 }
 
-// Node's path.resolve() does NOT expand `~` to $HOME — passing
-// `--tunnel-config ~/foo.json` would resolve relative to CWD and look
-// for a literal "~/foo.json" subdirectory. Common UX trap, so we expand
-// here. This is the only place users pass paths into the CLI in v0.6.
+// expandTilde + resolveTunnelConfig kept here as PUBLIC HELPERS — the
+// existing unit tests exercise them directly. The SDK has its own copy
+// of validateTunnelConfig() that maps failures to ERR_INVALID_INPUT;
+// these CLI-side variants throw plain Errors which cli.ts surfaces.
 function expandTilde(p: string): string {
   if (p === '~') return os.homedir()
   if (p.startsWith('~/')) return path.join(os.homedir(), p.slice(2))
   return p
 }
 
-/**
- * Validate a `--tunnel-config <path>` argument and report the absolute
- * path + node count back to the caller for display.
- *
- * Exported so the unit tests exercise the live implementation rather
- * than a copy that drifts.
- */
 export function resolveTunnelConfig(rawPath: string): ResolvedTunnel {
   const absPath = path.resolve(expandTilde(rawPath))
   if (!existsSync(absPath)) {
@@ -80,14 +76,28 @@ export function resolveTunnelConfig(rawPath: string): ResolvedTunnel {
   return { absPath, nodeCount }
 }
 
+/**
+ * CLI adapter — drives the SDK's `deploy()` generator and renders progress
+ * events as terminal output. Returns the same shape v0.7 callers expect.
+ *
+ * Daemon lifecycle: we ask the SDK for `keep_alive: true` so the daemon
+ * survives the SDK call. The CLI then either continues into watch mode
+ * (which re-uses the daemon) or kills it via the returned `daemon.kill()`.
+ *
+ * Because the SDK now owns spawn / API-wait, we don't get a proper
+ * `TonutilsHandle` back — we synthesise one from the SDK result's
+ * `dashboard_url` (= daemon.apiUrl) and `daemon_pid`. The synthetic handle
+ * satisfies `tonutilsCreate(handle, ...)` (which only reads `apiUrl`)
+ * for watch-mode re-uploads.
+ */
 export async function runDeployTonutils(
   opts: CliOptions,
   buildDirArg?: string,
   deployOpts: TonutilsDeployOptions = {},
 ): Promise<TonutilsDeployReturn | undefined> {
-  let daemon: TonutilsHandle | undefined
+  let synthHandle: TonutilsHandle | undefined
 
-  const cleanup = () => { if (daemon) daemon.kill() }
+  const cleanup = () => { if (synthHandle) synthHandle.kill() }
   process.on('SIGINT',  () => { cleanup(); process.exit(130) })
   process.on('SIGTERM', () => { cleanup(); process.exit(143) })
   process.on('uncaughtException', (err) => {
@@ -100,14 +110,6 @@ export async function runDeployTonutils(
   const createSpinner = createSpinnerFactory({ silent: !!opts.jsonOutput, plain: isCI })
 
   try {
-    // Both checks intentionally live INSIDE the try so their errors are
-    // routed through the same JSON-vs-human surfacing path as everything
-    // else (Codex M1-CO3 caught that --tunnel-config errors were
-    // bypassing the `--json-output` formatter).
-
-    // tonutils-storage uses mainnet network config out of the box.
-    // Pretending testnet works on this backend would silently send to
-    // mainnet — refuse up front.
     if (opts.testnet) {
       throw new Error(
         `--testnet is not supported on the tonutils-storage backend in v0.6. ` +
@@ -115,8 +117,6 @@ export async function runDeployTonutils(
       )
     }
 
-    // Validate the tunnel config (if any) before we download a daemon
-    // binary — fail fast on user-input problems.
     const tunnel = deployOpts.tunnelConfigPath
       ? resolveTunnelConfig(deployOpts.tunnelConfigPath)
       : undefined
@@ -137,30 +137,50 @@ export async function runDeployTonutils(
       console.log()
     }
 
-    const setupSpinner = createSpinner.start('Checking tonutils-storage…')
-    ensureTonutilsBinary({ silent: !!opts.jsonOutput })
-    setupSpinner.succeed('tonutils-storage ready')
+    // ─── Drive the SDK and render events ────────────────────────────────
+    let spinner: ReturnType<typeof createSpinner.start> | undefined
+    let sdkResult: SdkDeployResult | undefined
+    let daemonApiUrl: string | undefined
 
-    const daemonSpinner = createSpinner.start('Starting tonutils-storage…')
-    daemon = await startTonutilsDaemon({ tunnelConfigPath: tunnel?.absPath })
-    daemonSpinner.succeed(
-      `tonutils-storage started at ${daemon.apiUrl}` +
-      (tunnel ? ` (tunnelling via ${tunnel.nodeCount} node(s))` : ''),
-    )
-
-    const uploadSpinner = createSpinner.start('Creating bag in TON Storage…')
-    const created = await tonutilsCreate(daemon, { path: buildDir, description })
-    const bagId = created.bag_id
-    uploadSpinner.succeed(`Bag created: ${bagId}`)
-
-    // Verify the daemon registered the bag and fetch metadata for display.
-    const details = await tonutilsDetails(daemon, bagId)
-    if (!opts.jsonOutput) {
-      console.log(chalk.dim(`  Size:      ${details.size} bytes`))
-      console.log(chalk.dim(`  Files:     ${details.files_count}`))
+    const sdkInput = {
+      source_dir: buildDir,
+      description,
+      keep_alive: true as const,
+      tunnel_config: tunnel?.absPath ?? null,
     }
 
-    const result: DeployResult = { bagId, ...buildUrls(bagId) }
+    try {
+      for await (const ev of sdkDeploy(sdkInput)) {
+        renderEvent(ev)
+        if (ev.phase === 'done') sdkResult = ev.data as SdkDeployResult
+      }
+    } catch (err) {
+      // Spinner may still be open — close it as failed before rethrowing.
+      spinner?.fail(err instanceof Error ? err.message : String(err))
+      throw err
+    }
+
+    if (!sdkResult) throw new Error('SDK deploy() ended without a `done` event.')
+    daemonApiUrl = sdkResult.dashboard_url
+
+    // Synthesise a TonutilsHandle that watch-mode re-uploads can use.
+    // tonutilsCreate / tonutilsDetails only read `apiUrl`; the rest are
+    // stubbed. kill() uses process.kill(pid, 'SIGTERM') against the SDK's
+    // returned daemon_pid.
+    const pid = sdkResult.daemon_pid
+    if (pid === null) {
+      throw new Error('SDK returned daemon_pid: null despite keep_alive: true.')
+    }
+    synthHandle = makeSyntheticHandle(daemonApiUrl, pid)
+
+    const result: DeployResult = {
+      bagId: sdkResult.bag_id,
+      ...buildUrls(sdkResult.bag_id),
+    }
+
+    if (!opts.jsonOutput) {
+      console.log(chalk.dim(`  Size:      ${sdkResult.bag_size_bytes} bytes`))
+    }
 
     if (opts.jsonOutput) {
       console.log(exportAsJson(result))
@@ -168,16 +188,81 @@ export async function runDeployTonutils(
       printResult(result)
     }
 
-    return { result, daemon, buildDir, description }
+    return { result, daemon: synthHandle, buildDir, description }
+
+    // ─── helpers (closures over `spinner` + `createSpinner`) ────────────
+    function renderEvent(ev: DeployEvent): void {
+      switch (ev.phase) {
+        case 'env_check':
+          spinner = createSpinner.start('Checking tonutils-storage…')
+          break
+        case 'daemon_starting':
+          spinner?.succeed('tonutils-storage ready')
+          spinner = createSpinner.start('Starting tonutils-storage…')
+          break
+        case 'bag_creating': {
+          const data = ev.data as { dashboard_url?: string } | undefined
+          const url = data?.dashboard_url ?? ''
+          spinner?.succeed(
+            `tonutils-storage started${url ? ` at ${url}` : ''}` +
+            (tunnel ? ` (tunnelling via ${tunnel.nodeCount} node(s))` : ''),
+          )
+          spinner = createSpinner.start('Creating bag in TON Storage…')
+          break
+        }
+        case 'bag_uploaded': {
+          const data = ev.data as { bag_id: string; files_count: number } | undefined
+          spinner?.succeed(`Bag created: ${data?.bag_id}`)
+          spinner = undefined
+          if (!opts.jsonOutput && data) {
+            console.log(chalk.dim(`  Files:     ${data.files_count}`))
+          }
+          break
+        }
+        case 'done':
+          // Final logging happens after the for-await loop.
+          break
+        // other phases are not emitted in rc2 scope (DNS / watch / verify).
+      }
+    }
   } catch (err: unknown) {
     cleanup()
     const message = err instanceof Error ? err.message : String(err)
     if (opts.jsonOutput) {
-      console.log(JSON.stringify({ error: message }, null, 2))
+      console.log(JSON.stringify({ error: message, ...(err instanceof SdkError ? { code: err.code } : {}) }, null, 2))
     } else {
       console.error(chalk.red('\nError:'), message)
     }
     process.exit(1)
+  }
+}
+
+/**
+ * Synthetic `TonutilsHandle` for watch-mode re-uploads. The SDK owns the
+ * real ChildProcess; the CLI only needs an object that satisfies
+ * `tonutilsCreate(handle, ...)` (which reads `apiUrl`) and supports `kill()`.
+ *
+ * The `process` field is a typed-but-empty stub — watch-mode and DNS code
+ * never touch it. If a future caller does, this synth handle should be
+ * replaced with an SDK-exposed real handle (see [S3] follow-up TODO).
+ */
+function makeSyntheticHandle(apiUrl: string, pid: number): TonutilsHandle {
+  let killed = false
+  return {
+    apiUrl,
+    dbDir: '',  // unused after spawn
+    // process is a typed slot; we never call its methods because the CLI
+    // tracks the kill via pid below.
+    process: { pid } as unknown as TonutilsHandle['process'],
+    kill: () => {
+      if (killed) return
+      killed = true
+      try {
+        process.kill(pid, 'SIGTERM')
+      } catch {
+        /* daemon already gone */
+      }
+    },
   }
 }
 
@@ -209,9 +294,6 @@ export async function runWatchModeTonutils(
     console.log(chalk.dim(`  Initial bag: ${initial.bagId}`))
     console.log(chalk.dim('  daemon will re-create the bag on file changes (same content ⇒ same id)'))
     if (opts.domain) {
-      // Codex M1-CO1: re-deploys on change yield a new bag id; the DNS
-      // record we wrote earlier still points at `initial.bagId`. Until
-      // we wire DNS updates into the redeploy loop, just be honest.
       console.log(chalk.yellow(
         `  ⚠ ${opts.domain} keeps pointing at the initial bag (${initial.bagId.slice(0, 12)}…).`,
       ))
@@ -255,3 +337,8 @@ export async function runWatchModeTonutils(
   // Hold the process alive until SIGINT/SIGTERM
   await new Promise<void>(() => { /* never resolves */ })
 }
+
+// Suppress unused-import warning: startTonutilsDaemon is imported because
+// the legacy export shape kept it as part of this module's surface; if
+// no caller uses it, future cleanup can drop the re-export.
+void startTonutilsDaemon

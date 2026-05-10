@@ -332,11 +332,14 @@ export async function* deploy(
     }
 
     // ─── bag_creating ────────────────────────────────────────────────────
+    // The daemon is up by this point, so we can surface its dashboard URL
+    // here. CLI renderers use this to log "tonutils-storage started at <url>"
+    // without needing the SDK to expose the daemon handle.
     currentPhase = 'bag_creating'
     yield {
       phase: 'bag_creating',
       message: `creating bag from ${opts.source_dir}`,
-      data: { source_dir: opts.source_dir },
+      data: { source_dir: opts.source_dir, dashboard_url: daemon.apiUrl },
     }
     checkAborted()
 
