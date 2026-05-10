@@ -28,8 +28,10 @@ export const OP_OFFER_STORAGE_CONTRACT = 0x107c49ef
 
 export interface Provider {
   address: string
-  ratePerMbDay: number  // nanoTON per MB per day
-  maxSpan: number       // seconds per contract
+  ratePerMbDay: number       // nanoTON per MB per day
+  maxSpan: number            // seconds per contract
+  minimalFileSize: number    // bytes; bag must be ≥ this or contract throws 1004
+  maximalFileSize: number    // bytes; bag must be ≤ this or contract throws 1005
 }
 
 export interface ContractMessage {
@@ -53,15 +55,32 @@ interface TonApiProvider {
   maximal_file_size: number
 }
 
-export async function fetchProviders(testnet = false): Promise<Provider[]> {
+export interface FetchProvidersOptions {
+  // When set, only return providers whose accepted file-size range covers
+  // sizeBytes. Use this when you already know the bag size — auto-select
+  // will then never pick a provider that would throw error::file_too_small
+  // (1004) or error::file_too_big (1005) on contract deployment.
+  sizeBytes?: number
+}
+
+export async function fetchProviders(
+  testnet = false,
+  opts: FetchProvidersOptions = {},
+): Promise<Provider[]> {
   const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/storage/providers`
   const data = await httpsGet<{ providers: TonApiProvider[] }>(url, { timeout: 10_000 })
   return data.providers
     .filter(p => p.accept_new_contracts && p.rate_per_mb_day > 10 && p.max_span >= 3600)
+    .filter(p => {
+      if (opts.sizeBytes === undefined) return true
+      return opts.sizeBytes >= p.minimal_file_size && opts.sizeBytes <= p.maximal_file_size
+    })
     .map(p => ({
       address: p.address,
       ratePerMbDay: p.rate_per_mb_day,
       maxSpan: p.max_span,
+      minimalFileSize: p.minimal_file_size,
+      maximalFileSize: p.maximal_file_size,
     }))
     .sort((a, b) => a.ratePerMbDay - b.ratePerMbDay)
 }
@@ -197,6 +216,24 @@ export function generateContractMessage(
     throw new Error(
       `Span ${spanSeconds}s exceeds provider's max_span (${provider.maxSpan}s). ` +
       `Pass --span ≤ ${provider.maxSpan} or pick a different provider.`,
+    )
+  }
+  // Reject bags outside the provider's accepted size range — otherwise the
+  // contract's recv_internal throws 1004 (file_too_small) or 1005
+  // (file_too_big) and the user pays gas for a bounce. Round-4 mainnet soak
+  // hit 1004 with a 76 B HTML against minimal_file_size = 1024.
+  // provider.{minimalFileSize,maximalFileSize} == 0 means the provider was
+  // passed manually and its params couldn't be resolved; skip the check.
+  if (provider.minimalFileSize > 0 && sizeBytes < provider.minimalFileSize) {
+    throw new Error(
+      `Bag is ${sizeBytes} bytes; provider requires ≥ ${provider.minimalFileSize} bytes. ` +
+      `Pad your build dir or pick a provider with a smaller minimal_file_size.`,
+    )
+  }
+  if (provider.maximalFileSize > 0 && sizeBytes > provider.maximalFileSize) {
+    throw new Error(
+      `Bag is ${sizeBytes} bytes; provider accepts ≤ ${provider.maximalFileSize} bytes. ` +
+      `Pick a provider with a larger maximal_file_size.`,
     )
   }
 

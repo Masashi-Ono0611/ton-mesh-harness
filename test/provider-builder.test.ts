@@ -164,68 +164,96 @@ describe('buildOfferStorageContractMessage — guards', () => {
   })
 })
 
+interface FakeProvider {
+  address: string
+  ratePerMbDay: number
+  maxSpan: number
+  minimalFileSize: number
+  maximalFileSize: number
+}
+function makeProvider(overrides: Partial<FakeProvider> = {}): FakeProvider {
+  return {
+    address: '0:cafe',
+    ratePerMbDay: 20,
+    maxSpan: 86_400,
+    minimalFileSize: 0,
+    maximalFileSize: 0,
+    ...overrides,
+  }
+}
+
 describe('generateContractMessage — span vs provider.maxSpan guard', () => {
-  // Daemon is never reached: the guard at the top of generateContractMessage
-  // fires before any daemon call.
+  // Daemon is never reached: the guards at the top of generateContractMessage
+  // fire before any daemon call.
   const fakeDaemon = {} as unknown as DaemonHandle
 
   it('throws when span exceeds provider.maxSpan', () => {
-    const provider = {
-      address: '0:cafe',
-      ratePerMbDay: 20,
-      maxSpan: 3600, // 1 hour
-    }
+    const provider = makeProvider({ maxSpan: 3600 })
     expect(() =>
       generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 86_400),
     ).toThrow(/exceeds provider's max_span/)
   })
 
   it('throws with helpful suggestion text', () => {
-    const provider = {
-      address: '0:cafe',
-      ratePerMbDay: 20,
-      maxSpan: 3600,
-    }
+    const provider = makeProvider({ maxSpan: 3600 })
     expect(() =>
       generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 86_400),
     ).toThrow(/--span ≤ 3600/)
   })
 
   it('accepts span equal to provider.maxSpan (boundary)', () => {
-    const provider = {
-      address: '0:cafe',
-      ratePerMbDay: 20,
-      maxSpan: 86_400,
-    }
-    // The guard should NOT throw; we only need to confirm it gets past the
-    // guard and then fails downstream (daemon CLI absent), which manifests as
-    // a different error message.
+    const provider = makeProvider({ maxSpan: 86_400 })
     expect(() =>
       generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 86_400),
     ).not.toThrow(/exceeds provider's max_span/)
   })
 
   it('skips guard when provider.maxSpan is 0 (manual address fallback)', () => {
-    const provider = {
-      address: '0:cafe',
-      ratePerMbDay: 0,
-      maxSpan: 0, // sentinel — provider params unknown
-    }
-    // The guard should be bypassed; downstream will fail because no daemon,
-    // but NOT with the maxSpan error.
+    const provider = makeProvider({ ratePerMbDay: 0, maxSpan: 0 })
     expect(() =>
       generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 999_999),
     ).not.toThrow(/exceeds provider's max_span/)
   })
 
   it('rejects span outside uint32 range before checking maxSpan', () => {
-    const provider = {
-      address: '0:cafe',
-      ratePerMbDay: 20,
-      maxSpan: 86_400,
-    }
+    const provider = makeProvider()
     expect(() =>
       generateContractMessage('00ff'.repeat(16), 100, provider, fakeDaemon, 0),
     ).toThrow(/positive integer/)
+  })
+})
+
+describe('generateContractMessage — bag size vs provider file-size range', () => {
+  const fakeDaemon = {} as unknown as DaemonHandle
+
+  it('throws when bag is smaller than provider.minimalFileSize', () => {
+    const provider = makeProvider({ minimalFileSize: 1024, maximalFileSize: 1_000_000 })
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 76, provider, fakeDaemon, 86_400),
+    ).toThrow(/76 bytes; provider requires ≥ 1024 bytes/)
+  })
+
+  it('throws when bag is larger than provider.maximalFileSize', () => {
+    const provider = makeProvider({ minimalFileSize: 0, maximalFileSize: 1024 })
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 4096, provider, fakeDaemon, 86_400),
+    ).toThrow(/provider accepts ≤ 1024 bytes/)
+  })
+
+  it('accepts boundary sizes (=== minimal and === maximal)', () => {
+    const provider = makeProvider({ minimalFileSize: 1024, maximalFileSize: 1_000_000 })
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 1024, provider, fakeDaemon, 86_400),
+    ).not.toThrow(/file_too_small|provider requires/)
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 1_000_000, provider, fakeDaemon, 86_400),
+    ).not.toThrow(/file_too_big|provider accepts/)
+  })
+
+  it('skips both checks when sentinels are 0 (manual address fallback)', () => {
+    const provider = makeProvider({ minimalFileSize: 0, maximalFileSize: 0 })
+    expect(() =>
+      generateContractMessage('00ff'.repeat(16), 1, provider, fakeDaemon, 86_400),
+    ).not.toThrow(/provider requires|provider accepts/)
   })
 })

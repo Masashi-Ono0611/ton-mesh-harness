@@ -47,31 +47,47 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
     return
   }
 
-  // 1. Resolve provider
+  // 1. Read bag size first — we need it to filter providers by their
+  //    minimal_file_size / maximal_file_size before sign.
+  const sizeSpinner = createSpinner.start('Reading bag size...')
+  const sizeBytes = getBagSizeBytes(opts.bagId, opts.daemon)
+  const sizeMb = (sizeBytes / 1_000_000).toFixed(2)
+  sizeSpinner.succeed(`Bag size: ${sizeMb} MB (${sizeBytes} bytes)`)
+
+  // 2. Resolve provider, scoped to those that accept this bag size.
   const resolveSpinner = createSpinner.start(
     opts.providerArg === true
-      ? 'Finding cheapest storage provider...'
+      ? 'Finding cheapest storage provider for this bag size...'
       : `Fetching provider info...`
   )
 
   let provider: Provider
   try {
     if (opts.providerArg === true) {
-      const providers = await fetchProviders(opts.testnet)
+      const providers = await fetchProviders(opts.testnet, { sizeBytes })
+      if (providers.length === 0) {
+        throw new Error(
+          `No active provider accepts a ${sizeBytes}-byte bag. ` +
+          `Pad your bag (most providers require ≥ 1024 bytes) or pass --provider <address> manually.`,
+        )
+      }
       provider = selectCheapestProvider(providers)
       resolveSpinner.succeed(
         `Selected provider: ${provider.address.slice(0, 20)}... ` +
-        `(${provider.ratePerMbDay} nanoTON/MB/day)`
+        `(${provider.ratePerMbDay} nanoTON/MB/day, file range ${provider.minimalFileSize}–${provider.maximalFileSize} bytes)`
       )
     } else {
       const providers = await fetchProviders(opts.testnet)
       const found = providers.find(p => p.address === opts.providerArg)
       if (!found) {
-        // Use given address with rate from TONAPI (may not be in list if paused)
+        // Use given address with sentinel params (TONAPI didn't list it).
+        // Zero sentinels disable the size/span guards so the user can proceed.
         provider = {
           address: opts.providerArg,
           ratePerMbDay: 0,
-          maxSpan: 86400,
+          maxSpan: 0,
+          minimalFileSize: 0,
+          maximalFileSize: 0,
         }
         resolveSpinner.warn(`Provider ${opts.providerArg.slice(0, 20)}... not in active list — proceeding anyway`)
       } else {
@@ -83,12 +99,6 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
     resolveSpinner.fail()
     throw err
   }
-
-  // 2. Get bag size
-  const sizeSpinner = createSpinner.start('Reading bag size...')
-  const sizeBytes = getBagSizeBytes(opts.bagId, opts.daemon)
-  const sizeMb = (sizeBytes / 1_000_000).toFixed(2)
-  sizeSpinner.succeed(`Bag size: ${sizeMb} MB`)
 
   // 3. Generate contract message (self-built BOC; bypasses daemon CLI uint8 cap)
   const msgSpinner = createSpinner.start('Generating provider contract message...')
