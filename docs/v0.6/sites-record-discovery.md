@@ -104,8 +104,14 @@ key removes the limit.
 
 ## Status
 
-- v0.6 ships without `sites` record support — unchanged.
-- This document overrides the v0.6 roadmap-draft.md "Out of scope"
-  bullet that dismissed `sites` records.
-- B5 is the natural next milestone, sequenced before any further B4
-  (Payment Network) work.
+- **B5 ships in v0.6 (write-path only)**: `--site-adnl <hex>` writes
+  the `dns_adnl_address` record under SHA256("site"); when combined
+  with `--domain`, both the storage and site records ride in a
+  single TonConnect tx (one sign).
+- Auto-spawning `rldp-http-proxy` + ADNL key generation is **v0.7**
+  (needs the 96 MB ton-zip just for `generate-random-id`, plus a
+  NAT-traversal story we don't yet have for inbound UDP).
+- This document also revealed TONAPI lies about `sites: []`. The
+  CLI's `pollDnsSiteRecord` is therefore a best-effort poller that
+  fails open with "verify in TON Browser" rather than looping
+  forever. See `src/dns.ts pollDnsSiteRecord`.

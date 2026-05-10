@@ -20,19 +20,25 @@ export interface DnsCheckResult {
 }
 
 // -----------------------------------------------------------------------
-// DNS record key
+// DNS record keys
 // -----------------------------------------------------------------------
+// TON DNS record keys are SHA256(<name>) as a 256-bit integer.
+// "storage" → dns_storage_address (magic 0x7473)
+// "site"    → dns_adnl_address    (magic 0xad01) — the record TON Browser /
+//             rldp-http-proxy hosts (e.g. piracy.ton, tonnet-sync-check.ton)
+// See: https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md
 
-// TON DNS record key for "storage" is SHA256("storage") as a 256-bit integer
-function storageRecordKey(): bigint {
-  const hash = createHash('sha256').update('storage').digest()
+function recordKey(name: string): bigint {
+  const hash = createHash('sha256').update(name).digest()
   return BigInt('0x' + hash.toString('hex'))
 }
 
+function storageRecordKey(): bigint { return recordKey('storage') }
+function siteRecordKey(): bigint { return recordKey('site') }
+
 // -----------------------------------------------------------------------
-// DNS record value cell
-// Cell format: 0x7473 (2 bytes magic) + 256-bit bag ID
-// See: https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md
+// dns_storage_address (0x7473) — points the domain at a TON Storage bag
+// Layout: magic:uint16 + bag_id:bits256
 // -----------------------------------------------------------------------
 
 export function buildDnsStorageRecord(bagId: string): Cell {
@@ -48,22 +54,65 @@ export function buildDnsStorageRecord(bagId: string): Cell {
 }
 
 // -----------------------------------------------------------------------
+// dns_adnl_address (0xad01) — points the domain at an ADNL identity
+// Layout: magic:uint16 + adnl_addr:bits256 + flags:uint8 (flags <= 1)
+// flags = 0 here (no proto_list); browsers and rldp-http-proxy default to
+// HTTP-over-RLDP. Ref: TEP-0081 §"DNS records".
+// -----------------------------------------------------------------------
+
+const ADNL_HEX_RE = /^[0-9a-f]{64}$/i
+
+function normalizeAdnlHex(adnlHex: string): Buffer {
+  // Accept both lower- and upper-case `0x` / `0X` prefixes.
+  const cleaned = /^0x/i.test(adnlHex) ? adnlHex.slice(2) : adnlHex
+  if (!ADNL_HEX_RE.test(cleaned)) {
+    throw new Error(
+      `Invalid ADNL address: expected 64 hex chars (256-bit), got ${JSON.stringify(adnlHex)}`,
+    )
+  }
+  return Buffer.from(cleaned, 'hex')
+}
+
+export function buildDnsAdnlRecord(adnlHex: string, flags: number = 0): Cell {
+  // TEP-0081: `dns_adnl_address#ad01 adnl_addr:bits256 flags:(## 8)`
+  // `proto_list:flags . 0?ProtoList`. flags=1 means a proto_list must follow.
+  // v0.6 supports flags=0 only (no proto list); rldp-http-proxy and TON
+  // Browser default to HTTP-over-RLDP in that case. Building a flags=1 cell
+  // without a proto_list ref would produce a malformed record, so reject it.
+  if (flags !== 0) {
+    throw new Error(`Invalid ADNL flags: only flags=0 is supported in v0.6 (got ${flags})`)
+  }
+  const adnlBuf = normalizeAdnlHex(adnlHex)
+
+  return beginCell()
+    .storeUint(0xad01, 16)   // magic: dns_adnl_address
+    .storeBuffer(adnlBuf)    // 256-bit ADNL identity
+    .storeUint(flags, 8)     // flags = 0 → no proto list
+    .endCell()
+}
+
+// -----------------------------------------------------------------------
 // change_dns_record transaction body
 // Op: 0x4eb1f0f9
 // Layout: op(32) + queryId(64) + key(256) + flag(1=set, 0=delete) + value(ref)
 // -----------------------------------------------------------------------
 
-export function buildChangeDnsRecordBody(bagId: string): Cell {
-  const key = storageRecordKey()
-  const valueCell = buildDnsStorageRecord(bagId)
-
+function buildChangeDnsRecordBodyForKey(key: bigint, valueCell: Cell): Cell {
   return beginCell()
     .storeUint(0x4eb1f0f9, 32)   // op: change_dns_record
     .storeUint(0, 64)             // queryId = 0
-    .storeUint(key, 256)          // DNS record key = SHA256("storage")
+    .storeUint(key, 256)          // DNS record key (SHA256 of record name)
     .storeBit(1)                  // flag: 1 = set (0 = delete)
     .storeRef(valueCell)          // value cell (ref)
     .endCell()
+}
+
+export function buildChangeDnsRecordBody(bagId: string): Cell {
+  return buildChangeDnsRecordBodyForKey(storageRecordKey(), buildDnsStorageRecord(bagId))
+}
+
+export function buildChangeDnsSiteRecordBody(adnlHex: string, flags: number = 0): Cell {
+  return buildChangeDnsRecordBodyForKey(siteRecordKey(), buildDnsAdnlRecord(adnlHex, flags))
 }
 
 // -----------------------------------------------------------------------
@@ -101,15 +150,15 @@ export async function getDomainNftAddress(domain: string, testnet = false): Prom
 
 interface TonApiDnsRecord {
   storage?: { bag_id?: string }
+  sites?: string[]
 }
 
-async function getDnsStorageRecord(domain: string, testnet = false): Promise<string | null> {
+async function getDnsResolved(domain: string, testnet = false): Promise<TonApiDnsRecord | null> {
   const cleanDomain = domain.endsWith('.ton') ? domain : `${domain}.ton`
   const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`
 
   try {
-    const data = await httpsGet<TonApiDnsRecord>(url, { timeout: 5_000 })
-    return data.storage?.bag_id?.toLowerCase() ?? null
+    return await httpsGet<TonApiDnsRecord>(url, { timeout: 5_000 })
   } catch {
     return null
   }
@@ -126,7 +175,8 @@ export async function pollDnsRecord(
   const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
-    const current = await getDnsStorageRecord(domain, testnet)
+    const data = await getDnsResolved(domain, testnet)
+    const current = data?.storage?.bag_id?.toLowerCase() ?? null
     if (current === expectedBagId.toLowerCase()) {
       spinner.succeed('DNS record confirmed on-chain!')
       return true
@@ -136,6 +186,43 @@ export async function pollDnsRecord(
 
   spinner.warn('DNS propagation timed out — the transaction may still be pending.')
   console.log(chalk.dim('  Check manually: ' + getNetworkConfig(testnet).tonapiUrl + '/v2/dns/' + encodeURIComponent(domain) + '/resolve'))
+  return false
+}
+
+// -----------------------------------------------------------------------
+// Site record propagation poller
+// TONAPI's resolver is known to be flaky for `dns_adnl_address` records
+// (`sites: []` for famous .ton domains we cross-checked via on-chain
+// `dnsresolve` — see docs/v0.6/sites-record-discovery.md). When it works,
+// `data.sites` is an array of ADNL hex strings; when it lies, we surface a
+// "verify manually" hint instead of looping forever.
+// -----------------------------------------------------------------------
+
+export async function pollDnsSiteRecord(
+  domain: string,
+  expectedAdnlHex: string,
+  timeoutMs = 180_000,
+  intervalMs = 10_000,
+  testnet = false,
+): Promise<boolean> {
+  const spinner = ora('Waiting for site record to propagate...').start()
+  const deadline = Date.now() + timeoutMs
+  const expected = expectedAdnlHex.toLowerCase().replace(/^0x/, '')
+
+  while (Date.now() < deadline) {
+    const data = await getDnsResolved(domain, testnet)
+    const sites = (data?.sites ?? []).map((s) => s.toLowerCase().replace(/^0x/, ''))
+    if (sites.includes(expected)) {
+      spinner.succeed('Site record confirmed on-chain!')
+      return true
+    }
+    await sleep(intervalMs)
+  }
+
+  spinner.warn(
+    'Site record not yet visible via TONAPI — TONAPI is known to lag/lie for `sites` records. The on-chain transaction may already be settled.',
+  )
+  console.log(chalk.dim('  Verify on-chain: node scripts/dns-probe.cjs (or open the .ton domain in TON Browser)'))
   return false
 }
 

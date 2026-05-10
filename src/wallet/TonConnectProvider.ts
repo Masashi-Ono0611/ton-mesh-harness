@@ -100,6 +100,25 @@ export class TonConnectProvider implements SendProvider {
     payload?: Cell,
     stateInit?: StateInit,
   ): Promise<SendTransactionResponse> {
+    return this.sendTransactionMulti([{ address, amount, payload, stateInit }])
+  }
+
+  /**
+   * Send a TonConnect transaction with multiple messages bundled into a single
+   * sign request. Tonkeeper supports up to 4 messages per tx (TonConnect spec
+   * §sendTransaction). Used by --domain when both a `storage` and `site` DNS
+   * record are written in one user-prompt.
+   */
+  async sendTransactionMulti(
+    messages: Array<{ address: Address; amount: bigint; payload?: Cell; stateInit?: StateInit }>,
+  ): Promise<SendTransactionResponse> {
+    if (messages.length < 1) {
+      throw new Error('sendTransactionMulti: at least one message required')
+    }
+    if (messages.length > 4) {
+      throw new Error(`sendTransactionMulti: TonConnect spec caps messages at 4 (got ${messages.length})`)
+    }
+
     this.ui.setActionPrompt('Sending transaction. Approve in your wallet...')
 
     // TonConnect spec: validUntil is Unix epoch SECONDS, not ms. Blueprint's
@@ -116,16 +135,14 @@ export class TonConnectProvider implements SendProvider {
     const result = await this.connector.sendTransaction({
       validUntil,
       network,
-      messages: [
-        {
-          address: address.toString(),
-          amount: amount.toString(),
-          payload: payload?.toBoc().toString('base64'),
-          stateInit: stateInit
-            ? beginCell().storeWritable(storeStateInit(stateInit)).endCell().toBoc().toString('base64')
-            : undefined,
-        },
-      ],
+      messages: messages.map((m) => ({
+        address: m.address.toString(),
+        amount: m.amount.toString(),
+        payload: m.payload?.toBoc().toString('base64'),
+        stateInit: m.stateInit
+          ? beginCell().storeWritable(storeStateInit(m.stateInit)).endCell().toBoc().toString('base64')
+          : undefined,
+      })),
     })
 
     this.ui.clearActionPrompt()

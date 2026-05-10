@@ -12,6 +12,7 @@ export interface CliOptions {
   debounce?: string
   daemonBackend?: 'tonutils' | 'ton-core'  // v0.6: which backend daemon to run
   tunnelConfig?: string                    // v0.6: path to a nodes-pool.json for ADNL Tunnel
+  siteAdnl?: string                        // v0.6 B5: 64-hex ADNL identity for `dns_adnl_address`
 }
 
 export interface DaemonContext {

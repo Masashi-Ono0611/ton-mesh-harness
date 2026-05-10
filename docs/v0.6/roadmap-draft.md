@@ -240,16 +240,53 @@ of the daemon spawn / connect path needed.
 Test coverage: `test/payments.test.ts` (3 trivial tests pinning the
 v0.6 contract).
 
+### B5 — `dns_adnl_address` (sites record) write path ✅ (shipped 2026-05-10)
+
+After the on-chain probe revealed piracy.ton, tonnet-sync-check.ton
+and most Telegram-visible .ton sites use `dns_adnl_address` records
+(`docs/v0.6/sites-record-discovery.md`), B5 was added to v0.6 scope
+to align the CLI with the mainstream hosting pattern.
+
+**v0.6 scope (this milestone):**
+
+- New flag: `--site-adnl <hex>` accepts a 64-hex ADNL identity (the
+  one printed by your `rldp-http-proxy` instance). Validated up
+  front; canonicalised to lowercase, no `0x` prefix.
+- New cell builders in `src/dns.ts`:
+  - `buildDnsAdnlRecord(adnlHex, flags=0)` — magic `0xad01` +
+    256-bit ADNL hash + 8-bit flags (TEP-0081).
+  - `buildChangeDnsSiteRecordBody(adnlHex)` — wraps it under
+    `op::change_dns_record (0x4eb1f0f9)` keyed by SHA256("site").
+- New `TonConnectProvider.sendTransactionMulti(messages[])` bundles
+  up to 4 messages per TonConnect tx (Tonkeeper spec). When
+  `--site-adnl` is set together with `--domain`, the storage record
+  and the site record ship in **one** signed tx — user signs once,
+  pays `2 × 0.05 TON = 0.10 TON` gas.
+- New TONAPI poller `pollDnsSiteRecord` watches `data.sites[]` for
+  the expected ADNL. TONAPI is known to lag/lie for site records, so
+  the poller fails open with a "verify in TON Browser" hint instead
+  of looping forever.
+- Behaviour preserved: `--domain` without `--site-adnl` still writes
+  only the storage record (existing v0.5 path, unchanged).
+
+**v0.6 explicitly out of scope (deferred to v0.7):**
+
+- Auto-spawning `rldp-http-proxy` locally + minting an ADNL identity
+  (would require either bundling `generate-random-id` from a 96 MB
+  ton zip or implementing the on-disk Ed25519 keyring format
+  ourselves).
+- NAT-traversal for the proxy's UDP listener — needs B3.x tunnel
+  follow-up + the future `adnl-tunnel-client` server-side variant.
+- A "self-host on a laptop" UX. v0.6 is **bring-your-own
+  rldp-http-proxy** (typically a VPS); v0.7 will close the loop.
+
+**Tests:** 13 new cell-builder tests in `test/dns.test.ts` (104 unit
+total now, all passing).
+
 ## Out of scope for v0.6 (deferred / dropped)
 
-- ⚠ **`sites` record support** — re-classified from "out of scope" to
-  "v0.7 priority". The v0.6 dismissal was wrong; on-chain probing
-  (`scripts/dns-probe.cjs` + `docs/v0.6/sites-record-discovery.md`)
-  shows piracy.ton, tonnet-sync-check.ton and likely most other
-  Telegram-visible .ton sites use `dns_adnl_address` records. TONAPI
-  was returning `sites: []` for them, which fooled the original
-  survey. Expect a B5 milestone covering `rldp-http-proxy`
-  integration + sites-record writes.
+- ⚠ **Auto-spawning `rldp-http-proxy`** — moved to v0.7 alongside
+  ADNL tunnel server-side bringup (B5 ships the write path only).
 - ❌ **Building or operating a storage provider ourselves** — economics
   are wrong while no one else is doing it
 - ❌ **Full Payment Network integration** — pushed to v0.7

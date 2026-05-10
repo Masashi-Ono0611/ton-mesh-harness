@@ -12,5 +12,8 @@ export interface SendProvider {
     payload?: Cell,
     stateInit?: StateInit,
   ): Promise<unknown>
+  sendTransactionMulti(
+    messages: Array<{ address: Address; amount: bigint; payload?: Cell; stateInit?: StateInit }>,
+  ): Promise<unknown>
   address(): Address | undefined
 }

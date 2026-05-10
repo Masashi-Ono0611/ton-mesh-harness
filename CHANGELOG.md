@@ -35,6 +35,22 @@ place for v0.7.
   locked in storage contracts deployed under v0.5.
 
 ### Added
+- **`--site-adnl <hex>`** (v0.6 B5) writes a `dns_adnl_address`
+  (`0xad01`, the `site` record) on top of the existing `storage`
+  (`0x7473`) record when combined with `--domain`. Both record
+  changes ride in a **single TonConnect transaction** (one user
+  sign), matching the mainstream .ton hosting pattern (piracy.ton,
+  tonnet-sync-check.ton, …). Bring-your-own `rldp-http-proxy`:
+  v0.6 takes the ADNL identity hex as input; auto-spawning the
+  proxy + minting the ADNL key is v0.7.
+- **`TonConnectProvider.sendTransactionMulti(messages[])`** bundles
+  up to 4 messages per TonConnect tx (Tonkeeper spec). Underpins
+  the storage + site DNS-record bundling above; `sendTransaction`
+  is now a 1-message specialisation.
+- **`pollDnsSiteRecord`** watches TONAPI's `data.sites[]` for the
+  expected ADNL hex with a fail-open behaviour (TONAPI is known to
+  lag/lie for site records — see
+  `docs/v0.6/sites-record-discovery.md`).
 - **`--tunnel-config <path>`** wires an ADNL Tunnel `nodes-pool.json`
   into the tonutils-storage daemon (NAT-traversal). Bring-your-own
   pool: no public community pool exists yet. Tilde expansion (`~/`)

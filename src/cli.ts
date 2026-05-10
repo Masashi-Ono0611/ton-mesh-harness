@@ -51,6 +51,12 @@ program
   // through that pool — useful when the host is behind NAT or wants to
   // hide its IP. tonutils backend only.
   .option('--tunnel-config <path>', 'Path to nodes-pool.json for ADNL Tunnel (tonutils backend only; bring-your-own pool)')
+  // v0.6 B5: bring-your-own rldp-http-proxy ADNL identity. When set together
+  // with --domain, the CLI writes both a `storage` (bag) and a `site`
+  // (dns_adnl_address) record in a single TonConnect tx, matching the
+  // mainstream .ton hosting pattern (piracy.ton, tonnet-sync-check.ton, …).
+  // Auto-spawning a local rldp-http-proxy + ADNL key minting is v0.7 work.
+  .option('--site-adnl <hex>', '64-hex ADNL identity to publish as the `site` (dns_adnl_address) DNS record (BYO rldp-http-proxy)')
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
     // Validate backend choice early.
     if (opts.daemonBackend && opts.daemonBackend !== 'tonutils' && opts.daemonBackend !== 'ton-core') {
@@ -66,6 +72,21 @@ program
       throw new Error(
         `--tunnel-config requires --daemon-backend=tonutils (the ton-core C++ daemon has no built-in ADNL Tunnel client).`,
       )
+    }
+
+    // v0.6 B5: --site-adnl requires --domain (otherwise there is no NFT to
+    // write the record to). Hex shape is validated here so we fail fast,
+    // before any deploy work happens.
+    if (opts.siteAdnl) {
+      if (!opts.domain) {
+        throw new Error(`--site-adnl requires --domain (the .ton domain to publish the site record under).`)
+      }
+      const cleaned = /^0x/i.test(opts.siteAdnl) ? opts.siteAdnl.slice(2) : opts.siteAdnl
+      if (!/^[0-9a-f]{64}$/i.test(cleaned)) {
+        throw new Error(`--site-adnl must be a 64-character hex string (256-bit ADNL identity); got ${JSON.stringify(opts.siteAdnl)}`)
+      }
+      // canonicalize to lowercase, no 0x prefix, for downstream consistency
+      opts.siteAdnl = cleaned.toLowerCase()
     }
 
     // v0.6: --provider is temporarily disabled while the daemon backend is
@@ -116,6 +137,7 @@ program
           jsonOutput: opts.jsonOutput,
           ciMode: opts.ciMode,
           walletName: opts.wallet,
+          siteAdnl: opts.siteAdnl,
         })
       }
 
@@ -163,6 +185,7 @@ program
         jsonOutput: opts.jsonOutput,
         ciMode: opts.ciMode,
         walletName: opts.wallet,
+        siteAdnl: opts.siteAdnl,
       })
     }
 
