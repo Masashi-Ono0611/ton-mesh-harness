@@ -31,13 +31,14 @@ Network. That's where v0.6 should go.
 
 ## Scope of v0.6 (in priority order)
 
-### B1 — `--watch` becomes the default (this commit) ✅
+### B1 — `--watch` becomes the default ✅ (shipped 2026-05-10, `a5d08f2`)
 
 `--watch` was an opt-in flag. Since the ecosystem reality is "self-host
 is the canonical mode", v0.6 makes `--watch` the default behaviour.
-Users get `--no-watch` to opt out for CI / one-shot deploys.
-
-Status: shipping in this commit.
+Users get `--no-watch` to opt out for CI / one-shot deploys. Multi-model
+self-review then caught that `--json-output` and `--ci-mode` should not
+inherit the default — those modes auto-apply `--no-watch` to avoid CI
+job hangs (fixed in `c815cf5`).
 
 What changed:
 - `src/cli.ts`: `--watch` now defaults on; `--no-watch` is the explicit opt-out
@@ -98,33 +99,34 @@ sits above the daemon and doesn't care which backend is in use.
 
 #### B2 work breakdown
 
-1. **Daemon installer**: download tonutils-storage release for the
-   user's OS/arch into `~/.ton-sovereign/bin/tonutils-storage`.
-   Target version v1.4.1.
-2. **Daemon process**: spawn with `--api 127.0.0.1:<port>` plus a
-   per-session db dir; wait for HTTP `/api/v1/list` to respond.
-3. **HTTP client**: a thin wrapper around `fetch` for the four endpoints
-   we need (`create`, `details`, `list`, `remove`).
-4. **Refactor `src/cli/deploy.ts`**: replace daemon CLI calls with
-   HTTP API calls. Remove the `getBagSizeBytes` daemon CLI path; use
-   `details.size` instead.
-5. **`--daemon-backend` flag**: add to `src/cli.ts` and route through.
-   Default `tonutils`; valid values `tonutils` | `ton-core`.
-6. **Disable `--provider` in v0.6**: throw with a helpful message that
-   links to the post-mortem. Keep the code paths (we'll need them again
-   in v0.7).
-7. **Tests**: update daemon-related mocks; the parity integration test
-   already requires `RUN_DAEMON_TESTS=1` so it stays opt-in. Add a new
-   integration test that boots tonutils, creates a tiny bag via HTTP
-   API, and reads back size + merkle hash.
+1. **Daemon installer** ✅ — download tonutils-storage v1.4.1 per OS/arch
+2. **Daemon process** ✅ — spawn + waitForApi (with AbortController per
+   probe; spawn errors captured to shared state). Adds an extra
+   pre-stage step: tonutils-storage panics if UDP 17555 is taken
+   (e.g. TON Browser.app), so we run a short-lived spawn to let the
+   daemon write `config.json`, then patch `ListenAddr` to a free UDP
+   port, then spawn the real one.
+3. **HTTP client** ✅ — `tonutilsCreate / Details / List / Remove`
+4. **Refactor `cli/deploy.ts`** ✅ — split into `deploy.ts` (ton-core)
+   and `deploy-tonutils.ts` (new default), dispatched from `cli.ts`
+5. **`--daemon-backend` flag** ✅
+6. **Disable `--provider` in v0.6** ✅ — early throw with pointer to
+   post-mortem and roadmap; ton-core path is preserved so v0.7 can
+   re-enable provider against whichever protocol has liveness
+7. **Tests** ✅ unit (96 green) + ✅ daemon parity (4 green) + ⏳ tonutils
+   integration test under RUN_DAEMON_TESTS=1 (deferred — manual
+   smoke proved bag id matches ton-core's byte-for-byte for the same
+   content)
 
-Estimated work: 2 days end-to-end if no surprises.
+**Status: shipped 2026-05-10 (`d9072a2`), self-review fixes in `c815cf5`.**
 
-Stop-points (commit at each):
-- after step 3 (HTTP client + smoke against a manually-started
-  tonutils-storage)
-- after step 5 (CLI flag works, both backends usable)
-- after step 7 (tests green)
+Outstanding follow-ups before B3:
+- Auto-redeploy on file change for the tonutils backend (the daemon
+  is alive in `--watch`; we just need a chokidar loop calling
+  `tonutilsCreate` on changes). Current behaviour is "seed the
+  initial bag and hold". Tracking this as **B2.x**.
+- A tonutils integration test mirroring `provider-parity.integration.test.ts`
+  (boots tonutils, creates a bag, asserts on `/api/v1/details`).
 
 ### B3 — ADNL Tunnel client integration
 

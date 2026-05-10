@@ -1212,8 +1212,9 @@
         <tr><td><code>--ci-mode</code></td><td>Disable spinners for CI logs</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
         <tr><td><code>--json-output</code></td><td>Emit JSON instead of human-readable</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
         <tr><td><code>--skip-verify</code></td><td>Skip 60s post-upload verify</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
-        <tr><td><code>--watch</code></td><td>Watch build dir, auto-redeploy, keep daemon alive (<strong>default since v0.6</strong>)</td><td>v0.3</td><td><span class="chip green">Stable · default</span></td></tr>
-        <tr><td><code>--no-watch</code></td><td>One-shot deploy; exit after upload (CI-friendly)</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
+        <tr><td><code>--watch</code></td><td>Watch build dir, auto-redeploy, keep daemon alive (<strong>default for interactive runs since v0.6</strong>)</td><td>v0.3</td><td><span class="chip green">Stable · default</span></td></tr>
+        <tr><td><code>--no-watch</code></td><td>One-shot deploy; exit after upload (CI-friendly). Auto-applied under <code>--ci-mode</code>/<code>--json-output</code>.</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
+        <tr><td><code>--daemon-backend &lt;name&gt;</code></td><td>Daemon backend: <code>tonutils</code> (default, xssnick / Go — same daemon TON-Torrent uses) or <code>ton-core</code> (legacy C++; needed for <code>--testnet</code>/<code>--provider</code>)</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--debounce &lt;ms&gt;</code></td><td>Watch debounce delay (default <code>2000</code>)</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
       </tbody>
     </table>

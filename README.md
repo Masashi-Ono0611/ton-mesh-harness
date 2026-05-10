@@ -308,11 +308,12 @@ ton-sovereign-deploy [build-dir] [options]
 | `--desc <text>` | Bag の説明 |
 | `--domain <domain>` | .ton ドメインに登録 (v0.2) |
 | `--ci-mode` | CI 環境向けスピナー無効化 (v0.3) |
-| `--json-output` | JSON 出力 (v0.3) |
-| `--watch` | ファイル変更を監視して自動再デプロイ（**v0.6 以降デフォルトで有効**） |
+| `--json-output` | JSON 出力 (v0.3)。 `--ci-mode` または `--json-output` のときは `--watch` が **自動的に無効** になり、 upload 完了後に exit します（CI hang 防止） |
+| `--watch` | ファイル変更を監視して自動再デプロイ（**v0.6 以降、 対話実行ではデフォルトで有効**） |
 | `--no-watch` | watch モードを無効化し upload 完了後に exit（CI / one-shot deploy 用）v0.6+ |
 | `--debounce <ms>` | watch モードのデバウンス遅延（デフォルト: 2000ms） |
-| `--provider [address]` | **experimental** — ストレージプロバイダー契約（mainnet provider 経済が現状ほぼ稼働しないため、 当面は `--watch` 既定の self-host を推奨）|
+| `--daemon-backend <name>` | daemon バックエンド: `tonutils` (デフォルト、 v0.6+) / `ton-core`（C++ レガシー、 `--testnet` や `--provider` を使うときの fallback）|
+| `--provider [address]` | **v0.6 では一時的に disabled**（mainnet provider 経済が dormant なため）。 `--daemon-backend=ton-core` を使えば v0.5 と同じく実装は動くが受け入れる provider はほぼいません。 詳細: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md) |
 | `--span <seconds>` | プロバイダー契約期間（秒、デフォルト 86400 = 1 日、最大 4294967295）v0.5+ |
 | `--wallet <name>` | 署名する wallet の希望名（部分一致、 デフォルト "Tonkeeper"）v0.5+ |
 | `--skip-verify` | bag アクセス確認をスキップ（伝播には時間がかかるため） |
@@ -328,9 +329,28 @@ ton-sovereign-deploy ./build/ --json-output
 ton-sovereign-deploy ./build/ --ci-mode --json-output
 ```
 
+### バックエンド選択（v0.6 以降）
+
+v0.6 から **bundled daemon を `tonutils-storage` (xssnick / Go)** に切り替えました。 これは [TON-Torrent](https://github.com/xssnick/TON-Torrent) や [Resistance Tools](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08) スタックが使う daemon そのものです。
+
+```bash
+# デフォルト = tonutils backend (Go)
+ton-sovereign-deploy ./build/
+
+# レガシー TON Core C++ daemon に切替（--testnet / --provider を使う場合）
+ton-sovereign-deploy ./build/ --daemon-backend=ton-core
+```
+
+| 機能 | tonutils (default) | ton-core (legacy) |
+|---|---|---|
+| Bag upload + seed | ✅ | ✅ |
+| `--watch` (auto-redeploy) | ⏳ 初回シードのみ（自動再デプロイは v0.6 follow-up で予定） | ✅ |
+| `--testnet` | ❌ | ✅ |
+| `--provider` | ❌（v0.6 は provider 経路全体を一時 disable） | ⚠ experimental（mainnet provider 経済 dormant） |
+
 ### Watch モード（v0.6 以降デフォルト）
 
-**v0.6 から `--watch` が既定挙動です。** 引数なしで実行すると daemon が常駐し、 ファイル変更を監視して自動再デプロイします。
+**v0.6 から `--watch` が対話実行時の既定挙動です。** 引数なしで実行すると daemon が常駐し、 ファイル変更を監視して自動再デプロイします（ただし auto-redeploy は現状 ton-core backend のみ）。
 
 ```bash
 # 既定挙動: watch モードで起動 (= self-host first)
