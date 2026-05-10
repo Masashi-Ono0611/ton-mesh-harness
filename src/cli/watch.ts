@@ -28,8 +28,25 @@ export async function runWatchMode(
   console.log(chalk.dim('  Press Ctrl+C to stop'))
   console.log()
 
-  // Keep daemon alive for watch mode
+  // Keep daemon alive for watch mode.
+  // Codex P2 caught: by this point the deploy step has already killed the
+  // daemon used to upload `initialBagId` and removed its temp DB, so the
+  // bag printed earlier is *not* yet seeded by anyone. Recreate it on the
+  // fresh daemon up front (same content ⇒ same bag id, deterministic) so
+  // the first watch tick isn't required to make the bag reachable.
   const daemon = await startDaemon(opts.testnet)
+  try {
+    const reseeded = createBag({ buildDir, description: opts.desc, daemon })
+    if (reseeded.bagId !== initialBagId) {
+      console.log(chalk.yellow(
+        `\n  ⚠ Re-seeded bag id (${reseeded.bagId.slice(0, 12)}…) ` +
+        `differs from initial (${initialBagId.slice(0, 12)}…). ` +
+        `This means the build dir changed between deploy and watch start.`,
+      ))
+    }
+  } catch (err) {
+    console.log(chalk.yellow(`\n  ⚠ Failed to re-seed initial bag on the watch daemon: ${err instanceof Error ? err.message : err}`))
+  }
 
   const stopWatching = watchBuildDir({
     buildDir,

@@ -61,26 +61,51 @@ async function ensureTonutilsConfig(daemonPath: string, dbDir: string): Promise<
 
   if (!existsSync(configPath)) {
     // Step 1: short-lived spawn to let the daemon generate the file.
+    // Both the polling timer and the child's `exit` event can race to
+    // resolve, and in either branch we need to clean up the other —
+    // hence the explicit `settled` guard.
     await new Promise<void>((resolve, reject) => {
+      let settled = false
       const child = spawn(daemonPath, ['--db', dbDir], { stdio: 'ignore', detached: false })
-      const timer = setInterval(() => {
-        if (existsSync(configPath)) {
-          clearInterval(timer)
-          try { child.kill('SIGKILL') } catch { /* ignore */ }
-          resolve()
-        }
-      }, 200)
-      const giveUp = setTimeout(() => {
-        clearInterval(timer)
+
+      let timer: NodeJS.Timeout | undefined
+      let giveUp: NodeJS.Timeout | undefined
+
+      const cleanup = () => {
+        if (timer) clearInterval(timer)
+        if (giveUp) clearTimeout(giveUp)
         try { child.kill('SIGKILL') } catch { /* ignore */ }
-        reject(new Error('tonutils-storage did not produce config.json within 8 s'))
+      }
+
+      const succeed = () => {
+        if (settled) return
+        settled = true
+        cleanup()
+        resolve()
+      }
+
+      const fail = (err: Error) => {
+        if (settled) return
+        settled = true
+        cleanup()
+        reject(err)
+      }
+
+      timer = setInterval(() => {
+        if (existsSync(configPath)) succeed()
+      }, 200)
+
+      giveUp = setTimeout(() => {
+        fail(new Error('tonutils-storage did not produce config.json within 8 s'))
       }, 8_000)
+
       child.on('exit', () => {
-        if (existsSync(configPath)) {
-          clearTimeout(giveUp)
-          clearInterval(timer)
-          resolve()
-        }
+        if (existsSync(configPath)) succeed()
+        else fail(new Error('tonutils-storage exited before producing config.json'))
+      })
+
+      child.on('error', (err) => {
+        fail(new Error(`tonutils-storage spawn (config-gen step) failed: ${err.message}`))
       })
     })
   }
@@ -115,9 +140,12 @@ export async function startTonutilsDaemon(): Promise<TonutilsHandle> {
     ],
     { stdio: 'ignore', detached: false },
   )
-  child.on('error', (err) => {
-    throw new Error(`tonutils-storage failed to start: ${err.message}`)
-  })
+
+  // Capture the spawn error in a state we can check during waitForApi
+  // instead of throwing inside the event handler (which becomes an
+  // unhandled exception that bypasses the caller's try/catch).
+  let spawnError: Error | undefined
+  child.on('error', (err) => { spawnError = err })
 
   const handle: TonutilsHandle = {
     apiUrl: `http://127.0.0.1:${apiPort}`,
@@ -129,20 +157,40 @@ export async function startTonutilsDaemon(): Promise<TonutilsHandle> {
     },
   }
 
-  await waitForApi(handle)
+  try {
+    await waitForApi(handle, 30_000, () => spawnError)
+  } catch (err) {
+    handle.kill()
+    throw err
+  }
   return handle
 }
 
-async function waitForApi(handle: TonutilsHandle, timeoutMs = 30_000): Promise<void> {
+async function waitForApi(
+  handle: TonutilsHandle,
+  timeoutMs = 30_000,
+  getSpawnError?: () => Error | undefined,
+): Promise<void> {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
+    const spawnErr = getSpawnError?.()
+    if (spawnErr) {
+      throw new Error(`tonutils-storage spawn failed: ${spawnErr.message}`)
+    }
+    // Each fetch needs its own timeout — Node 18+'s fetch has no default,
+    // so a stuck connect would otherwise hang past the outer deadline.
+    const ac = new AbortController()
+    const probeTimer = setTimeout(() => ac.abort(), 1_500)
     try {
-      const r = await fetch(`${handle.apiUrl}/api/v1/list`, { method: 'GET' })
+      const r = await fetch(`${handle.apiUrl}/api/v1/list`, { method: 'GET', signal: ac.signal })
+      clearTimeout(probeTimer)
       if (r.ok) return
-    } catch { /* not ready yet */ }
+    } catch {
+      clearTimeout(probeTimer)
+      /* not ready yet */
+    }
     await sleep(300)
   }
-  handle.kill()
   throw new Error(`tonutils-storage did not accept HTTP on ${handle.apiUrl} within ${timeoutMs} ms`)
 }
 

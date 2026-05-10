@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { spawnSync } from 'child_process'
 import path from 'path'
 import os from 'os'
@@ -94,8 +94,10 @@ function downloadFile(url: string, dest: string): void {
   if (result.status !== 0) {
     throw new Error(`Failed to download ${url} (curl exit ${result.status})`)
   }
-  // rename is atomic on the same filesystem
-  spawnSync('mv', [tmp, dest])
+  // Use Node's renameSync (portable atomic rename on the same FS) instead
+  // of `mv`, which is not on PATH on stock Windows. Same fix Codex P2
+  // flagged for the tonutils installer; applying it here for symmetry.
+  renameSync(tmp, dest)
 }
 
 /**

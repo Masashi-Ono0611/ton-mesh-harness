@@ -72,10 +72,20 @@ program
     // (Only meaningful when --provider is set; otherwise the value is ignored.)
     const spanSeconds = opts.provider ? parseSpanFlag(opts.span) : undefined
 
-    // v0.6: --watch is the default. opts.watch is undefined when neither
-    // --watch nor --no-watch was passed; commander sets it to false only
-    // when --no-watch is given explicitly. So treat undefined as true.
-    const watchEnabled = opts.watch !== false
+    // v0.6: --watch is the default for interactive runs (self-host first).
+    // For non-interactive runs (--json-output, --ci-mode, or CI=true env)
+    // the documented behaviour is one-shot: print the result and exit, so
+    // a CI invocation that doesn't pass --no-watch must not be left
+    // hanging in the seeding loop. Codex P1 caught this on review.
+    const isCI = opts.ciMode || process.env.CI === 'true'
+    const watchExplicitlyOff = opts.watch === false
+    const watchExplicitlyOn  = opts.watch === true
+    const nonInteractive = isCI || !!opts.jsonOutput
+    const watchEnabled = watchExplicitlyOn
+      ? true
+      : watchExplicitlyOff
+        ? false
+        : !nonInteractive
 
     // -----------------------------------------------------------------
     // Backend dispatch

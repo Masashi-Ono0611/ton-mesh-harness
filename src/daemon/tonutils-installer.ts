@@ -2,7 +2,7 @@
 // Sibling of installer.ts (TON Core daemon installer); we keep both around
 // so users can opt in to either backend via --daemon-backend.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { spawnSync } from 'child_process'
 import path from 'path'
 import os from 'os'
@@ -38,12 +38,18 @@ export function getTonutilsPaths(): TonutilsPaths {
   }
 }
 
+export interface EnsureTonutilsBinaryOptions {
+  // Suppress all human-readable progress messages (download banner). Use
+  // when the caller's stdout must remain valid JSON (`--json-output`).
+  silent?: boolean
+}
+
 /**
  * Ensure the tonutils-storage binary is installed and at the expected
  * version. Idempotent — does nothing if the binary is already present
  * with a matching .tonutils-version file.
  */
-export function ensureTonutilsBinary(): void {
+export function ensureTonutilsBinary(opts: EnsureTonutilsBinaryOptions = {}): void {
   mkdirSync(BIN_DIR, { recursive: true })
 
   const paths = getTonutilsPaths()
@@ -67,7 +73,12 @@ export function ensureTonutilsBinary(): void {
 
   const url = `https://github.com/xssnick/tonutils-storage/releases/download/${TONUTILS_VERSION}/${asset}`
 
-  process.stdout.write(`  Downloading tonutils-storage (${TONUTILS_VERSION})…\n`)
+  if (!opts.silent) {
+    // Send to stderr so JSON-output stdout stays parseable even if a future
+    // caller wires the wrong silent flag. Codex P2 flagged the previous
+    // stdout write as a JSON-mode polluter.
+    process.stderr.write(`  Downloading tonutils-storage (${TONUTILS_VERSION})…\n`)
+  }
   downloadFile(url, paths.daemon)
   if (process.platform !== 'win32') {
     spawnSync('chmod', ['+x', paths.daemon])
@@ -83,7 +94,10 @@ function downloadFile(url: string, dest: string): void {
   if (result.status !== 0) {
     throw new Error(`Failed to download ${url} (curl exit ${result.status})`)
   }
-  spawnSync('mv', [tmp, dest])
+  // renameSync is portable across darwin/linux/win32; the previous
+  // spawnSync('mv', …) silently failed on stock Windows where `mv` is
+  // not on PATH (Codex P2).
+  renameSync(tmp, dest)
 }
 
 function removeQuarantine(filePath: string): void {

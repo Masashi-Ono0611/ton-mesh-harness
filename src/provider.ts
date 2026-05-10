@@ -166,10 +166,17 @@ interface DaemonBagInfo {
   files?: Array<{ size?: number | string }>
 }
 
+// Treat zero as missing so that `??`-chained fallbacks fall through to the
+// next candidate. The daemon's JSON contains several size-like fields and
+// any of them may be 0 even when another is the real value (e.g.
+// `total_size: 0` together with `downloaded_size: 1685`). The previous
+// version returned 0 here and short-circuited the `??` chain, throwing
+// for completed bags that had a positive `downloaded_size`/`files[].size`.
+// Codex flagged this twice — keep `> 0` strict.
 function parseNumericField(v: number | string | undefined): number | undefined {
   if (v === undefined || v === null) return undefined
   const n = typeof v === 'number' ? v : Number(v)
-  return Number.isFinite(n) && n >= 0 ? n : undefined
+  return Number.isFinite(n) && n > 0 ? n : undefined
 }
 
 export function getBagSizeBytes(bagId: string, daemon: DaemonHandle): number {

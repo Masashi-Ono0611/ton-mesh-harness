@@ -39,6 +39,16 @@ export async function runDeployTonutils(
   const isCI = opts.ciMode || process.env.CI === 'true'
   const createSpinner = createSpinnerFactory({ silent: !!opts.jsonOutput, plain: isCI })
 
+  // tonutils-storage uses mainnet network config out of the box. Pretending
+  // testnet works on this backend would silently send to mainnet — refuse
+  // up front so the user picks a supported combination.
+  if (opts.testnet) {
+    throw new Error(
+      `--testnet is not supported on the tonutils-storage backend in v0.6. ` +
+      `Use --daemon-backend=ton-core for testnet, or drop --testnet for mainnet self-host.`,
+    )
+  }
+
   try {
     const buildDir = detectBuildDir(process.cwd(), buildDirArg)
     const description = opts.desc ?? path.basename(buildDir)
@@ -47,14 +57,13 @@ export async function runDeployTonutils(
       console.log()
       console.log(chalk.bold('🚀 TON Sovereign Deploy'))
       console.log(chalk.dim('  Backend:   tonutils-storage (xssnick / Go) — v0.6 default'))
-      if (opts.testnet) console.log(chalk.yellow('  (testnet mode — note: tonutils backend uses mainnet config; testnet is unsupported on this backend in v0.6)'))
       console.log(chalk.dim(`  Build dir: ${buildDir}`))
       if (opts.domain) console.log(chalk.dim(`  Domain:    ${opts.domain}`))
       console.log()
     }
 
     const setupSpinner = createSpinner.start('Checking tonutils-storage…')
-    ensureTonutilsBinary()
+    ensureTonutilsBinary({ silent: !!opts.jsonOutput })
     setupSpinner.succeed('tonutils-storage ready')
 
     const daemonSpinner = createSpinner.start('Starting tonutils-storage…')
