@@ -8,7 +8,7 @@ import { runDoctor } from './cli/doctor'
 import { runProviderContract } from './cli/provider'
 import { runWatchMode } from './cli/watch'
 
-const VERSION = '0.4.0'
+const VERSION = '0.6.0'
 
 function parseSpanFlag(raw: string | undefined): number {
   const n = Number(raw ?? '86400')
