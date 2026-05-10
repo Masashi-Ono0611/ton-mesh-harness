@@ -4,6 +4,61 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] – 2026-05-10
+
+v0.7 closes the v0.6 BYO gap: `--site-auto` now spins up
+`rldp-http-proxy` from one CLI command and the .ton domain serves
+your build directory end-to-end without manual VPS setup.
+
+### Added
+
+- **`--site-auto`** flag (mutually exclusive with `--site-adnl`).
+  Mints a fresh Ed25519 ADNL identity in pure JS, downloads
+  `rldp-http-proxy` from `ton-blockchain/ton@v2026.04-1`, spawns it
+  with the minted identity, runs a tiny Node http server rooted at
+  the build directory, and feeds the resulting hex into the
+  existing `dns_adnl_address` write path. Storage + site DNS
+  records still bundle into a single TonConnect signature.
+- **`--site-public-ip <ip>`** override for the IPv4 published in the
+  ADNL DHT entry. Default: `api.ipify.org` probe.
+- **`--site-udp-port <port>`** override for the proxy's UDP listener
+  (default: free port in `17600-17699`).
+- **`src/daemon/keyring.ts`** new module: `generateAdnlIdentity` +
+  `writeKeyringFile` + `adnlIdEncode` / `adnlIdDecode` (TON's
+  base32+CRC16 user-friendly form, the value `-A` actually expects).
+  Constants captured from a `generate-random-id` v2026.04-1 spike
+  and pinned in `docs/v0.7/c1-design-notes.md`.
+- **`src/daemon/rldp-http-proxy-installer.ts`** + **`-process.ts`**
+  mirror the tonutils-storage installer / spawn pattern.
+- **`scripts/probe-providers.cjs`** (C4): re-ran the storage-provider
+  liveness probe under v0.7. Verdict: still **dormant** (top-8
+  cheapest, zero `accept_storage_contract` ops in 30d). `--provider`
+  stays disabled. Snapshot: `docs/v0.7/provider-probe-2026-05-10.md`.
+- **doctor extension** (C5.1): surfaces the rldp-http-proxy binary
+  + the persisted site ADNL hex from `~/.ton-sovereign/site-adnl.txt`.
+
+### Internal
+
+- 121 unit tests (was 106; +15 keyring including base32+CRC16
+  fixture round-trips against `generate-random-id` output).
+- New `test/daemon/rldp-http-proxy-process.integration.test.ts`
+  gated behind `RUN_DAEMON_TESTS=1` validates a live proxy spawn
+  with the minted identity end-to-end.
+- `findFreeUdpPort` now exported from `src/daemon/tonutils-process.ts`
+  for reuse by the new proxy module.
+
+### Out of scope (deferred to v0.8)
+
+- **C2 NAT traversal via tunnel** — TON Foundation's `rldp-http-proxy`
+  is C++ and doesn't import `adnl-tunnel`; xssnick's tunnel only
+  handles outbound (which v0.6 already uses). Inbound HTTP-over-RLDP
+  via tunnel needs us to write a Go drop-in — 1-2 weeks of new work.
+- **C3 Payment Network real client** — its purpose was paying tunnel
+  rentals; without C2 it has no real-world exercise.
+
+The v0.6 `byo-rldp-http-proxy.md` guide stays in tree as a fallback
+for users who prefer the C++ proxy or already have a VPS provisioned.
+
 ## [0.6.3] – 2026-05-10
 
 ### Fixed

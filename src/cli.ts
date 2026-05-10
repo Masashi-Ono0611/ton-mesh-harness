@@ -8,7 +8,7 @@ import { runDoctor } from './cli/doctor'
 import { runSiteHost } from './cli/site-host'
 import { runWatchMode } from './cli/watch'
 
-const VERSION = '0.6.3'
+const VERSION = '0.7.0'
 
 const program = new Command()
 

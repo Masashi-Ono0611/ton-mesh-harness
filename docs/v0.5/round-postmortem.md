@@ -130,3 +130,11 @@ Foundation's docs say vs what's actually deployed, and how IPFS bridging
 could integrate with `.ton` DNS.
 
 See `docs/v0.5/next-research-plan.md` (forthcoming) for the research outline.
+
+## Update: 2026-05-10 v0.7 dormancy re-probe
+
+Re-ran the same probe under v0.7 (`scripts/probe-providers.cjs`,
+top-8 cheapest, 30-day window). Same verdict: **all 8 providers
+zero `accept_storage_contract` ops** in the window. Provider economy
+still dormant ~2 months after the v0.5 round; v0.7 keeps `--provider`
+disabled. Raw data: `docs/v0.7/provider-probe-2026-05-10.md`.
