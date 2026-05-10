@@ -148,9 +148,25 @@ export async function getDomainNftAddress(domain: string, testnet = false): Prom
 // Poll TONAPI until DNS record matches our bag ID (or timeout)
 // -----------------------------------------------------------------------
 
+// TONAPI `/v2/dns/{domain}/resolve` shape — observed live on 2026-05-10:
+//   "storage": "<hex bag id>"               // string, not object
+//   "sites":   ["<hex adnl>", ...] | []
+// The earlier code expected `storage: { bag_id: "..." }` (a v0.2-era schema)
+// and consequently never matched — every deploy timed out at the polling
+// step even though the on-chain write had succeeded. v0.6.2 fix: accept the
+// current string shape, defensively also accept the legacy object shape so a
+// future schema flip doesn't bite us again.
 interface TonApiDnsRecord {
-  storage?: { bag_id?: string }
+  storage?: string | { bag_id?: string }
   sites?: string[]
+}
+
+export function extractStorageBagId(data: TonApiDnsRecord | null | undefined): string | null {
+  const s = data?.storage
+  if (!s) return null
+  if (typeof s === 'string') return s.toLowerCase()
+  if (typeof s.bag_id === 'string') return s.bag_id.toLowerCase()
+  return null
 }
 
 async function getDnsResolved(domain: string, testnet = false): Promise<TonApiDnsRecord | null> {
@@ -176,7 +192,7 @@ export async function pollDnsRecord(
 
   while (Date.now() < deadline) {
     const data = await getDnsResolved(domain, testnet)
-    const current = data?.storage?.bag_id?.toLowerCase() ?? null
+    const current = extractStorageBagId(data)
     if (current === expectedBagId.toLowerCase()) {
       spinner.succeed('DNS record confirmed on-chain!')
       return true

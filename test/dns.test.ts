@@ -4,6 +4,7 @@ import {
   buildChangeDnsRecordBody,
   buildDnsAdnlRecord,
   buildChangeDnsSiteRecordBody,
+  extractStorageBagId,
 } from '../src/dns'
 
 const SAMPLE_BAG_ID = '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
@@ -160,5 +161,37 @@ describe('buildChangeDnsSiteRecordBody', () => {
     siteSlice.loadUint(32); siteSlice.loadUintBig(64)
     const siteKey = siteSlice.loadUintBig(256)
     expect(storageKey).not.toBe(siteKey)
+  })
+})
+
+describe('extractStorageBagId (TONAPI parser)', () => {
+  it('extracts from current TONAPI shape (string)', () => {
+    const got = extractStorageBagId({ storage: SAMPLE_BAG_ID })
+    expect(got).toBe(SAMPLE_BAG_ID)
+  })
+
+  it('extracts from legacy v0.2-era shape (object with bag_id)', () => {
+    // Defensive — TONAPI flipped from object to string between v0.2 and v0.6.
+    // Keep accepting both so a future flip back doesn't break us silently.
+    const got = extractStorageBagId({ storage: { bag_id: SAMPLE_BAG_ID } })
+    expect(got).toBe(SAMPLE_BAG_ID)
+  })
+
+  it('lowercases the result for consistent comparison', () => {
+    const got = extractStorageBagId({ storage: SAMPLE_BAG_ID.toUpperCase() })
+    expect(got).toBe(SAMPLE_BAG_ID)
+  })
+
+  it('returns null when storage is missing', () => {
+    expect(extractStorageBagId({})).toBeNull()
+    expect(extractStorageBagId(null)).toBeNull()
+    expect(extractStorageBagId(undefined)).toBeNull()
+  })
+
+  it('returns null when storage is an unexpected type (defensive)', () => {
+    // Numbers, booleans, nested arrays — all rejected gracefully.
+    expect(extractStorageBagId({ storage: 0 as unknown as string })).toBeNull()
+    expect(extractStorageBagId({ storage: false as unknown as string })).toBeNull()
+    expect(extractStorageBagId({ storage: { bag_id: undefined } })).toBeNull()
   })
 })

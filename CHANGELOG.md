@@ -4,6 +4,31 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] – 2026-05-10
+
+Tier-3.1 mainnet soak on `masashi-ono0611.ton` produced two findings.
+
+### Fixed
+- **`pollDnsRecord` parser drift** (`src/dns.ts`): TONAPI
+  `/v2/dns/{domain}/resolve` now returns `storage` as a hex string
+  (e.g. `"a4df8074…"`), not the v0.2-era `{ bag_id: "…" }` shape the CLI
+  expected. The poller therefore never matched and every successful
+  deploy hit the 5-minute "DNS propagation timed out" warning even
+  though the on-chain write had already settled. New `extractStorageBagId`
+  helper accepts both shapes (current string + legacy object) so a future
+  schema flip won't bite us again. Pure-function form makes it unit
+  testable.
+
+### Changed
+- **DNS gas amount lowered from 0.05 TON to 0.02 TON per
+  `change_dns_record` message** (`src/cli/dns.ts`). Live measurement on
+  the v0.6.1 soak transaction showed `total_fees = 0.001536 TON`
+  (compute 8419 gas + storage), so 0.02 TON keeps a >10× buffer while
+  shrinking each call's "stuck in NFT balance" excess from ~0.048 TON
+  to ~0.018 TON. Matches the default Tonkeeper uses in its own DNS UI.
+  When `--site-adnl` bundles two messages, the wallet sees `0.04 TON`
+  instead of `0.10 TON`.
+
 ## [0.6.1] – 2026-05-10
 
 ### Fixed

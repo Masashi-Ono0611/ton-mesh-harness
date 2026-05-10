@@ -13,10 +13,14 @@ import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { createWalletUI } from '../wallet/ui'
 import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
 
-// 0.05 TON gas for each DNS update message — matches the legacy hand-rolled
-// deeplink amount. When --site-adnl is set we bundle two messages into a
-// single sign request, so the wallet sees `2 * 0.05 = 0.10 TON` total.
-const DNS_UPDATE_AMOUNT_NANO = 50_000_000n
+// 0.02 TON per DNS update message. Reduced from 0.05 TON in v0.6.2 after
+// observing the live tx burn for change_dns_record (8419 gas + storage
+// fees ≈ 0.0015 TON total — recorded on the masashi-ono0611.ton tier-3.1
+// soak). 0.02 keeps a >10× compute-fee buffer, matches Tonkeeper's own UI
+// default for DNS edits, and shrinks the per-call "stuck in NFT balance"
+// excess from ~0.048 TON to ~0.018 TON. When --site-adnl is set we bundle
+// two messages, so the wallet sees `2 * 0.02 = 0.04 TON` total.
+const DNS_UPDATE_AMOUNT_NANO = 20_000_000n
 
 interface DnsRegistrationOptions {
   testnet?: boolean
