@@ -1,6 +1,5 @@
 import ora from 'ora'
 import chalk from 'chalk'
-import type { DaemonHandle } from '../daemon'
 import { startDaemon } from '../daemon'
 import { createBag } from '../upload'
 import { printResult } from '../output'

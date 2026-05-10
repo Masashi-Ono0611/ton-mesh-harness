@@ -1,5 +1,4 @@
 import https from 'https'
-import { URL } from 'url'
 
 export interface HttpResponse<T = unknown> {
   statusCode: number
@@ -22,8 +21,6 @@ export interface HttpOptions {
  */
 export function httpsGet<T = unknown>(url: string, options: HttpOptions = {}): Promise<T> {
   return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(url)
-
     const req = https.get(
       url,
       { headers: { ...options.headers, 'Accept': 'application/json' }, timeout: options.timeout },
