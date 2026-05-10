@@ -313,6 +313,7 @@ ton-sovereign-deploy [build-dir] [options]
 | `--no-watch` | watch モードを無効化し upload 完了後に exit（CI / one-shot deploy 用）v0.6+ |
 | `--debounce <ms>` | watch モードのデバウンス遅延（デフォルト: 2000ms） |
 | `--daemon-backend <name>` | daemon バックエンド: `tonutils` (デフォルト、 v0.6+) / `ton-core`（C++ レガシー、 `--testnet` や `--provider` を使うときの fallback）|
+| `--tunnel-config <path>` | ADNL Tunnel の `nodes-pool.json` を指定（v0.6+、 tonutils backend のみ）。 NAT 越えに使う。 公開可能なプールはまだないため **bring-your-own-pool**（運営者から個別取得）|
 | `--provider [address]` | **v0.6 では一時的に disabled**（mainnet provider 経済が dormant なため）。 `--daemon-backend=ton-core` を使えば v0.5 と同じく実装は動くが受け入れる provider はほぼいません。 詳細: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md) |
 | `--span <seconds>` | プロバイダー契約期間（秒、デフォルト 86400 = 1 日、最大 4294967295）v0.5+ |
 | `--wallet <name>` | 署名する wallet の希望名（部分一致、 デフォルト "Tonkeeper"）v0.5+ |
@@ -344,9 +345,21 @@ ton-sovereign-deploy ./build/ --daemon-backend=ton-core
 | 機能 | tonutils (default) | ton-core (legacy) |
 |---|---|---|
 | Bag upload + seed | ✅ | ✅ |
-| `--watch` (auto-redeploy) | ⏳ 初回シードのみ（自動再デプロイは v0.6 follow-up で予定） | ✅ |
+| `--watch` (auto-redeploy) | ✅ (v0.6 step B2.x で実装) | ✅ |
+| `--tunnel-config` (ADNL Tunnel) | ✅ (v0.6 step B3.x で対応) | ❌（C++ daemon に tunnel client なし） |
 | `--testnet` | ❌ | ✅ |
 | `--provider` | ❌（v0.6 は provider 経路全体を一時 disable） | ⚠ experimental（mainnet provider 経済 dormant） |
+
+#### ADNL Tunnel — NAT 越え
+
+家の WiFi など **公開 IP がない環境** でも bag を seed させるには、 ADNL Tunnel intermediate node を経由します（[TON Foundation 公式 2025-03 発表](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08)）。
+
+```bash
+# 運営者から受け取った nodes-pool.json を渡す
+ton-sovereign-deploy ./build/ --tunnel-config ./tunnel-pool.json
+```
+
+**現状の制約**: 公開できる community-run pool が存在しないため、 nodes-pool.json は **tunnel 運営者から個別に取得**する必要があります（[xssnick/TON-Torrent](https://github.com/xssnick/TON-Torrent) と同じ運用）。 運営者の community / Telegram チャンネルから入手してください。 v0.6 では CLI 表面と config 配線まで対応、 default pool curation または自前運営は v0.7 以降の判断です。
 
 ### Watch モード（v0.6 以降デフォルト）
 

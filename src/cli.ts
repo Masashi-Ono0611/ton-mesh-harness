@@ -45,6 +45,11 @@ program
   // TON-Torrent and the Resistance Tools stack use. ton-core is the legacy
   // C++ daemon, kept as a fallback during the migration.
   .option('--daemon-backend <name>', 'Daemon backend: tonutils (default) | ton-core', 'tonutils')
+  // v0.6: ADNL Tunnel client. Pass a nodes-pool.json (obtained from the
+  // tunnel operator you trust) and the daemon will route bag traffic
+  // through that pool — useful when the host is behind NAT or wants to
+  // hide its IP. tonutils backend only.
+  .option('--tunnel-config <path>', 'Path to nodes-pool.json for ADNL Tunnel (tonutils backend only; bring-your-own pool)')
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
     // Validate backend choice early.
     if (opts.daemonBackend && opts.daemonBackend !== 'tonutils' && opts.daemonBackend !== 'ton-core') {
@@ -53,6 +58,14 @@ program
       )
     }
     const backend = opts.daemonBackend ?? 'tonutils'
+
+    // --tunnel-config is wired into the tonutils ClientConfig only; the
+    // legacy ton-core daemon has no equivalent code path.
+    if (opts.tunnelConfig && backend !== 'tonutils') {
+      throw new Error(
+        `--tunnel-config requires --daemon-backend=tonutils (the ton-core C++ daemon has no built-in ADNL Tunnel client).`,
+      )
+    }
 
     // v0.6: --provider is temporarily disabled while the daemon backend is
     // being migrated. The mainnet provider economy was already dormant
@@ -90,7 +103,9 @@ program
     // Backend dispatch
     // -----------------------------------------------------------------
     if (backend === 'tonutils') {
-      const deployed = await runDeployTonutils(opts, buildDirArg)
+      const deployed = await runDeployTonutils(opts, buildDirArg, {
+        tunnelConfigPath: opts.tunnelConfig,
+      })
       if (!deployed) return
       const { result, daemon } = deployed
 

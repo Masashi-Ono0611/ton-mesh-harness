@@ -3,6 +3,7 @@
 // path stays in deploy.ts for users who pass --daemon-backend=ton-core.
 
 import path from 'path'
+import { existsSync, readFileSync } from 'fs'
 import chalk from 'chalk'
 import type { CliOptions } from '../types/cli'
 import { createSpinnerFactory } from '../utils/spinner'
@@ -24,9 +25,47 @@ export interface TonutilsDeployReturn {
   description: string     // for watch-mode re-create
 }
 
+export interface TonutilsDeployOptions {
+  tunnelConfigPath?: string  // absolute or relative path to nodes-pool.json
+}
+
+interface ResolvedTunnel {
+  absPath: string
+  nodeCount: number  // best-effort count of intermediate nodes in the pool
+}
+
+function resolveTunnelConfig(rawPath: string): ResolvedTunnel {
+  const absPath = path.resolve(rawPath)
+  if (!existsSync(absPath)) {
+    throw new Error(
+      `--tunnel-config: file not found at ${absPath}. ` +
+      `Pass a path to a nodes-pool.json supplied by your tunnel operator.`,
+    )
+  }
+  let nodeCount = 0
+  try {
+    const parsed = JSON.parse(readFileSync(absPath, 'utf-8'))
+    if (Array.isArray(parsed?.NodesPool)) nodeCount = parsed.NodesPool.length
+    else if (Array.isArray(parsed?.nodes_pool)) nodeCount = parsed.nodes_pool.length
+  } catch (err) {
+    throw new Error(
+      `--tunnel-config: could not parse ${absPath} as JSON: ` +
+      `${err instanceof Error ? err.message : String(err)}`,
+    )
+  }
+  if (nodeCount === 0) {
+    throw new Error(
+      `--tunnel-config: ${absPath} has zero entries in NodesPool. ` +
+      `The tunnel client needs at least one intermediate node to route through.`,
+    )
+  }
+  return { absPath, nodeCount }
+}
+
 export async function runDeployTonutils(
   opts: CliOptions,
   buildDirArg?: string,
+  deployOpts: TonutilsDeployOptions = {},
 ): Promise<TonutilsDeployReturn | undefined> {
   let daemon: TonutilsHandle | undefined
 
@@ -52,6 +91,12 @@ export async function runDeployTonutils(
     )
   }
 
+  // Validate the tunnel config (if any) BEFORE we download a daemon binary
+  // — fail fast on user-input problems.
+  const tunnel = deployOpts.tunnelConfigPath
+    ? resolveTunnelConfig(deployOpts.tunnelConfigPath)
+    : undefined
+
   try {
     const buildDir = detectBuildDir(process.cwd(), buildDirArg)
     const description = opts.desc ?? path.basename(buildDir)
@@ -60,6 +105,10 @@ export async function runDeployTonutils(
       console.log()
       console.log(chalk.bold('🚀 TON Sovereign Deploy'))
       console.log(chalk.dim('  Backend:   tonutils-storage (xssnick / Go) — v0.6 default'))
+      if (tunnel) {
+        console.log(chalk.dim(`  Tunnel:    ${tunnel.absPath}`))
+        console.log(chalk.dim(`             ${tunnel.nodeCount} intermediate node(s) in pool`))
+      }
       console.log(chalk.dim(`  Build dir: ${buildDir}`))
       if (opts.domain) console.log(chalk.dim(`  Domain:    ${opts.domain}`))
       console.log()
@@ -70,8 +119,11 @@ export async function runDeployTonutils(
     setupSpinner.succeed('tonutils-storage ready')
 
     const daemonSpinner = createSpinner.start('Starting tonutils-storage…')
-    daemon = await startTonutilsDaemon()
-    daemonSpinner.succeed(`tonutils-storage started at ${daemon.apiUrl}`)
+    daemon = await startTonutilsDaemon({ tunnelConfigPath: tunnel?.absPath })
+    daemonSpinner.succeed(
+      `tonutils-storage started at ${daemon.apiUrl}` +
+      (tunnel ? ` (tunnelling via ${tunnel.nodeCount} node(s))` : ''),
+    )
 
     const uploadSpinner = createSpinner.start('Creating bag in TON Storage…')
     const created = await tonutilsCreate(daemon, { path: buildDir, description })

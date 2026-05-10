@@ -50,13 +50,24 @@ async function findFreeUdpPort(min = 17556, max = 17600): Promise<number> {
   throw new Error(`No free UDP port in range ${min}-${max} for tonutils ListenAddr`)
 }
 
+export interface EnsureTonutilsConfigOptions {
+  // Absolute path to a nodes-pool.json that the bundled tunnel client
+  // should route through. Pre-validated by the caller (see
+  // resolveTunnelConfig in cli/deploy-tonutils.ts).
+  tunnelConfigPath?: string
+}
+
 // Produce a config.json with a non-default ListenAddr UDP port. The very
 // first run of tonutils-storage generates config.json (with Key + tunnel
 // data) and only then tries to listen on UDP 17555, panicking if the port
 // is busy (e.g. TON Browser.app's own daemon already runs there). We
 // exploit the order by letting it generate the file, killing the process,
 // rewriting ListenAddr to a free UDP port, then starting again.
-async function ensureTonutilsConfig(daemonPath: string, dbDir: string): Promise<void> {
+async function ensureTonutilsConfig(
+  daemonPath: string,
+  dbDir: string,
+  cfgOpts: EnsureTonutilsConfigOptions = {},
+): Promise<void> {
   const configPath = path.join(dbDir, 'config.json')
 
   if (!existsSync(configPath)) {
@@ -111,14 +122,25 @@ async function ensureTonutilsConfig(daemonPath: string, dbDir: string): Promise<
   }
 
   // Step 2: rewrite ListenAddr to a free UDP port so we don't collide with
-  // any other tonutils-storage instance on the machine.
+  // any other tonutils-storage instance on the machine; if the caller
+  // supplied a tunnel pool path, wire it into TunnelConfig too.
   const cfg = JSON.parse(readFileSync(configPath, 'utf-8'))
   const port = await findFreeUdpPort()
   cfg.ListenAddr = `0.0.0.0:${port}`
+  if (cfgOpts.tunnelConfigPath) {
+    cfg.TunnelConfig = cfg.TunnelConfig ?? {}
+    cfg.TunnelConfig.NodesPoolConfigPath = cfgOpts.tunnelConfigPath
+  }
   writeFileSync(configPath, JSON.stringify(cfg, null, '\t'))
 }
 
-export async function startTonutilsDaemon(): Promise<TonutilsHandle> {
+export interface StartTonutilsDaemonOptions {
+  tunnelConfigPath?: string
+}
+
+export async function startTonutilsDaemon(
+  opts: StartTonutilsDaemonOptions = {},
+): Promise<TonutilsHandle> {
   const paths = getTonutilsPaths()
   if (!existsSync(paths.daemon)) {
     throw new Error(`tonutils-storage binary not found at ${paths.daemon}; run ensureTonutilsBinary() first`)
@@ -129,8 +151,11 @@ export async function startTonutilsDaemon(): Promise<TonutilsHandle> {
   const dbDir = path.join(sessionDir, 'db')
   mkdirSync(dbDir, { recursive: true })
 
-  // Pre-stage config with a non-conflicting UDP ListenAddr.
-  await ensureTonutilsConfig(paths.daemon, dbDir)
+  // Pre-stage config with a non-conflicting UDP ListenAddr (and tunnel
+  // pool path if provided).
+  await ensureTonutilsConfig(paths.daemon, dbDir, {
+    tunnelConfigPath: opts.tunnelConfigPath,
+  })
 
   const child = spawn(
     paths.daemon,

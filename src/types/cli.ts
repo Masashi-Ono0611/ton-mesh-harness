@@ -11,6 +11,7 @@ export interface CliOptions {
   watch?: boolean
   debounce?: string
   daemonBackend?: 'tonutils' | 'ton-core'  // v0.6: which backend daemon to run
+  tunnelConfig?: string                    // v0.6: path to a nodes-pool.json for ADNL Tunnel
 }
 
 export interface DaemonContext {
