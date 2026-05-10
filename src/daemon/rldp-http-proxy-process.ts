@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import http, { type Server } from 'node:http'
 import { generateAdnlIdentity, writeKeyringFile, type AdnlIdentity } from './keyring'
-import { findFreePort, findFreeUdpPort } from './tonutils-process'
+import { findFreeTcpPort, findFreeUdpPort } from './ports'
 import { getRldpHttpProxyPaths } from './rldp-http-proxy-installer'
 
 const TON_GLOBAL_CONFIG_URL = 'https://ton-blockchain.github.io/global.config.json'
@@ -77,7 +77,7 @@ export async function startRldpHttpProxy(
     )
   }
   const udpPort = opts.udpPort ?? (await findFreeUdpPort(17600, 17699))
-  const localHttpPort = await findFreePort(18080, 18099)
+  const localHttpPort = await findFreeTcpPort(18080, 18099)
 
   // Local static-file server FIRST so the proxy has somewhere to forward to.
   const staticServer = await startStaticServer(opts.buildDir, localHttpPort)

@@ -5,8 +5,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { spawn, type ChildProcess } from 'child_process'
 import path from 'path'
 import os from 'os'
-import net from 'net'
-import dgram from 'dgram'
+import { findFreeTcpPort, findFreeUdpPort } from './ports'
 import { getTonutilsPaths } from './tonutils-installer'
 
 export interface TonutilsHandle {
@@ -20,40 +19,11 @@ export interface TonutilsHandle {
 // Spawn + ready-wait
 // -----------------------------------------------------------------------
 
-export async function findFreePort(min = 7100, max = 7199): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const tryPort = (port: number) => {
-      if (port > max) {
-        reject(new Error(`No free port found in range ${min}-${max}`))
-        return
-      }
-      const server = net.createServer()
-      server.listen(port, '127.0.0.1', () => {
-        server.close(() => resolve(port))
-      })
-      server.on('error', () => tryPort(port + 1))
-    }
-    tryPort(min)
-  })
-}
-
-export async function findFreeUdpPort(min = 17556, max = 17600): Promise<number> {
-  // Probe-then-spawn races a third party who may grab the port between
-  // our close() and the daemon's bind(). The daemon panics in that case
-  // and exits in <1 s, so we add an early-exit detection in waitForApi
-  // (see below) instead of trying to make the probe atomic — which would
-  // require fork-then-pass-fd-to-child plumbing we don't want.
-  for (let p = min; p <= max; p++) {
-    // eslint-disable-next-line no-await-in-loop
-    const ok = await new Promise<boolean>((resolve) => {
-      const s = dgram.createSocket('udp4')
-      s.once('error', () => resolve(false))
-      s.bind(p, '0.0.0.0', () => { s.close(() => resolve(true)) })
-    })
-    if (ok) return p
-  }
-  throw new Error(`No free UDP port in range ${min}-${max} for tonutils ListenAddr`)
-}
+// Port helpers moved to `./ports.ts` in v0.8 cleanup batch 7. Re-exported
+// here so existing call sites (rldp-http-proxy-process.ts and tests) keep
+// importing from `./tonutils-process`. New callers should import from
+// `./ports` directly.
+export { findFreeTcpPort as findFreePort, findFreeUdpPort }
 
 export interface EnsureTonutilsConfigOptions {
   // Absolute path to a nodes-pool.json that the bundled tunnel client
@@ -162,7 +132,7 @@ export async function startTonutilsDaemon(
     throw new Error(`tonutils-storage binary not found at ${paths.daemon}; run ensureTonutilsBinary() first`)
   }
 
-  const apiPort = await findFreePort(7100, 7199)
+  const apiPort = await findFreeTcpPort(7100, 7199)
   const sessionDir = path.join(os.tmpdir(), `ton-sovereign-tonutils-${process.pid}`)
   const dbDir = path.join(sessionDir, 'db')
   mkdirSync(dbDir, { recursive: true })
