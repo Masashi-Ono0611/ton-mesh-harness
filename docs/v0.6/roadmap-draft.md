@@ -130,19 +130,100 @@ Outstanding follow-ups before B3:
 
 ### B3 — ADNL Tunnel client integration
 
-Once B2 puts a tunnel-capable daemon in place, this is mostly
-configuration. Add `--tunnel-config <path>` (the same JSON shape
-TON-Torrent accepts — a list of intermediate-node URLs with their
-ADNL public keys) and pipe it into the daemon at startup.
+#### B3 prep findings (2026-05-10)
 
-Marketing line we want to be able to honestly write:
+Surveyed `ton-blockchain/adnl-tunnel` (server side) and
+`xssnick/tonutils-storage`'s tunnel hookup (client side). The picture
+is much simpler than the original v0.6 draft assumed:
 
-> "Deploy a static site from your laptop. Even if you're behind NAT,
-> the ADNL Tunnel route keeps your bag reachable while the daemon runs."
+- `adnl-tunnel` ships **server binaries** (`tunnel-node-*`) for
+  intermediate-node operators. **We don't need to spawn or bundle
+  these** — they run on third-party / community machines that rent
+  out address+port. Releases at v0.1.8 (2025-10-02) cover all our
+  target OSes.
+- `adnl-tunnel` also ships `libtunnel.a` + `libtunnel.h` for
+  embedding the client in C/C++ code. Not relevant to us — Go
+  consumers use the Go package directly.
+- `tonutils-storage` already imports
+  `github.com/ton-blockchain/adnl-tunnel/config` and **carries a
+  `TunnelConfig: *tunnelConfig.ClientConfig` field on its own
+  `config.json`**. `GenerateClientConfig()` populates a default
+  with all the ed25519 keys needed; the user just supplies a nodes-
+  pool path.
 
-Estimated work: 1–2 weeks. Most of the cost is curating a default
-tunnel pool config to bundle (so users don't have to find one
-themselves) and surfacing tunnel status in the CLI.
+So the integration we ship reduces to:
+
+1. Accept `--tunnel-config <nodes-pool.json>` on our CLI (and a few
+   convenience flags below).
+2. In `ensureTonutilsConfig` (already exists), set
+   `cfg.TunnelConfig.NodesPoolConfigPath` to the absolute path the
+   user passed.
+3. Optional later: `--enable-payments` flag toggling
+   `cfg.TunnelConfig.PaymentsEnabled` and sufficient payment fields
+   (groundwork for B4).
+4. Document where to obtain a `nodes-pool.json` in the README.
+
+ClientConfig shape (from `adnl-tunnel/config/config.go`):
+
+```go
+type ClientConfig struct {
+    TunnelServerKey     []byte
+    TunnelThreads       uint
+    TunnelSectionsNum   uint
+    NodesPoolConfigPath string  // ← what the user supplies
+    PaymentsEnabled     bool
+    Payments            PaymentsClientConfig
+}
+
+type SharedConfig struct {
+    NodesPool []TunnelRouteSection  // list of intermediate-node ADNL keys
+}
+```
+
+#### B3 work breakdown (revised)
+
+1. `--tunnel-config <path>` flag in `src/cli.ts` (+ `CliOptions`).
+2. Extend `ensureTonutilsConfig` to write `TunnelConfig.NodesPoolConfigPath`
+   when the flag is present. Resolve to absolute path.
+3. Print "  Tunnelling via X intermediate node(s)" on startup so
+   users can see the tunnel is live.
+4. Detect missing/unreadable nodes-pool file before spawning the
+   daemon; surface a clear error.
+5. README + dashboard: document where to source a nodes-pool config
+   (TON Telegram channels for now; community-run pool list TBD).
+
+Estimated work: **half a day to a day** (much smaller than the
+original v0.6 estimate). The expensive part is *not* the code — it's
+the operational question of where users get a working pool.
+
+#### B3 reality check (deferring **end-to-end** ship)
+
+Tonutils-storage and TON-Torrent both treat the nodes-pool file as
+"obtained from your tunnel provider" — there is **no public,
+auto-discoverable pool we can default to today**. Shipping the flag
+without a working pool to recommend repeats the lesson of v0.5 Lane
+B (provider economy was empty; pretending otherwise hurt users).
+
+Plan therefore:
+
+- Land the **CLI surface + config wiring** (steps 1–4 above) in v0.6
+  so the path is wired and tested with a fake `nodes-pool.json`.
+- Hold off on documenting "use this pool" until we either find a
+  public community pool or run our own intermediate node. Without
+  that, the README block under step 5 should explicitly say "bring
+  your own nodes-pool.json from a tunnel operator you trust".
+- Operating our own intermediate node is its own decision (probably
+  v0.7+ once we want a SaaS leg).
+
+Marketing line we **can** honestly write at this stage:
+
+> "Deploy a static site from your laptop. If you have access to an
+> ADNL Tunnel pool config, point the CLI at it with
+> `--tunnel-config` and your seeding works behind NAT too."
+
+Estimated remaining: ~1 day for steps 1–4 once we decide to ship
+them. Tracking as **B3.x** (cli surface) and **B3.y** (default pool /
+SaaS decision) in the next session.
 
 ### B4 — Payment Network abstraction (groundwork only in v0.6)
 
