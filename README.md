@@ -319,7 +319,7 @@ ton-sovereign-deploy [build-dir] [options]
 | `--debounce <ms>` | watch モードのデバウンス遅延（デフォルト: 2000ms） |
 | `--daemon-backend <name>` | daemon バックエンド: `tonutils` (デフォルト、 v0.6+) / `ton-core`（C++ レガシー、 `--testnet` や `--provider` を使うときの fallback）|
 | `--tunnel-config <path>` | ADNL Tunnel の `nodes-pool.json` を指定（v0.6+、 tonutils backend のみ）。 NAT 越えに使う。 公開可能なプールはまだないため **bring-your-own-pool**（運営者から個別取得）|
-| `--site-adnl <hex>` | 64 文字 hex の ADNL identity を `dns_adnl_address` (`site` レコード、 magic `0xad01`) として `--domain` 指定の .ton に書き込む（v0.6+ B5）。 **bring-your-own rldp-http-proxy**: 既に動いている proxy の ADNL hash を渡す前提（自動 spawn は v0.7）。 `--domain` と併用すると、 storage と site の 2 record を **1 度の TonConnect 署名** にまとめます。 |
+| `--site-adnl <hex>` | 64 文字 hex の ADNL identity を `dns_adnl_address` (`site` レコード、 magic `0xad01`) として `--domain` 指定の .ton に書き込む（v0.6+ B5）。 **bring-your-own rldp-http-proxy**: 既に動いている proxy の ADNL hash を渡す前提（自動 spawn は v0.7）。 `--domain` と併用すると、 storage と site の 2 record を **1 度の TonConnect 署名** にまとめます。 セットアップ手順: [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md) |
 | `--provider [address]` | **v0.6 では一時的に disabled**（mainnet provider 経済が dormant なため）。 `--daemon-backend=ton-core` を使えば v0.5 と同じく実装は動くが受け入れる provider はほぼいません。 詳細: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md) |
 | `--span <seconds>` | プロバイダー契約期間（秒、デフォルト 86400 = 1 日、最大 4294967295）v0.5+ |
 | `--wallet <name>` | 署名する wallet の希望名（部分一致、 デフォルト "Tonkeeper"）v0.5+ |

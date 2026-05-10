@@ -614,7 +614,7 @@
     </div>
   </div>
   <div class="meta">
-    <strong>v0.5 shipped · v0.6 planning</strong><br>
+    <strong>v0.5 shipped · v0.6 in progress (B1–B5 done)</strong><br>
     Updated 2026-05-10 · <code>ton-projects/sovereign-deploy-kit</code>
   </div>
 </header>
@@ -773,11 +773,41 @@
     <div class="when">May 2026</div>
     <span class="status">✅ Shipped</span>
   </div>
-  <div class="phase next">
+  <div class="phase done">
     <div class="num">v0.5</div>
     <div class="name">Hardening &amp; Visibility</div>
-    <div class="when">May → Jun 2026</div>
-    <span class="status">▶ In progress</span>
+    <div class="when">May 2026</div>
+    <span class="status">✅ Shipped</span>
+  </div>
+  <div class="phase next">
+    <div class="num">v0.6</div>
+    <div class="name">Resistance stack alignment</div>
+    <div class="when">May 2026</div>
+    <span class="status">▶ B1–B5 done</span>
+  </div>
+</section>
+
+<!-- v0.6 in-progress callout -->
+<section class="concept-hero" style="padding: 24px 28px; margin-bottom: 28px;">
+  <div style="display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap;">
+    <div style="flex-shrink: 0; font-size: 32px; line-height: 1;">🛰️</div>
+    <div style="flex: 1; min-width: 260px;">
+      <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; color: var(--ton); text-transform: uppercase; margin-bottom: 6px;">
+        v0.6 B5 · landed 2026-05-10
+      </div>
+      <div style="font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; margin-bottom: 10px;">
+        <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">--site-adnl</code> writes the <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">dns_adnl_address</code> record alongside <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">storage</code> in one signature.
+      </div>
+      <div style="font-size: 13px; color: var(--text-dim); line-height: 1.65;">
+        On-chain probing showed <strong>piracy.ton, tonnet-sync-check.ton and most Telegram-visible <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">.ton</code> sites use <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">dns_adnl_address</code></strong> records, not <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">dns_storage_address</code>. TONAPI was <em>lying</em> about <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">sites: []</code> on the high-level resolver. v0.6 closes the gap on the <strong>write path</strong>: pass an ADNL hex from your <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">rldp-http-proxy</code> and the CLI bundles <em>two</em> <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">change_dns_record</code> messages into one TonConnect tx (Tonkeeper supports up to 4 per sign).
+        Auto-spawning the proxy + minting an ADNL identity + NAT traversal moves to <strong>v0.7</strong>.
+      </div>
+      <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <span class="chip blue">aligned with reference .ton sites</span>
+        <span class="chip green">one signature, both records</span>
+        <span class="chip purple">BYO rldp-http-proxy</span>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1216,6 +1246,7 @@
         <tr><td><code>--no-watch</code></td><td>One-shot deploy; exit after upload (CI-friendly). Auto-applied under <code>--ci-mode</code>/<code>--json-output</code>.</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--daemon-backend &lt;name&gt;</code></td><td>Daemon backend: <code>tonutils</code> (default, xssnick / Go — same daemon TON-Torrent uses) or <code>ton-core</code> (legacy C++; needed for <code>--testnet</code>/<code>--provider</code>)</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--tunnel-config &lt;path&gt;</code></td><td>nodes-pool.json for ADNL Tunnel client (NAT traversal). Bring-your-own pool — public community pool TBD.</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
+        <tr><td><code>--site-adnl &lt;hex&gt;</code></td><td>64-hex ADNL identity to publish as the <code>site</code> (<code>dns_adnl_address</code>) DNS record. Combined with <code>--domain</code>, ships <code>storage</code> + <code>site</code> records in <strong>one</strong> TonConnect signature. BYO <code>rldp-http-proxy</code>; auto-spawn is v0.7.</td><td>v0.6 (B5)</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>doctor</code> (subcommand)</td><td>Pre-flight env check: daemon binaries, TONAPI/manifest reachability, TonConnect pairing, ~/.ton-sovereign dir.</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--debounce &lt;ms&gt;</code></td><td>Watch debounce delay (default <code>2000</code>)</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
       </tbody>
