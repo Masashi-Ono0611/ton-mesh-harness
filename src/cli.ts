@@ -188,9 +188,12 @@ program
 
     // -----------------------------------------------------------------
     // Legacy ton-core backend (opt-in via --daemon-backend=ton-core).
-    // --provider is disabled at the gate above (line ~97), so the legacy
-    // path here only handles deploy + DNS + watch; the v0.5 provider-
-    // contract code path stays in tree (cli/provider.ts) for v0.7 revival.
+    // --provider is disabled at the gate above; the legacy path here
+    // only handles deploy + DNS + watch. The v0.5 provider-contract
+    // CLI adapter (`src/cli/provider.ts`) was removed in v0.8 cleanup
+    // — `src/provider.ts` (TL-B / message construction / registry)
+    // stays in tree for v0.9 revival. Re-introduce a thin CLI adapter
+    // alongside any provider revival work.
     // -----------------------------------------------------------------
     const deployed = await runDeploy(opts, buildDirArg)
     if (!deployed) return
