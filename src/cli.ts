@@ -5,20 +5,9 @@ import { runDeploy } from './cli/deploy'
 import { runDeployTonutils, runWatchModeTonutils } from './cli/deploy-tonutils'
 import { runDnsRegistration } from './cli/dns'
 import { runDoctor } from './cli/doctor'
-import { runProviderContract } from './cli/provider'
 import { runWatchMode } from './cli/watch'
 
 const VERSION = '0.6.0'
-
-function parseSpanFlag(raw: string | undefined): number {
-  const n = Number(raw ?? '86400')
-  if (!Number.isInteger(n) || n < 1 || n > 0xffff_ffff) {
-    throw new Error(
-      `--span must be a positive integer ≤ 4294967295 (got ${JSON.stringify(raw)})`,
-    )
-  }
-  return n
-}
 
 const program = new Command()
 
@@ -102,10 +91,6 @@ program
       )
     }
 
-    // Validate span up front so we fail before doing any deploy work.
-    // (Only meaningful when --provider is set; otherwise the value is ignored.)
-    const spanSeconds = opts.provider ? parseSpanFlag(opts.span) : undefined
-
     // v0.6: --watch is the default for interactive runs (self-host first).
     // For non-interactive runs (--json-output, --ci-mode, or CI=true env)
     // the documented behaviour is one-shot: print the result and exit, so
@@ -154,30 +139,15 @@ program
     }
 
     // -----------------------------------------------------------------
-    // Legacy ton-core backend (opt-in via --daemon-backend=ton-core)
+    // Legacy ton-core backend (opt-in via --daemon-backend=ton-core).
+    // --provider is disabled at the gate above (line ~97), so the legacy
+    // path here only handles deploy + DNS + watch; the v0.5 provider-
+    // contract code path stays in tree (cli/provider.ts) for v0.7 revival.
     // -----------------------------------------------------------------
     const deployed = await runDeploy(opts, buildDirArg)
     if (!deployed) return
 
     const { result, daemon } = deployed
-
-    // Provider contract (daemon still alive when --provider is set)
-    if (opts.provider && daemon) {
-      try {
-        await runProviderContract({
-          bagId: result.bagId,
-          providerArg: opts.provider,
-          daemon,
-          testnet: opts.testnet,
-          jsonOutput: opts.jsonOutput,
-          ciMode: opts.ciMode,
-          walletName: opts.wallet,
-          spanSeconds,
-        })
-      } finally {
-        daemon.kill()
-      }
-    }
 
     // DNS registration
     if (opts.domain) {
@@ -193,6 +163,9 @@ program
     if (watchEnabled) {
       const buildDir = buildDirArg || process.cwd()
       await runWatchMode(buildDir, opts, result.bagId)
+    } else if (daemon) {
+      // No watch + no provider work → daemon has nothing left to do.
+      daemon.kill()
     }
   })
 

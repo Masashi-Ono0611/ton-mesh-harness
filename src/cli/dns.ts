@@ -33,12 +33,19 @@ export async function runDnsRegistration(
   opts: DnsRegistrationOptions = {},
 ): Promise<void> {
   const isCI = process.env.CI === 'true' || opts.ciMode === true
-  const interactive = !isCI && !opts.jsonOutput
-  const createSpinner = createSpinnerFactory({ silent: !!opts.jsonOutput, plain: isCI })
+  const jsonMode = !!opts.jsonOutput
+  const interactive = !isCI && !jsonMode
+  const createSpinner = createSpinnerFactory({ silent: jsonMode, plain: isCI })
 
-  console.log()
-  console.log(chalk.bold('🔗 DNS Registration'))
-  console.log()
+  // In JSON mode the deploy step has already emitted the result JSON; any
+  // additional human-readable progress here would corrupt the parseable
+  // stdout for callers piping into `jq`. Suppress everything except the
+  // wallet-driven sign step (which has its own TTY-only QR/picker UI).
+  const log = jsonMode ? () => {} : console.log
+
+  log()
+  log(chalk.bold('🔗 DNS Registration'))
+  log()
 
   const lookupSpinner = createSpinner.start(`Looking up ${domain}...`)
   let nftAddress: Address
@@ -62,16 +69,16 @@ export async function runDnsRegistration(
     messages.push({ address: nftAddress, amount: DNS_UPDATE_AMOUNT_NANO, payload: sitePayload })
   }
 
-  console.log(chalk.bold('📱 Sign DNS Registration'))
-  console.log(chalk.dim(`  Domain:   ${domain}`))
-  console.log(chalk.dim(`  NFT:      ${nftAddress.toString()}`))
-  console.log(chalk.dim(`  storage:  ${bagId}`))
+  log(chalk.bold('📱 Sign DNS Registration'))
+  log(chalk.dim(`  Domain:   ${domain}`))
+  log(chalk.dim(`  NFT:      ${nftAddress.toString()}`))
+  log(chalk.dim(`  storage:  ${bagId}`))
   if (opts.siteAdnl) {
-    console.log(chalk.dim(`  site:     ${opts.siteAdnl} (dns_adnl_address)`))
+    log(chalk.dim(`  site:     ${opts.siteAdnl} (dns_adnl_address)`))
   }
   const totalNano = DNS_UPDATE_AMOUNT_NANO * BigInt(messages.length)
-  console.log(chalk.dim(`  Amount:   ${(Number(totalNano) / 1e9).toFixed(4)} TON (gas, ${messages.length} message${messages.length === 1 ? '' : 's'})`))
-  console.log()
+  log(chalk.dim(`  Amount:   ${(Number(totalNano) / 1e9).toFixed(4)} TON (gas, ${messages.length} message${messages.length === 1 ? '' : 's'})`))
+  log()
 
   const storage = new FSStorage(getTonConnectStoragePath())
   const ui = createWalletUI({
@@ -88,19 +95,24 @@ export async function runDnsRegistration(
   try {
     await wallet.connect()
   } catch (err) {
-    console.log(chalk.red('  ✗ Wallet connection failed.'))
+    log(chalk.red('  ✗ Wallet connection failed.'))
     throw err
   }
 
   try {
     await wallet.sendTransactionMulti(messages)
   } catch (err) {
-    console.log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
+    log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
     throw err
   }
 
-  console.log()
-  console.log(chalk.dim('  Polling TONAPI for DNS record propagation...'))
+  // In JSON mode we stop here: the wallet has sent the tx, the deploy JSON
+  // already emitted to stdout, and polling would only add noise. Humans
+  // see the propagation poller, CI parses the deploy JSON.
+  if (jsonMode) return
+
+  log()
+  log(chalk.dim('  Polling TONAPI for DNS record propagation...'))
   const confirmedStorage = await pollDnsRecord(domain, bagId, 300_000, 10_000, testnet)
 
   let confirmedSite = true
@@ -108,13 +120,13 @@ export async function runDnsRegistration(
     confirmedSite = await pollDnsSiteRecord(domain, opts.siteAdnl, 180_000, 10_000, testnet)
   }
 
-  console.log()
+  log()
   if (confirmedStorage && confirmedSite) {
-    console.log(chalk.green(`  ✅ ${domain} now points to your site!`))
-    console.log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
+    log(chalk.green(`  ✅ ${domain} now points to your site!`))
+    log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
   } else {
-    console.log(chalk.yellow(`  ⚠ ${domain} DNS update not fully confirmed via TONAPI.`))
-    console.log(chalk.dim('    The wallet sent the transaction; the chain may still be settling, '))
-    console.log(chalk.dim('    or TONAPI is lagging (especially for `sites` records).'))
+    log(chalk.yellow(`  ⚠ ${domain} DNS update not fully confirmed via TONAPI.`))
+    log(chalk.dim('    The wallet sent the transaction; the chain may still be settling, '))
+    log(chalk.dim('    or TONAPI is lagging (especially for `sites` records).'))
   }
 }
