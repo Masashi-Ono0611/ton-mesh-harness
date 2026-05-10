@@ -145,20 +145,30 @@ export async function runProviderContract(opts: ProviderContractOptions): Promis
     throw err
   }
 
-  // 5. Optional: poll TONAPI to surface "contract active" once the provider has
-  //    accepted and deployed the storage contract. This is no longer the
-  //    sign-completion gate (the wallet's response above is) — purely
-  //    confirmation. Default 5 min; increase if testing real-world propagation.
+  // 5. Keep daemon alive while the provider fetches our bag and deploys the
+  //    contract. The CLI will continue seeding via ADNL until either:
+  //      - TONAPI shows the contract active (early exit, ✅), or
+  //      - 10 minutes elapse (warn and exit)
+  //    The 5-min lower bound previously used here was too short for the
+  //    provider to find and pull the bag; 10 min gives it room without
+  //    holding the user's terminal hostage.
   console.log()
-  console.log(chalk.dim('  Polling TONAPI for provider activation...'))
-  const confirmed = await pollProviderContract(opts.bagId, provider.address, opts.testnet)
+  console.log(chalk.dim('  Daemon staying alive while the provider fetches your bag...'))
+  console.log(chalk.dim('  (Polling TONAPI for activation — Ctrl+C is safe once you see ✅)'))
+  const confirmed = await pollProviderContract(
+    opts.bagId,
+    provider.address,
+    opts.testnet,
+    10 * 60 * 1000,
+    15 * 1000,
+  )
   console.log()
   if (confirmed) {
     console.log(chalk.green(`  ✅ Provider contract active! Your site is hosted 24/7.`))
     console.log(chalk.dim(`     Duration: ${spanSeconds} seconds`))
   } else {
-    console.log(chalk.yellow('  ⚠ Provider contract not yet confirmed via TONAPI.'))
-    console.log(chalk.dim('    The wallet sent the transaction; the provider may still be fetching the bag.'))
+    console.log(chalk.yellow('  ⚠ Provider contract not yet confirmed via TONAPI after 10 minutes.'))
+    console.log(chalk.dim('    The wallet did sign the transaction; the provider may still be working on it.'))
     console.log(chalk.dim(`    Re-check later: curl https://tonapi.io/v2/storage/bag/${opts.bagId}`))
   }
 }
