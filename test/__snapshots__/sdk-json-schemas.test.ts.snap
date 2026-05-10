@@ -1,0 +1,826 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env input snapshot 1`] = `
+{
+  "$ref": "#/definitions/CheckEnvOptions",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "CheckEnvOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "source_dir": {
+          "default": null,
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+      },
+      "type": "object",
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env output snapshot 1`] = `
+{
+  "$ref": "#/definitions/CheckEnvResult",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "CheckEnvResult": {
+      "additionalProperties": false,
+      "properties": {
+        "blocking": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+              },
+              "fix_hint": {
+                "type": "string",
+              },
+              "message": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "code",
+              "message",
+              "fix_hint",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "daemon_backend_installed": {
+          "additionalProperties": false,
+          "properties": {
+            "ton_core": {
+              "type": "boolean",
+            },
+            "tonutils": {
+              "type": "boolean",
+            },
+          },
+          "required": [
+            "tonutils",
+            "ton_core",
+          ],
+          "type": "object",
+        },
+        "disk_free_mb": {
+          "minimum": 0,
+          "type": "integer",
+        },
+        "network_reachable": {
+          "type": "boolean",
+        },
+        "node_version": {
+          "type": "string",
+        },
+        "ready": {
+          "type": "boolean",
+        },
+        "source_dir_valid": {
+          "type": [
+            "boolean",
+            "null",
+          ],
+        },
+        "udp_port_17555_free": {
+          "type": "boolean",
+        },
+        "wallet_signers_available": {
+          "items": {
+            "enum": [
+              "tonconnect",
+              "agentic",
+            ],
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "warnings": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+              },
+              "message": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "code",
+              "message",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "ready",
+        "node_version",
+        "disk_free_mb",
+        "udp_port_17555_free",
+        "wallet_signers_available",
+        "daemon_backend_installed",
+        "network_reachable",
+        "source_dir_valid",
+        "blocking",
+        "warnings",
+      ],
+      "type": "object",
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy input snapshot 1`] = `
+{
+  "$ref": "#/definitions/DeployOptions",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "DeployOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "daemon_backend": {
+          "default": "tonutils",
+          "enum": [
+            "tonutils",
+            "ton-core",
+          ],
+          "type": "string",
+        },
+        "description": {
+          "default": null,
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "domain": {
+          "default": null,
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "keep_alive": {
+          "default": false,
+          "type": "boolean",
+        },
+        "skip_verify": {
+          "default": false,
+          "type": "boolean",
+        },
+        "source_dir": {
+          "type": "string",
+        },
+        "testnet": {
+          "default": false,
+          "type": "boolean",
+        },
+        "tunnel_config": {
+          "default": null,
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "wallet": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "connector": {
+                  "default": "Tonkeeper",
+                  "type": "string",
+                },
+                "kind": {
+                  "const": "tonconnect",
+                  "type": "string",
+                },
+              },
+              "required": [
+                "kind",
+              ],
+              "type": "object",
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "config_path": {
+                  "type": "string",
+                },
+                "kind": {
+                  "const": "agentic",
+                  "type": "string",
+                },
+                "wallet_label": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "kind",
+              ],
+              "type": "object",
+            },
+          ],
+          "default": {
+            "connector": "Tonkeeper",
+            "kind": "tonconnect",
+          },
+        },
+      },
+      "required": [
+        "source_dir",
+      ],
+      "type": "object",
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy output snapshot 1`] = `
+{
+  "$ref": "#/definitions/DeployResult",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "DeployResult": {
+      "additionalProperties": false,
+      "properties": {
+        "bag_id": {
+          "type": "string",
+        },
+        "bag_size_bytes": {
+          "minimum": 0,
+          "type": "integer",
+        },
+        "daemon_pid": {
+          "anyOf": [
+            {
+              "type": "integer",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "dashboard_url": {
+          "type": "string",
+        },
+        "dns_tx_hash": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "next_actions": {
+          "default": [],
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "description",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "seed_status": {
+          "enum": [
+            "seeding",
+            "stopped",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "bag_id",
+        "bag_size_bytes",
+        "dns_tx_hash",
+        "dashboard_url",
+        "daemon_pid",
+        "seed_status",
+      ],
+      "type": "object",
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > supplementary schema: DeployEvent 1`] = `
+{
+  "$ref": "#/definitions/DeployEvent",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "DeployEvent": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "expires_at_iso": {
+                      "type": "string",
+                    },
+                    "signing_mode": {
+                      "const": "tonconnect",
+                      "type": "string",
+                    },
+                    "signing_url": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "signing_mode",
+                    "signing_url",
+                    "expires_at_iso",
+                  ],
+                  "type": "object",
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "signing_mode": {
+                      "const": "agentic",
+                      "type": "string",
+                    },
+                    "signing_url": {
+                      "type": "null",
+                    },
+                    "wallet_label": {
+                      "default": null,
+                      "type": [
+                        "string",
+                        "null",
+                      ],
+                    },
+                  },
+                  "required": [
+                    "signing_mode",
+                    "signing_url",
+                  ],
+                  "type": "object",
+                },
+              ],
+            },
+            "message": {
+              "type": "string",
+            },
+            "percent": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number",
+            },
+            "phase": {
+              "const": "awaiting_signature",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+            "data",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "additionalProperties": false,
+              "properties": {
+                "bag_id": {
+                  "type": "string",
+                },
+                "bag_size_bytes": {
+                  "minimum": 0,
+                  "type": "integer",
+                },
+                "daemon_pid": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                },
+                "dashboard_url": {
+                  "type": "string",
+                },
+                "dns_tx_hash": {
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "next_actions": {
+                  "default": [],
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "description": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "description",
+                    ],
+                    "type": "object",
+                  },
+                  "type": "array",
+                },
+                "seed_status": {
+                  "enum": [
+                    "seeding",
+                    "stopped",
+                  ],
+                  "type": "string",
+                },
+              },
+              "required": [
+                "bag_id",
+                "bag_size_bytes",
+                "dns_tx_hash",
+                "dashboard_url",
+                "daemon_pid",
+                "seed_status",
+              ],
+              "type": "object",
+            },
+            "message": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/message",
+            },
+            "percent": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/percent",
+            },
+            "phase": {
+              "const": "done",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+            "data",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "additionalProperties": {},
+              "type": "object",
+            },
+            "message": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/message",
+            },
+            "percent": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/percent",
+            },
+            "phase": {
+              "const": "env_check",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/DeployEvent/anyOf/2/properties/data",
+            },
+            "message": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/message",
+            },
+            "percent": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/percent",
+            },
+            "phase": {
+              "const": "bag_creating",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/DeployEvent/anyOf/2/properties/data",
+            },
+            "message": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/message",
+            },
+            "percent": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/percent",
+            },
+            "phase": {
+              "const": "daemon_starting",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/DeployEvent/anyOf/2/properties/data",
+            },
+            "message": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/message",
+            },
+            "percent": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/percent",
+            },
+            "phase": {
+              "const": "bag_uploaded",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/DeployEvent/anyOf/2/properties/data",
+            },
+            "message": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/message",
+            },
+            "percent": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/percent",
+            },
+            "phase": {
+              "const": "dns_signing",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/DeployEvent/anyOf/2/properties/data",
+            },
+            "message": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/message",
+            },
+            "percent": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/percent",
+            },
+            "phase": {
+              "const": "dns_confirmed",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/DeployEvent/anyOf/2/properties/data",
+            },
+            "message": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/message",
+            },
+            "percent": {
+              "$ref": "#/definitions/DeployEvent/anyOf/0/properties/percent",
+            },
+            "phase": {
+              "const": "verifying",
+              "type": "string",
+            },
+          },
+          "required": [
+            "phase",
+            "message",
+          ],
+          "type": "object",
+        },
+      ],
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > supplementary schema: ErrorPayload 1`] = `
+{
+  "$ref": "#/definitions/ErrorPayload",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "ErrorPayload": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "const": "ERR_CANCELLED",
+              "type": "string",
+            },
+            "data": {
+              "additionalProperties": false,
+              "properties": {
+                "bag_id": {
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "may_have_published": {
+                  "type": "boolean",
+                },
+                "phase_at_cancel": {
+                  "enum": [
+                    "env_check",
+                    "bag_creating",
+                    "daemon_starting",
+                    "bag_uploaded",
+                    "awaiting_signature",
+                    "dns_signing",
+                    "dns_confirmed",
+                    "verifying",
+                    "done",
+                  ],
+                  "type": "string",
+                },
+                "tx_hash": {
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+              },
+              "required": [
+                "phase_at_cancel",
+                "may_have_published",
+                "bag_id",
+                "tx_hash",
+              ],
+              "type": "object",
+            },
+            "fix_hint": {
+              "type": "string",
+            },
+            "message": {
+              "type": "string",
+            },
+            "severity": {
+              "enum": [
+                "fatal",
+                "recoverable",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "code",
+            "message",
+            "severity",
+            "data",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "ERR_INVALID_INPUT",
+                "ERR_NO_DOMAIN",
+                "ERR_NO_WALLET",
+                "ERR_PORT_BUSY",
+                "ERR_DAEMON_SPAWN",
+                "ERR_DAEMON_API_TIMEOUT",
+                "ERR_BAG_UPLOAD",
+                "ERR_DNS_SIGN_REJECTED",
+                "ERR_DNS_TX_TIMEOUT",
+                "ERR_VERIFY_FAILED",
+                "ERR_BUSY",
+                "ERR_INTERNAL",
+              ],
+              "type": "string",
+            },
+            "data": {
+              "additionalProperties": {},
+              "type": "object",
+            },
+            "fix_hint": {
+              "type": "string",
+            },
+            "message": {
+              "type": "string",
+            },
+            "severity": {
+              "enum": [
+                "fatal",
+                "recoverable",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "code",
+            "message",
+            "severity",
+          ],
+          "type": "object",
+        },
+      ],
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > supplementary schema: WalletSpec 1`] = `
+{
+  "$ref": "#/definitions/WalletSpec",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "WalletSpec": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "connector": {
+              "default": "Tonkeeper",
+              "type": "string",
+            },
+            "kind": {
+              "const": "tonconnect",
+              "type": "string",
+            },
+          },
+          "required": [
+            "kind",
+          ],
+          "type": "object",
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "config_path": {
+              "type": "string",
+            },
+            "kind": {
+              "const": "agentic",
+              "type": "string",
+            },
+            "wallet_label": {
+              "type": "string",
+            },
+          },
+          "required": [
+            "kind",
+          ],
+          "type": "object",
+        },
+      ],
+    },
+  },
+}
+`;

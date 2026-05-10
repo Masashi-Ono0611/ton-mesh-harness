@@ -3,8 +3,10 @@
  *
  * - `schemas`: zod source of truth for all I/O contracts ([F2] #13).
  * - `check`: programmatic environment probe ([S1] #6).
+ * - `json-schemas`: JSON Schema artefacts for MCP `tools/list` ([V1] #11).
  * - `deploy`: runtime deploy SDK — coming in [S2] #7.
  */
 
 export * from './schemas'
 export * from './check'
+export * from './json-schemas'
