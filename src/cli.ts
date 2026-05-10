@@ -4,6 +4,7 @@ import type { CliOptions } from './types/cli'
 import { runDeploy } from './cli/deploy'
 import { runDeployTonutils, runWatchModeTonutils } from './cli/deploy-tonutils'
 import { runDnsRegistration } from './cli/dns'
+import { runDoctor } from './cli/doctor'
 import { runProviderContract } from './cli/provider'
 import { runWatchMode } from './cli/watch'
 
@@ -171,5 +172,10 @@ program
       await runWatchMode(buildDir, opts, result.bagId)
     }
   })
+
+program
+  .command('doctor')
+  .description('Pre-flight environment check: daemon binaries, TONAPI / manifest reachability, TonConnect session')
+  .action(async () => { await runDoctor() })
 
 program.parse()

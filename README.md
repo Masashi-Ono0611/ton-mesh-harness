@@ -319,6 +319,8 @@ ton-sovereign-deploy [build-dir] [options]
 | `--wallet <name>` | 署名する wallet の希望名（部分一致、 デフォルト "Tonkeeper"）v0.5+ |
 | `--skip-verify` | bag アクセス確認をスキップ（伝播には時間がかかるため） |
 
+加えて v0.6 から `ton-sovereign-deploy doctor` で環境チェックができます（daemon バイナリ・ TONAPI・ TonConnect manifest の到達性・ wallet pairing 状態）。 deploy 前のトラブルシュートに。
+
 ### CI/CD 向けオプション
 
 ```bash
