@@ -329,3 +329,45 @@ describe('buildAwaitingSignatureAgentic', () => {
     expect(data.wallet_label).toBe('main-mainnet')
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cross-validation: helper outputs MUST satisfy DeployEventSchema strict
+// parse. Catches drift between helper builders and the F2 schema.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { DeployEventSchema } from '../src/sdk/schemas'
+
+describe('event-builder × DeployEventSchema strict round-trip', () => {
+  it('buildVerifyingEvent output passes schema', () => {
+    const ev = buildVerifyingEvent('done verifying')
+    expect(() => DeployEventSchema.parse(ev)).not.toThrow()
+  })
+
+  it('buildAwaitingSignatureTonConnect output passes schema', () => {
+    const ev = buildAwaitingSignatureTonConnect('open wallet', 'tonconnect://x')
+    expect(() => DeployEventSchema.parse(ev)).not.toThrow()
+  })
+
+  it('buildAwaitingSignatureAgentic output passes schema', () => {
+    const ev = buildAwaitingSignatureAgentic('signing locally', 'wallet-label')
+    expect(() => DeployEventSchema.parse(ev)).not.toThrow()
+  })
+
+  it('buildAwaitingSignatureTonConnect rejected by agentic-data shape', () => {
+    // Sanity: if we accidentally fed agentic data through the tonconnect
+    // builder (or vice versa), the schema discriminator catches it.
+    // We can't easily build a malformed event via the typed helper, but
+    // can verify the discriminated union doesn't accept the wrong mode
+    // in the same data slot.
+    const tonconnectShape = {
+      phase: 'awaiting_signature' as const,
+      message: 'x',
+      data: {
+        signing_mode: 'agentic' as const,
+        signing_url: 'should-be-null',
+        wallet_label: 'x',
+      },
+    }
+    expect(() => DeployEventSchema.parse(tonconnectShape)).toThrow()
+  })
+})
