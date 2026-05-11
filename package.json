@@ -34,6 +34,7 @@
     "test:watch": "vitest",
     "lint": "eslint src/sdk",
     "smoke": "node scripts/cli-smoke.cjs && node scripts/mcp-smoke.cjs && node scripts/sdk-smoke.cjs",
+    "smoke:full": "npm run smoke && node scripts/tarball-smoke.cjs",
     "verify": "npm run lint && tsc --noEmit && npm test && npm run build && npm run smoke",
     "pack:dry": "npm pack --dry-run"
   },

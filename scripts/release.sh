@@ -109,10 +109,13 @@ if [[ "$VERSION" != *-* ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Verify gate.
+# 5. Verify gate (basic) + tarball pack/install/run end-to-end.
 # ---------------------------------------------------------------------------
 echo "→ running npm run verify"
 npm run verify
+
+echo "→ running tarball install + run smoke (final pre-publish gate)"
+node scripts/tarball-smoke.cjs
 
 # ---------------------------------------------------------------------------
 # 6. Next-step hints (intentionally manual).

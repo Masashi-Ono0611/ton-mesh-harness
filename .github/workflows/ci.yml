@@ -106,3 +106,14 @@ jobs:
         # templates/ omission in rc5 development). Doesn't publish;
         # the dry-run just emits the file list.
         run: npm pack --dry-run
+
+      - name: Tarball install + run smoke
+        # End-to-end harness: packs the kit, installs the tarball
+        # into a fresh tmpdir-sandbox, runs the installed CLI bin
+        # (--version + --help), require()s the SDK from the install,
+        # confirms the MCP bin is launchable. Catches the failure
+        # mode where `dist/*` builds locally but the published shape
+        # (files allowlist + bin path + exports field) is wrong.
+        # This would have flagged the rc5 templates/ omission AT
+        # CI time, not via post-pack inspection.
+        run: node scripts/tarball-smoke.cjs
