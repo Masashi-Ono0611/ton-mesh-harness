@@ -16,7 +16,6 @@
 import type { Address, Cell } from '@ton/core'
 import {
   ApiClientToncenter,
-  Network,
   Signer,
   WalletV4R2Adapter,
   WalletV5R1Adapter,
@@ -24,8 +23,9 @@ import {
   type WalletSigner,
 } from '@ton/walletkit'
 import { SdkError } from './deploy'
-import type { StoredStandardWallet, AgenticNetwork } from './agentic-config'
+import type { StoredStandardWallet } from './agentic-config'
 import { TONCENTER_ENDPOINTS } from './endpoints'
+import { getWalletkitNetwork } from './walletkit-network'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private-key normalization
@@ -80,26 +80,23 @@ async function buildSigner(wallet: StoredStandardWallet): Promise<WalletSigner> 
   }
 }
 
-function getNetwork(network: AgenticNetwork): ReturnType<typeof Network.mainnet> {
-  return network === 'mainnet' ? Network.mainnet() : Network.testnet()
-}
-
 async function buildAdapter(
   wallet: StoredStandardWallet,
   toncenterApiKey: string | undefined,
 ): Promise<WalletAdapter> {
   const signer = await buildSigner(wallet)
+  const network = getWalletkitNetwork(wallet.network)
   const client = new ApiClientToncenter({
     endpoint: TONCENTER_ENDPOINTS[wallet.network],
     apiKey: toncenterApiKey,
-    network: getNetwork(wallet.network),
+    network,
   })
 
   if (wallet.wallet_version === 'v4r2') {
-    return WalletV4R2Adapter.create(signer, { client, network: getNetwork(wallet.network) })
+    return WalletV4R2Adapter.create(signer, { client, network })
   }
   // default → v5r1
-  return WalletV5R1Adapter.create(signer, { client, network: getNetwork(wallet.network) })
+  return WalletV5R1Adapter.create(signer, { client, network })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
