@@ -135,22 +135,9 @@ async function loadAgenticWalletAdapter(): Promise<{
     },
   ) => Promise<WalletAdapter>
 }> {
+  let mod: { AgenticWalletAdapter?: unknown }
   try {
-    const mod = (await import('@ton/mcp')) as {
-      AgenticWalletAdapter: {
-        create: (
-          signer: WalletSigner,
-          options: {
-            client: unknown
-            network: unknown
-            walletAddress?: string
-            walletNftIndex?: bigint
-            collectionAddress?: string
-          },
-        ) => Promise<WalletAdapter>
-      }
-    }
-    return mod.AgenticWalletAdapter
+    mod = (await import('@ton/mcp')) as { AgenticWalletAdapter?: unknown }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     throw new SdkError(
@@ -164,6 +151,39 @@ async function loadAgenticWalletAdapter(): Promise<{
           'no extra install needed.',
       },
     )
+  }
+  // Defend against version skew: @ton/mcp could be installed but expose
+  // a different AgenticWalletAdapter shape (or remove the export). The
+  // type cast hides this from tsc but a missing `.create` would crash
+  // later with a confusing TypeError. Surface a clean F5 error here.
+  const adapter = mod.AgenticWalletAdapter
+  if (
+    !adapter ||
+    typeof adapter !== 'object' ||
+    typeof (adapter as { create?: unknown }).create !== 'function'
+  ) {
+    throw new SdkError(
+      'ERR_NO_WALLET',
+      'Installed @ton/mcp does not export AgenticWalletAdapter.create — likely a major version skew.',
+      {
+        severity: 'fatal',
+        fixHint:
+          'Pin @ton/mcp to the version range advertised in this kit\'s peerDependencies ' +
+          '(see package.json::peerDependencies).',
+      },
+    )
+  }
+  return adapter as {
+    create: (
+      signer: WalletSigner,
+      options: {
+        client: unknown
+        network: unknown
+        walletAddress?: string
+        walletNftIndex?: bigint
+        collectionAddress?: string
+      },
+    ) => Promise<WalletAdapter>
   }
 }
 
