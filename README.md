@@ -246,6 +246,7 @@ npx ton-sovereign-deploy ./build/
 - MCP server 仕様: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md)
 - 2026-05-10 コンセプト更新ログ: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md)
 - P-1 `@ton/mcp` compose contract probe: [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md)
+- **Agentic CLI 使い方**: [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) — `--wallet-mode agentic` の prerequisites / wallet selector / CI/CD 例 / エラーコード解説
 
 ### v0.9 reserve
 v0.7 から繰り延べた C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network 実クライアント。詳細: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) の C2 / C3 セクション (もとは v0.8 parked、agent-surface が v0.8 を取った 2026-05-10 の rename で v0.9 に降格)。
