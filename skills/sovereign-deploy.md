@@ -97,8 +97,11 @@ items with `code`, `message`, and `fix_hint`. Surface each `fix_hint` to
 the user; don't proceed to deploy until `ready: true`.
 
 ### 2. Deploy
+
+TonConnect path (human-signed):
+
 ```jsonc
-// MCP call (rc2)
+// MCP call (rc5+)
 {
   "name": "sovereign_deploy",
   "arguments": {
@@ -109,49 +112,53 @@ the user; don't proceed to deploy until `ready: true`.
 }
 ```
 
-#### What rc2 MCP actually does
+Agentic path (autonomous — reads `~/.config/ton/config.json`):
 
-**At v0.8.0-rc2, the MCP server runs the bag-upload core ONLY.** The
-.ton DNS record is NOT written by the MCP server in this release — that
-work is tracked at [S2.5] (see `docs/v0.8/at-mcp-probe.md` and the open
-GitHub issue) and lands at v0.8.0 GA. The CLI (`npx ton-sovereign-deploy`)
-chains DNS today; the MCP path returns a `next_actions` hint telling the
-agent to use the CLI to publish DNS.
+```jsonc
+{
+  "name": "sovereign_deploy",
+  "arguments": {
+    "source_dir": "./dist",
+    "domain": "myprotocol.ton",
+    "wallet": { "kind": "agentic", "wallet_label": "main-mainnet" }
+  }
+}
+```
 
-rc2 MCP `notifications/progress` events (only the first four phases fire):
+#### What rc5 MCP does end-to-end
+
+From rc3+ the MCP server completes the **entire flow** — bag upload
+AND .ton DNS write — for both wallet paths. `notifications/progress`
+events fire in this order:
+
 1. `env_check` — preparing tonutils-storage
 2. `daemon_starting` — spawning the storage daemon
 3. `bag_creating` — uploading the build dir
 4. `bag_uploaded` — bag is on disk in the daemon
+5. `awaiting_signature` — TonConnect: `data.signing_url` is a tonkeeper://
+   deeplink, surface to the user. Agentic: `signing_url: null`, signing
+   proceeds locally and instantly.
+6. `dns_signing` — broadcast accepted by Toncenter (TonConnect: signed
+   message BOC in `data`; agentic: normalized message hash in `data`)
+7. `dns_confirmed` — DNS record propagated via TONAPI
+8. `verifying` — informational; TONAPI propagation IS the verification
 
-Then the terminal `done` event with `DeployResult` (where
-`dns_tx_hash: null` and `next_actions` lists the DNS-via-CLI hint).
-
-#### GA roadmap (post-S2.5)
-
-When [S2.5] lands, the same `sovereign_deploy` call ALSO emits these
-phases before `done`:
-
-5. `awaiting_signature` — TonConnect mode: surface `data.signing_url`
-   to the user. Agentic mode: `signing_url` is null and signing
-   proceeds autonomously.
-6. `dns_signing` — wallet approved, broadcasting the storage + site
-   DNS record write
-7. `dns_confirmed` — DNS tx confirmed on-chain
-8. `verifying` — bag verified accessible via TONAPI
+Then the terminal `done` event with `DeployResult.dns_tx_hash` carrying
+the **real on-chain tx hash** resolved via Toncenter v3
+`transactionsByMessage` (rc4+), or `null` with a `next_actions` fallback
+hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 
 ### 3. After deploy
 - Tell the user the bag id (it's the content hash — `https://ton.run/<bag_id>`
   is a fallback gateway URL).
-- **rc2 only**: if the user wanted `<domain>.ton` to resolve, tell them
-  to run `npx ton-sovereign-deploy <build-dir> --domain <name>.ton` to
-  finish the DNS write — the MCP server has done the upload but DNS is
-  CLI-only at this release.
-- **GA (post-S2.5)**: if they passed `domain`, tell them `<domain>.ton`
-  will resolve within
-  a few minutes after the DNS tx confirms.
+- If `dns_tx_hash` is non-null, surface a tonviewer link:
+  `https://tonviewer.com/transaction/<hash without 0x>`.
+- If they passed `domain`, tell them `<domain>.ton` will resolve within
+  a few minutes after the DNS tx confirms (the `dns_confirmed` event
+  already implies TONAPI propagation succeeded).
 - Suggest `--watch` mode (CLI) or a follow-up call if they expect the
-  build dir to change.
+  build dir to change. **MCP rejects `keep_alive: true`** — use the CLI
+  if you need long-running watch.
 
 ## Common mistakes
 
@@ -267,4 +274,6 @@ the wallet config:
 - GitHub: https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 - License: MIT
 - v0.8.0-rc1 first published 2026-05-10
-- Status: rc2 (bag-creation core; DNS write in CLI today, SDK at GA)
+- Status: rc5 — full end-to-end (bag upload + .ton DNS write via either
+  TonConnect or agentic signing path). v0.8.0 GA pending V3 (E2E
+  acceptance) + V4 (red-team) per the open Epic.

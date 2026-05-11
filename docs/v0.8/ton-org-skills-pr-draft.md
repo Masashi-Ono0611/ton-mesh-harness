@@ -60,9 +60,9 @@ conventions — point us at the right group dir and we'll move the file.
 
 ## Internal pre-submit checklist (NOT part of the PR body)
 
-- [ ] v0.8.0 GA is tagged and published to npm (rc2 NOT sufficient — DNS still CLI-chained)
-- [ ] The in-repo `skills/sovereign-deploy.md` is current and documents rc2 vs GA behaviour honestly
-- [ ] `templates/.well-known/mcp.json` template is in `main`
+- [ ] v0.8.0 GA is tagged and published to npm (rc5 is feature-complete; GA = V3+V4 acceptance)
+- [x] The in-repo `skills/sovereign-deploy.md` is current — documents rc5 end-to-end MCP flow (TonConnect + agentic) ✅ 2026-05-11
+- [x] `templates/.well-known/mcp.json` template is in `main` ✅
 - [ ] `[V4]` red-team agent test (rc1 path AND GA path) has passed at least once and the transcript is checked in
 - [ ] Confirmed the actual upstream `ton-org/skills` directory layout (likely `<group>/<skill-name>/SKILL.md`); update this draft accordingly before opening
 - [ ] No private TON Foundation pre-coordination required — open the PR cold through the public submission process

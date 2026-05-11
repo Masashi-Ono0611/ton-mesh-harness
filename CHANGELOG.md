@@ -4,6 +4,48 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+<!--
+v0.8.0 GA pre-draft. Promotes to the released `[0.8.0]` heading at D3
+once V3 (E2E) + V4 (red-team) pass. Aggregates rc1-rc5; do NOT duplicate
+per-rc details here — those stay in the rc subsections below.
+
+## [0.8.0] – TODO
+
+**Agent-surface track.** The kit is now an agent-first deployment
+target: a CLI + an MCP server + a programmable SDK that all share the
+same `awaiting_signature → dns_signing → dns_confirmed → verifying`
+phase contract. Either an autonomous agent (signing locally from
+`~/.config/ton/config.json`) or a human (signing via TonConnect QR)
+can drive a full deploy with one command / one tool call.
+
+### Headline
+
+- **Two wallet paths, one surface.** `wallet: { kind: "tonconnect", … }`
+  for human-signed flows; `wallet: { kind: "agentic", … }` for
+  autonomous agents. Both produce the same `DeployResult` shape with
+  a real on-chain `dns_tx_hash`.
+- **MCP server `ton-sovereign-mcp`** with `sovereign_check_env` +
+  `sovereign_deploy` tools, structured F5 errors, F3 phase events
+  via `notifications/progress`.
+- **CLI `--wallet-mode agentic`** brings the same autonomous path
+  to the terminal (no QR, no phone).
+- **Agent discoverability**: `skills/sovereign-deploy.md` (Anthropic
+  skill format), `.well-known/mcp.json` template, expanded npm
+  keywords. Acceptance hypothesis tested by V4 red-team.
+- **`dns_tx_hash` is honest**: real on-chain hash via Toncenter v3
+  `transactionsByMessage`, resolved in parallel with TONAPI
+  propagation poll — zero added latency.
+
+### Deferred to v0.8.x
+
+- NFT-delegated agentic signing (`type: "agentic"` in @ton/mcp's
+  schema, distinct from our `wallet.kind: "agentic"`). Requires
+  the operator-key + collection-contract dance.
+- Encrypted-config decryption (the `\x8aTM\x01` magic-prefixed
+  format is already supported in rc3+; we self-decode the
+  bundled AES-256-GCM blob).
+-->
+
 ## [0.8.0-rc5] – 2026-05-11
 
 [S2.8] CLI agentic mode + critical Node 22+ runtime fix.

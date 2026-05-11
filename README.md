@@ -26,19 +26,25 @@ Press Ctrl+C to stop seeding.
 
 ---
 
-## Agent quickstart (v0.8 rc2)
+## Agent quickstart (v0.8 rc5)
 
 このツールは AI エージェントから直接呼び出せるよう設計されています。Agent runtime に "deploy a static site to .ton" のような prompt を投げたとき、kit を npm 検索 + README + skill registry 経由で見つけてもらうことを *狙っています* — ただしこれは hypothesis で、[V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。発見が外れた場合は明示的に呼び出してください:
 
-**rc2 で利用可能な 2 つの経路**
+**rc5 で利用可能な 3 つの経路**
 
-```jsonc
-// 1. CLI (推奨 — DNS write も完結):
+```bash
+# 1. CLI (TonConnect — 人間が phone wallet で承認):
 npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton --json-output
 ```
 
+```bash
+# 2. CLI (Agentic — autonomous、~/.config/ton/config.json から自動署名):
+npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton \
+  --wallet-mode agentic --wallet-label main-mainnet --json-output
+```
+
 ```jsonc
-// 2. MCP server (rc2 で実装、TonConnect 経由なら DNS write も SDK 経由で完結):
+// 3. MCP server (rc2 から、TonConnect / Agentic 両 path で DNS write 完結):
 {
   "mcpServers": {
     "ton-sovereign-deploy": {
@@ -52,7 +58,7 @@ npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton --json-output
 
 `--json-output` を付けると 1 行 1 JSON の structured output になり、agent が parse しやすくなります。
 
-**rc2 で実装済の MCP flow**
+**rc5 で実装済の MCP flow**
 
 ```jsonc
 // MCP client config に追加:
@@ -62,15 +68,20 @@ npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton --json-output
       "command": "npx",
       "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
     }
-    // optional: 並列に @ton/mcp を load して agentic wallet ops と組み合わせる
+    // optional: 並列に @ton/mcp を load してエージェントから wallet 管理も行わせる
     // "ton": { "command": "npx", "args": ["-y", "@ton/mcp@alpha"] }
   }
 }
 ```
 
-agent は `sovereign_check_env` → `sovereign_deploy` の 2 tool を順に call します。`sovereign_deploy` は SDK が直接 awaiting_signature → dns_signing → dns_confirmed → verifying まで進めます(TonConnect 経由のみ)。
+agent は `sovereign_check_env` → `sovereign_deploy` の 2 tool を順に call します。`sovereign_deploy` は SDK が直接 awaiting_signature → dns_signing → dns_confirmed → verifying まで進めます(両 path 対応)。
 
-**Wallet モード**: `wallet: {kind: "tonconnect", connector}` (default、人間が phone wallet で承認、rc2 で MCP 経由でも完結) または `wallet: {kind: "agentic", config_path?, wallet_label?}` (autonomous、`~/.config/ton/config.json` のキーで自動署名 — config を `@ton/mcp` と共有、MCP-RPC ハンドオフではなく filesystem level の compose)。**rc2 注意**: agentic mode で `domain` を指定すると `ERR_INVALID_INPUT` を返します(autonomous 署名の DNS 書き込みは GA で実装、現在は CLI 利用を案内)。詳細は [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) §F2 と [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md)。
+**Wallet モード** (rc4 で agentic も DNS write 完結、rc5 で CLI からも利用可):
+
+- **`wallet: {kind: "tonconnect", connector}`** (default) — 人間が phone wallet で QR 経由で承認
+- **`wallet: {kind: "agentic", config_path?, wallet_label?}`** — autonomous、`~/.config/ton/config.json` (the file `@ton/mcp@alpha` manages) のキーで自動署名。`@ton/walletkit` 経由で Toncenter v3 にブロードキャスト。`type: standard` (mnemonic / private_key 直接署名) 対応。`type: agentic` (NFT-delegated operator key) は v0.8.x で対応予定。
+
+**`dns_tx_hash`** (rc4 から): 両 path とも Toncenter v3 の `transactionsByMessage` lookup で実 on-chain tx hash を解決。DNS 伝播の poll と並行で実行するため happy path に追加 latency なし。詳細は [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) §F2。
 
 **Discoverability の前提**: agent が npm 検索 + skill registry でこの kit に到達できるよう README / keywords / `.well-known/mcp.json` template を整備していますが、これは **acceptance hypothesis であって fact ではありません**。[V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。失敗したら artifact 側を直して再 ship。
 
@@ -208,7 +219,7 @@ npx ton-sovereign-deploy ./build/
 
 ## 開発状況
 
-**ステータス:** v0.8.0-rc2 (2026-05-11) — MCP server bootstrap + SDK の DNS write 実装。GA は V3 (Claude Code MCP→testnet E2E) と V4 (agency-transfer red-team test) を通過後。
+**ステータス:** v0.8.0-rc5 (2026-05-11) — MCP server、SDK の DNS write (TonConnect + agentic 両 path)、CLI `--wallet-mode agentic`、real `dns_tx_hash` 解決。GA は V3 (Claude Code MCP→testnet E2E) と V4 (agency-transfer red-team test) を通過後。
 
 ### Released
 - **v0.1** ✅ — TON Storage アップロード
@@ -220,11 +231,15 @@ npx ton-sovereign-deploy ./build/
 - **v0.7** ✅ — `--site-auto` で rldp-http-proxy 自動 spawn + ADNL identity 自前 mint
 - **v0.8.0-rc1** ✅ (2026-05-10) — agent-surface track の first-useful flag-plant: README "Agent quickstart" + npm keywords + doc rescope
 - **v0.8.0-rc2** ✅ (2026-05-11) — MCP server (`ton-sovereign-mcp`)、SDK 抽出 (`src/sdk/`)、SDK DNS write (TonConnect 経由)、ESLint v9 no-console gate、GitHub Actions CI、プロジェクト全体リファクタリング (-290 LOC)
+- **v0.8.0-rc3** ✅ (2026-05-11) — SDK agentic DNS write (`wallet.kind: "agentic"`): `~/.config/ton/config.json` の protected-file (\x8aTM\x01 AES-256-GCM) decode + `@ton/walletkit` 経由で署名 + Toncenter v3 ブロードキャスト
+- **v0.8.0-rc4** ✅ (2026-05-11) — real on-chain `dns_tx_hash` 解決: TonConnect path は TEP-467 normalized hash 経由、agentic は Toncenter `sendBoc` の返り値経由。DNS 伝播 poll と並列で動かして happy path に latency 追加なし
+- **v0.8.0-rc5** ✅ (2026-05-11) — CLI `--wallet-mode agentic` でターミナルからも autonomous 署名可能。`@ton/walletkit` の Node 22+ runtime regression (`ERR_UNSUPPORTED_DIR_IMPORT`) を `noExternal` で修正。`scripts/cli-smoke.cjs` を CI に追加して再発防止
 
 ### Pending for v0.8.0 GA
 - **[V3] #18** — Claude Code MCP client → testnet deploy E2E (S2.5 land 済、agent と testnet TON が必要)
 - **[V4] #26** — Agency-transfer red-team test (fresh agent session、手動実行)
-- **Agentic DNS path** — `wallet.kind: "agentic"` で DNS write を完了させる(現在は ERR_INVALID_INPUT、CLI を案内)。`@ton/walletkit` を経由した `~/.config/ton/config.json` の key loader 実装が必要
+- **[D3] #21** — 最終 v0.8.0 GA tag (V3+V4 通過後)
+- **NFT-delegated agentic** — `@ton/mcp` の `type: "agentic"` (operator-key + collection contract) 対応。v0.8.x 予定
 
 ### v0.8 docs
 - 全体ビジョン: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md)
