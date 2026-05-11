@@ -48,29 +48,52 @@ export interface DnsWriteControl {
   signal?: AbortSignal
 }
 
+/** Outcome the caller surfaces to the user / consumer. */
+export interface DnsWriteResult {
+  /**
+   * The signed message BOC returned by TonConnect. NOT the on-chain tx
+   * hash — that requires a follow-up TONAPI lookup. Surface as
+   * `message_boc` in `next_actions`, not as `dns_tx_hash`.
+   */
+  message_boc: string | null
+}
+
 /**
  * Headless UI shim for the TonConnectProvider — the SDK does not write to
  * stdout. Choices auto-select by `preferByName` (matching the connector_name
- * the caller passed). Errors throw rather than prompt.
+ * the caller passed). Errors are SdkError-typed so callers can branch.
  */
 function headlessWalletUI(preferByName: string): import('../wallet/ui').WalletUI {
   const wanted = preferByName.trim().toLowerCase()
   return {
-    async choose<T>(message: string, options: T[], display: (t: T) => string): Promise<T> {
-      if (options.length === 0) throw new Error(`No options for "${message}"`)
+    async choose<T>(_message: string, options: T[], display: (t: T) => string): Promise<T> {
+      if (options.length === 0) {
+        throw new SdkError('ERR_INVALID_INPUT', 'No TonConnect-compatible wallets available.', {
+          severity: 'fatal',
+        })
+      }
       if (wanted) {
         const match = options.findIndex((o) => display(o).toLowerCase().includes(wanted))
         if (match >= 0) return options[match]
         const names = options.map(display).join(', ')
-        throw new Error(`No wallet matches "${preferByName}" — available: ${names}`)
+        throw new SdkError(
+          'ERR_INVALID_INPUT',
+          `No TonConnect wallet matches "${preferByName}". Available: ${names}.`,
+          {
+            severity: 'fatal',
+            fixHint: `Pass wallet.connector as a substring of one of: ${names}.`,
+          },
+        )
       }
       return options[0]
     },
     async input(message: string): Promise<string> {
-      throw new Error(`Headless UI cannot prompt for "${message}"`)
+      throw new SdkError('ERR_INTERNAL', `Headless UI cannot prompt for "${message}"`, {
+        severity: 'fatal',
+      })
     },
     write(_message: string): void {
-      /* swallow — SDK doesn't write to stdout */
+      /* swallow — SDK does not write to stdout */
     },
     setActionPrompt(_message: string): void {
       /* swallow */
@@ -82,22 +105,24 @@ function headlessWalletUI(preferByName: string): import('../wallet/ui').WalletUI
 }
 
 /**
- * Drive the TonConnect-mediated `.ton` DNS record write. Yields the same
- * F3 event phases the SDK's `deploy()` generator embeds inline.
+ * Drive the TonConnect-mediated `.ton` DNS record write. Yields F3 event
+ * phases in order:
+ *   awaiting_signature (with signing_url) → dns_signing (after wallet
+ *   returns the signed message) → dns_confirmed (after TONAPI polling
+ *   sees the record) → verifying (TONAPI bag accessibility probe).
  *
  * The caller (deploy()) tracks `phase_at_cancel` / `bag_id` for F4
- * cancellation accuracy; this helper just bubbles SdkError out and lets
- * the caller decorate cancellations with the right phase.
+ * cancellation accuracy; this generator throws bare ERR_CANCELLED on
+ * abort and the caller decorates with F4 `data`. `wallet.dispose()`
+ * always runs via finally so the TonConnect bridge listener never leaks.
  */
 export async function* writeDnsRecord(
   opts: DnsWriteOptions,
   control: DnsWriteControl = {},
-): AsyncGenerator<DeployEvent, { tx_hash: string | null }, void> {
+): AsyncGenerator<DeployEvent, DnsWriteResult, void> {
   const checkAborted = () => {
     if (control.signal?.aborted) {
-      throw new SdkError('ERR_CANCELLED', 'DNS write cancelled.', {
-        severity: 'recoverable',
-      })
+      throw new SdkError('ERR_CANCELLED', 'DNS write cancelled.', { severity: 'recoverable' })
     }
   }
 
@@ -133,7 +158,7 @@ export async function* writeDnsRecord(
     })
   }
 
-  // ─── TonConnect: connect (emit awaiting_signature with signing_url) ─
+  // ─── TonConnect setup ───────────────────────────────────────────────
   const storage = new FSStorage(getTonConnectStoragePath())
   const ui = headlessWalletUI(opts.connector_name ?? 'Tonkeeper')
   const wallet = new TonConnectProvider(
@@ -143,130 +168,154 @@ export async function* writeDnsRecord(
     TONCONNECT_MANIFEST_URL,
   )
 
-  // We must emit awaiting_signature WITH the URL but we don't have the URL
-  // until `wallet.connect()` calls our onConnectUrl hook. The trick: kick
-  // off the connect first, capture the URL via the hook, yield, then
-  // await the connect's resolution.
-  let urlResolve: (url: string) => void = () => {}
-  const urlPromise = new Promise<string>((res) => {
-    urlResolve = res
-  })
-
-  // Start the connect — runs asynchronously. The hook fires synchronously
-  // inside connectWallet() when the connect URL is generated.
-  const connectPromise = wallet.connect((url) => urlResolve(url)).catch((err) => {
-    // Rebrand connection failures so the outer caller can map them.
-    throw new SdkError(
-      'ERR_DNS_SIGN_REJECTED',
-      `Wallet connection failed: ${err instanceof Error ? err.message : String(err)}`,
-      { severity: 'fatal' },
-    )
-  })
-
-  // If the wallet had a stored session, `connectWallet` returns immediately
-  // without invoking onConnectUrl. We race the URL promise against the
-  // connect-completed promise; whichever wins, we don't block forever.
-  const urlOrConnected = await Promise.race([
-    urlPromise.then((url) => ({ kind: 'url' as const, url })),
-    connectPromise.then(() => ({ kind: 'connected' as const })),
-  ])
-
-  if (urlOrConnected.kind === 'url') {
-    yield {
-      phase: 'awaiting_signature',
-      message: `open wallet to approve ${messages.length} DNS update message(s)`,
-      data: {
-        signing_mode: 'tonconnect',
-        signing_url: urlOrConnected.url,
-        expires_at_iso: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      },
-    }
-    // Now wait for the actual wallet pairing.
-    await connectPromise
-  } else {
-    // Already paired — emit awaiting_signature with a synthetic URL note
-    // so consumers still see the phase (signing_url is the stored session
-    // address since there's no fresh URL).
-    yield {
-      phase: 'awaiting_signature',
-      message: `re-using paired wallet for ${messages.length} DNS update message(s)`,
-      data: {
-        signing_mode: 'tonconnect',
-        signing_url: 'tonconnect://restored-session',
-        expires_at_iso: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      },
-    }
-  }
-
-  checkAborted()
-
-  // ─── Send tx (yield dns_signing → wait for tx hash) ──────────────────
-  yield {
-    phase: 'dns_signing',
-    message: 'tx submitted to wallet; awaiting on-chain confirmation',
-  }
-
-  let txResult
   try {
-    txResult = await wallet.sendTransactionMulti(messages)
-  } catch (err) {
-    wallet.dispose()
-    throw new SdkError(
-      'ERR_DNS_SIGN_REJECTED',
-      `Wallet rejected DNS write: ${err instanceof Error ? err.message : String(err)}`,
-      { severity: 'fatal' },
-    )
-  }
+    // ─── Connect: capture URL via hook, yield awaiting_signature ─────
+    let urlResolve: (url: string) => void = () => {}
+    const urlPromise = new Promise<string>((res) => {
+      urlResolve = res
+    })
 
-  // TonConnect's `boc` is a base64 of the signed external message — the
-  // tx hash isn't directly exposed; we poll TONAPI to confirm the
-  // `change_dns_record` op landed, and use the polled record as the
-  // "confirmed" signal. The boc is informational.
-  const txBoc = (txResult as { boc?: string }).boc ?? null
+    // wallet.connect either calls onConnectUrl (fresh session) or returns
+    // immediately (restored session). We race the URL promise against the
+    // completion promise so we always emit a sensible awaiting_signature.
+    const connectPromise = wallet.connect((url) => urlResolve(url)).catch((err) => {
+      // Rewrap headless-UI SdkErrors (already typed) and wallet-side
+      // errors. Connection-time failures map to ERR_DNS_SIGN_REJECTED
+      // EXCEPT input-class errors (no matching connector), which are
+      // ERR_INVALID_INPUT via the headlessWalletUI throws.
+      if (err instanceof SdkError) throw err
+      throw new SdkError(
+        'ERR_DNS_SIGN_REJECTED',
+        `Wallet connection failed: ${err instanceof Error ? err.message : String(err)}`,
+        { severity: 'fatal' },
+      )
+    })
 
-  checkAborted()
+    const urlOrConnected = await Promise.race([
+      urlPromise.then((url) => ({ kind: 'url' as const, url })),
+      connectPromise.then(() => ({ kind: 'connected' as const })),
+    ])
 
-  // ─── Poll for propagation (yield dns_confirmed when done) ────────────
-  // pollDnsRecord retries TONAPI lookups until the record matches the bag
-  // id or the timeout fires. We give it 5 minutes for storage and 3
-  // minutes for site (matches cli/dns.ts).
-  const confirmedStorage = await pollDnsRecord(
-    opts.domain,
-    opts.bag_id,
-    300_000,
-    10_000,
-    !!opts.testnet,
-  )
+    if (urlOrConnected.kind === 'url') {
+      yield {
+        phase: 'awaiting_signature',
+        message: `open wallet to approve ${messages.length} DNS update message(s)`,
+        data: {
+          signing_mode: 'tonconnect',
+          signing_url: urlOrConnected.url,
+          expires_at_iso: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        },
+      }
+      // Now actually wait for the wallet pairing to complete.
+      await connectPromise
+    } else {
+      yield {
+        phase: 'awaiting_signature',
+        message: `re-using paired wallet for ${messages.length} DNS update message(s)`,
+        data: {
+          signing_mode: 'tonconnect',
+          signing_url: 'tonconnect://restored-session',
+          expires_at_iso: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        },
+      }
+    }
 
-  let confirmedSite = true
-  if (opts.site_adnl) {
-    confirmedSite = await pollDnsSiteRecord(
+    checkAborted()
+
+    // ─── Send tx — phase STAYS awaiting_signature through the wallet ──
+    // prompt + approval. Only AFTER sendTransactionMulti returns do we
+    // yield dns_signing (= "tx submitted to chain"). Codex S2.5 review:
+    // the prior ordering yielded dns_signing while the wallet UI was
+    // still open, misleading consumers about the actual progress state.
+    let txResult
+    try {
+      txResult = await wallet.sendTransactionMulti(messages)
+    } catch (err) {
+      if (err instanceof SdkError) throw err
+      throw new SdkError(
+        'ERR_DNS_SIGN_REJECTED',
+        `Wallet rejected DNS write: ${err instanceof Error ? err.message : String(err)}`,
+        { severity: 'fatal' },
+      )
+    }
+    const messageBoc = (txResult as { boc?: string }).boc ?? null
+
+    checkAborted()
+
+    yield {
+      phase: 'dns_signing',
+      message: 'tx submitted; awaiting on-chain confirmation',
+      data: { message_boc: messageBoc },
+    }
+
+    // ─── Poll TONAPI for record propagation ──────────────────────────
+    const confirmedStorage = await pollDnsRecord(
       opts.domain,
-      opts.site_adnl,
-      180_000,
+      opts.bag_id,
+      300_000,
       10_000,
       !!opts.testnet,
+      { silent: true },
     )
+    checkAborted()
+
+    let confirmedSite = true
+    if (opts.site_adnl) {
+      confirmedSite = await pollDnsSiteRecord(
+        opts.domain,
+        opts.site_adnl,
+        180_000,
+        10_000,
+        !!opts.testnet,
+        { silent: true },
+      )
+      checkAborted()
+    }
+
+    if (!confirmedStorage || !confirmedSite) {
+      throw new SdkError(
+        'ERR_DNS_TX_TIMEOUT',
+        `DNS record for ${opts.domain} did not propagate via TONAPI within window. ` +
+          `The wallet sent the tx; chain may still be settling, or TONAPI is lagging.`,
+        { severity: 'recoverable' },
+      )
+    }
+
+    yield {
+      phase: 'dns_confirmed',
+      message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
+      data: {
+        domain: opts.domain,
+        bag_id: opts.bag_id,
+        ...(opts.site_adnl ? { site_adnl: opts.site_adnl } : {}),
+        message_boc: messageBoc,
+      },
+    }
+
+    // ─── F3 verifying phase ─────────────────────────────────────────
+    // The spec requires emitting `verifying` after `dns_confirmed`. We
+    // don't run a separate gateway-fetch probe in rc2 — the TONAPI
+    // pollers above ARE the verification. Yield the phase informationally
+    // with a status note so downstream consumers can branch.
+    yield {
+      phase: 'verifying',
+      message: 'DNS record propagated via TONAPI; downstream gateway resolution may still be settling',
+      data: {
+        verifier: 'tonapi',
+        gateway_propagation_lag_minutes: 'usually 0-5',
+      },
+    }
+
+    return { message_boc: messageBoc }
+  } finally {
+    // Always release the TonConnect bridge listener so Node's event loop
+    // can drain. Without this, the SSE connection keeps the process
+    // alive (the v0.6.3 fix the CLI's runDnsRegistration already had —
+    // we replicate it here for symmetry).
+    try {
+      wallet.dispose()
+    } catch {
+      /* best-effort */
+    }
   }
-
-  if (!confirmedStorage || !confirmedSite) {
-    wallet.dispose()
-    throw new SdkError(
-      'ERR_DNS_TX_TIMEOUT',
-      `DNS record for ${opts.domain} did not propagate via TONAPI within window. ` +
-        `The wallet sent the tx; chain may still be settling, or TONAPI is lagging.`,
-      { severity: 'recoverable' },
-    )
-  }
-
-  yield {
-    phase: 'dns_confirmed',
-    message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
-    data: { domain: opts.domain, bag_id: opts.bag_id, ...(opts.site_adnl ? { site_adnl: opts.site_adnl } : {}) },
-  }
-
-  // ─── Dispose the TonConnect bridge listener (prevents hang) ──────────
-  wallet.dispose()
-
-  return { tx_hash: txBoc }
 }

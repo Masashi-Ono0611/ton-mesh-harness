@@ -180,28 +180,38 @@ async function getDnsResolved(domain: string, testnet = false): Promise<TonApiDn
   }
 }
 
+/**
+ * @param opts.silent suppresses ora spinner + console.log fallback message
+ *   so the SDK / MCP path can call this without polluting stdout (the MCP
+ *   stdio framing breaks if console.log writes to stdout). CLI continues
+ *   to pass silent: false (default) for human output.
+ */
 export async function pollDnsRecord(
   domain: string,
   expectedBagId: string,
   timeoutMs = 300_000,
   intervalMs = 10_000,
   testnet = false,
+  opts: { silent?: boolean } = {},
 ): Promise<boolean> {
-  const spinner = ora('Waiting for DNS record to propagate...').start()
+  const silent = !!opts.silent
+  const spinner = silent ? null : ora('Waiting for DNS record to propagate...').start()
   const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
     const data = await getDnsResolved(domain, testnet)
     const current = extractStorageBagId(data)
     if (current === expectedBagId.toLowerCase()) {
-      spinner.succeed('DNS record confirmed on-chain!')
+      spinner?.succeed('DNS record confirmed on-chain!')
       return true
     }
     await sleep(intervalMs)
   }
 
-  spinner.warn('DNS propagation timed out — the transaction may still be pending.')
-  console.log(chalk.dim('  Check manually: ' + getNetworkConfig(testnet).tonapiUrl + '/v2/dns/' + encodeURIComponent(domain) + '/resolve'))
+  spinner?.warn('DNS propagation timed out — the transaction may still be pending.')
+  if (!silent) {
+    console.log(chalk.dim('  Check manually: ' + getNetworkConfig(testnet).tonapiUrl + '/v2/dns/' + encodeURIComponent(domain) + '/resolve'))
+  }
   return false
 }
 
@@ -214,14 +224,19 @@ export async function pollDnsRecord(
 // "verify manually" hint instead of looping forever.
 // -----------------------------------------------------------------------
 
+/**
+ * @param opts.silent see pollDnsRecord.
+ */
 export async function pollDnsSiteRecord(
   domain: string,
   expectedAdnlHex: string,
   timeoutMs = 180_000,
   intervalMs = 10_000,
   testnet = false,
+  opts: { silent?: boolean } = {},
 ): Promise<boolean> {
-  const spinner = ora('Waiting for site record to propagate...').start()
+  const silent = !!opts.silent
+  const spinner = silent ? null : ora('Waiting for site record to propagate...').start()
   const deadline = Date.now() + timeoutMs
   const expected = expectedAdnlHex.toLowerCase().replace(/^0x/, '')
 
@@ -229,16 +244,18 @@ export async function pollDnsSiteRecord(
     const data = await getDnsResolved(domain, testnet)
     const sites = (data?.sites ?? []).map((s) => s.toLowerCase().replace(/^0x/, ''))
     if (sites.includes(expected)) {
-      spinner.succeed('Site record confirmed on-chain!')
+      spinner?.succeed('Site record confirmed on-chain!')
       return true
     }
     await sleep(intervalMs)
   }
 
-  spinner.warn(
+  spinner?.warn(
     'Site record not yet visible via TONAPI — TONAPI is known to lag/lie for `sites` records. The on-chain transaction may already be settled.',
   )
-  console.log(chalk.dim('  Verify on-chain: node scripts/dns-probe.cjs (or open the .ton domain in TON Browser)'))
+  if (!silent) {
+    console.log(chalk.dim('  Verify on-chain: node scripts/dns-probe.cjs (or open the .ton domain in TON Browser)'))
+  }
   return false
 }
 

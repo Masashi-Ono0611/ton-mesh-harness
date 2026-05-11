@@ -166,15 +166,22 @@ function mapDaemonStartError(err: unknown): SdkError {
   })
 }
 
+/**
+ * Build an F5 ERR_CANCELLED error with the F4 cancellation contract
+ * payload. `may_have_published` is true iff the cancel happened
+ * AFTER `awaiting_signature` fired — once that fires, the wallet may
+ * sign and broadcast even though we asked to abort.
+ */
 function buildCancelledError(
   phase: DeployEvent['phase'],
   bag_id: string | null,
+  mayHavePublished: boolean = false,
 ): SdkError {
   return new SdkError('ERR_CANCELLED', `Deploy cancelled at phase ${phase}.`, {
     severity: 'recoverable',
     data: {
       phase_at_cancel: phase,
-      may_have_published: false, // rc2 scope ends before awaiting_signature
+      may_have_published: mayHavePublished,
       bag_id,
       tx_hash: null,
     },
@@ -393,7 +400,14 @@ export async function* deploy(
     // "agentic" AND opts.domain is set, we reject early with a clear error
     // pointing at the gap. v0.8.0 GA will close this; the SDK's signing
     // surface needs a key loader for the agentic config first.
-    let dnsTxHash: string | null = null
+    //
+    // F4 cancellation contract (post-S2.5 review fix):
+    // - Cancellation BEFORE writeDnsRecord starts → may_have_published: false
+    // - Cancellation AFTER awaiting_signature has yielded → may_have_published: true
+    //   (the wallet may sign and broadcast even after we abort)
+    // We track this with `dnsAwaitingSignatureSeen` and decorate any
+    // ERR_CANCELLED from the delegated generator before re-throwing.
+    let messageBoc: string | null = null
     if (opts.domain) {
       if (opts.wallet.kind === 'agentic') {
         throw new SdkError(
@@ -405,19 +419,17 @@ export async function* deploy(
             severity: 'fatal',
             fixHint:
               'Set `wallet: { kind: "tonconnect", connector: "Tonkeeper" }` to sign DNS via TonConnect, ' +
-              'or drop `domain` to skip DNS for now.',
+              'or drop `domain` to skip `domain` from this call.',
           },
         )
       }
 
       // Path 1: TonConnect. Stream through the writeDnsRecord helper which
-      // yields awaiting_signature → dns_signing → dns_confirmed.
+      // yields awaiting_signature → dns_signing → dns_confirmed → verifying.
       const { writeDnsRecord } = await import('./dns')
+      let dnsAwaitingSignatureSeen = false
       try {
-        // currentPhase tracking + checkAborted() inside writeDnsRecord
-        // handles cancellation; we mirror the phase here so the deploy()
-        // generator's `currentPhase` stays accurate.
-        for await (const ev of writeDnsRecord(
+        const inner = writeDnsRecord(
           {
             domain: opts.domain,
             bag_id: created.bag_id,
@@ -425,53 +437,66 @@ export async function* deploy(
             connector_name: opts.wallet.connector,
           },
           { signal: control.signal },
-        )) {
+        )
+        // Manual iteration so we can capture the generator's RETURN value
+        // (the DnsWriteResult with message_boc) — for-await drops returns.
+        while (true) {
+          const step = await inner.next()
+          if (step.done) {
+            messageBoc = step.value?.message_boc ?? null
+            break
+          }
+          const ev = step.value
+          if (ev.phase === 'awaiting_signature') {
+            dnsAwaitingSignatureSeen = true
+            // Capture message_boc lazily — the dns_signing event carries it.
+          }
+          if (ev.phase === 'dns_signing') {
+            const evData = ev.data as { message_boc?: string | null } | undefined
+            if (evData?.message_boc) messageBoc = evData.message_boc
+          }
           currentPhase = ev.phase
-          // F4 cancellation: once awaiting_signature has fired, any cancel
-          // from here on is `may_have_published: true` because the wallet
-          // may sign + broadcast even after we abort.
           yield ev
-          // (post-yield abort check would re-throw the cancelled error; the
-          // delegated generator handles its own checkAborted, and any
-          // SdkError it throws propagates up through this for-await.)
         }
-        // The terminal event from writeDnsRecord carries the tx hash via
-        // its return value, but for-await drops it. Re-call .next() to
-        // capture? Easier: writeDnsRecord's `dns_confirmed` event already
-        // has the substantive data; the tx_hash is informational. Set null
-        // unless writeDnsRecord later exposes it via the event payload.
       } catch (err) {
+        // Decorate cancellation with phase-aware F4 data per BLOCKER 1.
+        if (err instanceof SdkError && err.code === 'ERR_CANCELLED') {
+          throw buildCancelledError(currentPhase, knownBagId, dnsAwaitingSignatureSeen)
+        }
         if (err instanceof SdkError) throw err
         const msg = err instanceof Error ? err.message : String(err)
-        throw new SdkError('ERR_INTERNAL', `DNS write failed: ${msg}`, {
-          severity: 'fatal',
-        })
+        throw new SdkError('ERR_INTERNAL', `DNS write failed: ${msg}`, { severity: 'fatal' })
       }
-      // (verifying phase post-DNS is intentionally not emitted in S2.5;
-      // it duplicates the polling that writeDnsRecord already does. Add
-      // post-S2.5 if a separate "bag served via gateway" probe becomes
-      // valuable.)
-      dnsTxHash = 'sent'  // truthy sentinel; real boc capture in GA
     }
 
     // ─── Build result + transfer daemon ownership BEFORE final yield ─────
     // (Codex S2 review: ownership flip after `yield done` lets a consumer
     // that breaks early via for-await leak / falsely-kill the daemon.)
+    // dns_tx_hash policy (Codex S2.5 MAJOR): we do NOT have the on-chain
+    // tx hash — TonConnect returns a signed-message BOC, which is not the
+    // same thing. Stay HONEST: dns_tx_hash is null for now; surface the
+    // message BOC via next_actions so consumers can do their own TONAPI
+    // lookup if they want the real tx hash. GA can add a TONAPI poll
+    // step that returns the actual tx hash.
+    //
+    // The agentic+domain case is unreachable (we throw earlier), so the
+    // prior dead next_actions branch was removed (Codex MINOR 3).
+    const nextActions: { description: string }[] = []
+    if (opts.domain && messageBoc) {
+      nextActions.push({
+        description: `DNS write submitted via TonConnect. Message BOC (NOT the on-chain tx hash): ${messageBoc}. ` +
+          `For the real tx hash, look up the wallet's outgoing transactions on TONAPI within a minute of dispatch.`,
+      })
+    }
+
     const result: DeployResult = {
       bag_id: created.bag_id,
       bag_size_bytes: details.size,
-      dns_tx_hash: dnsTxHash,
+      dns_tx_hash: null,
       daemon_api_url: daemon.apiUrl,
       daemon_pid: opts.keep_alive ? pid : null,
       seed_status: opts.keep_alive ? 'seeding' : 'stopped',
-      next_actions:
-        opts.domain && opts.wallet.kind === 'agentic'
-          ? [
-              {
-                description: `Agentic DNS write not yet implemented in v0.8.0-rc2. Run \`npx ton-sovereign-deploy <build-dir> --domain ${opts.domain}\` with a TonConnect wallet to publish bag ${created.bag_id}.`,
-              },
-            ]
-          : [],
+      next_actions: nextActions,
     }
 
     if (opts.keep_alive) {
