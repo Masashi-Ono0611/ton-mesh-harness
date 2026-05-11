@@ -19,6 +19,8 @@ import { normalizedExternalInHashHex } from './resolve-tx'
 import { networkFromTestnetFlag } from './endpoints'
 import {
   awaitTxHashWithGrace,
+  buildAwaitingSignatureAgentic,
+  buildAwaitingSignatureTonConnect,
   buildDnsMessageBatch,
   buildVerifyingEvent,
   kickoffTxHashResolve,
@@ -185,27 +187,17 @@ export async function* writeDnsRecord(
     ])
 
     if (urlOrConnected.kind === 'url') {
-      yield {
-        phase: 'awaiting_signature',
-        message: `open wallet to approve ${messages.length} DNS update message(s)`,
-        data: {
-          signing_mode: 'tonconnect',
-          signing_url: urlOrConnected.url,
-          expires_at_iso: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-        },
-      }
+      yield buildAwaitingSignatureTonConnect(
+        `open wallet to approve ${messages.length} DNS update message(s)`,
+        urlOrConnected.url,
+      )
       // Now actually wait for the wallet pairing to complete.
       await connectPromise
     } else {
-      yield {
-        phase: 'awaiting_signature',
-        message: `re-using paired wallet for ${messages.length} DNS update message(s)`,
-        data: {
-          signing_mode: 'tonconnect',
-          signing_url: 'tonconnect://restored-session',
-          expires_at_iso: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-        },
-      }
+      yield buildAwaitingSignatureTonConnect(
+        `re-using paired wallet for ${messages.length} DNS update message(s)`,
+        'tonconnect://restored-session',
+      )
     }
 
     checkAborted()
@@ -379,15 +371,11 @@ export async function* writeDnsRecordAgentic(
     // The phase is kept for F3-contract parity with the TonConnect path.
     // `signing_url` is null per AwaitingSignatureDataSchema's agentic
     // variant — there's no QR / external app to open.
-    yield {
-      phase: 'awaiting_signature',
-      message: `signing locally with ${selection.wallet.name ?? selection.wallet.id} (${selection.wallet.wallet_version})`,
-      data: {
-        signing_mode: 'agentic',
-        signing_url: null,
-        wallet_label: selection.wallet.name ?? selection.wallet.id,
-      },
-    }
+    const walletLabel = selection.wallet.name ?? selection.wallet.id
+    yield buildAwaitingSignatureAgentic(
+      `signing locally with ${walletLabel} (${selection.wallet.wallet_version})`,
+      walletLabel,
+    )
 
     // ─── F4 cancellation window ──────────────────────────────────────────
     // For agentic, unlike TonConnect, there's no human approval in between.

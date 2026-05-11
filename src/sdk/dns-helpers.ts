@@ -227,3 +227,56 @@ export function buildVerifyingEvent(message: string): DeployEvent {
     },
   }
 }
+
+/**
+ * Standard 5-minute future ISO timestamp for the
+ * `awaiting_signature.data.expires_at_iso` field (TonConnect variant).
+ * Defines how long the consumer should expect the wallet to wait for
+ * approval before the request becomes stale. Not chain-enforced —
+ * informational for the agent/UI.
+ */
+function signingExpiresAtIso(): string {
+  return new Date(Date.now() + 5 * 60 * 1000).toISOString()
+}
+
+/**
+ * Build the F3 `awaiting_signature` event for the TonConnect path.
+ * `signing_url` is either the live tonkeeper://... deeplink (fresh
+ * session) or a sentinel for a restored session. Per
+ * `AwaitingSignatureDataSchema.tonconnect`.
+ */
+export function buildAwaitingSignatureTonConnect(
+  message: string,
+  signingUrl: string,
+): DeployEvent {
+  return {
+    phase: 'awaiting_signature',
+    message,
+    data: {
+      signing_mode: 'tonconnect',
+      signing_url: signingUrl,
+      expires_at_iso: signingExpiresAtIso(),
+    },
+  }
+}
+
+/**
+ * Build the F3 `awaiting_signature` event for the agentic path. Per
+ * `AwaitingSignatureDataSchema.agentic` — `signing_url` is null
+ * (no QR / external app), `wallet_label` is informational for the
+ * agent's logs.
+ */
+export function buildAwaitingSignatureAgentic(
+  message: string,
+  walletLabel: string,
+): DeployEvent {
+  return {
+    phase: 'awaiting_signature',
+    message,
+    data: {
+      signing_mode: 'agentic',
+      signing_url: null,
+      wallet_label: walletLabel,
+    },
+  }
+}
