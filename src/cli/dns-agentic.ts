@@ -16,6 +16,7 @@ import chalk from 'chalk'
 import { createSpinnerFactory } from '../utils/spinner'
 import { writeDnsRecordAgentic } from '../sdk/dns'
 import { SdkError } from '../sdk/deploy'
+import { tonviewerTxUrl } from '../sdk/endpoints'
 
 export interface DnsRegistrationAgenticOptions {
   testnet?: boolean
@@ -78,11 +79,7 @@ export async function runDnsRegistrationAgentic(
         const result = step.value
         if (result?.tx_hash) {
           log(chalk.dim(`  Tx hash:       ${result.tx_hash}`))
-          log(
-            chalk.dim(
-              `  Explorer:      https://tonviewer.com/transaction/${result.tx_hash.replace(/^0x/, '')}`,
-            ),
-          )
+          log(chalk.dim(`  Explorer:      ${tonviewerTxUrl(result.tx_hash, !!testnet)}`))
         } else if (result?.message_hash) {
           log(chalk.dim(`  Message hash:  ${result.message_hash}`))
           log(chalk.dim(`  (Tx hash resolve timed out — tonviewer typically indexes within ~10s)`))

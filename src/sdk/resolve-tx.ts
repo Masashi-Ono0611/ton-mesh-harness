@@ -22,11 +22,7 @@
 import { beginCell, Cell, loadMessage, storeMessage } from '@ton/core'
 import { ApiClientToncenter, Network } from '@ton/walletkit'
 import type { AgenticNetwork } from './agentic-config'
-
-const TONCENTER_ENDPOINTS: Record<AgenticNetwork, string> = {
-  mainnet: 'https://toncenter.com',
-  testnet: 'https://testnet.toncenter.com',
-}
+import { TONCENTER_ENDPOINTS } from './endpoints'
 
 function getNetwork(network: AgenticNetwork): ReturnType<typeof Network.mainnet> {
   return network === 'mainnet' ? Network.mainnet() : Network.testnet()

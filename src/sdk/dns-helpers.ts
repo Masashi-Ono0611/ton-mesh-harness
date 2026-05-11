@@ -118,18 +118,23 @@ export async function pollDnsConfirmationOrThrow(args: {
   bagId: string
   siteAdnl: string | null | undefined
   testnet: boolean
-  checkAborted: () => void
+  /** Optional — called between polls to short-circuit on caller abort. */
+  checkAborted?: () => void
+  /** Optional — when omitted, the inner poller emits its own spinner. */
+  silent?: boolean
   timeoutHint: string
 }): Promise<void> {
+  const silent = args.silent ?? true
+  const noopCheck = args.checkAborted ?? (() => {})
   const confirmedStorage = await pollDnsRecord(
     args.domain,
     args.bagId,
     300_000,
     10_000,
     args.testnet,
-    { silent: true },
+    { silent },
   )
-  args.checkAborted()
+  noopCheck()
 
   let confirmedSite = true
   if (args.siteAdnl) {
@@ -139,9 +144,9 @@ export async function pollDnsConfirmationOrThrow(args: {
       180_000,
       10_000,
       args.testnet,
-      { silent: true },
+      { silent },
     )
-    args.checkAborted()
+    noopCheck()
   }
 
   if (!confirmedStorage || !confirmedSite) {

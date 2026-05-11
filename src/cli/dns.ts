@@ -1,16 +1,19 @@
 import chalk from 'chalk'
-import type { Address } from '@ton/core'
 import { createSpinnerFactory } from '../utils/spinner'
-import {
-  getDomainNftAddress,
-  pollDnsRecord,
-  pollDnsSiteRecord,
-} from '../dns'
 import { FSStorage } from '../wallet/FSStorage'
 import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { createWalletUI } from '../wallet/ui'
 import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
-import { buildDnsMessageBatch, DNS_UPDATE_AMOUNT_NANO } from '../sdk/dns-helpers'
+import {
+  awaitTxHashWithGrace,
+  buildDnsMessageBatch,
+  DNS_UPDATE_AMOUNT_NANO,
+  kickoffTxHashResolve,
+  pollDnsConfirmationOrThrow,
+  resolveDomainNftOrThrow,
+} from '../sdk/dns-helpers'
+import { normalizedExternalInHashHex } from '../sdk/resolve-tx'
+import { tonviewerTxUrl } from '../sdk/endpoints'
 
 interface DnsRegistrationOptions {
   testnet?: boolean
@@ -42,18 +45,21 @@ export async function runDnsRegistration(
   log()
 
   const lookupSpinner = createSpinner.start(`Looking up ${domain}...`)
-  let nftAddress: Address
+  let nftAddress: Awaited<ReturnType<typeof resolveDomainNftOrThrow>>
   try {
-    nftAddress = await getDomainNftAddress(domain, testnet)
+    nftAddress = await resolveDomainNftOrThrow(
+      domain,
+      testnet,
+      'Verify the domain is owned by the signing wallet and that TONAPI is reachable.',
+    )
     lookupSpinner.succeed(`Found NFT: ${nftAddress.toString()}`)
   } catch (err) {
     lookupSpinner.fail()
     throw err
   }
 
-  // Build message payloads via the shared SDK helper. Always writes the
-  // storage record; if --site-adnl is set, also bundles the site
-  // (dns_adnl_address) record into the same wallet sign request.
+  // Always writes the storage record; if --site-adnl is set, bundles the
+  // site (dns_adnl_address) record into the same wallet sign request.
   const messages = buildDnsMessageBatch(nftAddress, bagId, opts.siteAdnl)
 
   log(chalk.bold('📱 Sign DNS Registration'))
@@ -79,6 +85,11 @@ export async function runDnsRegistration(
     TONCONNECT_MANIFEST_URL,
   )
 
+  // Internal abort for the in-flight Toncenter resolve poll so an early
+  // exit (sign-reject, jsonMode return, dispose) doesn't leave the poll
+  // running.
+  const txResolveAbort = new AbortController()
+
   try {
     try {
       await wallet.connect()
@@ -87,11 +98,28 @@ export async function runDnsRegistration(
       throw err
     }
 
+    let txResult: Awaited<ReturnType<typeof wallet.sendTransactionMulti>>
     try {
-      await wallet.sendTransactionMulti(messages)
+      txResult = await wallet.sendTransactionMulti(messages)
     } catch (err) {
       log(chalk.red('  ✗ Transaction signing failed or was rejected.'))
       throw err
+    }
+
+    const messageBoc = (txResult as { boc?: string }).boc ?? null
+
+    // Kick off the tx-hash resolve in parallel with the TONAPI poll
+    // (or before the JSON-mode early return). Aborted in `finally`.
+    let txHashResolvePromise: Promise<string | null> = Promise.resolve(null)
+    if (messageBoc) {
+      const bocHashHex = normalizedExternalInHashHex(messageBoc)
+      if (bocHashHex) {
+        txHashResolvePromise = kickoffTxHashResolve({
+          messageHashHex: `0x${bocHashHex}`,
+          network: testnet ? 'testnet' : 'mainnet',
+          internalAbortSignal: txResolveAbort.signal,
+        })
+      }
     }
 
     // In JSON mode we stop here: the wallet has sent the tx, the deploy
@@ -101,23 +129,44 @@ export async function runDnsRegistration(
 
     log()
     log(chalk.dim('  Polling TONAPI for DNS record propagation...'))
-    const confirmedStorage = await pollDnsRecord(domain, bagId, 300_000, 10_000, testnet)
-
-    let confirmedSite = true
-    if (opts.siteAdnl) {
-      confirmedSite = await pollDnsSiteRecord(domain, opts.siteAdnl, 180_000, 10_000, testnet)
-    }
-
-    log()
-    if (confirmedStorage && confirmedSite) {
-      log(chalk.green(`  ✅ ${domain} now points to your site!`))
-      log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
-    } else {
+    try {
+      await pollDnsConfirmationOrThrow({
+        domain,
+        bagId,
+        siteAdnl: opts.siteAdnl,
+        testnet,
+        silent: false,
+        timeoutHint:
+          'The wallet sent the transaction; the chain may still be settling, ' +
+          'or TONAPI is lagging (especially for `sites` records).',
+      })
+    } catch {
+      // The helper throws ERR_DNS_TX_TIMEOUT; in CLI mode we surface as
+      // a human-readable warning and continue (the BOC IS on chain).
+      log()
       log(chalk.yellow(`  ⚠ ${domain} DNS update not fully confirmed via TONAPI.`))
       log(chalk.dim('    The wallet sent the transaction; the chain may still be settling, '))
       log(chalk.dim('    or TONAPI is lagging (especially for `sites` records).'))
+      return
+    }
+
+    const txHash = await awaitTxHashWithGrace(txHashResolvePromise)
+
+    log()
+    log(chalk.green(`  ✅ ${domain} now points to your site!`))
+    log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
+    if (txHash) {
+      log(chalk.dim(`     Tx:  ${txHash}`))
+      log(chalk.dim(`     View: ${tonviewerTxUrl(txHash, testnet)}`))
+    } else if (messageBoc) {
+      log(chalk.dim('     (Tx hash resolve timed out — tonviewer typically indexes within ~10s)'))
     }
   } finally {
+    try {
+      txResolveAbort.abort()
+    } catch {
+      /* best-effort */
+    }
     // v0.6.3: pause the bridge listener so a `--no-watch` deploy actually
     // exits. Without this, Node's event loop is kept alive by the SSE
     // connection and the CLI hangs after printing the success message.

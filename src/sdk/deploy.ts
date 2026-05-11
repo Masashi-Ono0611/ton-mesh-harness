@@ -35,6 +35,7 @@ import {
   resolveTunnelConfig as resolveTunnelConfigCore,
   TunnelConfigError,
 } from '../utils/tunnel-config'
+import { tonviewerTxUrl } from './endpoints'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public input shape — accepts the full DeployOptions schema, plus a legacy
@@ -518,7 +519,7 @@ export async function* deploy(
       nextActions.push({
         description:
           `DNS write confirmed on-chain. Tx hash: ${dnsTxHash}. ` +
-          `View: https://tonviewer.com/transaction/${dnsTxHash.replace(/^0x/, '')}.`,
+          `View: ${tonviewerTxUrl(dnsTxHash, !!opts.testnet)}.`,
       })
     } else if (opts.domain && dnsSubmissionHash) {
       // Agentic path, Toncenter's index hadn't caught up — surface

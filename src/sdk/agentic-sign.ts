@@ -25,12 +25,7 @@ import {
 } from '@ton/walletkit'
 import { SdkError } from './deploy'
 import type { StoredStandardWallet, AgenticNetwork } from './agentic-config'
-
-// ─── Endpoints — match @ton/mcp's defaults ────────────────────────────────
-const TONCENTER_ENDPOINTS: Record<AgenticNetwork, string> = {
-  mainnet: 'https://toncenter.com',
-  testnet: 'https://testnet.toncenter.com',
-}
+import { TONCENTER_ENDPOINTS } from './endpoints'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private-key normalization
