@@ -24,6 +24,7 @@ import {
   pollDnsConfirmationOrThrow,
   resolveDomainNftOrThrow,
 } from './dns-helpers'
+import { makeAbortChecker } from './abort'
 import { SdkError } from './deploy'
 import type { DeployEvent } from './schemas'
 
@@ -126,11 +127,7 @@ export async function* writeDnsRecord(
   opts: DnsWriteOptions,
   control: DnsWriteControl = {},
 ): AsyncGenerator<DeployEvent, DnsWriteResult, void> {
-  const checkAborted = () => {
-    if (control.signal?.aborted) {
-      throw new SdkError('ERR_CANCELLED', 'DNS write cancelled.', { severity: 'recoverable' })
-    }
-  }
+  const checkAborted = makeAbortChecker(control.signal, 'DNS write cancelled.')
 
   const nftAddress = await resolveDomainNftOrThrow(
     opts.domain,
@@ -357,13 +354,7 @@ export async function* writeDnsRecordAgentic(
   control: DnsWriteAgenticControl = {},
 ): AsyncGenerator<DeployEvent, DnsWriteAgenticResult, void> {
   const network = opts.testnet ? 'testnet' : 'mainnet'
-  const checkAborted = () => {
-    if (control.signal?.aborted) {
-      throw new SdkError('ERR_CANCELLED', 'Agentic DNS write cancelled.', {
-        severity: 'recoverable',
-      })
-    }
-  }
+  const checkAborted = makeAbortChecker(control.signal, 'Agentic DNS write cancelled.')
 
   // Hoisted abort controller for the in-parallel Toncenter resolve.
   // Aborted in `finally` so an early exit cancels the resolver.

@@ -23,6 +23,7 @@ import {
 } from '@ton/walletkit'
 import { SdkError } from './deploy'
 import type { StoredStandardWallet } from './agentic-config'
+import { makeAbortChecker } from './abort'
 import { buildToncenterClient, getWalletkitNetwork } from './walletkit-network'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,13 +130,7 @@ export interface AgenticSignSendResult {
 export async function agenticSignAndSend(
   input: AgenticSignSendInput,
 ): Promise<AgenticSignSendResult> {
-  const checkAborted = () => {
-    if (input.signal?.aborted) {
-      throw new SdkError('ERR_CANCELLED', 'Agentic sign+send cancelled.', {
-        severity: 'recoverable',
-      })
-    }
-  }
+  const checkAborted = makeAbortChecker(input.signal, 'Agentic sign+send cancelled.')
 
   checkAborted()
   const adapter = await buildAdapter(input.wallet, input.toncenter_api_key)
