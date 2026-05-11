@@ -4,10 +4,11 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
-<!--
-v0.8.0 GA pre-draft. Promotes to the released `[0.8.0]` heading at D3
-once V3 (E2E) + V4 (red-team) pass. Aggregates rc1-rc5; do NOT duplicate
-per-rc details here — those stay in the rc subsections below.
+<!-- GA-PREDRAFT-BEGIN
+v0.8.0 GA pre-draft. `scripts/release.sh` promotes this block to the
+released `[0.8.0]` heading at D3 once V3 (E2E) + V4 (red-team) pass.
+Aggregates rc1-rc6; do NOT duplicate per-rc details here — those stay
+in the rc subsections below.
 
 ## [0.8.0] – TODO
 
@@ -22,29 +23,54 @@ can drive a full deploy with one command / one tool call.
 
 - **Two wallet paths, one surface.** `wallet: { kind: "tonconnect", … }`
   for human-signed flows; `wallet: { kind: "agentic", … }` for
-  autonomous agents. Both produce the same `DeployResult` shape with
-  a real on-chain `dns_tx_hash`.
-- **MCP server `ton-sovereign-mcp`** with `sovereign_check_env` +
-  `sovereign_deploy` tools, structured F5 errors, F3 phase events
-  via `notifications/progress`.
-- **CLI `--wallet-mode agentic`** brings the same autonomous path
-  to the terminal (no QR, no phone).
-- **Agent discoverability**: `skills/sovereign-deploy.md` (Anthropic
+  autonomous agents. Both produce the same `DeployResult` shape with a
+  real on-chain `dns_tx_hash`. Agentic supports BOTH wallet types in
+  @ton/mcp's schema: `type: "standard"` (direct mnemonic/key sign) AND
+  `type: "agentic"` (NFT-delegated operator-key signing via the
+  agentic collection contract — @ton/mcp is an optional peer dep,
+  lazy-loaded only when needed).
+- **MCP server `ton-sovereign-mcp`** with three GA tools:
+  `sovereign_check_env`, `sovereign_deploy`, `sovereign_status`.
+  Structured F5 errors, F3 phase events via `notifications/progress`.
+- **CLI `--wallet-mode agentic`** brings the autonomous path to the
+  terminal (no QR, no phone).
+- **Programmable SDK** — `import { deploy, checkEnv, status } from
+  'ton-sovereign-deploy'`. CJS + TypeScript declarations shipped.
+- **Agent discoverability** — `skills/sovereign-deploy.md` (Anthropic
   skill format), `.well-known/mcp.json` template, expanded npm
   keywords. Acceptance hypothesis tested by V4 red-team.
-- **`dns_tx_hash` is honest**: real on-chain hash via Toncenter v3
+- **`dns_tx_hash` is honest** — real on-chain hash via Toncenter v3
   `transactionsByMessage`, resolved in parallel with TONAPI
-  propagation poll — zero added latency.
+  propagation poll. Zero added latency on the happy path.
+- **Observability** — `DEBUG=sovereign:*` env var enables structured
+  stderr logs at SDK boundaries (deploy phases, signing, tx-hash
+  resolve). Always stderr-only so `--json-output` stdout / MCP stdio
+  framing stay valid.
+- **Examples** — `examples/hello-ton/` is a one-file reference site
+  with TonConnect + Agentic deploy walkthroughs.
 
-### Deferred to v0.8.x
+### Stability of new surfaces
 
-- NFT-delegated agentic signing (`type: "agentic"` in @ton/mcp's
-  schema, distinct from our `wallet.kind: "agentic"`). Requires
-  the operator-key + collection-contract dance.
-- Encrypted-config decryption (the `\x8aTM\x01` magic-prefixed
-  format is already supported in rc3+; we self-decode the
-  bundled AES-256-GCM blob).
--->
+- The two MCP tools `sovereign_check_env` and `sovereign_deploy` are
+  GA. Their JSON Schemas are snapshot-tested; breaking changes will
+  bump the minor.
+- `sovereign_status` ships GA. Its TONAPI URL is regression-tested.
+- The programmable SDK (`import from 'ton-sovereign-deploy'`) is GA.
+  The exported surface is enumerated in `src/sdk.ts`; semver applies.
+
+### Deferred / Not in scope
+
+- **NFT-delegated agentic on-chain validation**: the code path is
+  unit-tested with mocked walletkit + @ton/mcp; on-chain behaviour
+  with a real collection contract awaits a testnet run with a real
+  operator key. Marked experimental in docs/v0.8/agentic-cli-usage.md
+  until validated.
+- **C2 NAT traversal** (`adnl-tunnel-client`) and **C3 Payment
+  Network real-client** moved to the v0.9 reserve when the agent-
+  surface track took the v0.8 slot on 2026-05-10. See
+  `docs/v0.7/roadmap-draft.md`.
+
+GA-PREDRAFT-END -->
 
 ## [Unreleased] (target: 0.8.0-rc6) – 2026-05-12
 
