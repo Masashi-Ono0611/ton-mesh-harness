@@ -26,7 +26,7 @@ Press Ctrl+C to stop seeding.
 
 ---
 
-## Agent quickstart (v0.8 rc5)
+## Agent quickstart (v0.8 rc6)
 
 This kit is designed to be invoked directly by AI agents. When an agent runtime gets a prompt like "deploy a static site to .ton", we *aim* for the agent to discover this kit via npm search + README + skill registry — but that's a hypothesis, validated empirically by the [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26). If discovery misses, you can invoke explicitly:
 
@@ -221,7 +221,7 @@ Direct competitors: none.
 
 ## Development status
 
-**Status:** v0.8.0-rc5 (2026-05-11) — MCP server, SDK DNS write (TonConnect + agentic paths), CLI `--wallet-mode agentic`, real `dns_tx_hash` resolution. GA pending V3 (Claude Code MCP → testnet E2E) and V4 (agency-transfer red-team test).
+**Status:** v0.8.0-rc6 (2026-05-12) — full v0.8 feature ship: MCP server (3 tools: `sovereign_check_env` / `sovereign_deploy` / `sovereign_status`), SDK external entry (`import { deploy } from 'ton-sovereign-deploy'`), NFT-delegated agentic signing (optional `@ton/mcp` peer), structured stderr logging (`DEBUG=sovereign:*`), tarball-install smoke in CI. GA pending V3 (Claude Code MCP → testnet E2E) and V4 (agency-transfer red-team test).
 
 ### Released
 - **v0.1** ✅ — TON Storage upload.
@@ -236,12 +236,12 @@ Direct competitors: none.
 - **v0.8.0-rc3** ✅ (2026-05-11) — SDK agentic DNS write (`wallet.kind: "agentic"`): `~/.config/ton/config.json` protected-file (\x8aTM\x01 AES-256-GCM) decode + sign via `@ton/walletkit` + broadcast via Toncenter v3.
 - **v0.8.0-rc4** ✅ (2026-05-11) — real on-chain `dns_tx_hash` resolution: TonConnect path via TEP-467 normalized hash, agentic path via Toncenter `sendBoc` return. Runs in parallel with DNS propagation polling so the happy path adds zero latency.
 - **v0.8.0-rc5** ✅ (2026-05-11) — CLI `--wallet-mode agentic` makes autonomous signing available from the terminal. Fixed a Node 22+ `@ton/walletkit` runtime regression (`ERR_UNSUPPORTED_DIR_IMPORT`) via `noExternal`. Added `scripts/cli-smoke.cjs` to CI so the regression class can't recur.
+- **v0.8.0-rc6** ✅ (2026-05-12) — final feature snapshot before GA. Adds: NFT-delegated agentic signing (`@ton/mcp` lazy peer, `AgenticWalletAdapter` integration), `sovereign_status` MCP tool (one-shot bag-propagation snapshot with `bag_unavailable_reason: not_found | network_error`), SDK external entry (`import { deploy, status, checkEnv } from 'ton-sovereign-deploy'`), structured logger (`DEBUG=sovereign:*`), GA release script (`scripts/release.sh`), 4 smoke harnesses (CLI / MCP / SDK / tarball-install) covering packaging regressions. Two Codex multi-model review rounds resolved 1 BLOCKER + 4 MAJORs.
 
 ### Pending for v0.8.0 GA
 - **[V3] #18** — Claude Code MCP client → testnet deploy E2E (S2.5 landed; needs an agent + testnet TON).
 - **[V4] #26** — Agency-transfer red-team test (fresh agent session, manual).
-- **[D3] #21** — Final v0.8.0 GA tag (after V3 + V4).
-- **NFT-delegated agentic** — `@ton/mcp`'s `type: "agentic"` (operator-key + collection contract). ✅ Landed in rc6 development; awaits testnet validation.
+- **[D3] #21** — Final v0.8.0 GA tag (after V3 + V4) — `scripts/release.sh 0.8.0` one-shot ritual ready.
 
 ### v0.8 docs
 - Overall vision: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md).
