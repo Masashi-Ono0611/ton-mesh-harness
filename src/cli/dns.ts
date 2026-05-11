@@ -14,6 +14,7 @@ import {
 } from '../sdk/dns-helpers'
 import { normalizedExternalInHashHex } from '../sdk/resolve-tx'
 import { tonviewerTxUrl } from '../sdk/endpoints'
+import { safeAbort } from '../sdk/abort'
 
 interface DnsRegistrationOptions {
   testnet?: boolean
@@ -162,11 +163,7 @@ export async function runDnsRegistration(
       log(chalk.dim('     (Tx hash resolve timed out — tonviewer typically indexes within ~10s)'))
     }
   } finally {
-    try {
-      txResolveAbort.abort()
-    } catch {
-      /* best-effort */
-    }
+    safeAbort(txResolveAbort)
     // v0.6.3: pause the bridge listener so a `--no-watch` deploy actually
     // exits. Without this, Node's event loop is kept alive by the SSE
     // connection and the CLI hangs after printing the success message.

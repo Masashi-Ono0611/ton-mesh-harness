@@ -28,3 +28,17 @@ export function makeAbortChecker(
     }
   }
 }
+
+/**
+ * Best-effort `controller.abort()` for use in `finally` blocks. Some
+ * runtimes throw on a double-abort or on aborting a controller whose
+ * signal is already aborted; we swallow because the goal is "make sure
+ * dependents stop running" and any further error is noise.
+ */
+export function safeAbort(controller: AbortController): void {
+  try {
+    controller.abort()
+  } catch {
+    /* best-effort */
+  }
+}

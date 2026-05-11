@@ -24,7 +24,7 @@ import {
   pollDnsConfirmationOrThrow,
   resolveDomainNftOrThrow,
 } from './dns-helpers'
-import { makeAbortChecker } from './abort'
+import { makeAbortChecker, safeAbort } from './abort'
 import { SdkError } from './deploy'
 import type { DeployEvent } from './schemas'
 
@@ -286,11 +286,7 @@ export async function* writeDnsRecord(
     // exits early (consumer break-early on for-await, propagation
     // timeout, etc.). The .catch(() => null) wrap upstream prevents
     // the abort from surfacing as an unhandled rejection.
-    try {
-      txResolveAbort.abort()
-    } catch {
-      /* best-effort */
-    }
+    safeAbort(txResolveAbort)
     // Always release the TonConnect bridge listener so Node's event loop
     // can drain. Without this, the SSE connection keeps the process
     // alive (the v0.6.3 fix the CLI's runDnsRegistration already had —
@@ -465,10 +461,6 @@ export async function* writeDnsRecordAgentic(
     // Cancel an in-flight Toncenter resolve poll if the generator
     // exits early. The .catch(() => null) wrap upstream prevents this
     // from surfacing as an unhandled rejection.
-    try {
-      txResolveAbort.abort()
-    } catch {
-      /* best-effort */
-    }
+    safeAbort(txResolveAbort)
   }
 }
