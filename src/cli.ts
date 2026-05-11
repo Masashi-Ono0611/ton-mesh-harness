@@ -9,7 +9,7 @@ import { runDoctor } from './cli/doctor'
 import { runSiteHost } from './cli/site-host'
 import { runWatchMode } from './cli/watch'
 
-const VERSION = '0.8.0-rc5'
+import { SOVEREIGN_DEPLOY_VERSION as VERSION } from './version'
 
 const program = new Command()
 

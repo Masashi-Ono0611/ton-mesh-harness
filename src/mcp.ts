@@ -34,8 +34,9 @@ import {
 } from './sdk/json-schemas'
 import { CheckEnvOptionsSchema, DeployOptionsSchema } from './sdk/schemas'
 
+import { SOVEREIGN_DEPLOY_VERSION as SERVER_VERSION } from './version'
+
 const SERVER_NAME = 'ton-sovereign-mcp'
-const SERVER_VERSION = '0.8.0-rc5'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Result helpers (F5 structured error contract)
@@ -254,7 +255,7 @@ async function handleDeploy(
 // the smoke test should fail loud.
 if (ALL_TOOLS.length !== 2) {
   process.stderr.write(
-    `ton-sovereign-mcp: ALL_TOOLS has ${ALL_TOOLS.length} entries; expected 2 for v0.8.0-rc2. ` +
+    `ton-sovereign-mcp: ALL_TOOLS has ${ALL_TOOLS.length} entries; expected 2 (sovereign_check_env + sovereign_deploy). ` +
       `Wire any new tools in src/mcp.ts before shipping.\n`,
   )
   process.exit(1)
