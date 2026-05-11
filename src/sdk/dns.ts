@@ -10,26 +10,22 @@
  * NO `console.*` ANYWHERE IN THIS FILE — lint-enforced.
  */
 
-import { Address, Cell } from '@ton/core'
-import {
-  buildChangeDnsRecordBody,
-  buildChangeDnsSiteRecordBody,
-  getDomainNftAddress,
-  pollDnsRecord,
-  pollDnsSiteRecord,
-} from '../dns'
 import { FSStorage } from '../wallet/FSStorage'
 import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
 import { agenticSignAndSend } from './agentic-sign'
 import { loadAgenticConfig } from './agentic-config'
-import { resolveTxHashFromMessageHash, normalizedExternalInHashHex } from './resolve-tx'
+import { normalizedExternalInHashHex } from './resolve-tx'
+import {
+  awaitTxHashWithGrace,
+  buildDnsMessageBatch,
+  buildVerifyingEvent,
+  kickoffTxHashResolve,
+  pollDnsConfirmationOrThrow,
+  resolveDomainNftOrThrow,
+} from './dns-helpers'
 import { SdkError } from './deploy'
 import type { DeployEvent } from './schemas'
-
-// 0.02 TON per DNS update message. v0.6.2 tuned. See cli/dns.ts for
-// the field-test rationale (compute fee ~0.0015 TON; 10× buffer).
-const DNS_UPDATE_AMOUNT_NANO = 20_000_000n
 
 export interface DnsWriteOptions {
   /** `.ton` domain (e.g. `"myprotocol.ton"`). */
@@ -136,37 +132,16 @@ export async function* writeDnsRecord(
     }
   }
 
-  // ─── Resolve NFT address ─────────────────────────────────────────────
-  let nftAddress: Address
-  try {
-    nftAddress = await getDomainNftAddress(opts.domain, !!opts.testnet)
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    throw new SdkError('ERR_NO_DOMAIN', `Could not resolve NFT for ${opts.domain}: ${msg}`, {
-      severity: 'fatal',
-      fixHint:
-        'Verify the domain is owned by the signing wallet and that TONAPI is reachable. ' +
-        'Doctor: `npx ton-sovereign-deploy doctor`.',
-    })
-  }
+  const nftAddress = await resolveDomainNftOrThrow(
+    opts.domain,
+    !!opts.testnet,
+    'Verify the domain is owned by the signing wallet and that TONAPI is reachable. ' +
+      'Doctor: `npx ton-sovereign-deploy doctor`.',
+  )
 
   checkAborted()
 
-  // ─── Build payloads ──────────────────────────────────────────────────
-  const messages: Array<{ address: Address; amount: bigint; payload: Cell }> = [
-    {
-      address: nftAddress,
-      amount: DNS_UPDATE_AMOUNT_NANO,
-      payload: buildChangeDnsRecordBody(opts.bag_id),
-    },
-  ]
-  if (opts.site_adnl) {
-    messages.push({
-      address: nftAddress,
-      amount: DNS_UPDATE_AMOUNT_NANO,
-      payload: buildChangeDnsSiteRecordBody(opts.site_adnl, 0),
-    })
-  }
+  const messages = buildDnsMessageBatch(nftAddress, opts.bag_id, opts.site_adnl)
 
   // ─── TonConnect setup ───────────────────────────────────────────────
   const storage = new FSStorage(getTonConnectStoragePath())
@@ -268,60 +243,29 @@ export async function* writeDnsRecord(
     // before hashing — the raw cell hash does NOT match Toncenter's
     // index. `normalizedExternalInHashHex` zeros src + import_fee and
     // re-hashes (Codex S2.7 review MAJOR 1 fix).
-    //
-    // Internal AbortController (hoisted to enclosing scope) cancels the
-    // resolver in `finally` so an early generator exit doesn't leave a
-    // Toncenter polling loop running (Codex S2.7 review MINOR fix).
-    let bocMessageHashHex: string | null = null
     let txHashResolvePromise: Promise<string | null> = Promise.resolve(null)
     if (messageBoc) {
-      bocMessageHashHex = normalizedExternalInHashHex(messageBoc)
-      if (bocMessageHashHex) {
-        txHashResolvePromise = resolveTxHashFromMessageHash(
-          `0x${bocMessageHashHex}`,
-          opts.testnet ? 'testnet' : 'mainnet',
-          { timeout_ms: 90_000, signal: txResolveAbort.signal },
-        ).catch(() => null)
+      const bocHashHex = normalizedExternalInHashHex(messageBoc)
+      if (bocHashHex) {
+        txHashResolvePromise = kickoffTxHashResolve({
+          messageHashHex: `0x${bocHashHex}`,
+          network: opts.testnet ? 'testnet' : 'mainnet',
+          internalAbortSignal: txResolveAbort.signal,
+          callerSignal: control.signal,
+        })
       }
     }
 
-    // ─── Poll TONAPI for record propagation ──────────────────────────
-    const confirmedStorage = await pollDnsRecord(
-      opts.domain,
-      opts.bag_id,
-      300_000,
-      10_000,
-      !!opts.testnet,
-      { silent: true },
-    )
-    checkAborted()
+    await pollDnsConfirmationOrThrow({
+      domain: opts.domain,
+      bagId: opts.bag_id,
+      siteAdnl: opts.site_adnl,
+      testnet: !!opts.testnet,
+      checkAborted,
+      timeoutHint: 'The wallet sent the tx; chain may still be settling, or TONAPI is lagging.',
+    })
 
-    let confirmedSite = true
-    if (opts.site_adnl) {
-      confirmedSite = await pollDnsSiteRecord(
-        opts.domain,
-        opts.site_adnl,
-        180_000,
-        10_000,
-        !!opts.testnet,
-        { silent: true },
-      )
-      checkAborted()
-    }
-
-    if (!confirmedStorage || !confirmedSite) {
-      throw new SdkError(
-        'ERR_DNS_TX_TIMEOUT',
-        `DNS record for ${opts.domain} did not propagate via TONAPI within window. ` +
-          `The wallet sent the tx; chain may still be settling, or TONAPI is lagging.`,
-        { severity: 'recoverable' },
-      )
-    }
-
-    const txHash = await Promise.race([
-      txHashResolvePromise,
-      new Promise<null>((r) => setTimeout(() => r(null), 3_000)),
-    ])
+    const txHash = await awaitTxHashWithGrace(txHashResolvePromise)
 
     yield {
       phase: 'dns_confirmed',
@@ -335,19 +279,9 @@ export async function* writeDnsRecord(
       },
     }
 
-    // ─── F3 verifying phase ─────────────────────────────────────────
-    // The spec requires emitting `verifying` after `dns_confirmed`. We
-    // don't run a separate gateway-fetch probe in rc2 — the TONAPI
-    // pollers above ARE the verification. Yield the phase informationally
-    // with a status note so downstream consumers can branch.
-    yield {
-      phase: 'verifying',
-      message: 'DNS record propagated via TONAPI; downstream gateway resolution may still be settling',
-      data: {
-        verifier: 'tonapi',
-        gateway_propagation_lag_minutes: 'usually 0-5',
-      },
-    }
+    yield buildVerifyingEvent(
+      'DNS record propagated via TONAPI; downstream gateway resolution may still be settling',
+    )
 
     return { message_boc: messageBoc, tx_hash: txHash }
   } finally {
@@ -443,176 +377,99 @@ export async function* writeDnsRecordAgentic(
   })
 
   try {
-  // ─── Resolve NFT address ─────────────────────────────────────────────────
-  let nftAddress: Address
-  try {
-    nftAddress = await getDomainNftAddress(opts.domain, !!opts.testnet)
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    throw new SdkError('ERR_NO_DOMAIN', `Could not resolve NFT for ${opts.domain}: ${msg}`, {
-      severity: 'fatal',
-      fixHint:
-        `Verify the domain is owned by ${selection.wallet.address} and that TONAPI is reachable.`,
-    })
-  }
-
-  checkAborted()
-
-  // ─── Build payloads ──────────────────────────────────────────────────────
-  const messages: Array<{ address: Address; amount: bigint; payload: Cell }> = [
-    {
-      address: nftAddress,
-      amount: DNS_UPDATE_AMOUNT_NANO,
-      payload: buildChangeDnsRecordBody(opts.bag_id),
-    },
-  ]
-  if (opts.site_adnl) {
-    messages.push({
-      address: nftAddress,
-      amount: DNS_UPDATE_AMOUNT_NANO,
-      payload: buildChangeDnsSiteRecordBody(opts.site_adnl, 0),
-    })
-  }
-
-  // ─── awaiting_signature: informational, near-instant for agentic ─────────
-  // The phase is kept for F3-contract parity with the TonConnect path.
-  // `signing_url` is null (per AwaitingSignatureDataSchema's agentic
-  // variant) — there's no QR / external app to open. `wallet_label`
-  // carries the wallet name/id for the agent's logs.
-  yield {
-    phase: 'awaiting_signature',
-    message: `signing locally with ${selection.wallet.name ?? selection.wallet.id} (${selection.wallet.wallet_version})`,
-    data: {
-      signing_mode: 'agentic',
-      signing_url: null,
-      wallet_label: selection.wallet.name ?? selection.wallet.id,
-    },
-  }
-
-  // ─── F4 cancellation window — bug 2 fix ──────────────────────────────────
-  // For agentic, unlike TonConnect, there's no human approval in between.
-  // If the caller cancels between awaiting_signature and the broadcast
-  // (i.e., RIGHT HERE), no BOC has been sent yet — `may_have_published`
-  // must remain false. Check abort before initiating sign+send. Once
-  // `agenticSignAndSend` returns, the broadcast IS enqueued and from
-  // that point may_have_published flips to true.
-  checkAborted()
-
-  // ─── Sign + broadcast — signal threaded so the pre-sendBoc cancel
-  // window is honoured. Once sendBoc returns the broadcast is in flight
-  // and may_have_published flips to true (via dnsBroadcastEnqueued in
-  // deploy.ts upon seeing the dns_signing event below).
-  const sent = await agenticSignAndSend({
-    wallet: selection.wallet,
-    toncenter_api_key: selection.toncenter_api_key,
-    messages,
-    signal: control.signal,
-  })
-
-  yield {
-    phase: 'dns_signing',
-    message: `tx submitted via Toncenter (${sent.message_hash}); awaiting confirmation`,
-    data: {
-      message_boc: null,
-      message_hash: sent.message_hash,
-      from_address: sent.from_address,
-    },
-  }
-
-  // ─── Resolve real tx hash in parallel with DNS propagation poll ─────────
-  // Toncenter's tx index typically catches up within ~5-15s. The TONAPI
-  // DNS poll takes 30-300s. By the time DNS confirms, the resolve has
-  // almost certainly completed — so this adds zero latency to the happy
-  // path while populating `dns_tx_hash` with the actual on-chain hash.
-  //
-  // Signal is chained from BOTH the caller's signal AND the internal
-  // abort controller so early generator exit cancels the resolve.
-  const signalCombiner = new AbortController()
-  control.signal?.addEventListener('abort', () => signalCombiner.abort(), { once: true })
-  txResolveAbort.signal.addEventListener('abort', () => signalCombiner.abort(), { once: true })
-  const txHashResolvePromise = resolveTxHashFromMessageHash(
-    sent.message_hash,
-    network,
-    {
-      toncenter_api_key: selection.toncenter_api_key,
-      timeout_ms: 90_000,
-      signal: signalCombiner.signal,
-    },
-  ).catch(() => null)
-
-  // Post-broadcast: even if the caller now aborts, the BOC has hit Toncenter.
-  // `may_have_published: true` is the honest answer; we still check abort
-  // to short-circuit the long TONAPI polling loop.
-  checkAborted()
-
-  // ─── Poll TONAPI for record propagation ──────────────────────────────────
-  const confirmedStorage = await pollDnsRecord(
-    opts.domain,
-    opts.bag_id,
-    300_000,
-    10_000,
-    !!opts.testnet,
-    { silent: true },
-  )
-  checkAborted()
-
-  let confirmedSite = true
-  if (opts.site_adnl) {
-    confirmedSite = await pollDnsSiteRecord(
+    const nftAddress = await resolveDomainNftOrThrow(
       opts.domain,
-      opts.site_adnl,
-      180_000,
-      10_000,
       !!opts.testnet,
-      { silent: true },
+      `Verify the domain is owned by ${selection.wallet.address} and that TONAPI is reachable.`,
     )
     checkAborted()
-  }
 
-  if (!confirmedStorage || !confirmedSite) {
-    throw new SdkError(
-      'ERR_DNS_TX_TIMEOUT',
-      `DNS record for ${opts.domain} did not propagate via TONAPI within window. ` +
-        `Toncenter accepted the BOC (message_hash: ${sent.message_hash}); chain may still be settling.`,
-      { severity: 'recoverable' },
-    )
-  }
+    const messages = buildDnsMessageBatch(nftAddress, opts.bag_id, opts.site_adnl)
 
-  // ─── Resolve tx hash with short grace period after DNS confirms ──────────
-  // If Toncenter is still slow, wait up to 3s more (the DNS propagation
-  // poll usually buys us much more than that already). Worst case: null,
-  // surface message_hash via next_actions.
-  const txHash = await Promise.race([
-    txHashResolvePromise,
-    new Promise<null>((r) => setTimeout(() => r(null), 3_000)),
-  ])
+    // ─── awaiting_signature: informational, near-instant for agentic ─────
+    // The phase is kept for F3-contract parity with the TonConnect path.
+    // `signing_url` is null per AwaitingSignatureDataSchema's agentic
+    // variant — there's no QR / external app to open.
+    yield {
+      phase: 'awaiting_signature',
+      message: `signing locally with ${selection.wallet.name ?? selection.wallet.id} (${selection.wallet.wallet_version})`,
+      data: {
+        signing_mode: 'agentic',
+        signing_url: null,
+        wallet_label: selection.wallet.name ?? selection.wallet.id,
+      },
+    }
 
-  yield {
-    phase: 'dns_confirmed',
-    message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
-    data: {
+    // ─── F4 cancellation window ──────────────────────────────────────────
+    // For agentic, unlike TonConnect, there's no human approval in between.
+    // If the caller cancels between awaiting_signature and the broadcast,
+    // no BOC has been sent yet — `may_have_published` must remain false.
+    // Once `agenticSignAndSend` returns, the BOC IS at Toncenter and
+    // may_have_published flips to true (via dnsBroadcastEnqueued in
+    // deploy.ts upon seeing the dns_signing event below).
+    checkAborted()
+
+    const sent = await agenticSignAndSend({
+      wallet: selection.wallet,
+      toncenter_api_key: selection.toncenter_api_key,
+      messages,
+      signal: control.signal,
+    })
+
+    yield {
+      phase: 'dns_signing',
+      message: `tx submitted via Toncenter (${sent.message_hash}); awaiting confirmation`,
+      data: {
+        message_boc: null,
+        message_hash: sent.message_hash,
+        from_address: sent.from_address,
+      },
+    }
+
+    // ─── Tx-hash resolve in parallel with DNS propagation poll ──────────
+    const txHashResolvePromise = kickoffTxHashResolve({
+      messageHashHex: sent.message_hash,
+      network,
+      internalAbortSignal: txResolveAbort.signal,
+      callerSignal: control.signal,
+      toncenterApiKey: selection.toncenter_api_key,
+    })
+
+    // Post-broadcast: even if the caller aborts, the BOC has hit
+    // Toncenter; `may_have_published: true` is honest. checkAborted
+    // here only short-circuits the long TONAPI poll.
+    checkAborted()
+
+    await pollDnsConfirmationOrThrow({
       domain: opts.domain,
-      bag_id: opts.bag_id,
-      ...(opts.site_adnl ? { site_adnl: opts.site_adnl } : {}),
+      bagId: opts.bag_id,
+      siteAdnl: opts.site_adnl,
+      testnet: !!opts.testnet,
+      checkAborted,
+      timeoutHint: `Toncenter accepted the BOC (message_hash: ${sent.message_hash}); chain may still be settling.`,
+    })
+
+    const txHash = await awaitTxHashWithGrace(txHashResolvePromise)
+
+    yield {
+      phase: 'dns_confirmed',
+      message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
+      data: {
+        domain: opts.domain,
+        bag_id: opts.bag_id,
+        ...(opts.site_adnl ? { site_adnl: opts.site_adnl } : {}),
+        message_hash: sent.message_hash,
+        tx_hash: txHash,
+      },
+    }
+
+    yield buildVerifyingEvent('DNS record propagated via TONAPI')
+
+    return {
       message_hash: sent.message_hash,
+      from_address: sent.from_address,
       tx_hash: txHash,
-    },
-  }
-
-  yield {
-    phase: 'verifying',
-    message: 'DNS record propagated via TONAPI',
-    data: {
-      verifier: 'tonapi',
-      gateway_propagation_lag_minutes: 'usually 0-5',
-    },
-  }
-
-  return {
-    message_hash: sent.message_hash,
-    from_address: sent.from_address,
-    tx_hash: txHash,
-  }
+    }
   } finally {
     // Cancel an in-flight Toncenter resolve poll if the generator
     // exits early. The .catch(() => null) wrap upstream prevents this

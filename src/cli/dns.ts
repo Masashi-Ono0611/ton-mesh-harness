@@ -1,9 +1,7 @@
 import chalk from 'chalk'
-import type { Address, Cell } from '@ton/core'
+import type { Address } from '@ton/core'
 import { createSpinnerFactory } from '../utils/spinner'
 import {
-  buildChangeDnsRecordBody,
-  buildChangeDnsSiteRecordBody,
   getDomainNftAddress,
   pollDnsRecord,
   pollDnsSiteRecord,
@@ -12,15 +10,7 @@ import { FSStorage } from '../wallet/FSStorage'
 import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { createWalletUI } from '../wallet/ui'
 import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
-
-// 0.02 TON per DNS update message. Reduced from 0.05 TON in v0.6.2 after
-// observing the live tx burn for change_dns_record (8419 gas + storage
-// fees ≈ 0.0015 TON total — recorded on the masashi-ono0611.ton tier-3.1
-// soak). 0.02 keeps a >10× compute-fee buffer, matches Tonkeeper's own UI
-// default for DNS edits, and shrinks the per-call "stuck in NFT balance"
-// excess from ~0.048 TON to ~0.018 TON. When --site-adnl is set we bundle
-// two messages, so the wallet sees `2 * 0.02 = 0.04 TON` total.
-const DNS_UPDATE_AMOUNT_NANO = 20_000_000n
+import { buildDnsMessageBatch, DNS_UPDATE_AMOUNT_NANO } from '../sdk/dns-helpers'
 
 interface DnsRegistrationOptions {
   testnet?: boolean
@@ -61,17 +51,10 @@ export async function runDnsRegistration(
     throw err
   }
 
-  // Build message payloads. Always write the storage record. When
-  // --site-adnl is set, also write the site (dns_adnl_address) record in
-  // the same TonConnect tx so the user signs once.
-  const storagePayload = buildChangeDnsRecordBody(bagId)
-  const messages: Array<{ address: Address; amount: bigint; payload: Cell }> = [
-    { address: nftAddress, amount: DNS_UPDATE_AMOUNT_NANO, payload: storagePayload },
-  ]
-  if (opts.siteAdnl) {
-    const sitePayload = buildChangeDnsSiteRecordBody(opts.siteAdnl, 0)
-    messages.push({ address: nftAddress, amount: DNS_UPDATE_AMOUNT_NANO, payload: sitePayload })
-  }
+  // Build message payloads via the shared SDK helper. Always writes the
+  // storage record; if --site-adnl is set, also bundles the site
+  // (dns_adnl_address) record into the same wallet sign request.
+  const messages = buildDnsMessageBatch(nftAddress, bagId, opts.siteAdnl)
 
   log(chalk.bold('📱 Sign DNS Registration'))
   log(chalk.dim(`  Domain:   ${domain}`))
