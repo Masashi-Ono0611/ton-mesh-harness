@@ -21,6 +21,8 @@ import {
 import { FSStorage } from '../wallet/FSStorage'
 import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
+import { agenticSignAndSend } from './agentic-sign'
+import { loadAgenticConfig } from './agentic-config'
 import { SdkError } from './deploy'
 import type { DeployEvent } from './schemas'
 
@@ -318,4 +320,164 @@ export async function* writeDnsRecord(
       /* best-effort */
     }
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Agentic path — autonomous signing via `~/.config/ton/config.json`
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DnsWriteAgenticOptions {
+  domain: string
+  bag_id: string
+  site_adnl?: string | null
+  testnet?: boolean
+  /** Optional override for the config file location. */
+  config_path?: string
+  /** Optional wallet selector (id, name, or address). */
+  wallet_label?: string
+}
+
+export interface DnsWriteAgenticResult {
+  /** Normalized message hash (`0x<hex>`) returned by Toncenter. */
+  message_hash: string
+  /** Wallet address that sent the batch (user-friendly). */
+  from_address: string
+}
+
+/**
+ * Drive the agentic-wallet-signed `.ton` DNS record write. No human in
+ * the loop — `awaiting_signature` is emitted informationally (so the
+ * F3 phase contract stays consistent across paths) and resolves in
+ * milliseconds because the signing key is read from disk.
+ *
+ * F4 cancellation: cancellation BEFORE `dns_signing` is safe
+ * (`may_have_published: false`); cancellation AFTER `dns_signing`
+ * implies the broadcast already left this process, so the caller
+ * decorates with `may_have_published: true` (same as the TonConnect
+ * path's post-awaiting_signature semantics).
+ */
+export async function* writeDnsRecordAgentic(
+  opts: DnsWriteAgenticOptions,
+): AsyncGenerator<DeployEvent, DnsWriteAgenticResult, void> {
+  const network = opts.testnet ? 'testnet' : 'mainnet'
+
+  const selection = loadAgenticConfig({
+    config_path: opts.config_path,
+    wallet_label: opts.wallet_label,
+    network,
+  })
+
+  // ─── Resolve NFT address ─────────────────────────────────────────────────
+  let nftAddress: Address
+  try {
+    nftAddress = await getDomainNftAddress(opts.domain, !!opts.testnet)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new SdkError('ERR_NO_DOMAIN', `Could not resolve NFT for ${opts.domain}: ${msg}`, {
+      severity: 'fatal',
+      fixHint:
+        `Verify the domain is owned by ${selection.wallet.address} and that TONAPI is reachable.`,
+    })
+  }
+
+  // ─── Build payloads ──────────────────────────────────────────────────────
+  const messages: Array<{ address: Address; amount: bigint; payload: Cell }> = [
+    {
+      address: nftAddress,
+      amount: DNS_UPDATE_AMOUNT_NANO,
+      payload: buildChangeDnsRecordBody(opts.bag_id),
+    },
+  ]
+  if (opts.site_adnl) {
+    messages.push({
+      address: nftAddress,
+      amount: DNS_UPDATE_AMOUNT_NANO,
+      payload: buildChangeDnsSiteRecordBody(opts.site_adnl, 0),
+    })
+  }
+
+  // ─── awaiting_signature: informational, near-instant for agentic ─────────
+  // The phase is kept for F3-contract parity with the TonConnect path.
+  // `signing_url` is null (per AwaitingSignatureDataSchema's agentic
+  // variant) — there's no QR / external app to open. `wallet_label`
+  // carries the wallet name/id for the agent's logs.
+  yield {
+    phase: 'awaiting_signature',
+    message: `signing locally with ${selection.wallet.name ?? selection.wallet.id} (${selection.wallet.wallet_version})`,
+    data: {
+      signing_mode: 'agentic',
+      signing_url: null,
+      wallet_label: selection.wallet.name ?? selection.wallet.id,
+    },
+  }
+
+  // ─── Sign + broadcast atomically (no abortable step here) ────────────────
+  const sent = await agenticSignAndSend({
+    wallet: selection.wallet,
+    toncenter_api_key: selection.toncenter_api_key,
+    messages,
+  })
+
+  yield {
+    phase: 'dns_signing',
+    message: `tx submitted via Toncenter (${sent.message_hash}); awaiting confirmation`,
+    data: {
+      message_boc: null,
+      message_hash: sent.message_hash,
+      from_address: sent.from_address,
+    },
+  }
+
+  // ─── Poll TONAPI for record propagation ──────────────────────────────────
+  const confirmedStorage = await pollDnsRecord(
+    opts.domain,
+    opts.bag_id,
+    300_000,
+    10_000,
+    !!opts.testnet,
+    { silent: true },
+  )
+
+  let confirmedSite = true
+  if (opts.site_adnl) {
+    confirmedSite = await pollDnsSiteRecord(
+      opts.domain,
+      opts.site_adnl,
+      180_000,
+      10_000,
+      !!opts.testnet,
+      { silent: true },
+    )
+  }
+
+  if (!confirmedStorage || !confirmedSite) {
+    throw new SdkError(
+      'ERR_DNS_TX_TIMEOUT',
+      `DNS record for ${opts.domain} did not propagate via TONAPI within window. ` +
+        `Toncenter accepted the BOC (message_hash: ${sent.message_hash}); chain may still be settling.`,
+      { severity: 'recoverable' },
+    )
+  }
+
+  yield {
+    phase: 'dns_confirmed',
+    message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
+    data: {
+      domain: opts.domain,
+      bag_id: opts.bag_id,
+      ...(opts.site_adnl ? { site_adnl: opts.site_adnl } : {}),
+      message_hash: sent.message_hash,
+    },
+  }
+
+  yield {
+    phase: 'verifying',
+    message: 'DNS record propagated via TONAPI',
+    data: {
+      verifier: 'tonapi',
+      gateway_propagation_lag_minutes: 'usually 0-5',
+    },
+  }
+
+  return { message_hash: sent.message_hash, from_address: sent.from_address }
 }

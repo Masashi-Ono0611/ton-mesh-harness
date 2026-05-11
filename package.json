@@ -1,7 +1,7 @@
 {
   "name": "ton-sovereign-deploy",
-  "version": "0.8.0-rc2",
-  "description": "Sovereign one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. v0.8.0-rc2 ships the MCP server bootstrap (bag-upload core); .ton DNS write lands in CLI today and in the SDK at v0.8.0 GA.",
+  "version": "0.8.0-rc3",
+  "description": "Sovereign one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. v0.8.0-rc3 closes the last GA code gate: SDK + MCP can now write .ton DNS records via either TonConnect (human-signed) or agentic (autonomous, reads ~/.config/ton/config.json).",
   "main": "./dist/cli.js",
   "bin": {
     "ton-sovereign-deploy": "dist/cli.js",

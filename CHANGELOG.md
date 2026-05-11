@@ -4,6 +4,66 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0-rc3] – 2026-05-11
+
+[S2.6] Agentic DNS path lands. The last v0.8.0 GA code gate closes:
+`wallet: { kind: "agentic" }` + `domain` now signs autonomously from
+`~/.config/ton/config.json` (the file `@ton/mcp@alpha` writes) and
+broadcasts via Toncenter v3. No human in the loop.
+
+### Added
+
+- **`src/sdk/agentic-config.ts`** — strict zod loader for
+  `~/.config/ton/config.json` (the `@ton/mcp@alpha` schema, version 2).
+  Mirrors `@ton/mcp@0.1.15-alpha.15`'s `TonConfig` shape. Supports the
+  `standard` wallet type (mnemonic OR private_key) and resolves the
+  active wallet via `wallet_label` (matches id/name/address) or
+  `active_wallet_id` fallback. Network-filtered, removed-entry-aware.
+  Rejects `type: "agentic"` (NFT-delegated) with a clear v0.8.x
+  follow-up pointer.
+- **`src/sdk/agentic-sign.ts`** — builds a `WalletAdapter` from a
+  `StoredStandardWallet` via `@ton/walletkit`'s `Signer.fromMnemonic`
+  / `Signer.fromPrivateKey` and the version-appropriate
+  `WalletV5R1Adapter` / `WalletV4R2Adapter`. Signs the change_dns_record
+  body batch (storage + optional site/ADNL) and broadcasts via
+  `ApiClientToncenter.sendBoc`. Returns the normalized message hash
+  (`0x<hex>`) — the indexable identifier explorers and TONAPI resolve
+  to the on-chain tx within ~10s.
+- **`src/sdk/dns.ts::writeDnsRecordAgentic`** — async-generator parallel
+  to `writeDnsRecord` (TonConnect). Yields the same F3 phase contract:
+  `awaiting_signature` (informational, near-instant) →
+  `dns_signing` (after Toncenter accepts the BOC; data includes
+  `message_hash`, `from_address`) → `dns_confirmed` → `verifying`.
+- **`src/sdk/deploy.ts`** — replaces the rc2 `ERR_INVALID_INPUT` early
+  reject with a real branch into `writeDnsRecordAgentic`. The F4
+  cancellation contract is unified across both paths
+  (`dnsAwaitingSignatureSeen` decorates `may_have_published`).
+- **`dns_tx_hash` exposure** — agentic path populates `dns_tx_hash`
+  with the Toncenter normalized message hash (NOT null). TonConnect
+  path still null (`message_boc` surfaced via `next_actions` — same
+  rc2 behaviour). Schema unchanged; consumers that branch on
+  `dns_tx_hash !== null` now see a real value on the agentic path.
+
+### Tests
+
+- `test/sdk-agentic-config.test.ts` — 14 new unit tests covering path
+  resolution, selection, encrypted-file rejection, network filtering,
+  removed-entry skip, malformed JSON, schema version mismatch, missing
+  signing material, and NFT-delegated type rejection. Total: 167 pass
+  / 11 skip.
+
+### Not yet (deferred to v0.8.x / v0.9)
+
+- NFT-delegated agentic signing (`type: "agentic"` wallets in
+  `@ton/mcp`'s parlance, NOT our SDK's `wallet.kind: "agentic"`).
+  Requires the `@ton/mcp` collection-contract operator-key dance —
+  tracked separately.
+- Encrypted-config decryption (the `\x8aTON` magic-prefixed format).
+  Plaintext only for v0.8.0.
+- TonConnect-path `dns_tx_hash` upgrade (currently null). Would
+  require a TONAPI poll on the connected wallet's outgoing tx
+  history after the BOC dispatch.
+
 ## [0.8.0-rc2] – 2026-05-11
 
 MCP server ships. v0.8.0-rc2 is the agent-surface track's first
