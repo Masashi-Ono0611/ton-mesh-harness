@@ -13,7 +13,7 @@ import {
   resolveDomainNftOrThrow,
 } from '../sdk/dns-helpers'
 import { normalizedExternalInHashHex } from '../sdk/resolve-tx'
-import { tonviewerTxUrl } from '../sdk/endpoints'
+import { networkFromTestnetFlag, tonviewerTxUrl } from '../sdk/endpoints'
 import { safeAbort } from '../sdk/abort'
 
 interface DnsRegistrationOptions {
@@ -79,10 +79,11 @@ export async function runDnsRegistration(
     interactive,
     preferByName: opts.walletName ?? 'Tonkeeper',
   })
+  const network = networkFromTestnetFlag(testnet)
   const wallet = new TonConnectProvider(
     storage,
     ui,
-    testnet ? 'testnet' : 'mainnet',
+    network,
     TONCONNECT_MANIFEST_URL,
   )
 
@@ -117,7 +118,7 @@ export async function runDnsRegistration(
       if (bocHashHex) {
         txHashResolvePromise = kickoffTxHashResolve({
           messageHashHex: `0x${bocHashHex}`,
-          network: testnet ? 'testnet' : 'mainnet',
+          network,
           internalAbortSignal: txResolveAbort.signal,
         })
       }

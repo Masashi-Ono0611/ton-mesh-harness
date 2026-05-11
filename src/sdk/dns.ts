@@ -16,6 +16,7 @@ import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/con
 import { agenticSignAndSend } from './agentic-sign'
 import { loadAgenticConfig } from './agentic-config'
 import { normalizedExternalInHashHex } from './resolve-tx'
+import { networkFromTestnetFlag } from './endpoints'
 import {
   awaitTxHashWithGrace,
   buildDnsMessageBatch,
@@ -128,6 +129,7 @@ export async function* writeDnsRecord(
   control: DnsWriteControl = {},
 ): AsyncGenerator<DeployEvent, DnsWriteResult, void> {
   const checkAborted = makeAbortChecker(control.signal, 'DNS write cancelled.')
+  const network = networkFromTestnetFlag(opts.testnet)
 
   const nftAddress = await resolveDomainNftOrThrow(
     opts.domain,
@@ -146,7 +148,7 @@ export async function* writeDnsRecord(
   const wallet = new TonConnectProvider(
     storage,
     ui,
-    opts.testnet ? 'testnet' : 'mainnet',
+    network,
     TONCONNECT_MANIFEST_URL,
   )
 
@@ -246,7 +248,7 @@ export async function* writeDnsRecord(
       if (bocHashHex) {
         txHashResolvePromise = kickoffTxHashResolve({
           messageHashHex: `0x${bocHashHex}`,
-          network: opts.testnet ? 'testnet' : 'mainnet',
+          network,
           internalAbortSignal: txResolveAbort.signal,
           callerSignal: control.signal,
         })
@@ -349,7 +351,7 @@ export async function* writeDnsRecordAgentic(
   opts: DnsWriteAgenticOptions,
   control: DnsWriteAgenticControl = {},
 ): AsyncGenerator<DeployEvent, DnsWriteAgenticResult, void> {
-  const network = opts.testnet ? 'testnet' : 'mainnet'
+  const network = networkFromTestnetFlag(opts.testnet)
   const checkAborted = makeAbortChecker(control.signal, 'Agentic DNS write cancelled.')
 
   // Hoisted abort controller for the in-parallel Toncenter resolve.

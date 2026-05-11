@@ -20,6 +20,17 @@ export const TONCENTER_ENDPOINTS: Record<AgenticNetwork, string> = {
 }
 
 /**
+ * Lift our boolean `testnet` flag (the CLI / SDK input convention) to
+ * the string-discriminated `AgenticNetwork` (the config / endpoint
+ * key). `testnet === true` → `'testnet'`; anything else → `'mainnet'`.
+ *
+ * Hoisted so we don't repeat the same ternary in N places.
+ */
+export function networkFromTestnetFlag(testnet: boolean | undefined): AgenticNetwork {
+  return testnet ? 'testnet' : 'mainnet'
+}
+
+/**
  * Build a tonviewer.com transaction URL. Accepts hashes with or without
  * the `0x` prefix; emits the canonical no-prefix form tonviewer expects.
  *
