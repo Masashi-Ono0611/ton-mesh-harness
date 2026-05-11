@@ -20,10 +20,8 @@
  */
 
 import { beginCell, Cell, loadMessage, storeMessage } from '@ton/core'
-import { ApiClientToncenter } from '@ton/walletkit'
 import type { AgenticNetwork } from './agentic-config'
-import { TONCENTER_ENDPOINTS } from './endpoints'
-import { getWalletkitNetwork } from './walletkit-network'
+import { buildToncenterClient } from './walletkit-network'
 
 /**
  * Compute the normalized external-in message hash per TEP-467 — the
@@ -109,11 +107,7 @@ export async function resolveTxHashFromMessageHash(
   const padded = stripped.padStart(64, '0')
   const msgHashB64 = Buffer.from(padded, 'hex').toString('base64')
 
-  const client = new ApiClientToncenter({
-    endpoint: TONCENTER_ENDPOINTS[network],
-    apiKey: opts.toncenter_api_key,
-    network: getWalletkitNetwork(network),
-  })
+  const client = buildToncenterClient(network, opts.toncenter_api_key)
 
   const deadline = Date.now() + (opts.timeout_ms ?? 60_000)
   const intervalMs = opts.interval_ms ?? 2_000

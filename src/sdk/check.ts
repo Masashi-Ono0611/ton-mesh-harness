@@ -10,11 +10,10 @@
 
 import { existsSync, readFileSync } from 'fs'
 import { promises as fsp } from 'fs'
-import path from 'path'
-import os from 'os'
 import dgram from 'dgram'
 import { CheckEnvOptionsSchema, CheckEnvResultSchema } from './schemas'
 import type { CheckEnvOptions, CheckEnvResult } from './schemas'
+import { getAgenticConfigPath } from './agentic-config'
 import { getDaemonPaths } from '../daemon/installer'
 import { getTonutilsPaths } from '../daemon/tonutils-installer'
 import { getRldpHttpProxyPaths } from '../daemon/rldp-http-proxy-installer'
@@ -99,10 +98,7 @@ type AgenticProbeOutcome =
   | { found: false; path: string; reason: 'missing' | 'unparseable' | 'schema_unknown' }
 
 function detectAgenticConfig(overridePath?: string): AgenticProbeOutcome {
-  const p =
-    overridePath ??
-    process.env.TON_CONFIG_PATH ??
-    path.join(os.homedir(), '.config', 'ton', 'config.json')
+  const p = getAgenticConfigPath(overridePath)
   if (!existsSync(p)) return { found: false, path: p, reason: 'missing' }
 
   let parsed: unknown

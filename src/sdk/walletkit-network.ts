@@ -11,8 +11,9 @@
  * NO `console.*` IN THIS FILE — lint-enforced.
  */
 
-import { Network } from '@ton/walletkit'
+import { ApiClientToncenter, Network } from '@ton/walletkit'
 import type { AgenticNetwork } from './agentic-config'
+import { TONCENTER_ENDPOINTS } from './endpoints'
 
 /**
  * Convert our string-discriminated `AgenticNetwork` to walletkit's
@@ -22,4 +23,24 @@ export function getWalletkitNetwork(
   network: AgenticNetwork,
 ): ReturnType<typeof Network.mainnet> {
   return network === 'mainnet' ? Network.mainnet() : Network.testnet()
+}
+
+/**
+ * Build an `ApiClientToncenter` for the given network using the
+ * canonical Toncenter v3 endpoint (single source of truth in
+ * `endpoints.ts`). The API key is optional — without it the client
+ * uses the public per-IP rate limit.
+ *
+ * Centralised so the signer (`agentic-sign.ts`) and the tx-hash
+ * resolver (`resolve-tx.ts`) don't both reconstruct the same config.
+ */
+export function buildToncenterClient(
+  network: AgenticNetwork,
+  apiKey: string | undefined,
+): ApiClientToncenter {
+  return new ApiClientToncenter({
+    endpoint: TONCENTER_ENDPOINTS[network],
+    apiKey,
+    network: getWalletkitNetwork(network),
+  })
 }
