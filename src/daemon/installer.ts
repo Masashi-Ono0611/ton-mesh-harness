@@ -30,11 +30,23 @@ export function getDaemonPaths(): DaemonPaths {
   }
 }
 
+export interface EnsureBinariesOptions {
+  /** Suppress the download banner. Use when stdout must stay JSON-clean. */
+  silent?: boolean
+}
+
 /**
- * Ensure daemon binaries are installed and up-to-date
+ * Ensure daemon binaries (storage-daemon + storage-daemon-cli) are
+ * installed and up-to-date. Also downloads the appropriate network
+ * config JSON if missing. Idempotent.
+ *
+ * All progress banners go to STDERR so `--json-output` stdout stays
+ * parseable (matches the convention `tonutils-installer.ts` /
+ * `rldp-http-proxy-installer.ts` use via `installer-utils`).
  */
-export function ensureBinaries(useTestnet = false): void {
+export function ensureBinaries(useTestnet = false, opts: EnsureBinariesOptions = {}): void {
   mkdirSync(BIN_DIR, { recursive: true })
+  const banner = opts.silent ? () => {} : (msg: string) => process.stderr.write(msg)
 
   const paths = getDaemonPaths()
   const currentVersion = existsSync(VERSION_FILE)
@@ -51,11 +63,11 @@ export function ensureBinaries(useTestnet = false): void {
     const cliAsset = getBinaryName('storage-daemon-cli')
     const base = `https://github.com/ton-blockchain/ton/releases/download/${TON_RELEASE_TAG}`
 
-    process.stdout.write(`  Downloading storage-daemon (${TON_RELEASE_TAG})...\n`)
+    banner(`  Downloading storage-daemon (${TON_RELEASE_TAG})…\n`)
     downloadFile(`${base}/${daemonAsset}`, paths.daemon)
     chmodExecutable(paths.daemon)
 
-    process.stdout.write(`  Downloading storage-daemon-cli...\n`)
+    banner(`  Downloading storage-daemon-cli…\n`)
     downloadFile(`${base}/${cliAsset}`, paths.cli)
     chmodExecutable(paths.cli)
 
@@ -67,11 +79,11 @@ export function ensureBinaries(useTestnet = false): void {
 
   // Config JSON (download if missing)
   if (!existsSync(paths.mainnetConfig)) {
-    process.stdout.write(`  Downloading mainnet config...\n`)
+    banner(`  Downloading mainnet config…\n`)
     downloadFile(getNetworkConfig(false).daemonConfigUrl, paths.mainnetConfig)
   }
   if (useTestnet && !existsSync(paths.testnetConfig)) {
-    process.stdout.write(`  Downloading testnet config...\n`)
+    banner(`  Downloading testnet config…\n`)
     downloadFile(getNetworkConfig(true).daemonConfigUrl, paths.testnetConfig)
   }
 }
