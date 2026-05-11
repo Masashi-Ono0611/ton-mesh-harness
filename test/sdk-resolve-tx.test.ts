@@ -24,7 +24,8 @@ vi.mock('@ton/walletkit', () => {
   }
 })
 
-import { resolveTxHashFromMessageHash } from '../src/sdk/resolve-tx'
+import { Address, beginCell, external, storeMessage } from '@ton/core'
+import { normalizedExternalInHashHex, resolveTxHashFromMessageHash } from '../src/sdk/resolve-tx'
 
 describe('resolveTxHashFromMessageHash', () => {
   beforeEach(() => {
@@ -44,9 +45,17 @@ describe('resolveTxHashFromMessageHash', () => {
     expect(mocks.apiClientCtorMock).not.toHaveBeenCalled()
   })
 
-  it('returns null when hex too short', async () => {
-    const out = await resolveTxHashFromMessageHash('0xabcd', 'mainnet', { timeout_ms: 100 })
+  it('accepts short hex (pad-start to 64) — does NOT fast-fail', async () => {
+    // Walletkit drops leading zero nibbles; short hex is valid input.
+    // The lookup runs (returns nothing → polls until timeout).
+    mocks.getTransactionsByHashMock.mockResolvedValue({ transactions: [] })
+    const out = await resolveTxHashFromMessageHash('0xabcd', 'mainnet', {
+      timeout_ms: 80,
+      interval_ms: 10,
+    })
     expect(out).toBeNull()
+    // The lookup WAS attempted (not fast-failed at the regex).
+    expect(mocks.getTransactionsByHashMock).toHaveBeenCalled()
   })
 
   it('returns tx hash with 0x prefix when Toncenter has indexed', async () => {
@@ -151,5 +160,53 @@ describe('resolveTxHashFromMessageHash', () => {
     // round-trip back to hex matches input
     const roundTripHex = Buffer.from(arg.msgHash, 'base64').toString('hex')
     expect(roundTripHex).toBe(goodHex.slice(2))
+  })
+
+  it('pad-shorts left-pad with zeros when walletkit drops leading zero nibbles', async () => {
+    // Walletkit returns `0x${bigInt.toString(16)}` — a 32-byte hash that
+    // starts with a zero byte becomes 62 hex chars. The resolver must
+    // pad-start to 64 before base64 encoding, otherwise the lookup
+    // misses (Codex S2.7 review MAJOR 2 fix).
+    mocks.getTransactionsByHashMock.mockResolvedValueOnce({
+      transactions: [{ hash: 'feed' }],
+    })
+    const shortHex = '0x' + 'ab'.repeat(31) // 62 chars (= leading 00 byte dropped)
+    await resolveTxHashFromMessageHash(shortHex, 'mainnet', {
+      timeout_ms: 5_000,
+      interval_ms: 1,
+    })
+    const arg = mocks.getTransactionsByHashMock.mock.calls[0][0] as { msgHash: string }
+    const roundTripHex = Buffer.from(arg.msgHash, 'base64').toString('hex')
+    expect(roundTripHex).toBe('00' + 'ab'.repeat(31))
+  })
+})
+
+describe('normalizedExternalInHashHex (TEP-467)', () => {
+  function makeExternalInBoc(): string {
+    const dest = Address.parse('0:0000000000000000000000000000000000000000000000000000000000000000')
+    const body = beginCell().storeUint(0xdeadbeef, 32).endCell()
+    const ext = external({ to: dest, body })
+    return beginCell().store(storeMessage(ext)).endCell().toBoc().toString('base64')
+  }
+
+  it('returns null for non-base64 input', () => {
+    expect(normalizedExternalInHashHex('not_a_boc')).toBeNull()
+  })
+
+  it('returns null for an internal message (not external-in)', () => {
+    // Build a body cell directly — loading as Message will fail.
+    const body = beginCell().storeUint(0x42, 32).endCell()
+    expect(normalizedExternalInHashHex(body.toBoc().toString('base64'))).toBeNull()
+  })
+
+  it('returns 64-char hex for a valid external-in message', () => {
+    const boc = makeExternalInBoc()
+    const h = normalizedExternalInHashHex(boc)
+    expect(h).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('is deterministic — same input → same hash', () => {
+    const boc = makeExternalInBoc()
+    expect(normalizedExternalInHashHex(boc)).toBe(normalizedExternalInHashHex(boc))
   })
 })

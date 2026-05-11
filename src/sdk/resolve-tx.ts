@@ -19,6 +19,7 @@
  * NO `console.*` IN THIS FILE — lint-enforced.
  */
 
+import { beginCell, Cell, loadMessage, storeMessage } from '@ton/core'
 import { ApiClientToncenter, Network } from '@ton/walletkit'
 import type { AgenticNetwork } from './agentic-config'
 
@@ -29,6 +30,42 @@ const TONCENTER_ENDPOINTS: Record<AgenticNetwork, string> = {
 
 function getNetwork(network: AgenticNetwork): ReturnType<typeof Network.mainnet> {
   return network === 'mainnet' ? Network.mainnet() : Network.testnet()
+}
+
+/**
+ * Compute the normalized external-in message hash per TEP-467 — the
+ * `hash_norm` value Toncenter indexes (NOT the raw cell hash). For an
+ * `external-in` message, normalization zeros `src` (→ addr_none) and
+ * `import_fee` (→ 0) before hashing. Other fields (dest, init, body)
+ * are preserved.
+ *
+ * Spec: https://docs.ton.org/ecosystem/ton-connect/message-lookup
+ *
+ * @returns hex (no `0x`), or `null` if the BOC isn't a parseable
+ *   external-in message.
+ */
+export function normalizedExternalInHashHex(bocBase64: string): string | null {
+  try {
+    const cell = Cell.fromBase64(bocBase64)
+    const msg = loadMessage(cell.beginParse())
+    if (msg.info.type !== 'external-in') return null
+    const normalized = beginCell()
+      .store(
+        storeMessage({
+          ...msg,
+          info: {
+            type: 'external-in',
+            src: null, // addr_none
+            dest: msg.info.dest,
+            importFee: 0n,
+          },
+        }),
+      )
+      .endCell()
+    return normalized.hash().toString('hex')
+  } catch {
+    return null
+  }
 }
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
@@ -70,9 +107,14 @@ export async function resolveTxHashFromMessageHash(
   network: AgenticNetwork,
   opts: ResolveTxOptions = {},
 ): Promise<string | null> {
-  const stripped = messageHashHex.replace(/^0x/i, '')
-  if (!/^[0-9a-fA-F]{64}$/.test(stripped)) return null
-  const msgHashB64 = Buffer.from(stripped, 'hex').toString('base64')
+  const stripped = messageHashHex.replace(/^0x/i, '').toLowerCase()
+  // Walletkit's sendBoc returns `0x${Base64ToBigInt(...).toString(16)}`,
+  // which DROPS leading zero nibbles. A 32-byte hash with a leading zero
+  // byte becomes 62-63 hex chars. Accept 1..64 and left-pad to 64 before
+  // converting to base64 (Codex S2.7 review MAJOR 2 fix).
+  if (!/^[0-9a-f]{1,64}$/.test(stripped)) return null
+  const padded = stripped.padStart(64, '0')
+  const msgHashB64 = Buffer.from(padded, 'hex').toString('base64')
 
   const client = new ApiClientToncenter({
     endpoint: TONCENTER_ENDPOINTS[network],

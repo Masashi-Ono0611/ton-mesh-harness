@@ -23,7 +23,7 @@ import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
 import { agenticSignAndSend } from './agentic-sign'
 import { loadAgenticConfig } from './agentic-config'
-import { resolveTxHashFromMessageHash } from './resolve-tx'
+import { resolveTxHashFromMessageHash, normalizedExternalInHashHex } from './resolve-tx'
 import { SdkError } from './deploy'
 import type { DeployEvent } from './schemas'
 
@@ -178,6 +178,10 @@ export async function* writeDnsRecord(
     TONCONNECT_MANIFEST_URL,
   )
 
+  // Hoisted so `finally` can abort an in-flight Toncenter poll on
+  // generator exit (success, throw, or consumer break-early).
+  const txResolveAbort = new AbortController()
+
   try {
     // ─── Connect: capture URL via hook, yield awaiting_signature ─────
     let urlResolve: (url: string) => void = () => {}
@@ -259,25 +263,25 @@ export async function* writeDnsRecord(
     }
 
     // ─── Resolve real tx hash in parallel with DNS poll (S2.7) ───────
-    // TonConnect returns the full signed external message BOC. Its cell
-    // hash IS the inbound message hash Toncenter indexes — so we can
-    // look up the resulting tx by passing that hash to
-    // `transactionsByMessage`. Best-effort with the same parallel-
-    // poll pattern as the agentic path; zero added latency on the
-    // happy path.
+    // TonConnect returns the full signed external-in message BOC. Per
+    // TEP-467 (and Toncenter's `hash_norm` indexing), we MUST normalize
+    // before hashing — the raw cell hash does NOT match Toncenter's
+    // index. `normalizedExternalInHashHex` zeros src + import_fee and
+    // re-hashes (Codex S2.7 review MAJOR 1 fix).
+    //
+    // Internal AbortController (hoisted to enclosing scope) cancels the
+    // resolver in `finally` so an early generator exit doesn't leave a
+    // Toncenter polling loop running (Codex S2.7 review MINOR fix).
     let bocMessageHashHex: string | null = null
     let txHashResolvePromise: Promise<string | null> = Promise.resolve(null)
     if (messageBoc) {
-      try {
-        bocMessageHashHex = Cell.fromBase64(messageBoc).hash().toString('hex')
+      bocMessageHashHex = normalizedExternalInHashHex(messageBoc)
+      if (bocMessageHashHex) {
         txHashResolvePromise = resolveTxHashFromMessageHash(
           `0x${bocMessageHashHex}`,
           opts.testnet ? 'testnet' : 'mainnet',
-          { timeout_ms: 90_000 },
+          { timeout_ms: 90_000, signal: txResolveAbort.signal },
         ).catch(() => null)
-      } catch {
-        // Malformed BOC (shouldn't happen, but don't poison the deploy).
-        bocMessageHashHex = null
       }
     }
 
@@ -347,6 +351,15 @@ export async function* writeDnsRecord(
 
     return { message_boc: messageBoc, tx_hash: txHash }
   } finally {
+    // Cancel an in-flight Toncenter resolve poll if the generator
+    // exits early (consumer break-early on for-await, propagation
+    // timeout, etc.). The .catch(() => null) wrap upstream prevents
+    // the abort from surfacing as an unhandled rejection.
+    try {
+      txResolveAbort.abort()
+    } catch {
+      /* best-effort */
+    }
     // Always release the TonConnect bridge listener so Node's event loop
     // can drain. Without this, the SSE connection keeps the process
     // alive (the v0.6.3 fix the CLI's runDnsRegistration already had —
@@ -418,6 +431,10 @@ export async function* writeDnsRecordAgentic(
     }
   }
 
+  // Hoisted abort controller for the in-parallel Toncenter resolve.
+  // Aborted in `finally` so an early exit cancels the resolver.
+  const txResolveAbort = new AbortController()
+
   checkAborted()
   const selection = loadAgenticConfig({
     config_path: opts.config_path,
@@ -425,6 +442,7 @@ export async function* writeDnsRecordAgentic(
     network,
   })
 
+  try {
   // ─── Resolve NFT address ─────────────────────────────────────────────────
   let nftAddress: Address
   try {
@@ -506,13 +524,19 @@ export async function* writeDnsRecordAgentic(
   // DNS poll takes 30-300s. By the time DNS confirms, the resolve has
   // almost certainly completed — so this adds zero latency to the happy
   // path while populating `dns_tx_hash` with the actual on-chain hash.
+  //
+  // Signal is chained from BOTH the caller's signal AND the internal
+  // abort controller so early generator exit cancels the resolve.
+  const signalCombiner = new AbortController()
+  control.signal?.addEventListener('abort', () => signalCombiner.abort(), { once: true })
+  txResolveAbort.signal.addEventListener('abort', () => signalCombiner.abort(), { once: true })
   const txHashResolvePromise = resolveTxHashFromMessageHash(
     sent.message_hash,
     network,
     {
       toncenter_api_key: selection.toncenter_api_key,
       timeout_ms: 90_000,
-      signal: control.signal,
+      signal: signalCombiner.signal,
     },
   ).catch(() => null)
 
@@ -588,5 +612,15 @@ export async function* writeDnsRecordAgentic(
     message_hash: sent.message_hash,
     from_address: sent.from_address,
     tx_hash: txHash,
+  }
+  } finally {
+    // Cancel an in-flight Toncenter resolve poll if the generator
+    // exits early. The .catch(() => null) wrap upstream prevents this
+    // from surfacing as an unhandled rejection.
+    try {
+      txResolveAbort.abort()
+    } catch {
+      /* best-effort */
+    }
   }
 }

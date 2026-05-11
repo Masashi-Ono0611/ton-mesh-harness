@@ -507,15 +507,21 @@ export async function* deploy(
     //   - TonConnect: hash derived from Cell.fromBase64(boc).hash() —
     //     IS the inbound message hash for the wallet's external tx.
     //   - Agentic: hash returned directly by Toncenter's sendBoc.
+    // next_actions branching is mutually exclusive: emit ONE of
+    //   - tx-hash link (happy path, both paths)
+    //   - message_hash fallback (agentic, Toncenter index lagged)
+    //   - message_boc fallback (TonConnect, Toncenter index lagged or
+    //     normalization failed)
+    // so consumers see exactly one DNS-tx pointer (Codex S2.7 review MINOR 2).
     const nextActions: { description: string }[] = []
-    if (opts.domain && messageBoc) {
+    if (opts.domain && dnsTxHash) {
       nextActions.push({
-        description: `DNS write submitted via TonConnect. Signed-message BOC (NOT the on-chain tx hash): ${messageBoc}. ` +
-          `For the real tx hash, look up the wallet's outgoing transactions on TONAPI within a minute of dispatch.`,
+        description:
+          `DNS write confirmed on-chain. Tx hash: ${dnsTxHash}. ` +
+          `View: https://tonviewer.com/transaction/${dnsTxHash.replace(/^0x/, '')}.`,
       })
-    }
-    if (opts.domain && dnsSubmissionHash && !dnsTxHash) {
-      // Agentic path, but Toncenter's index hadn't caught up — surface
+    } else if (opts.domain && dnsSubmissionHash) {
+      // Agentic path, Toncenter's index hadn't caught up — surface
       // the message hash as a fallback identifier.
       nextActions.push({
         description:
@@ -524,12 +530,12 @@ export async function* deploy(
           `Tx hash resolve timed out — look up the resulting tx on https://tonviewer.com ` +
           `(or testnet.tonviewer.com); usually indexed within ~10s of broadcast.`,
       })
-    }
-    if (opts.domain && dnsTxHash) {
+    } else if (opts.domain && messageBoc) {
+      // TonConnect path, tx hash resolve timed out OR BOC wasn't parseable.
       nextActions.push({
         description:
-          `DNS write confirmed on-chain. Tx hash: ${dnsTxHash}. ` +
-          `View: https://tonviewer.com/transaction/${dnsTxHash.replace(/^0x/, '')}.`,
+          `DNS write submitted via TonConnect. Signed-message BOC (NOT the on-chain tx hash): ${messageBoc}. ` +
+          `Tx hash resolve timed out — look up the wallet's outgoing transactions on TONAPI within a minute of dispatch.`,
       })
     }
 
