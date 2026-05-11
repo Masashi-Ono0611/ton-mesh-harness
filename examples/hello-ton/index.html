@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hello, .ton</title>
+  <meta name="description" content="A minimal site published via ton-sovereign-deploy: TON Storage + TON DNS, no server, no CDN.">
+  <style>
+    :root { color-scheme: dark light; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 40rem;
+      margin: 4rem auto;
+      padding: 0 1.5rem;
+      line-height: 1.6;
+    }
+    h1 { font-size: 2.4rem; letter-spacing: -0.02em; }
+    code {
+      background: rgba(127, 127, 127, 0.15);
+      padding: 0.15em 0.4em;
+      border-radius: 0.3em;
+      font-size: 0.95em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.2em 0.6em;
+      border-radius: 0.5em;
+      font-size: 0.75em;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: #0066cc;
+      color: white;
+    }
+    .meta { color: #888; font-size: 0.9em; margin-top: 2.5rem; }
+    .meta a { color: inherit; }
+  </style>
+</head>
+<body>
+  <span class="badge">on TON</span>
+  <h1>Hello, .ton</h1>
+  <p>
+    This page is hosted on
+    <a href="https://github.com/ton-blockchain/TEPs/blob/master/text/0081-dns-standard.md">TON Storage</a>
+    and addressed via TON DNS &mdash; no AWS, no Cloudflare, no domain
+    registrar that can take it down.
+  </p>
+  <p>
+    If you can read this, the bag has propagated and the DNS record points
+    at it.
+  </p>
+
+  <h2>How it got here</h2>
+  <pre><code>npx -y ton-sovereign-deploy ./examples/hello-ton \
+  --domain &lt;yours&gt;.ton \
+  --no-watch</code></pre>
+
+  <p>
+    That's the whole deploy. The CLI uploads the directory to TON
+    Storage, signs a <code>change_dns_record</code> transaction via your
+    wallet, and waits until TONAPI confirms the record is live.
+  </p>
+
+  <h2>What you can do with it</h2>
+  <ul>
+    <li>Replace this index.html with your actual app and re-run the command.</li>
+    <li>Use <code>--watch</code> so changes auto-redeploy and your machine seeds the bag.</li>
+    <li>Use <code>--wallet-mode agentic</code> in CI to push from GitHub Actions without a phone.</li>
+  </ul>
+
+  <p class="meta">
+    Built with <a href="https://github.com/Masashi-Ono0611/sovereign-deploy-kit">ton-sovereign-deploy</a>.
+    A bag id never changes for the same content &mdash; immutable by design.
+  </p>
+</body>
+</html>
