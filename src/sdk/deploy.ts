@@ -412,13 +412,14 @@ export async function* deploy(
     // built. Post-`dns_signing` aborts cannot un-broadcast.
     let messageBoc: string | null = null
     let dnsSubmissionHash: string | null = null
+    let dnsTxHash: string | null = null
     if (opts.domain) {
       let dnsAwaitingSignatureSeen = false
       let dnsBroadcastEnqueued = false
       try {
         let inner: AsyncGenerator<
           DeployEvent,
-          { message_boc?: string | null; message_hash?: string } | undefined,
+          { message_boc?: string | null; message_hash?: string; tx_hash?: string | null } | undefined,
           void
         >
         if (opts.wallet.kind === 'tonconnect') {
@@ -447,14 +448,15 @@ export async function* deploy(
           ) as typeof inner
         }
         // Manual iteration so we can capture the generator's RETURN value
-        // (the DnsWriteResult with message_boc / message_hash) — for-await
-        // drops returns.
+        // (the DnsWriteResult with message_boc / message_hash / tx_hash) —
+        // for-await drops returns.
         while (true) {
           const step = await inner.next()
           if (step.done) {
             const v = step.value
             if (v && 'message_boc' in v && v.message_boc) messageBoc = v.message_boc
             if (v && 'message_hash' in v && v.message_hash) dnsSubmissionHash = v.message_hash
+            if (v && 'tx_hash' in v && v.tx_hash) dnsTxHash = v.tx_hash
             break
           }
           const ev = step.value
@@ -468,6 +470,10 @@ export async function* deploy(
               | undefined
             if (evData?.message_boc) messageBoc = evData.message_boc
             if (evData?.message_hash) dnsSubmissionHash = evData.message_hash
+          }
+          if (ev.phase === 'dns_confirmed') {
+            const evData = ev.data as { tx_hash?: string | null } | undefined
+            if (evData?.tx_hash) dnsTxHash = evData.tx_hash
           }
           currentPhase = ev.phase
           yield ev
@@ -491,17 +497,16 @@ export async function* deploy(
     // (Codex S2 review: ownership flip after `yield done` lets a consumer
     // that breaks early via for-await leak / falsely-kill the daemon.)
     //
-    // dns_tx_hash policy (S2.5 + S2.6 + post-Codex BLOCKER fix):
-    // We do NOT have the actual on-chain transaction hash from either
-    // path:
-    //  - TonConnect returns a signed-message BOC (NOT a tx hash).
-    //  - Toncenter v3 `/api/v3/message` returns the normalized external-in
-    //    message hash (NOT the on-chain tx hash).
-    // Both are explorer-indexable but neither IS the tx hash. Stay
-    // HONEST: dns_tx_hash remains null. Surface both via next_actions
-    // with explicit naming, and let consumers do their own TONAPI lookup
-    // if they want the real tx hash. GA can add a TONAPI poll that
-    // resolves the actual on-chain tx hash.
+    // dns_tx_hash policy (S2.5 + S2.6 + S2.7):
+    //   Both paths now resolve the real on-chain tx hash via Toncenter
+    //   v3's `transactionsByMessage` lookup. The resolve runs in parallel
+    //   with the TONAPI propagation poll — zero added latency on the
+    //   happy path. If Toncenter's index hadn't caught up by the time
+    //   the DNS poll succeeded, dns_tx_hash falls back to null and we
+    //   surface the message_boc / message_hash via next_actions.
+    //   - TonConnect: hash derived from Cell.fromBase64(boc).hash() —
+    //     IS the inbound message hash for the wallet's external tx.
+    //   - Agentic: hash returned directly by Toncenter's sendBoc.
     const nextActions: { description: string }[] = []
     if (opts.domain && messageBoc) {
       nextActions.push({
@@ -509,20 +514,29 @@ export async function* deploy(
           `For the real tx hash, look up the wallet's outgoing transactions on TONAPI within a minute of dispatch.`,
       })
     }
-    if (opts.domain && dnsSubmissionHash) {
+    if (opts.domain && dnsSubmissionHash && !dnsTxHash) {
+      // Agentic path, but Toncenter's index hadn't caught up — surface
+      // the message hash as a fallback identifier.
       nextActions.push({
         description:
           `DNS write submitted via agentic signing. Toncenter normalized message hash ` +
-          `(NOT the on-chain tx hash, but indexable on tonviewer): ${dnsSubmissionHash}. ` +
-          `Look up the resulting tx on https://tonviewer.com (or testnet.tonviewer.com) — ` +
-          `TONAPI typically indexes within ~10s.`,
+          `(NOT the on-chain tx hash; indexable on tonviewer): ${dnsSubmissionHash}. ` +
+          `Tx hash resolve timed out — look up the resulting tx on https://tonviewer.com ` +
+          `(or testnet.tonviewer.com); usually indexed within ~10s of broadcast.`,
+      })
+    }
+    if (opts.domain && dnsTxHash) {
+      nextActions.push({
+        description:
+          `DNS write confirmed on-chain. Tx hash: ${dnsTxHash}. ` +
+          `View: https://tonviewer.com/transaction/${dnsTxHash.replace(/^0x/, '')}.`,
       })
     }
 
     const result: DeployResult = {
       bag_id: created.bag_id,
       bag_size_bytes: details.size,
-      dns_tx_hash: null,
+      dns_tx_hash: dnsTxHash,
       daemon_api_url: daemon.apiUrl,
       daemon_pid: opts.keep_alive ? pid : null,
       seed_status: opts.keep_alive ? 'seeding' : 'stopped',

@@ -10,7 +10,7 @@
  * NO `console.*` ANYWHERE IN THIS FILE — lint-enforced.
  */
 
-import { Address, type Cell } from '@ton/core'
+import { Address, Cell } from '@ton/core'
 import {
   buildChangeDnsRecordBody,
   buildChangeDnsSiteRecordBody,
@@ -23,6 +23,7 @@ import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
 import { agenticSignAndSend } from './agentic-sign'
 import { loadAgenticConfig } from './agentic-config'
+import { resolveTxHashFromMessageHash } from './resolve-tx'
 import { SdkError } from './deploy'
 import type { DeployEvent } from './schemas'
 
@@ -58,6 +59,13 @@ export interface DnsWriteResult {
    * `message_boc` in `next_actions`, not as `dns_tx_hash`.
    */
   message_boc: string | null
+  /**
+   * Real on-chain transaction hash, resolved via Toncenter v3's
+   * `transactionsByMessage` lookup (computed from the BOC cell hash).
+   * `null` if Toncenter's index hadn't caught up by the time the DNS
+   * poll succeeded — `message_boc` is still the indexable identifier.
+   */
+  tx_hash: string | null
 }
 
 /**
@@ -250,6 +258,29 @@ export async function* writeDnsRecord(
       data: { message_boc: messageBoc },
     }
 
+    // ─── Resolve real tx hash in parallel with DNS poll (S2.7) ───────
+    // TonConnect returns the full signed external message BOC. Its cell
+    // hash IS the inbound message hash Toncenter indexes — so we can
+    // look up the resulting tx by passing that hash to
+    // `transactionsByMessage`. Best-effort with the same parallel-
+    // poll pattern as the agentic path; zero added latency on the
+    // happy path.
+    let bocMessageHashHex: string | null = null
+    let txHashResolvePromise: Promise<string | null> = Promise.resolve(null)
+    if (messageBoc) {
+      try {
+        bocMessageHashHex = Cell.fromBase64(messageBoc).hash().toString('hex')
+        txHashResolvePromise = resolveTxHashFromMessageHash(
+          `0x${bocMessageHashHex}`,
+          opts.testnet ? 'testnet' : 'mainnet',
+          { timeout_ms: 90_000 },
+        ).catch(() => null)
+      } catch {
+        // Malformed BOC (shouldn't happen, but don't poison the deploy).
+        bocMessageHashHex = null
+      }
+    }
+
     // ─── Poll TONAPI for record propagation ──────────────────────────
     const confirmedStorage = await pollDnsRecord(
       opts.domain,
@@ -283,6 +314,11 @@ export async function* writeDnsRecord(
       )
     }
 
+    const txHash = await Promise.race([
+      txHashResolvePromise,
+      new Promise<null>((r) => setTimeout(() => r(null), 3_000)),
+    ])
+
     yield {
       phase: 'dns_confirmed',
       message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
@@ -291,6 +327,7 @@ export async function* writeDnsRecord(
         bag_id: opts.bag_id,
         ...(opts.site_adnl ? { site_adnl: opts.site_adnl } : {}),
         message_boc: messageBoc,
+        tx_hash: txHash,
       },
     }
 
@@ -308,7 +345,7 @@ export async function* writeDnsRecord(
       },
     }
 
-    return { message_boc: messageBoc }
+    return { message_boc: messageBoc, tx_hash: txHash }
   } finally {
     // Always release the TonConnect bridge listener so Node's event loop
     // can drain. Without this, the SSE connection keeps the process
@@ -346,6 +383,14 @@ export interface DnsWriteAgenticResult {
   message_hash: string
   /** Wallet address that sent the batch (user-friendly). */
   from_address: string
+  /**
+   * Real on-chain transaction hash (`0x<hex>`), resolved via Toncenter's
+   * `transactionsByMessage` lookup. `null` if Toncenter's index hadn't
+   * caught up to the broadcast by the time the DNS poll succeeded —
+   * the message_hash is still the indexable identifier explorers use
+   * and is surfaced in `next_actions`.
+   */
+  tx_hash: string | null
 }
 
 /**
@@ -456,6 +501,21 @@ export async function* writeDnsRecordAgentic(
     },
   }
 
+  // ─── Resolve real tx hash in parallel with DNS propagation poll ─────────
+  // Toncenter's tx index typically catches up within ~5-15s. The TONAPI
+  // DNS poll takes 30-300s. By the time DNS confirms, the resolve has
+  // almost certainly completed — so this adds zero latency to the happy
+  // path while populating `dns_tx_hash` with the actual on-chain hash.
+  const txHashResolvePromise = resolveTxHashFromMessageHash(
+    sent.message_hash,
+    network,
+    {
+      toncenter_api_key: selection.toncenter_api_key,
+      timeout_ms: 90_000,
+      signal: control.signal,
+    },
+  ).catch(() => null)
+
   // Post-broadcast: even if the caller now aborts, the BOC has hit Toncenter.
   // `may_have_published: true` is the honest answer; we still check abort
   // to short-circuit the long TONAPI polling loop.
@@ -494,6 +554,15 @@ export async function* writeDnsRecordAgentic(
     )
   }
 
+  // ─── Resolve tx hash with short grace period after DNS confirms ──────────
+  // If Toncenter is still slow, wait up to 3s more (the DNS propagation
+  // poll usually buys us much more than that already). Worst case: null,
+  // surface message_hash via next_actions.
+  const txHash = await Promise.race([
+    txHashResolvePromise,
+    new Promise<null>((r) => setTimeout(() => r(null), 3_000)),
+  ])
+
   yield {
     phase: 'dns_confirmed',
     message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
@@ -502,6 +571,7 @@ export async function* writeDnsRecordAgentic(
       bag_id: opts.bag_id,
       ...(opts.site_adnl ? { site_adnl: opts.site_adnl } : {}),
       message_hash: sent.message_hash,
+      tx_hash: txHash,
     },
   }
 
@@ -514,5 +584,9 @@ export async function* writeDnsRecordAgentic(
     },
   }
 
-  return { message_hash: sent.message_hash, from_address: sent.from_address }
+  return {
+    message_hash: sent.message_hash,
+    from_address: sent.from_address,
+    tx_hash: txHash,
+  }
 }

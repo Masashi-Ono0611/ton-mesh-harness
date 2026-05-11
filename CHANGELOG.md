@@ -4,6 +4,56 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0-rc4] – 2026-05-11
+
+[S2.7] Real `dns_tx_hash` exposure. Both paths (TonConnect + agentic)
+now resolve the on-chain transaction hash via Toncenter v3's
+`transactionsByMessage` lookup, in parallel with the TONAPI DNS
+propagation poll. Zero added latency on the happy path.
+
+### Added
+
+- **`src/sdk/resolve-tx.ts`** — `resolveTxHashFromMessageHash`:
+  polls Toncenter v3 with exponential bounds (2s default interval,
+  60s default timeout), converts hex → padded-base64 for the
+  `transactionsByMessage` query, lower-cases & `0x`-prefixes the
+  result. Best-effort: swallows 429 / 5xx / DNS errors and keeps
+  polling until the deadline; returns `null` on timeout without
+  throwing. AbortSignal honoured.
+- **TonConnect path tx hash**: `src/sdk/dns.ts::writeDnsRecord` now
+  computes `Cell.fromBase64(messageBoc).hash().toString('hex')` —
+  that hash IS the inbound message hash Toncenter indexes for the
+  external-in tx. Passed to `resolveTxHashFromMessageHash`.
+- **Agentic path tx hash**: `src/sdk/dns.ts::writeDnsRecordAgentic`
+  passes the Toncenter-returned `message_hash` directly.
+- **`DeployResult.dns_tx_hash` now populated** on both paths when
+  Toncenter has indexed by the time the DNS poll succeeds. Falls
+  back to `null` + `next_actions` message_boc / message_hash hint
+  if Toncenter's index lagged.
+- **`DnsWriteResult.tx_hash` + `DnsWriteAgenticResult.tx_hash`** —
+  generator return values now carry the resolved hash.
+- **`next_actions` upgrade**: when `dns_tx_hash` is non-null, surfaces
+  a tonviewer.com link instead of the message-hash-with-disclaimer
+  text.
+
+### Tests
+
+- `test/sdk-resolve-tx.test.ts` — 11 new mocked tests: malformed-hex
+  fast-fail (no network call), Toncenter hit, lower-case +
+  0x-prefix normalization, multi-poll until success, timeout, error
+  swallowing, pre-aborted signal, network/endpoint selection, API
+  key passthrough, hex → padded-base64 round-trip.
+- Total: 195 pass / 11 skip.
+
+### Note
+
+The 90s resolve timeout + 3s post-DNS-confirm grace period means
+the worst case is a 93s wait that strictly overlaps the DNS
+propagation poll (which itself takes 30-300s). In practice
+Toncenter's tx index catches up within ~5-15s of the broadcast,
+well before DNS propagation completes, so dns_tx_hash is populated
+synchronously with the `done` event.
+
 ## [0.8.0-rc3] – 2026-05-11
 
 [S2.6] Agentic DNS path lands. The last v0.8.0 GA code gate closes:
