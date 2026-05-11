@@ -72,7 +72,13 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
-## [Unreleased] (target: 0.8.0-rc6) – 2026-05-12
+## [0.8.0-rc6] – 2026-05-12
+
+[S2.9] Full v0.8 feature ship: NFT-delegated agentic, `sovereign_status`
+MCP tool, SDK external entry, observability logger, GA release script,
+4 smoke harnesses. Two Codex multi-model review rounds resolved 1
+BLOCKER + 4 MAJORs. Final pre-GA snapshot — awaits V3 (E2E) + V4
+(red-team) acceptance.
 
 ### Fixed (Codex review 2026-05-12)
 
@@ -97,6 +103,12 @@ GA-PREDRAFT-END -->
   mask future endpoint changes as "not propagated"). New schema
   field `bag_unavailable_reason: 'not_found' | 'network_error' |
   null` distinguishes. 3 new tests; snapshot updated.
+- **[MAJOR] (verify pass)** `src/sdk/status.ts` — `httpsGet` throws
+  `"Not found: <url>"` / `"HTTP 404"` on TONAPI 404 BEFORE the body
+  inspection. The initial fix went through the catchall and emitted
+  `network_error` for genuine 404s. Now detects both error messages
+  → `unavailable_reason: 'not_found'` with no retry (404 is
+  definitive). 2 new tests.
 
 ### Added
 
