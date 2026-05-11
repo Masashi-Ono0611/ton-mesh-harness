@@ -372,8 +372,14 @@ export async function* writeDnsRecordAgentic(
     // `signing_url` is null per AwaitingSignatureDataSchema's agentic
     // variant — there's no QR / external app to open.
     const walletLabel = selection.wallet.name ?? selection.wallet.id
+    // wallet_version exists on standard wallets only; agentic (NFT-delegated)
+    // uses the @ton/mcp AgenticWallet contract version.
+    const walletKindHint =
+      selection.wallet.type === 'standard'
+        ? selection.wallet.wallet_version
+        : 'agentic-nft'
     yield buildAwaitingSignatureAgentic(
-      `signing locally with ${walletLabel} (${selection.wallet.wallet_version})`,
+      `signing locally with ${walletLabel} (${walletKindHint})`,
       walletLabel,
     )
 

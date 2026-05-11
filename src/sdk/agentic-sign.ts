@@ -1,14 +1,18 @@
 /**
- * Agentic signing — builds a `WalletAdapter` from a `StoredStandardWallet`
- * via `@ton/walletkit`'s `Signer` + version-appropriate adapter, signs a
- * batch of messages, and broadcasts via Toncenter.
+ * Agentic signing — dispatches by `wallet.type`:
+ *
+ *  - `standard`: walletkit's `Signer` + `WalletV5R1Adapter`/`WalletV4R2Adapter`
+ *    (direct sign — operator IS the wallet).
+ *  - `agentic`:  @ton/mcp's `AgenticWalletAdapter` (operator key signs via
+ *    the agentic NFT collection contract on behalf of owner_address; v0.8.x).
+ *
+ * Both adapters implement `WalletAdapter` so the rest of this module is
+ * agnostic to the path — `buildAdapter()` returns the right adapter and
+ * `getSignedSendTransaction → sendBoc` is identical.
  *
  * The result is the normalized message hash (`0x<hex>`) returned by
  * `ApiClientToncenter.sendBoc`, suitable as `dns_tx_hash` (it indexes the
  * external-in message; explorers resolve to the on-chain tx within seconds).
- *
- * Scope: standard wallets only (v5r1, v4r2). NFT-delegated agentic signing
- * is rejected upstream in `agentic-config.ts`.
  *
  * NO `console.*` IN THIS FILE — lint-enforced.
  */
@@ -22,7 +26,11 @@ import {
   type WalletSigner,
 } from '@ton/walletkit'
 import { SdkError } from './deploy'
-import type { StoredStandardWallet } from './agentic-config'
+import type {
+  StoredNftAgenticWallet,
+  StoredSelectableWallet,
+  StoredStandardWallet,
+} from './agentic-config'
 import { makeAbortChecker } from './abort'
 import { buildToncenterClient, getWalletkitNetwork } from './walletkit-network'
 import { signRequestValidUntilSeconds } from '../wallet/constants'
@@ -56,7 +64,7 @@ function parsePrivateKeySeed(privateKey: string): Buffer {
   return buf.length === 64 ? buf.subarray(0, 32) : buf
 }
 
-async function buildSigner(wallet: StoredStandardWallet): Promise<WalletSigner> {
+async function buildStandardSigner(wallet: StoredStandardWallet): Promise<WalletSigner> {
   try {
     if (wallet.private_key) {
       const seed = parsePrivateKeySeed(wallet.private_key)
@@ -80,14 +88,110 @@ async function buildSigner(wallet: StoredStandardWallet): Promise<WalletSigner> 
   }
 }
 
+async function buildOperatorSigner(wallet: StoredNftAgenticWallet): Promise<WalletSigner> {
+  if (!wallet.operator_private_key) {
+    // agentic-config.ts's refine already enforces this; belt-and-braces.
+    throw new SdkError(
+      'ERR_NO_WALLET',
+      'NFT-delegated agentic wallet has no operator_private_key',
+      {
+        severity: 'fatal',
+        fixHint:
+          'Re-import the agentic wallet via `@ton/mcp@alpha agentic_import_wallet` ' +
+          'to obtain a fresh operator key, or rotate the operator key.',
+      },
+    )
+  }
+  try {
+    const seed = parsePrivateKeySeed(wallet.operator_private_key)
+    return await Signer.fromPrivateKey(seed)
+  } catch (err) {
+    if (err instanceof SdkError) throw err
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new SdkError('ERR_NO_WALLET', `Failed to derive operator signer: ${msg}`, {
+      severity: 'fatal',
+    })
+  }
+}
+
+/**
+ * Lazy-load `@ton/mcp` so users on the TonConnect-only path don't pay
+ * the 19 MB install cost. `@ton/mcp` is declared as an OPTIONAL peer
+ * dependency — users who hit the NFT-delegated agentic path get a
+ * clear error pointing at `npm install @ton/mcp@alpha`.
+ */
+async function loadAgenticWalletAdapter(): Promise<{
+  create: (
+    signer: WalletSigner,
+    options: {
+      client: unknown
+      network: unknown
+      walletAddress?: string
+      walletNftIndex?: bigint
+      collectionAddress?: string
+    },
+  ) => Promise<WalletAdapter>
+}> {
+  try {
+    const mod = (await import('@ton/mcp')) as {
+      AgenticWalletAdapter: {
+        create: (
+          signer: WalletSigner,
+          options: {
+            client: unknown
+            network: unknown
+            walletAddress?: string
+            walletNftIndex?: bigint
+            collectionAddress?: string
+          },
+        ) => Promise<WalletAdapter>
+      }
+    }
+    return mod.AgenticWalletAdapter
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new SdkError(
+      'ERR_NO_WALLET',
+      `NFT-delegated agentic signing requires @ton/mcp (not installed): ${msg}`,
+      {
+        severity: 'fatal',
+        fixHint:
+          'Install the optional peer: `npm install @ton/mcp@alpha`. ' +
+          'Alternatively, use a `type: "standard"` wallet (mnemonic / private_key) — ' +
+          'no extra install needed.',
+      },
+    )
+  }
+}
+
 async function buildAdapter(
-  wallet: StoredStandardWallet,
+  wallet: StoredSelectableWallet,
   toncenterApiKey: string | undefined,
 ): Promise<WalletAdapter> {
-  const signer = await buildSigner(wallet)
   const network = getWalletkitNetwork(wallet.network)
   const client = buildToncenterClient(wallet.network, toncenterApiKey)
 
+  if (wallet.type === 'agentic') {
+    // NFT-delegated path — operator key signs via the agentic collection
+    // contract on behalf of owner_address. The adapter exposes the same
+    // `getSignedSendTransaction` shape as the standard adapters so the
+    // rest of the pipeline is unchanged.
+    const AgenticWalletAdapter = await loadAgenticWalletAdapter()
+    const signer = await buildOperatorSigner(wallet)
+    const walletNftIndex = wallet.wallet_nft_index
+      ? BigInt(wallet.wallet_nft_index)
+      : undefined
+    return AgenticWalletAdapter.create(signer, {
+      client,
+      network,
+      walletAddress: wallet.address,
+      walletNftIndex,
+      collectionAddress: wallet.collection_address,
+    })
+  }
+
+  // Standard path — direct sign via walletkit.
+  const signer = await buildStandardSigner(wallet)
   if (wallet.wallet_version === 'v4r2') {
     return WalletV4R2Adapter.create(signer, { client, network })
   }
@@ -100,7 +204,7 @@ async function buildAdapter(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface AgenticSignSendInput {
-  wallet: StoredStandardWallet
+  wallet: StoredSelectableWallet
   toncenter_api_key: string | undefined
   messages: Array<{ address: Address; amount: bigint; payload: Cell }>
   /**

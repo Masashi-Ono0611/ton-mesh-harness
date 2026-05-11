@@ -46,6 +46,57 @@ can drive a full deploy with one command / one tool call.
   bundled AES-256-GCM blob).
 -->
 
+## [Unreleased] (target: 0.8.0-rc6) – 2026-05-12
+
+### Added
+
+- **NFT-delegated agentic signing** — `wallet.kind: "agentic"` with a
+  `type: "agentic"` entry in `~/.config/ton/config.json` now signs
+  through `@ton/mcp`'s `AgenticWalletAdapter`. The operator key
+  signs on behalf of `owner_address` via the agentic collection
+  contract. The SDK lazy-loads `@ton/mcp` (declared as an optional
+  peer dependency) only when this path is selected, so TonConnect-
+  only / standard-wallet users don't pay the ~19 MB install cost.
+- New unit tests (7) in `test/sdk-agentic-sign.test.ts` for the
+  NFT-delegated path: adapter routing, operator-key vs mnemonic
+  selection, `wallet_nft_index` / `collection_address` plumbing,
+  missing-operator-key rejection, abort handling.
+- `examples/hello-ton/` — minimal reference site for the V3 E2E
+  acceptance test and first-touch users. Three-mode deploy
+  walkthrough in the README (TonConnect mainnet / TonConnect testnet
+  / agentic mainnet).
+- New unit tests across the refactor pass (49 new tests in
+  `sdk-abort` / `cli-output-mode` / `sdk-dns-helpers` /
+  `sdk-endpoints`). Total 265 pass / 11 skip (was 207).
+
+### Changed
+
+- `agentic-config.ts` schema now accepts `type: "agentic"` entries
+  (refine: requires `operator_private_key`). `AgenticConfigSelection`
+  exposes the union `StoredSelectableWallet = StoredStandardWallet |
+  StoredNftAgenticWallet`.
+- 13 refactor commits consolidating duplication: shared
+  `dns-helpers` (post-broadcast pipeline + event builders),
+  `abort.ts` (`makeAbortChecker` + `safeAbort`),
+  `endpoints.ts` (Toncenter / tonviewer URLs + `networkFromTestnetFlag`),
+  `walletkit-network.ts` (`buildToncenterClient` + isolated walletkit
+  imports), `cli/output-mode.ts` (`resolveCliOutputMode` +
+  `installCleanupOnExit`), `version.ts` (single VERSION source),
+  daemon `installer-utils.ts::installBinary` (collapses
+  tonutils + rldp-http-proxy installers), wallet
+  `signRequestValidUntilSeconds`.
+- Project docs fully translated to English (`README.md`,
+  `docs/provider-contract.md`, two CHANGELOG entries, two test
+  comments). `grep -rln '[一-龯ぁ-んァ-ンー]'` across the repo
+  returns zero matches.
+
+### npm
+
+- `@ton/mcp` moved from `dependencies` → `peerDependencies` (optional)
+  + `devDependencies` (for in-repo tests). Bundles stay at
+  `cli.js` 1.28 MB / `mcp.js` 1.27 MB; users who don't use
+  NFT-delegated agentic don't transitively install 19 MB of @ton/mcp.
+
 ## [0.8.0-rc5] – 2026-05-11
 
 [S2.8] CLI agentic mode + critical Node 22+ runtime fix.

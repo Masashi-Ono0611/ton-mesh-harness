@@ -171,21 +171,29 @@ describe('agentic-config', () => {
       expect(sel.wallet.id).toBe('w1')
     })
 
-    it('rejects type=agentic (NFT-delegated) with ERR_INVALID_INPUT', () => {
+    it('accepts type=agentic (NFT-delegated) since v0.8.x', () => {
       const p = writeTmp(
         makeConfig({
           active_wallet_id: 'a1',
           wallets: [makeAgenticEntry()],
         }),
       )
-      try {
-        loadAgenticConfig({ config_path: p, network: 'mainnet' })
-        expect.fail('should throw')
-      } catch (e) {
-        expect(e).toBeInstanceOf(SdkError)
-        expect((e as SdkError).code).toBe('ERR_INVALID_INPUT')
-        expect((e as SdkError).message).toMatch(/NFT-delegated/i)
+      const sel = loadAgenticConfig({ config_path: p, network: 'mainnet' })
+      expect(sel.wallet.type).toBe('agentic')
+      if (sel.wallet.type === 'agentic') {
+        expect(sel.wallet.owner_address).toBe('UQB')
+        expect(sel.wallet.operator_private_key).toMatch(/^a{64}$/)
       }
+    })
+
+    it('rejects agentic entry without operator_private_key', () => {
+      const p = writeTmp(
+        makeConfig({
+          active_wallet_id: 'a1',
+          wallets: [makeAgenticEntry({ operator_private_key: undefined })],
+        }),
+      )
+      expect(() => loadAgenticConfig({ config_path: p, network: 'mainnet' })).toThrowError(SdkError)
     })
 
     it('filters by network — testnet entries hidden on mainnet request', () => {

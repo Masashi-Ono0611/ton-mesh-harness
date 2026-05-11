@@ -40,7 +40,7 @@ export interface AgenticConfigLookup {
 }
 
 export interface AgenticConfigSelection {
-  wallet: StoredStandardWallet
+  wallet: StoredSelectableWallet
   /** Per-network toncenter API key from the config (may be undefined). */
   toncenter_api_key: string | undefined
   /** Resolved config path actually loaded (for diagnostics). */
@@ -106,6 +106,15 @@ const StoredAgenticWalletSchema = z
     updated_at: z.string(),
   })
   .strict()
+  .refine((v) => Boolean(v.operator_private_key), {
+    message:
+      'NFT-delegated agentic wallet entry must include operator_private_key (the key used to sign on behalf of owner_address via the agentic collection contract)',
+  })
+
+export type StoredNftAgenticWallet = z.infer<typeof StoredAgenticWalletSchema>
+
+/** Discriminated union of both supported wallet types. */
+export type StoredSelectableWallet = StoredStandardWallet | StoredNftAgenticWallet
 
 const StoredWalletSchema = z.union([StoredStandardWalletSchema, StoredAgenticWalletSchema])
 
@@ -310,21 +319,11 @@ export function loadAgenticConfig(lookup: AgenticConfigLookup): AgenticConfigSel
     if (!selected) selected = activeWallets[0]
   }
 
-  // ─── Reject NFT-delegated agentic wallet type (v0.8.0 scope) ──────────────
-  if (selected.type !== 'standard') {
-    throw new SdkError(
-      'ERR_INVALID_INPUT',
-      `Wallet "${selected.name ?? selected.id}" is type=agentic (NFT-delegated). ` +
-        `v0.8.0 only supports type=standard (mnemonic / private_key direct sign).`,
-      {
-        severity: 'fatal',
-        fixHint:
-          `Pass \`wallet.wallet_label\` selecting a standard wallet, ` +
-          `or import a standard wallet via \`@ton/mcp@alpha agentic_import_wallet\`. ` +
-          `NFT-delegated agentic signing is tracked for v0.8.x.`,
-      },
-    )
-  }
+  // ─── NFT-delegated agentic wallets are accepted from v0.8.x.
+  // The signing path is dispatched in agentic-sign.ts based on `wallet.type`:
+  // - standard: walletkit's Signer + V5R1/V4R2 adapter (direct sign)
+  // - agentic: @ton/mcp's AgenticWalletAdapter (operator key signs via
+  //            the agentic collection contract on behalf of owner_address)
 
   const networkBag =
     lookup.network === 'mainnet' ? parsed.networks?.mainnet : parsed.networks?.testnet

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   signerFromPrivateKeyMock: vi.fn(),
   v5CreateMock: vi.fn(),
   v4CreateMock: vi.fn(),
+  agenticCreateMock: vi.fn(),
   apiClientCtorMock: vi.fn(),
 }))
 
@@ -35,11 +36,16 @@ vi.mock('@ton/walletkit', () => ({
   SendModeFlag: { PAY_GAS_SEPARATELY: 1, IGNORE_ERRORS: 2 },
 }))
 
+vi.mock('@ton/mcp', () => ({
+  AgenticWalletAdapter: { create: mocks.agenticCreateMock },
+}))
+
 const {
   signerFromMnemonicMock,
   signerFromPrivateKeyMock,
   v5CreateMock,
   v4CreateMock,
+  agenticCreateMock,
   apiClientCtorMock,
 } = mocks
 
@@ -48,7 +54,10 @@ let sendBocMock = vi.fn()
 let getAddressMock = vi.fn()
 
 import { agenticSignAndSend } from '../src/sdk/agentic-sign'
-import type { StoredStandardWallet } from '../src/sdk/agentic-config'
+import type {
+  StoredNftAgenticWallet,
+  StoredStandardWallet,
+} from '../src/sdk/agentic-config'
 import { SdkError } from '../src/sdk/deploy'
 
 const ISO = '2026-05-11T00:00:00Z'
@@ -94,6 +103,7 @@ describe('agenticSignAndSend (mocked)', () => {
 
     v5CreateMock.mockResolvedValue(adapter)
     v4CreateMock.mockResolvedValue(adapter)
+    agenticCreateMock.mockResolvedValue(adapter)
     signerFromMnemonicMock.mockResolvedValue({ publicKey: 'pk_mnemonic' })
     signerFromPrivateKeyMock.mockResolvedValue({ publicKey: 'pk_pk' })
     apiClientCtorMock.mockImplementation((cfg: unknown) => ({ cfg }))
@@ -280,6 +290,128 @@ describe('agenticSignAndSend (mocked)', () => {
       expect.fail('should throw')
     } catch (e) {
       expect(e).toBeInstanceOf(SdkError)
+      expect((e as SdkError).code).toBe('ERR_CANCELLED')
+    }
+    expect(sendBocMock).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NFT-delegated agentic path (v0.8.x) — operator key + @ton/mcp adapter
+// ─────────────────────────────────────────────────────────────────────────────
+
+function makeAgenticWallet(
+  overrides: Partial<StoredNftAgenticWallet> = {},
+): StoredNftAgenticWallet {
+  return {
+    id: 'a1',
+    name: 'NftWallet',
+    type: 'agentic',
+    network: 'mainnet',
+    address: 'UQAgentic',
+    owner_address: 'UQOwner',
+    operator_private_key: 'ab'.repeat(32),
+    collection_address: 'EQCollection',
+    wallet_nft_index: '42',
+    created_at: ISO,
+    updated_at: ISO,
+    ...overrides,
+  } as StoredNftAgenticWallet
+}
+
+describe('agenticSignAndSend (NFT-delegated path, mocked)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getSignedSendTransactionMock = vi.fn().mockResolvedValue('SIGNED_BOC_B64')
+    sendBocMock = vi.fn().mockResolvedValue('0xnftdeadbeef')
+    getAddressMock = vi.fn().mockReturnValue('UQAgentic')
+    const adapter = {
+      getSignedSendTransaction: getSignedSendTransactionMock,
+      getClient: () => ({ sendBoc: sendBocMock }),
+      getAddress: getAddressMock,
+    }
+    v5CreateMock.mockResolvedValue(adapter)
+    v4CreateMock.mockResolvedValue(adapter)
+    agenticCreateMock.mockResolvedValue(adapter)
+    signerFromPrivateKeyMock.mockResolvedValue({ publicKey: 'pk_operator' })
+    apiClientCtorMock.mockImplementation((cfg: unknown) => ({ cfg }))
+  })
+
+  it('routes type=agentic → AgenticWalletAdapter.create (not V5/V4)', async () => {
+    await agenticSignAndSend({
+      wallet: makeAgenticWallet(),
+      toncenter_api_key: undefined,
+      messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+    })
+    expect(agenticCreateMock).toHaveBeenCalledTimes(1)
+    expect(v5CreateMock).not.toHaveBeenCalled()
+    expect(v4CreateMock).not.toHaveBeenCalled()
+  })
+
+  it('signs with operator_private_key (not mnemonic)', async () => {
+    await agenticSignAndSend({
+      wallet: makeAgenticWallet(),
+      toncenter_api_key: undefined,
+      messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+    })
+    expect(signerFromPrivateKeyMock).toHaveBeenCalled()
+    expect(signerFromMnemonicMock).not.toHaveBeenCalled()
+  })
+
+  it('passes walletAddress + walletNftIndex + collectionAddress to the adapter', async () => {
+    await agenticSignAndSend({
+      wallet: makeAgenticWallet(),
+      toncenter_api_key: undefined,
+      messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+    })
+    const [, opts] = agenticCreateMock.mock.calls[0] as [unknown, Record<string, unknown>]
+    expect(opts.walletAddress).toBe('UQAgentic')
+    expect(opts.walletNftIndex).toBe(42n)
+    expect(opts.collectionAddress).toBe('EQCollection')
+  })
+
+  it('omits walletNftIndex when not set in config', async () => {
+    await agenticSignAndSend({
+      wallet: makeAgenticWallet({ wallet_nft_index: undefined }),
+      toncenter_api_key: undefined,
+      messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+    })
+    const [, opts] = agenticCreateMock.mock.calls[0] as [unknown, Record<string, unknown>]
+    expect(opts.walletNftIndex).toBeUndefined()
+  })
+
+  it('rejects when operator_private_key is missing', async () => {
+    await expect(
+      agenticSignAndSend({
+        wallet: makeAgenticWallet({ operator_private_key: undefined }),
+        toncenter_api_key: undefined,
+        messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+      }),
+    ).rejects.toThrowError(SdkError)
+  })
+
+  it('returns message_hash from sendBoc + agentic NFT address as from_address', async () => {
+    const result = await agenticSignAndSend({
+      wallet: makeAgenticWallet(),
+      toncenter_api_key: undefined,
+      messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+    })
+    expect(result.message_hash).toBe('0xnftdeadbeef')
+    expect(result.from_address).toBe('UQAgentic')
+  })
+
+  it('honours pre-aborted signal (no broadcast)', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    try {
+      await agenticSignAndSend({
+        wallet: makeAgenticWallet(),
+        toncenter_api_key: undefined,
+        messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+        signal: controller.signal,
+      })
+      expect.fail('should throw')
+    } catch (e) {
       expect((e as SdkError).code).toBe('ERR_CANCELLED')
     }
     expect(sendBocMock).not.toHaveBeenCalled()

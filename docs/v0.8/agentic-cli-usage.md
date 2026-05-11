@@ -31,11 +31,21 @@ npx -y ton-sovereign-deploy doctor
 # Look for `agentic` in the `wallet_signers_available` line.
 ```
 
-> **`type: standard` only.** v0.8.0 supports wallets `@ton/mcp`
-> stores with `type: "standard"` (mnemonic OR private_key direct
-> sign). The NFT-delegated `type: "agentic"` flow — where an
-> operator key signs on behalf of an owner via the agentic
-> collection contract — is tracked for v0.8.x.
+> **Two wallet types supported.** The kit reads both wallet kinds
+> that `@ton/mcp` stores: `type: "standard"` (mnemonic OR private_key
+> direct sign — no extra install) by default. The NFT-delegated
+> `type: "agentic"` flow —
+> where an operator key signs on behalf of an owner via the
+> agentic collection contract — is supported in rc6+ via the
+> optional `@ton/mcp` peer dependency:
+>
+> ```bash
+> npm install @ton/mcp@alpha
+> ```
+>
+> The SDK lazy-loads `@ton/mcp` only when you select a
+> `type: "agentic"` entry, so TonConnect-only users don't pay
+> the ~19 MB install cost.
 
 ---
 
@@ -179,13 +189,14 @@ Surfaced via the CLI on stderr / non-zero exit:
 
 - `ERR_NO_WALLET` — `~/.config/ton/config.json` is missing, has no
   wallet for the chosen network, or the selector doesn't match
-  anything. Fix: run `@ton/mcp@alpha agentic_import_wallet` or check
-  `--wallet-label`.
+  anything. Can also fire when a `type: "agentic"` entry is selected
+  but the `@ton/mcp` optional peer is not installed (fix:
+  `npm install @ton/mcp@alpha`). Otherwise: run
+  `@ton/mcp@alpha agentic_import_wallet` or check `--wallet-label`.
 - `ERR_INVALID_INPUT` — schema mismatch (e.g. `version != 2`), corrupt
-  protected-file blob, or selected wallet is `type: "agentic"`
-  (NFT-delegated, not supported in v0.8.0). Fix:
-  re-create the wallet via `@ton/mcp`, or select a `type: "standard"`
-  entry via `--wallet-label`.
+  protected-file blob, or the selected agentic wallet is missing
+  `operator_private_key`. Fix: re-import the wallet via
+  `@ton/mcp@alpha agentic_import_wallet` or rotate the operator key.
 - `ERR_NO_DOMAIN` — TONAPI returned 404 for the domain, OR the domain
   is not owned by the wallet that's signing. Fix: verify ownership
   via TONAPI (`https://tonapi.io/v2/dns/<domain>`) and that you're on

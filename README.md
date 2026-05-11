@@ -79,7 +79,9 @@ The agent calls `sovereign_check_env` → `sovereign_deploy` in order. `sovereig
 **Wallet modes** (since rc4 both paths complete DNS write end-to-end; rc5 makes them available from the CLI too):
 
 - **`wallet: {kind: "tonconnect", connector}`** (default) — human approves via QR + phone wallet.
-- **`wallet: {kind: "agentic", config_path?, wallet_label?}`** — autonomous, signs with a key in `~/.config/ton/config.json` (the file `@ton/mcp@alpha` manages). Broadcasts via `@ton/walletkit` → Toncenter v3. Supports `type: standard` (mnemonic / private_key direct sign). `type: agentic` (NFT-delegated operator key) is planned for v0.8.x.
+- **`wallet: {kind: "agentic", config_path?, wallet_label?}`** — autonomous, signs with a key in `~/.config/ton/config.json` (the file `@ton/mcp@alpha` manages). Broadcasts via `@ton/walletkit` → Toncenter v3. Supports BOTH wallet types in `@ton/mcp`'s schema:
+   - **`type: "standard"`** — mnemonic / private_key direct sign. No extra install.
+   - **`type: "agentic"`** — NFT-delegated operator key; signs via the agentic collection contract on behalf of `owner_address`. Requires the optional peer dependency: `npm install @ton/mcp@alpha`. The SDK lazy-loads it only when a `type: "agentic"` entry is selected, so TonConnect-only users don't pay the install cost.
 
 **`dns_tx_hash`** (since rc4): both paths resolve the real on-chain tx hash via Toncenter v3's `transactionsByMessage` lookup. The lookup runs in parallel with DNS propagation polling — zero added latency on the happy path. Details: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) §F2.
 
@@ -239,7 +241,7 @@ Direct competitors: none.
 - **[V3] #18** — Claude Code MCP client → testnet deploy E2E (S2.5 landed; needs an agent + testnet TON).
 - **[V4] #26** — Agency-transfer red-team test (fresh agent session, manual).
 - **[D3] #21** — Final v0.8.0 GA tag (after V3 + V4).
-- **NFT-delegated agentic** — `@ton/mcp`'s `type: "agentic"` (operator-key + collection contract). Planned for v0.8.x.
+- **NFT-delegated agentic** — `@ton/mcp`'s `type: "agentic"` (operator-key + collection contract). ✅ Landed in rc6 development; awaits testnet validation.
 
 ### v0.8 docs
 - Overall vision: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md).
