@@ -115,6 +115,13 @@ export interface AgenticSignSendInput {
   wallet: StoredStandardWallet
   toncenter_api_key: string | undefined
   messages: Array<{ address: Address; amount: bigint; payload: Cell }>
+  /**
+   * AbortSignal for the cancel-before-broadcast race window. Checked
+   * after adapter construction and after signing, immediately before
+   * `sendBoc`. Once `sendBoc` is invoked the broadcast is no longer
+   * cancellable from our side.
+   */
+  signal?: AbortSignal
 }
 
 // NOTE on send mode: walletkit's WalletV5R1Adapter / WalletV4R2Adapter
@@ -136,7 +143,18 @@ export interface AgenticSignSendResult {
 export async function agenticSignAndSend(
   input: AgenticSignSendInput,
 ): Promise<AgenticSignSendResult> {
+  const checkAborted = () => {
+    if (input.signal?.aborted) {
+      throw new SdkError('ERR_CANCELLED', 'Agentic sign+send cancelled.', {
+        severity: 'recoverable',
+      })
+    }
+  }
+
+  checkAborted()
   const adapter = await buildAdapter(input.wallet, input.toncenter_api_key)
+  checkAborted()
+
   const fromAddress = adapter.getAddress({ testnet: input.wallet.network === 'testnet' })
   const validUntil = Math.floor(Date.now() / 1000) + 5 * 60 // 5 min window
 
@@ -163,6 +181,12 @@ export async function agenticSignAndSend(
         `Verify the wallet is deployed on-chain (run \`@ton/mcp@alpha\` get_balance to fund + deploy).`,
     })
   }
+
+  // ─── Last cancel window before broadcast ─────────────────────────────────
+  // Once we call `sendBoc`, the BOC is in flight at Toncenter and the
+  // broadcast cannot be un-published. Checking here closes the race the
+  // first review flagged.
+  checkAborted()
 
   let messageHash: string
   try {

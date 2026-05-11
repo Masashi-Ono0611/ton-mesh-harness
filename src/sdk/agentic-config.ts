@@ -60,6 +60,8 @@ export interface AgenticConfigSelection {
 
 const NetworkEnum = z.enum(['mainnet', 'testnet'])
 
+// `.strict()` on wallet objects — drift in @ton/mcp's wallet schema
+// should fail loud rather than silently slip through.
 const StoredStandardWalletSchema = z
   .object({
     id: z.string(),
@@ -75,7 +77,7 @@ const StoredStandardWalletSchema = z
     created_at: z.string(),
     updated_at: z.string(),
   })
-  .passthrough()
+  .strict()
   .refine((v) => Boolean(v.mnemonic) || Boolean(v.private_key), {
     message: 'standard wallet entry must contain mnemonic or private_key',
   })
@@ -92,12 +94,18 @@ const StoredAgenticWalletSchema = z
     owner_address: z.string(),
     operator_private_key: z.string().optional(),
     operator_public_key: z.string().optional(),
+    // Optional NFT-delegation fields per @ton/mcp's StoredAgenticWallet:
+    source: z.string().optional(),
+    collection_address: z.string().optional(),
+    wallet_nft_index: z.string().optional(),
+    origin_operator_public_key: z.string().optional(),
+    deployed_by_user: z.boolean().optional(),
     removed: z.boolean().optional(),
     removed_at: z.string().optional(),
     created_at: z.string(),
     updated_at: z.string(),
   })
-  .passthrough()
+  .strict()
 
 const StoredWalletSchema = z.union([StoredStandardWalletSchema, StoredAgenticWalletSchema])
 
@@ -106,18 +114,22 @@ const NetworkConfigSchema = z
     toncenter_api_key: z.string().optional(),
     agentic_collection_address: z.string().optional(),
   })
-  .passthrough()
+  .strict()
 
+// Top-level `.passthrough()` is intentional: @ton/mcp also writes
+// `pending_agentic_deployments`, `pending_agentic_key_rotations`,
+// `agentic_setup_sessions` arrays that we don't parse but should
+// tolerate. Wallet objects below are strict.
 const TonConfigSchema = z
   .object({
     version: z.literal(2),
     active_wallet_id: z.string().nullable(),
-    // @ton/mcp's TonConfig requires `networks`; keep it required so a
-    // hand-rolled config that omits it fails fast.
-    networks: z.object({
-      mainnet: NetworkConfigSchema.optional(),
-      testnet: NetworkConfigSchema.optional(),
-    }),
+    networks: z
+      .object({
+        mainnet: NetworkConfigSchema.optional(),
+        testnet: NetworkConfigSchema.optional(),
+      })
+      .strict(),
     wallets: z.array(StoredWalletSchema),
   })
   .passthrough()

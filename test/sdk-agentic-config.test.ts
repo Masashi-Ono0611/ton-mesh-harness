@@ -321,5 +321,42 @@ describe('agentic-config', () => {
       )
       expect(() => loadAgenticConfig({ config_path: p, network: 'mainnet' })).toThrowError(SdkError)
     })
+
+    it('rejects wallet entry with unknown extra fields (strict mode)', () => {
+      // Schema strictness — drift in @ton/mcp's wallet schema fails loud.
+      const p = writeTmp(
+        makeConfig({
+          wallets: [
+            {
+              id: 'w1',
+              name: 'X',
+              type: 'standard',
+              wallet_version: 'v5r1',
+              network: 'mainnet',
+              address: 'UQA',
+              mnemonic: 'word '.repeat(24).trim(),
+              created_at: ISO,
+              updated_at: ISO,
+              FUTURE_FIELD: 'oops',
+            },
+          ],
+        }),
+      )
+      expect(() => loadAgenticConfig({ config_path: p, network: 'mainnet' })).toThrowError(SdkError)
+    })
+
+    it('tolerates @ton/mcp top-level forward-compat fields (pending_*)', () => {
+      // pending_agentic_deployments etc. are written by @ton/mcp but
+      // we don't parse them — passthrough at top level must accept.
+      const p = writeTmp(
+        makeConfig({
+          pending_agentic_deployments: [],
+          pending_agentic_key_rotations: [],
+          agentic_setup_sessions: [],
+        }),
+      )
+      const sel = loadAgenticConfig({ config_path: p, network: 'mainnet' })
+      expect(sel.wallet.id).toBe('w1')
+    })
   })
 })

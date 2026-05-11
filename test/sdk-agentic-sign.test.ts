@@ -243,4 +243,45 @@ describe('agenticSignAndSend (mocked)', () => {
     const cfg = apiClientCtorMock.mock.calls[0][0] as { endpoint: string }
     expect(cfg.endpoint).toBe('https://testnet.toncenter.com')
   })
+
+  it('honours pre-aborted signal → ERR_CANCELLED + no broadcast', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    try {
+      await agenticSignAndSend({
+        wallet: makeWallet(),
+        toncenter_api_key: undefined,
+        messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+        signal: controller.signal,
+      })
+      expect.fail('should throw')
+    } catch (e) {
+      expect(e).toBeInstanceOf(SdkError)
+      expect((e as SdkError).code).toBe('ERR_CANCELLED')
+    }
+    // sendBoc must NOT have been called.
+    expect(sendBocMock).not.toHaveBeenCalled()
+  })
+
+  it('honours abort racing between sign and sendBoc', async () => {
+    const controller = new AbortController()
+    // Sign succeeds normally, then we trip the signal BEFORE sendBoc.
+    getSignedSendTransactionMock.mockImplementation(async () => {
+      controller.abort()
+      return 'SIGNED_BOC_B64'
+    })
+    try {
+      await agenticSignAndSend({
+        wallet: makeWallet(),
+        toncenter_api_key: undefined,
+        messages: [{ address: nftAddr(), amount: 20_000_000n, payload: dummyPayload() }],
+        signal: controller.signal,
+      })
+      expect.fail('should throw')
+    } catch (e) {
+      expect(e).toBeInstanceOf(SdkError)
+      expect((e as SdkError).code).toBe('ERR_CANCELLED')
+    }
+    expect(sendBocMock).not.toHaveBeenCalled()
+  })
 })

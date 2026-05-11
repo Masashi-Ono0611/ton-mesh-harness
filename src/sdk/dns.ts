@@ -435,11 +435,15 @@ export async function* writeDnsRecordAgentic(
   // that point may_have_published flips to true.
   checkAborted()
 
-  // ─── Sign + broadcast atomically (cannot abort mid-send) ─────────────────
+  // ─── Sign + broadcast — signal threaded so the pre-sendBoc cancel
+  // window is honoured. Once sendBoc returns the broadcast is in flight
+  // and may_have_published flips to true (via dnsBroadcastEnqueued in
+  // deploy.ts upon seeing the dns_signing event below).
   const sent = await agenticSignAndSend({
     wallet: selection.wallet,
     toncenter_api_key: selection.toncenter_api_key,
     messages,
+    signal: control.signal,
   })
 
   yield {
