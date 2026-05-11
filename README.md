@@ -26,26 +26,36 @@ Press Ctrl+C to stop seeding.
 
 ---
 
-## Agent quickstart (v0.8 rc1)
+## Agent quickstart (v0.8 rc2)
 
 このツールは AI エージェントから直接呼び出せるよう設計されています。Agent runtime に "deploy a static site to .ton" のような prompt を投げたとき、kit を npm 検索 + README + skill registry 経由で見つけてもらうことを *狙っています* — ただしこれは hypothesis で、[V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。発見が外れた場合は明示的に呼び出してください:
 
-**At rc1: CLI 経由で agent から呼び出し**
+**rc2 で利用可能な 2 つの経路**
 
 ```jsonc
-// Agent runtime からの explicit fallback invocation:
-// (発見が成功すれば自動、失敗時は user / agent prompt にこの行を貼る)
+// 1. CLI (推奨 — DNS write も完結):
 npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton --json-output
+```
+
+```jsonc
+// 2. MCP server (rc2 で実装、TonConnect 経由なら DNS write も SDK 経由で完結):
+{
+  "mcpServers": {
+    "ton-sovereign-deploy": {
+      "command": "npx",
+      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+    }
+  }
+}
+// → tools/call sovereign_check_env → sovereign_deploy
 ```
 
 `--json-output` を付けると 1 行 1 JSON の structured output になり、agent が parse しやすくなります。
 
-**At GA (v0.8.0 GA, 予定): MCP server 経由**
-
-`ton-sovereign-mcp` は `ton-sovereign-deploy` package の dual-bin の 1 つ(別パッケージではない)。MCP client config では npm の `--package` フラグ経由で呼びます:
+**rc2 で実装済の MCP flow**
 
 ```jsonc
-// agent runtime の MCP server config に追加:
+// MCP client config に追加:
 {
   "mcpServers": {
     "ton-sovereign-deploy": {
@@ -58,15 +68,13 @@ npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton --json-output
 }
 ```
 
-agent は `sovereign_check_env` → `sovereign_deploy` の 2 tool を順に call します。
+agent は `sovereign_check_env` → `sovereign_deploy` の 2 tool を順に call します。`sovereign_deploy` は SDK が直接 awaiting_signature → dns_signing → dns_confirmed → verifying まで進めます(TonConnect 経由のみ)。
 
-**Wallet モード(GA)**: `wallet: {kind: "tonconnect", connector}` (default、人間が phone wallet で承認) または `wallet: {kind: "agentic", config_path?, wallet_label?}` (autonomous、`~/.config/ton/config.json` のキーで自動署名 — config を `@ton/mcp` と共有、ただし MCP-RPC ハンドオフではなく filesystem level の compose)。詳細は [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) §F2 と [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md)。
+**Wallet モード**: `wallet: {kind: "tonconnect", connector}` (default、人間が phone wallet で承認、rc2 で MCP 経由でも完結) または `wallet: {kind: "agentic", config_path?, wallet_label?}` (autonomous、`~/.config/ton/config.json` のキーで自動署名 — config を `@ton/mcp` と共有、MCP-RPC ハンドオフではなく filesystem level の compose)。**rc2 注意**: agentic mode で `domain` を指定すると `ERR_INVALID_INPUT` を返します(autonomous 署名の DNS 書き込みは GA で実装、現在は CLI 利用を案内)。詳細は [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) §F2 と [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md)。
 
-**rc1 時点の wallet**: CLI のみ、TonConnect の `--wallet Tonkeeper` だけ(agentic mode は GA で `--wallet-mode agentic` として opt-in)。
+**Discoverability の前提**: agent が npm 検索 + skill registry でこの kit に到達できるよう README / keywords / `.well-known/mcp.json` template を整備していますが、これは **acceptance hypothesis であって fact ではありません**。[V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。失敗したら artifact 側を直して再 ship。
 
-**Discoverability の前提**: agent が npm 検索 + skill registry でこの kit に到達できるよう README / keywords / `.well-known/mcp.json` template を整備していますが、これは **acceptance hypothesis であって fact ではありません**。rc1 の [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。失敗したら artifact 側を直して再 ship。
-
-> **Note for agents:** `--watch` モードは agent 環境で daemon を維持する責任が生まれます。short-lived agent session では `--no-watch` を使い、bag が伝播するのを別途待ってください。
+> **Note for agents:** `--watch` モードは agent 環境で daemon を維持する責任が生まれます。short-lived agent session では `--no-watch` を使い、bag が伝播するのを別途待ってください。**MCP server は `keep_alive: true` を拒否します**(daemon tracking が未実装)— keep-alive flow が必要なら CLI を使うこと。
 
 ---
 
@@ -200,28 +208,36 @@ npx ton-sovereign-deploy ./build/
 
 ## 開発状況
 
-**ステータス:** v0.5 (2026-05-10) — TonConnect SDK 統合 + 自前 BOC ルートを mainnet で end-to-end 実証
-- v0.1 ✅ — TON Storage アップロード
-- v0.2 ✅ — .ton DNS 登録（`storage` レコード）
-- v0.3 ✅ — 仕上げ（疎通確認、GitHub Actions、Windows、watch モード）
-- v0.4 ✅ — `--provider` ストレージプロバイダー契約（実装は完了、 ただし mainnet で実利用可能な provider はほぼゼロ。 詳細: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md)）
-- v0.5 ✅ — TonConnect SDK 統合 / 自前 BOC で `--span` 任意 uint32 / 防御深化 (rate cap / size guard / 1 TON 上限) / `op::close_contract` 救出ルート実装
+**ステータス:** v0.8.0-rc2 (2026-05-11) — MCP server bootstrap + SDK の DNS write 実装。GA は V3 (Claude Code MCP→testnet E2E) と V4 (agency-transfer red-team test) を通過後。
 
-**v0.6 計画**（`docs/v0.6/roadmap-draft.md`）— **digital-resistance スタックへの整合**:
-- **`sites` (ADNL Address) レコード対応** ← TON Sites の現実の本流。 実在する `.ton` サイトの大半が使用
-- **ADNL Tunnel クライアント統合** ← 公開 IP を持たない user が中継ノード経由で seed できるように（[xssnick / TON-Torrent](https://github.com/xssnick/TON-Torrent) 互換）
-- **README / dashboard を「self-host first」に整理** ← 本コミットで対応中
-- **Payment Network 抽象化（v0.7 以降）** ← tunnel rental / future provider rental の自動マイクロペイメント
+### Released
+- **v0.1** ✅ — TON Storage アップロード
+- **v0.2** ✅ — .ton DNS 登録（`storage` レコード）
+- **v0.3** ✅ — 仕上げ（疎通確認、GitHub Actions、Windows、watch モード）
+- **v0.4** ✅ — `--provider` ストレージプロバイダー契約 (mainnet provider 経済は dormant。詳細: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md))
+- **v0.5** ✅ — TonConnect SDK 統合 / 自前 BOC / 防御深化 / `op::close_contract` 救出ルート
+- **v0.6** ✅ — `sites` (ADNL Address) レコード対応 / ADNL Tunnel クライアント統合 / self-host first README / Payment Network 抽象化
+- **v0.7** ✅ — `--site-auto` で rldp-http-proxy 自動 spawn + ADNL identity 自前 mint
+- **v0.8.0-rc1** ✅ (2026-05-10) — agent-surface track の first-useful flag-plant: README "Agent quickstart" + npm keywords + doc rescope
+- **v0.8.0-rc2** ✅ (2026-05-11) — MCP server (`ton-sovereign-mcp`)、SDK 抽出 (`src/sdk/`)、SDK DNS write (TonConnect 経由)、ESLint v9 no-console gate、GitHub Actions CI、プロジェクト全体リファクタリング (-290 LOC)
 
-**v0.8 構想** — **agent-surface track** (CLI 主導と並列に開く agent 向け表面): AI エージェントが自律的に発見・呼び出す MCP server + skill。multi-channel discoverability (npm keywords / README Agent quickstart / in-repo skill / `.well-known/mcp.json`) を moat として、`@ton/mcp` と filesystem 共有 (`~/.config/ton/config.json` を `@ton/walletkit` 経由で同居) する設計。MCP-RPC ハンドオフではない。
+### Pending for v0.8.0 GA
+- **[V3] #18** — Claude Code MCP client → testnet deploy E2E (S2.5 land 済、agent と testnet TON が必要)
+- **[V4] #26** — Agency-transfer red-team test (fresh agent session、手動実行)
+- **Agentic DNS path** — `wallet.kind: "agentic"` で DNS write を完了させる(現在は ERR_INVALID_INPUT、CLI を案内)。`@ton/walletkit` を経由した `~/.config/ton/config.json` の key loader 実装が必要
+
+### v0.8 docs
 - 全体ビジョン: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md)
-- 0.8.0 が出荷する1点に絞った要件: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md)
-- 2026-05-10 のコンセプト更新ログ: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md)
-- エコシステム動向の根拠: [`docs/v0.6/ecosystem-watch-2026-05.md`](docs/v0.6/ecosystem-watch-2026-05.md)
+- MCP server 仕様: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md)
+- 2026-05-10 コンセプト更新ログ: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md)
+- P-1 `@ton/mcp` compose contract probe: [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md)
 
-**v0.9 reserve** — v0.7 から繰り延べた C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network 実クライアント。詳細: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) の C2 / C3 セクション (もとは v0.8 parked、agent-surface が v0.8 を取った 2026-05-10 の rename で v0.9 に降格)。
+### v0.9 reserve
+v0.7 から繰り延べた C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network 実クライアント。詳細: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) の C2 / C3 セクション (もとは v0.8 parked、agent-surface が v0.8 を取った 2026-05-10 の rename で v0.9 に降格)。
 
 **リリース:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
+
+**npm:** `npm install -g ton-sovereign-deploy` (CLI) / `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` (MCP server)
 
 ---
 
