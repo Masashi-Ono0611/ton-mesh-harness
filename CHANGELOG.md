@@ -50,6 +50,15 @@ can drive a full deploy with one command / one tool call.
 
 ### Added
 
+- **Programmatic SDK entry** — `import { deploy, checkEnv, status,
+  type DeployOptions } from 'ton-sovereign-deploy'`. tsup now builds
+  `dist/sdk.js` + `dist/sdk.d.ts` (37 KB types) alongside the two
+  binaries. `package.json` `main` flips from `dist/cli.js` (was
+  wrong; main should not be a binary) to `dist/sdk.js`, with
+  `exports` field providing both `'.'` and `'./sdk'` subpaths.
+  Bin entries unchanged. Smoke: `require('ton-sovereign-deploy')` /
+  `require('ton-sovereign-deploy/sdk')` both work; TS consumers get
+  full types via `dist/sdk.d.ts`.
 - **Observability log layer** — `DEBUG=sovereign:*` style env var
   enables structured stderr logs at SDK boundaries. Namespaces
   available: `sovereign:deploy` (phase transitions),

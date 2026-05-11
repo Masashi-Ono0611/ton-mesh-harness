@@ -255,7 +255,10 @@ Deferred from v0.7: C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network
 
 **Release:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 
-**npm:** `npm install -g ton-sovereign-deploy` (CLI) / `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` (MCP server).
+**npm:**
+- `npm install -g ton-sovereign-deploy` — CLI binary.
+- `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` — MCP server.
+- `import { deploy, checkEnv, status } from 'ton-sovereign-deploy'` — programmatic SDK (CJS / TS types shipped).
 
 ---
 
@@ -494,7 +497,7 @@ ton-sovereign-deploy ./build/ --tunnel-config ./tunnel-pool.json
 
 ### Watch mode (default since v0.6)
 
-**Since v0.6, `--watch` is the default behavior for interactive runs.** With no arguments, the daemon stays resident, watches for file changes, and auto-redeploys (auto-redeploy currently ton-core backend only).
+**Since v0.6, `--watch` is the default behavior for interactive runs.** With no arguments, the daemon stays resident, watches for file changes, and auto-redeploys. Supported on both backends (tonutils + ton-core). When the new build has identical content the bag id is unchanged — the watch loop logs a `↻ no-op` line. With `--domain`, the DNS record continues to point at the *initial* bag id (re-running the DNS sign on every change would require a wallet prompt each time); stop watch mode and re-run with `--domain` when you want to publish the updated bag.
 
 ```bash
 # Default behavior: watch mode (= self-host first)
