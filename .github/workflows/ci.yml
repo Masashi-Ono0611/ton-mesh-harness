@@ -3,8 +3,11 @@
 #   - Lint (eslint src/sdk, no-console rule)
 #   - Type-check (tsc --noEmit with noUnusedLocals + strict)
 #   - Tests (vitest, RUN_DAEMON_TESTS skipped — those spawn real daemons)
-#   - Build (tsup, dual bin)
+#   - Build (tsup — dual bin + SDK entry)
+#   - CLI smoke (dist/cli.js --version / --help / invalid flag)
 #   - MCP smoke (initialize + tools/list via stdio)
+#   - SDK smoke (require('dist/sdk.js') shape check)
+#   - npm pack --dry-run (tarball manifest sanity)
 #
 # Matrix: Node 18 / 20 / 22 × ubuntu-latest / macos-latest.
 # Windows is in scope per `package.json` "os" but we skip in CI — the
@@ -87,6 +90,15 @@ jobs:
         # serverInfo + both tool names. Exits non-zero with a clear
         # message on any failure.
         run: node scripts/mcp-smoke.cjs
+
+      - name: SDK smoke (programmatic require shape)
+        # The SDK external entry (dist/sdk.js) is the surface npm
+        # consumers see via `require('ton-sovereign-deploy')`. This
+        # smoke require()s the bundle directly, asserts every function
+        # entry point + zod schema + tool descriptor + VERSION-vs-
+        # package.json pin. Catches accidental drops from src/sdk.ts
+        # (the public barrel) that the binary smokes wouldn't see.
+        run: node scripts/sdk-smoke.cjs
 
       - name: npm pack dry-run (tarball manifest sanity)
         # Surfaces packaging regressions early — e.g. forgetting to add
