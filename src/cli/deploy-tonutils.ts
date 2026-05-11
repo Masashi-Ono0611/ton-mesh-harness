@@ -8,7 +8,7 @@
 import path from 'path'
 import chalk from 'chalk'
 import type { CliOptions } from '../types/cli'
-import { createSpinnerFactory } from '../utils/spinner'
+import { resolveCliOutputMode } from './output-mode'
 import { detectBuildDir } from '../detect'
 import {
   tonutilsCreate,
@@ -117,8 +117,7 @@ export async function runDeployTonutils(
     process.off('uncaughtException', onUncaught)
   }
 
-  const isCI = opts.ciMode || process.env.CI === 'true'
-  const createSpinner = createSpinnerFactory({ silent: !!opts.jsonOutput, plain: isCI })
+  const { createSpinner } = resolveCliOutputMode(opts)
 
   try {
     if (opts.testnet) {

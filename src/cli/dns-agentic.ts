@@ -13,7 +13,7 @@
  */
 
 import chalk from 'chalk'
-import { createSpinnerFactory } from '../utils/spinner'
+import { resolveCliOutputMode } from './output-mode'
 import { writeDnsRecordAgentic } from '../sdk/dns'
 import { SdkError } from '../sdk/deploy'
 import { tonviewerTxUrl } from '../sdk/endpoints'
@@ -36,10 +36,7 @@ export async function runDnsRegistrationAgentic(
   testnet = false,
   opts: DnsRegistrationAgenticOptions = {},
 ): Promise<void> {
-  const isCI = process.env.CI === 'true' || opts.ciMode === true
-  const jsonMode = !!opts.jsonOutput
-  const createSpinner = createSpinnerFactory({ silent: jsonMode, plain: isCI })
-  const log = jsonMode ? () => {} : console.log
+  const { createSpinner, log } = resolveCliOutputMode(opts)
 
   log()
   log(chalk.bold('🤖 DNS Registration (agentic — autonomous signing)'))

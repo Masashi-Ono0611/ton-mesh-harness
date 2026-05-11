@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import type { DaemonHandle } from '../daemon'
 import type { CliOptions } from '../types/cli'
-import { createSpinnerFactory } from '../utils/spinner'
+import { resolveCliOutputMode } from './output-mode'
 import { detectBuildDir } from '../detect'
 import { ensureBinaries, startDaemon } from '../daemon'
 import { createBag } from '../upload'
@@ -28,8 +28,7 @@ export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise
     process.exit(1)
   })
 
-  const isCI = opts.ciMode || process.env.CI === 'true'
-  const createSpinner = createSpinnerFactory({ silent: !!opts.jsonOutput, plain: isCI })
+  const { createSpinner } = resolveCliOutputMode(opts)
 
   try {
     const buildDir = detectBuildDir(process.cwd(), buildDirArg)

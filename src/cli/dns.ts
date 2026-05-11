@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import { createSpinnerFactory } from '../utils/spinner'
+import { resolveCliOutputMode } from './output-mode'
 import { FSStorage } from '../wallet/FSStorage'
 import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { createWalletUI } from '../wallet/ui'
@@ -30,16 +30,11 @@ export async function runDnsRegistration(
   testnet = false,
   opts: DnsRegistrationOptions = {},
 ): Promise<void> {
-  const isCI = process.env.CI === 'true' || opts.ciMode === true
-  const jsonMode = !!opts.jsonOutput
-  const interactive = !isCI && !jsonMode
-  const createSpinner = createSpinnerFactory({ silent: jsonMode, plain: isCI })
-
   // In JSON mode the deploy step has already emitted the result JSON; any
   // additional human-readable progress here would corrupt the parseable
-  // stdout for callers piping into `jq`. Suppress everything except the
-  // wallet-driven sign step (which has its own TTY-only QR/picker UI).
-  const log = jsonMode ? () => {} : console.log
+  // stdout for callers piping into `jq`. resolveCliOutputMode wires
+  // createSpinner + log accordingly.
+  const { jsonMode, interactive, createSpinner, log } = resolveCliOutputMode(opts)
 
   log()
   log(chalk.bold('🔗 DNS Registration'))
