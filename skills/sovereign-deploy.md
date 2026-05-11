@@ -98,7 +98,7 @@ the user; don't proceed to deploy until `ready: true`.
 
 ### 2. Deploy
 ```jsonc
-// MCP call
+// MCP call (rc2)
 {
   "name": "sovereign_deploy",
   "arguments": {
@@ -109,22 +109,46 @@ the user; don't proceed to deploy until `ready: true`.
 }
 ```
 
-Receive `notifications/progress` events:
+#### What rc2 MCP actually does
+
+**At v0.8.0-rc2, the MCP server runs the bag-upload core ONLY.** The
+.ton DNS record is NOT written by the MCP server in this release — that
+work is tracked at [S2.5] (see `docs/v0.8/at-mcp-probe.md` and the open
+GitHub issue) and lands at v0.8.0 GA. The CLI (`npx ton-sovereign-deploy`)
+chains DNS today; the MCP path returns a `next_actions` hint telling the
+agent to use the CLI to publish DNS.
+
+rc2 MCP `notifications/progress` events (only the first four phases fire):
 1. `env_check` — preparing tonutils-storage
 2. `daemon_starting` — spawning the storage daemon
 3. `bag_creating` — uploading the build dir
 4. `bag_uploaded` — bag is on disk in the daemon
-5. *(at GA — currently v0.8.0-rc2 stops here for `domain`-less calls)*
-   `awaiting_signature` — surface `data.signing_url` to the user
-6. `dns_signing` — wallet approved, broadcasting
+
+Then the terminal `done` event with `DeployResult` (where
+`dns_tx_hash: null` and `next_actions` lists the DNS-via-CLI hint).
+
+#### GA roadmap (post-S2.5)
+
+When [S2.5] lands, the same `sovereign_deploy` call ALSO emits these
+phases before `done`:
+
+5. `awaiting_signature` — TonConnect mode: surface `data.signing_url`
+   to the user. Agentic mode: `signing_url` is null and signing
+   proceeds autonomously.
+6. `dns_signing` — wallet approved, broadcasting the storage + site
+   DNS record write
 7. `dns_confirmed` — DNS tx confirmed on-chain
 8. `verifying` — bag verified accessible via TONAPI
-9. `done` — final `DeployResult` with `bag_id`, `daemon_api_url`, etc.
 
 ### 3. After deploy
 - Tell the user the bag id (it's the content hash — `https://ton.run/<bag_id>`
   is a fallback gateway URL).
-- If they passed `domain`, tell them `<domain>.ton` will resolve within
+- **rc2 only**: if the user wanted `<domain>.ton` to resolve, tell them
+  to run `npx ton-sovereign-deploy <build-dir> --domain <name>.ton` to
+  finish the DNS write — the MCP server has done the upload but DNS is
+  CLI-only at this release.
+- **GA (post-S2.5)**: if they passed `domain`, tell them `<domain>.ton`
+  will resolve within
   a few minutes after the DNS tx confirms.
 - Suggest `--watch` mode (CLI) or a follow-up call if they expect the
   build dir to change.

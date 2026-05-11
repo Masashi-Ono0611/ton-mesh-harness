@@ -4,6 +4,106 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0-rc2] – 2026-05-11
+
+MCP server ships. v0.8.0-rc2 is the agent-surface track's first
+release where `ton-sovereign-mcp` is a real binary, not a fail-fast
+stub. The .ton DNS write is NOT yet integrated into the SDK / MCP path
+— that lands at [S2.5] before v0.8.0 GA. The CLI continues to chain
+DNS today.
+
+### Added
+
+- **`ton-sovereign-mcp` MCP server** (`src/mcp.ts`) — implemented via
+  the low-level `Server.setRequestHandler` API (not the high-level
+  `McpServer.registerTool`) so we own validation and emit F5
+  structured error payloads. Implements `initialize`, `tools/list`,
+  `tools/call`, `notifications/progress`, and accepts (but suppresses
+  response on, per protocol) `notifications/cancelled`.
+- **`src/sdk/deploy.ts`** — programmatic deploy SDK as an
+  `AsyncGenerator<DeployEvent, DeployResult>`. Bag-creation core only
+  in this release; DNS deferred to S2.5. AbortSignal honoured.
+  `ERR_BUSY` serialisation gate per F5. Daemon ownership flips before
+  the `done` yield so consumers can break early without leaking.
+- **`src/sdk/check.ts`** — `checkEnv()` programmatic environment
+  probe. Powers `runDoctor` AND the MCP `sovereign_check_env` tool.
+  Detects agentic-wallet config with a strict-shape probe (file
+  exists + at least one entry that looks like a wallet) — surfaces
+  `AGENTIC_CONFIG_SCHEMA_UNKNOWN` warning if the file shape is
+  unrecognised, so a future `@ton/mcp` schema change fails loud.
+- **`src/sdk/schemas.ts`** — single zod source of truth.
+  `WalletSpec` discriminated union (`tonconnect` | `agentic`).
+  `ErrorPayload` code-aware discriminated union with strict F4
+  `CancelledDataSchema`. `ERR_BUSY` added to stable codes.
+- **`src/sdk/json-schemas.ts`** + snapshot test — JSON Schema
+  artefacts for `tools/list`. Snapshot-tested so any zod drift fails
+  loud.
+- **ESLint v9 flat config** (`eslint.config.mjs`) enforcing
+  `no-console` on `src/sdk/**`.
+- **`skills/sovereign-deploy.md`** — Anthropic skill format,
+  documenting both signing paths + V4 heuristic trigger phrases.
+- **`templates/.well-known/mcp.json`** — opt-in MCP server
+  self-description users can copy into their deployed site's
+  `.well-known/`.
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — matrix Node
+  18/20/22 × ubuntu/macos. Steps: install, lint, tsc, test, build,
+  MCP smoke (portable Node harness at `scripts/mcp-smoke.cjs`).
+- **CONTRIBUTING.md + PR template** under `.github/`.
+- **`docs/v0.8/`** restructured: concept update, P-1 probe memo,
+  rescoped requirements, ton-org/skills PR draft.
+
+### Changed
+
+- **Doctor command** (`src/cli/doctor.ts`) is now a thin renderer
+  over `checkEnv()`. v0.7 output preserved + three new lines
+  (Agentic wallet config / Disk free / Node version).
+- **`runDeployTonutils`** is now an SDK adapter. Drives
+  `sdkDeploy()` and renders events. AbortController threaded
+  through SIGINT handling. `onDaemonReady` hook captures the real
+  TonutilsHandle for watch-mode (no synthetic handle).
+- **`DeployResult.dashboard_url` → `daemon_api_url`** — the daemon
+  serves a JSON API, not a dashboard HTML page.
+- **`docs/v0.9/` → `docs/v0.8/`** — v0.8 became the agent-surface
+  track slot (was drafted as v0.9). C2 NAT + C3 Payments moved to a
+  v0.9 reserve slot.
+- **Project-wide cleanup** (refactor/v0.8-cleanup branch, merged
+  c112ed9): tsconfig `noUnusedLocals` + `noUnusedParameters` enabled.
+  Shared `src/utils/tunnel-config.ts` extracted. Dead `src/cli/provider.ts`
+  removed. Port probes moved to `src/daemon/ports.ts`. Installer
+  utilities deduplicated in `src/daemon/installer-utils.ts`. Orphan
+  `src/payments/` placeholder removed. Net: -290 LOC.
+- `package.json` `version` 0.8.0-rc1 → 0.8.0-rc2. Description
+  rewritten to lead with "CLI + MCP server".
+
+### Out of scope (deferred to v0.8.0 GA)
+
+- **[S2.5] SDK DNS write** (`awaiting_signature` → `dns_signing` →
+  `dns_confirmed` → `verifying` phases). CLI continues to chain
+  `runDnsRegistration()` outside the SDK at rc2. MCP `sovereign_deploy`
+  returns `dns_tx_hash: null` plus a `next_actions` hint pointing at
+  the CLI.
+- **[V3] #18** Claude Code MCP client → testnet deploy E2E. Blocked
+  on S2.5.
+- **[V4] #26** Agency-transfer red-team test. Manual, fresh agent
+  session required. Run at GA before publishing the ton-org/skills PR.
+- **[D3] #21** Release prep (final version bump, README roadmap,
+  CHANGELOG GA section).
+
+### Codex review history
+
+Each block went through Codex multi-model review. Cumulative findings
+resolved in rc2: 7 BLOCKER + 23 MAJOR + 17 MINOR + 7 NIT across F1+F2,
+S1, S2, S3, S4+V1+V2, M1-M5, project-wide refactor, and D5+D1+D2 sweeps.
+Notable architectural pivots from review:
+- `@ton/mcp` does NOT do TonConnect — compose is filesystem-level
+  via shared `~/.config/ton/config.json`, NOT inter-MCP RPC. The
+  `@ton/walletkit` exposes `Signer` + adapters only, NOT a config
+  loader; the kit reads the config file itself.
+- MCP server uses LOW-LEVEL handlers (not `McpServer.registerTool`)
+  so SDK-level zod validation can produce F5 structured errors.
+- MCP cancellation is fire-and-forget — the protocol suppresses any
+  response after `notifications/cancelled`.
+
 ## [0.8.0-rc1] – 2026-05-10
 
 First-useful flag-plant for the **agent-surface track**. v0.8.0-rc1 ships

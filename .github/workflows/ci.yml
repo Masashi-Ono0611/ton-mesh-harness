@@ -70,27 +70,10 @@ jobs:
         run: npm run build
 
       - name: MCP smoke (initialize + tools/list)
-        # The kit's MCP server should boot, complete the initialize
-        # handshake, and return both GA tools. A regression in the
-        # server bootstrap would fail loud here without needing a real
-        # agent client.
-        shell: bash
-        run: |
-          OUT=$(
-            (
-              printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0.0.0"}}}'
-              sleep 0.3
-              printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/initialized"}'
-              sleep 0.3
-              printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
-              sleep 0.5
-            ) | timeout 8 node dist/mcp.js 2>&1 || true
-          )
-          echo "$OUT"
-          echo "$OUT" | grep -q '"serverInfo":{"name":"ton-sovereign-mcp"' \
-            || { echo "MCP initialize regression"; exit 1; }
-          echo "$OUT" | grep -q 'sovereign_check_env' \
-            || { echo "MCP tools/list missing sovereign_check_env"; exit 1; }
-          echo "$OUT" | grep -q 'sovereign_deploy' \
-            || { echo "MCP tools/list missing sovereign_deploy"; exit 1; }
-          echo "MCP smoke OK"
+        # Portable Node harness (scripts/mcp-smoke.cjs) — replaces the
+        # earlier bash + GNU `timeout` + grep recipe. `timeout` isn't on
+        # macOS runners by default. The Node harness spawns dist/mcp.js,
+        # speaks JSON-RPC over stdio, parses responses, asserts on
+        # serverInfo + both tool names. Exits non-zero with a clear
+        # message on any failure.
+        run: node scripts/mcp-smoke.cjs

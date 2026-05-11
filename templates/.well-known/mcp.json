@@ -1,5 +1,6 @@
 {
-  "$schema": "https://modelcontextprotocol.io/well-known/mcp.schema.json",
+  "_note_schema": "This is an experimental shape — there is no published JSON Schema at https://modelcontextprotocol.io/.well-known/ at the time of writing. Treat the file as a kit-specific self-description until/unless a standard MCP well-known schema lands. If a standard does land, add a $schema reference and update consumers.",
+  "_note_template": "This file is a TEMPLATE. Users who self-host the kit's dashboard at <domain>.ton can copy it into their build dir's .well-known/ so an agent visiting their site can discover the kit that published it (the 'View Source + Redeploy' axis from concept update 2026-05-10 Codex C proposal). The kit does NOT auto-write this file — copying is opt-in.",
   "name": "ton-sovereign-mcp",
   "version": "0.8.0-rc2",
   "description": "Deploy a static site to .ton (TON Storage + .ton DNS). Censorship-resistant, no server, no CDN, no domain registrar. Agent-callable via MCP; composes with @ton/mcp for autonomous (agentic) wallet flows.",
@@ -31,6 +32,5 @@
     ]
   },
   "skill_md": "https://github.com/Masashi-Ono0611/sovereign-deploy-kit/blob/main/skills/sovereign-deploy.md",
-  "license": "MIT",
-  "_note": "This file is a TEMPLATE. Users who self-host the kit's dashboard at <domain>.ton can copy it into their build dir's .well-known/ so an agent visiting their site can discover the kit that published it (the 'View Source + Redeploy' axis from concept update 2026-05-10 Codex C proposal). The kit does NOT auto-write this file — copying is opt-in."
+  "license": "MIT"
 }

@@ -11,7 +11,7 @@ for full architecture rules + Codex-review pattern.
 
 - [ ] `npm run lint` clean (no-console enforced on `src/sdk/`)
 - [ ] `npx tsc --noEmit` clean (strict + noUnusedLocals)
-- [ ] `npm test` green (default suite — 153+ tests at time of writing)
+- [ ] `npm test` green (default suite — daemon-spawn tests skipped unless `RUN_DAEMON_TESTS=1`)
 - [ ] `npm run build` clean (dual bin emits `dist/cli.js` + `dist/mcp.js`)
 - [ ] MCP smoke (if touching `src/mcp.ts` or anything it imports — see CONTRIBUTING.md)
 

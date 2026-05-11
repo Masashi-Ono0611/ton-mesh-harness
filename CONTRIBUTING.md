@@ -41,7 +41,7 @@ against Node 22 / 24.
 ```bash
 npm run lint     # eslint src/sdk — no-console rule
 npx tsc --noEmit # type-check with strict + noUnusedLocals
-npm test         # vitest, default suite (153 tests, no daemon spawn)
+npm test         # vitest, default suite — daemon-spawn tests skipped unless RUN_DAEMON_TESTS=1
 npm run build    # tsup dual-bin (cli.js + mcp.js)
 ```
 

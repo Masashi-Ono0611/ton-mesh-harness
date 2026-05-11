@@ -1,38 +1,39 @@
 # Draft PR text — adding `sovereign-deploy` to `ton-org/skills`
 
 **Target repo:** https://github.com/ton-org/skills (per `docs.ton.org/ecosystem/ai/mcp`)
-**Upstream layout:** `packages/<skill-name>/` per the existing `@ton/mcp` pattern (the agentskills.io spec)
+**Upstream layout:** unknown without inspecting the upstream tree at PR time. Per a 2026-05-10 spot-check, skills appear to live under top-level group dirs (e.g. `wallets/`, `docs/`) with second-level directories containing a `SKILL.md` file. Confirm the exact target path with the upstream maintainer before opening.
+**Suggested target:** `deploy/sovereign-deploy/SKILL.md` (or wherever the maintainer points).
 **Our skill source:** [`skills/sovereign-deploy.md`](../../skills/sovereign-deploy.md) in this repo
 
-The actual PR opens at v0.8.0 GA per [D5] #25. This file is the prepared text.
+The actual PR opens at v0.8.0 GA per [D5] #25. This file is the prepared text plus an internal pre-submit checklist.
 
 ---
 
 ## PR title
 
-`Add @ton/sovereign-deploy: sovereign static-site publishing skill (TON Storage + .ton DNS)`
+`Add sovereign-deploy: censorship-resistant static-site publishing skill (TON Storage + .ton DNS)`
 
 ## PR body
 
 ### Why
 
-`ton-org/skills` is the curated TON skills directory. The static-site-on-TON
-niche is currently empty — `@ton/mcp` covers wallet ops / on-chain tx /
-docs search, but nothing covers the "publish a build directory to TON
-Storage with a `.ton` DNS record" flow that DeFi-frontend / journalism /
-DAO-frontend builders need to escape takedown.
+This skill fills a gap in the TON skills directory: a one-call "deploy a
+static site to .ton" flow. Existing skills cover wallet operations,
+on-chain transactions, and docs search, but not the upload-to-TON-Storage
++ write-.ton-DNS path that DeFi-frontend, journalism, and DAO-frontend
+builders need to escape takedown.
 
-`ton-sovereign-deploy` fills that gap. It's been on npm since 2026-05-10
-and ships an MCP server (`ton-sovereign-mcp`) since v0.8.0-rc2 plus the
-`agentic-wallet` Path 2 that composes with `@ton/mcp` at the
-`~/.config/ton/config.json` filesystem level.
+`ton-sovereign-deploy` has been on npm since 2026-05-10. v0.8 ships an
+MCP server (`ton-sovereign-mcp`) plus an `agentic` signing path that
+composes with `@ton/mcp` at the `~/.config/ton/config.json` filesystem
+level (no inter-MCP RPC needed).
 
 ### What this PR adds
 
-- `packages/sovereign-deploy/skill.md` — the skill file (verbatim from
-  [our in-repo copy](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/blob/main/skills/sovereign-deploy.md))
-- `packages/sovereign-deploy/package.json` (or whatever convention this
-  repo uses) — points at the upstream npm package
+- `<group>/sovereign-deploy/SKILL.md` (verbatim from [our in-repo
+  copy](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/blob/main/skills/sovereign-deploy.md))
+- whatever package descriptor this directory expects (point at the
+  upstream npm package: `ton-sovereign-deploy`)
 
 ### Verification
 
@@ -52,12 +53,16 @@ wallet flows. Both servers read/write the same `~/.config/ton/config.json`
 
 MIT. Source: https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 
+Happy to iterate on the file layout / naming / description per repo
+conventions — point us at the right group dir and we'll move the file.
+
 ---
 
-## Pre-submit checklist (for the maintainer)
+## Internal pre-submit checklist (NOT part of the PR body)
 
-- [ ] v0.8.0 GA is tagged and published to npm
-- [ ] The in-repo `skills/sovereign-deploy.md` is current
+- [ ] v0.8.0 GA is tagged and published to npm (rc2 NOT sufficient — DNS still CLI-chained)
+- [ ] The in-repo `skills/sovereign-deploy.md` is current and documents rc2 vs GA behaviour honestly
 - [ ] `templates/.well-known/mcp.json` template is in `main`
-- [ ] [V4] red-team agent test (rc1 path AND GA path) has passed at least once
-- [ ] No private TON Foundation pre-coordination needed (open PR cold per the public submission process)
+- [ ] `[V4]` red-team agent test (rc1 path AND GA path) has passed at least once and the transcript is checked in
+- [ ] Confirmed the actual upstream `ton-org/skills` directory layout (likely `<group>/<skill-name>/SKILL.md`); update this draft accordingly before opening
+- [ ] No private TON Foundation pre-coordination required — open the PR cold through the public submission process
