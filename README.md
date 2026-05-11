@@ -275,28 +275,49 @@ node scripts/close-storage-contract.cjs <storage-contract-address>
 
 `git push` するだけで TON Storage にデプロイできます。
 
-**セットアップ:**
+**2 つのテンプレート:**
+
+| Template | 内容 | DNS write |
+|---|---|---|
+| `templates/github-workflow.yml` | bag アップロードのみ | しない |
+| `templates/github-workflow-agentic.yml` | bag + `.ton` DNS 書き込み (autonomous 署名) | する |
+
+**セットアップ (bag-only):**
 
 ```bash
-# 1. テンプレートをコピー
 mkdir -p .github/workflows
 cp node_modules/ton-sovereign-deploy/templates/github-workflow.yml \
    .github/workflows/deploy.yml
-
-# 2. Git に追加
 git add .github/workflows/deploy.yml
 git commit -m "Add TON Storage deployment"
-
-# 3. Push すると自動デプロイ
 git push origin main
 ```
 
-**ワークフローの機能:**
+**セットアップ (agentic — bag + DNS):**
+
+詳細は [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) を参照。要件:
+
+1. `npx -y @ton/mcp@alpha agentic_import_wallet` で wallet を作成
+2. `~/.config/ton/config.json` の中身を GH secret `TON_AGENTIC_CONFIG` として保存(暗号化済 blob のまま — `@ton/mcp` の protected-file 形式は AES key 同梱で passphrase 保護ではないため、plaintext 秘密鍵と同等に扱うこと)
+3. ドメイン名を GH variable `TON_DOMAIN` として登録
+4. テンプレートをコピー:
+
+```bash
+mkdir -p .github/workflows
+cp node_modules/ton-sovereign-deploy/templates/github-workflow-agentic.yml \
+   .github/workflows/deploy.yml
+git add .github/workflows/deploy.yml
+git commit -m "Add autonomous TON deployment"
+git push origin main
+```
+
+**ワークフローの機能 (両テンプレート共通):**
 
 - `main` ブランチへの push で自動デプロイ
-- `--ci-mode` でスピナー無効化（ログが見やすい）
-- `--json-output` で bag ID を後続ステップで参照可能
-- プルリクエストにプレビュー bag ID を自動コメント
+- `--ci-mode` でスピナー無効化(ログが見やすい)
+- `--json-output` で `bag_id` を後続ステップで参照可能
+- プルリクエストに bag ID をコメント (bag-only テンプレートのみ)
+- agentic テンプレートのみ: 実 on-chain `dns_tx_hash` + tonviewer リンクを GH Step Summary に出力
 
 **出力例:**
 
