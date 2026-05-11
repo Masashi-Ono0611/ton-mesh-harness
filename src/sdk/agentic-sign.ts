@@ -25,6 +25,7 @@ import { SdkError } from './deploy'
 import type { StoredStandardWallet } from './agentic-config'
 import { makeAbortChecker } from './abort'
 import { buildToncenterClient, getWalletkitNetwork } from './walletkit-network'
+import { signRequestValidUntilSeconds } from '../wallet/constants'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private-key normalization
@@ -137,7 +138,7 @@ export async function agenticSignAndSend(
   checkAborted()
 
   const fromAddress = adapter.getAddress({ testnet: input.wallet.network === 'testnet' })
-  const validUntil = Math.floor(Date.now() / 1000) + 5 * 60 // 5 min window
+  const validUntil = signRequestValidUntilSeconds()
 
   let signedBoc: string
   try {

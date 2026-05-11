@@ -14,6 +14,7 @@ import { Address, beginCell, Cell, type StateInit, storeStateInit } from '@ton/c
 import type { SendProvider } from './SendProvider'
 import type { Storage } from './Storage'
 import type { WalletUI } from './ui'
+import { signRequestValidUntilSeconds } from './constants'
 
 class TonConnectStorage implements IStorage {
   constructor(private readonly inner: Storage) {}
@@ -157,8 +158,9 @@ export class TonConnectProvider implements SendProvider {
     // TonConnect spec: validUntil is Unix epoch SECONDS, not ms. Blueprint's
     // original code passed Date.now() + 5*60*1000 (ms) which produced a
     // ~50,000-year-future timestamp — effectively a never-expiring signing
-    // request. We pin to 5 minutes from now in seconds.
-    const validUntil = Math.floor(Date.now() / 1000) + 5 * 60
+    // request. We use the shared signRequestValidUntilSeconds() helper
+    // (5-minute window) so agentic + tonconnect paths converge.
+    const validUntil = signRequestValidUntilSeconds()
 
     // Pin the chain explicitly so the wallet refuses if it is connected to a
     // different network — protects against signing a mainnet payment with a
