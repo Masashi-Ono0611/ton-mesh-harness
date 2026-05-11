@@ -23,7 +23,9 @@
     "lint": "eslint src/sdk"
   },
   "files": [
-    "dist"
+    "dist",
+    "templates",
+    "skills"
   ],
   "keywords": [
     "ton",
