@@ -4,6 +4,7 @@ import type { CliOptions } from './types/cli'
 import { runDeploy } from './cli/deploy'
 import { runDeployTonutils, runWatchModeTonutils } from './cli/deploy-tonutils'
 import { runDnsRegistration } from './cli/dns'
+import { runDnsRegistrationAgentic } from './cli/dns-agentic'
 import { runDoctor } from './cli/doctor'
 import { runSiteHost } from './cli/site-host'
 import { runWatchMode } from './cli/watch'
@@ -23,6 +24,12 @@ program
   .option('--provider [address]', 'Contract with a storage provider for 24/7 hosting (omit address to auto-select cheapest)')
   .option('--span <seconds>', 'Provider contract span in seconds (default 86400 = 1 day, max 4294967295)', '86400')
   .option('--wallet <name>', 'Preferred wallet for sign requests (case-insensitive substring of wallet name; default "Tonkeeper")', 'Tonkeeper')
+  // v0.8 S2.8: agentic signing mode. Reads a private key from
+  // ~/.config/ton/config.json (managed by @ton/mcp) and signs DNS
+  // updates locally — no QR / phone approval. For unattended deploys.
+  .option('--wallet-mode <mode>', 'Signing mode: tonconnect (default, QR) | agentic (autonomous, reads ~/.config/ton/config.json)', 'tonconnect')
+  .option('--wallet-label <label>', 'Wallet selector for --wallet-mode agentic (id / name / address; default = active_wallet_id)')
+  .option('--wallet-config <path>', 'Override path for --wallet-mode agentic config file (default ~/.config/ton/config.json or $TON_CONFIG_PATH)')
   .option('--ci-mode', 'Disable spinners for CI environments')
   .option('--json-output', 'Output result as JSON (for CI/CD pipelines)')
   .option('--skip-verify', 'Skip bag accessibility verification')
@@ -109,6 +116,36 @@ program
       throw new Error(`--site-udp-port requires --site-auto.`)
     }
 
+    // v0.8 S2.8: --wallet-mode validation
+    const walletMode = opts.walletMode ?? 'tonconnect'
+    if (walletMode !== 'tonconnect' && walletMode !== 'agentic') {
+      throw new Error(
+        `--wallet-mode must be 'tonconnect' or 'agentic' (got ${JSON.stringify(opts.walletMode)}).`,
+      )
+    }
+    if (walletMode === 'tonconnect') {
+      if (opts.walletLabel) {
+        throw new Error(`--wallet-label requires --wallet-mode=agentic.`)
+      }
+      if (opts.walletConfig) {
+        throw new Error(`--wallet-config requires --wallet-mode=agentic.`)
+      }
+    }
+    if (walletMode === 'agentic') {
+      if (!opts.domain) {
+        throw new Error(
+          `--wallet-mode=agentic only affects DNS write. Pass --domain to deploy to a .ton domain, ` +
+            `or drop --wallet-mode=agentic for a bag-only deploy (no signing needed).`,
+        )
+      }
+      if (backend !== 'tonutils') {
+        throw new Error(
+          `--wallet-mode=agentic requires --daemon-backend=tonutils (default). ` +
+            `Legacy ton-core backend's DNS path is TonConnect-only.`,
+        )
+      }
+    }
+
     // v0.6: --provider is temporarily disabled while the daemon backend is
     // being migrated. The mainnet provider economy was already dormant
     // (docs/v0.5/round-postmortem.md), so this gate costs no real
@@ -161,15 +198,28 @@ program
         })
       }
 
-      // DNS registration is daemon-agnostic (TonConnect + cell builder)
+      // DNS registration is daemon-agnostic (cell builder is shared).
+      // v0.8 S2.8: dispatch on --wallet-mode. tonconnect (default) goes
+      // through the original runDnsRegistration; agentic uses the SDK's
+      // writeDnsRecordAgentic via runDnsRegistrationAgentic.
       if (opts.domain) {
         const effectiveSiteAdnl = siteHost?.siteAdnlHex ?? opts.siteAdnl
-        await runDnsRegistration(opts.domain, result.bagId, opts.testnet, {
-          jsonOutput: opts.jsonOutput,
-          ciMode: opts.ciMode,
-          walletName: opts.wallet,
-          siteAdnl: effectiveSiteAdnl,
-        })
+        if (walletMode === 'agentic') {
+          await runDnsRegistrationAgentic(opts.domain, result.bagId, opts.testnet, {
+            jsonOutput: opts.jsonOutput,
+            ciMode: opts.ciMode,
+            walletLabel: opts.walletLabel,
+            configPath: opts.walletConfig,
+            siteAdnl: effectiveSiteAdnl,
+          })
+        } else {
+          await runDnsRegistration(opts.domain, result.bagId, opts.testnet, {
+            jsonOutput: opts.jsonOutput,
+            ciMode: opts.ciMode,
+            walletName: opts.wallet,
+            siteAdnl: effectiveSiteAdnl,
+          })
+        }
       }
 
       if (watchEnabled) {

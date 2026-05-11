@@ -4,6 +4,60 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0-rc5] – 2026-05-11
+
+[S2.8] CLI agentic mode + critical Node 22+ runtime fix.
+
+### Fixed (CRITICAL — broke rc2 / rc3 / rc4 CLI binaries)
+
+- **CLI binary failed to load on Node 22+** with
+  `ERR_UNSUPPORTED_DIR_IMPORT`. Root cause:
+  `@ton/walletkit@0.0.12-alpha.3` ships `dist/cjs/utils/mnemonic.mjs`
+  whose top-level `import { ... } from '../errors'` uses a directory
+  import — unsupported in Node ESM resolver strict mode (Node 22+).
+  Since the package's `main` points at the CJS index but internal
+  files mix `.mjs` (ESM), Node's loader picks up the broken `.mjs`
+  when our externalized `require('@ton/walletkit')` walks into the
+  package. The MCP smoke (`scripts/mcp-smoke.cjs`) didn't catch this
+  because it only exercised `dist/mcp.js`, not `dist/cli.js`. Tests
+  use vitest which has its own resolver, also unaffected.
+- Fix: `tsup.config.ts` now sets `noExternal: ['@ton/walletkit']`.
+  Inlining walletkit causes tsup to resolve directory imports at
+  build time, so the published bundle works on Node 18-24.
+- Bundle size cost: `dist/cli.js` 694 KB → 1.28 MB,
+  `dist/mcp.js` 686 KB → 1.27 MB. Acceptable for fixing a runtime
+  load failure that affected every CLI invocation on Node 22+.
+- **Affects rc2 / rc3 / rc4**. Users on Node 18 / 20 are unaffected
+  (those Nodes accept directory imports). rc5 fixes for all.
+
+### Added
+
+- **CLI `--wallet-mode agentic`** — the agentic signing path is now
+  reachable from the terminal, not just SDK / MCP. Reads the wallet
+  key from `~/.config/ton/config.json` (the @ton/mcp-managed file)
+  and signs `.ton` DNS updates locally — no QR / phone approval.
+  Routes through `src/cli/dns-agentic.ts`, a thin CLI adapter over
+  the SDK's `writeDnsRecordAgentic` generator. Phase events map to
+  spinners; the final `tx_hash` (when Toncenter has indexed) prints
+  a tonviewer link.
+- **CLI `--wallet-label`** — wallet selector for agentic mode
+  (id / name / address). Defaults to `active_wallet_id`.
+- **CLI `--wallet-config`** — override the config file path
+  (default `~/.config/ton/config.json` or `$TON_CONFIG_PATH`).
+- **Validation**: `--wallet-mode agentic` requires `--domain` and
+  `--daemon-backend=tonutils`; `--wallet-label` and `--wallet-config`
+  require `--wallet-mode=agentic`. Invalid `--wallet-mode` value
+  rejected at flag parse time.
+
+### Verified
+
+- 200 tests pass / 11 skip (unchanged from rc4 — CLI adapter is a
+  thin shim over the already-tested SDK).
+- `node dist/cli.js --help`, `--wallet-mode bogus`, `--wallet-label foo`
+  all behave as expected (help text shows new flags; invalid values
+  hit the validation gate).
+- MCP smoke unchanged.
+
 ## [0.8.0-rc4] – 2026-05-11
 
 [S2.7] Real `dns_tx_hash` exposure. Both paths (TonConnect + agentic)

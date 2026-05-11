@@ -1,7 +1,7 @@
 {
   "name": "ton-sovereign-deploy",
-  "version": "0.8.0-rc4",
-  "description": "Sovereign one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. v0.8.0-rc4 resolves real on-chain dns_tx_hash via Toncenter for both TonConnect and agentic paths. v0.8.0 GA pending V3 (E2E) + V4 (red-team) acceptance.",
+  "version": "0.8.0-rc5",
+  "description": "Sovereign one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. v0.8.0-rc5 adds --wallet-mode agentic to the CLI + fixes a Node 22+ walletkit runtime regression that broke rc2/rc3/rc4 CLI binaries.",
   "main": "./dist/cli.js",
   "bin": {
     "ton-sovereign-deploy": "dist/cli.js",
