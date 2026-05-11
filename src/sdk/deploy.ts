@@ -242,8 +242,8 @@ export async function* deploy(
   if (opts.testnet) {
     throw new SdkError(
       'ERR_INVALID_INPUT',
-      '--testnet is not supported on the tonutils-storage backend in v0.8. ' +
-        'Use --daemon-backend=ton-core for testnet, or drop --testnet for mainnet self-host.',
+      'testnet deploys are not supported by the SDK in v0.8 (the tonutils-storage backend is mainnet-only).' +
+        ' For testnet, use the CLI with `--daemon-backend=ton-core` — that path lives outside the SDK boundary.',
       { severity: 'fatal' },
     )
   }
@@ -469,33 +469,50 @@ export async function* deploy(
         // Manual iteration so we can capture the generator's RETURN value
         // (the DnsWriteResult with message_boc / message_hash / tx_hash) —
         // for-await drops returns.
-        while (true) {
-          const step = await inner.next()
-          if (step.done) {
-            const v = step.value
-            if (v && 'message_boc' in v && v.message_boc) messageBoc = v.message_boc
-            if (v && 'message_hash' in v && v.message_hash) dnsSubmissionHash = v.message_hash
-            if (v && 'tx_hash' in v && v.tx_hash) dnsTxHash = v.tx_hash
-            break
+        //
+        // The inner-try / finally pair below is the Codex-pre-GA-review
+        // fix: if the OUTER consumer break()s while we're suspended on
+        // `yield ev`, the runtime calls `outer.return()`, which throws
+        // a return-signal at our yield. That signal flows past the
+        // catch (it's not an SdkError), and without the finally below
+        // we'd leave `inner` suspended forever — its own finally
+        // (TonConnect bridge dispose, AbortController unsubscribe,
+        // in-flight Toncenter calls) would never run. The explicit
+        // `inner.return(undefined)` cascades cleanup down. No-op on
+        // an already-done generator.
+        try {
+          while (true) {
+            const step = await inner.next()
+            if (step.done) {
+              const v = step.value
+              if (v && 'message_boc' in v && v.message_boc) messageBoc = v.message_boc
+              if (v && 'message_hash' in v && v.message_hash) dnsSubmissionHash = v.message_hash
+              if (v && 'tx_hash' in v && v.tx_hash) dnsTxHash = v.tx_hash
+              break
+            }
+            const ev = step.value
+            if (ev.phase === 'awaiting_signature') {
+              dnsAwaitingSignatureSeen = true
+            }
+            if (ev.phase === 'dns_signing') {
+              dnsBroadcastEnqueued = true
+              const evData = ev.data as
+                | { message_boc?: string | null; message_hash?: string }
+                | undefined
+              if (evData?.message_boc) messageBoc = evData.message_boc
+              if (evData?.message_hash) dnsSubmissionHash = evData.message_hash
+            }
+            if (ev.phase === 'dns_confirmed') {
+              const evData = ev.data as { tx_hash?: string | null } | undefined
+              if (evData?.tx_hash) dnsTxHash = evData.tx_hash
+            }
+            currentPhase = ev.phase
+            yield ev
           }
-          const ev = step.value
-          if (ev.phase === 'awaiting_signature') {
-            dnsAwaitingSignatureSeen = true
-          }
-          if (ev.phase === 'dns_signing') {
-            dnsBroadcastEnqueued = true
-            const evData = ev.data as
-              | { message_boc?: string | null; message_hash?: string }
-              | undefined
-            if (evData?.message_boc) messageBoc = evData.message_boc
-            if (evData?.message_hash) dnsSubmissionHash = evData.message_hash
-          }
-          if (ev.phase === 'dns_confirmed') {
-            const evData = ev.data as { tx_hash?: string | null } | undefined
-            if (evData?.tx_hash) dnsTxHash = evData.tx_hash
-          }
-          currentPhase = ev.phase
-          yield ev
+        } finally {
+          // Cascade: ensure inner's finally runs even if we exited the
+          // while loop for any reason. No-op on completed generator.
+          await inner.return(undefined as never).catch(() => {})
         }
       } catch (err) {
         if (err instanceof SdkError && err.code === 'ERR_CANCELLED') {

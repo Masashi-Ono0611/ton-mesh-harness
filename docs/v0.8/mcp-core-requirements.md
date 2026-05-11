@@ -86,11 +86,15 @@ The literal phrase **"deploy a static site to .ton"** (or close paraphrase) must
 | `domain` | string \| null | — | null | e.g. `"myprotocol.ton"` |
 | `description` | string \| null | — | dir name | bag description |
 | `wallet` | `WalletSpec` | — | `{kind: "tonconnect", connector: "Tonkeeper"}` | discriminated union, see below |
-| `testnet` | boolean | — | false | |
-| `daemon_backend` | `"tonutils" \| "ton-core"` | — | `"tonutils"` | |
+| `testnet` | boolean | — | false | reserved for v0.9 — SDK rejects `true` with `ERR_INVALID_INPUT` in v0.8 (tonutils-storage backend is mainnet-only). CLI testnet route lives outside the SDK. |
 | `tunnel_config` | string \| null | — | null | path to nodes-pool.json |
 | `keep_alive` | boolean | — | false | true = daemon keeps seeding after the call returns; false = one-shot |
-| `skip_verify` | boolean | — | false | |
+
+> `daemon_backend` and `skip_verify` existed in pre-rc6 drafts but never made
+> it into runtime behaviour. They were removed from `DeployOptionsSchema`
+> before GA — the SDK ships one backend (tonutils-storage) and one verify
+> path. The CLI's `--daemon-backend=ton-core` is a separate code path that
+> doesn't go through the SDK.
 
 **`WalletSpec`** (discriminated union per [P-1 verdict](at-mcp-probe.md)):
 

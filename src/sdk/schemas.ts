@@ -75,13 +75,12 @@ export const DeployOptionsSchema = z.strictObject({
    * bare string and are lifted via `parseWalletInput()` in the SDK boundary.
    */
   wallet: WalletSpecSchema.default({ kind: 'tonconnect', connector: 'Tonkeeper' }),
-  /** Use TON testnet instead of mainnet. */
-  testnet: z.boolean().default(false),
   /**
-   * Storage daemon backend. `tonutils` is the v0.6+ default (xssnick path);
-   * `ton-core` is the legacy v0.5 path kept for fallback / debug.
+   * Use TON testnet instead of mainnet. v0.8 SDK does not yet support the
+   * testnet path on the tonutils backend; the SDK throws `ERR_INVALID_INPUT`
+   * when this is true. Reserved for v0.9. Status / check_env honour it.
    */
-  daemon_backend: z.enum(['tonutils', 'ton-core']).default('tonutils'),
+  testnet: z.boolean().default(false),
   /** Path to ADNL Tunnel client config (nodes-pool.json). */
   tunnel_config: z.string().nullable().default(null),
   /**
@@ -90,8 +89,6 @@ export const DeployOptionsSchema = z.strictObject({
    * before the call returns (one-shot semantics).
    */
   keep_alive: z.boolean().default(false),
-  /** Skip the `verifyBagOnNetwork` post-upload check. */
-  skip_verify: z.boolean().default(false),
 })
 
 export type DeployOptions = z.infer<typeof DeployOptionsSchema>

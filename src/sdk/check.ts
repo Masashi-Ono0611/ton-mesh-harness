@@ -13,6 +13,7 @@ import { promises as fsp } from 'fs'
 import dgram from 'dgram'
 import { CheckEnvOptionsSchema, CheckEnvResultSchema } from './schemas'
 import type { CheckEnvOptions, CheckEnvResult } from './schemas'
+import { SdkError } from './deploy'
 import { getAgenticConfigPath } from './agentic-config'
 import { getDaemonPaths } from '../daemon/installer'
 import { getTonutilsPaths } from '../daemon/tonutils-installer'
@@ -156,7 +157,15 @@ function detectAgenticConfig(overridePath?: string): AgenticProbeOutcome {
  * route through here.
  */
 export async function checkEnv(opts: CheckEnvOptions = { source_dir: null }): Promise<CheckEnvResult> {
-  const parsed = CheckEnvOptionsSchema.parse(opts)
+  let parsed: CheckEnvOptions
+  try {
+    parsed = CheckEnvOptionsSchema.parse(opts)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new SdkError('ERR_INVALID_INPUT', `Invalid sovereign_check_env input: ${msg}`, {
+      severity: 'fatal',
+    })
+  }
   const blocking: CheckEnvResult['blocking'] = []
   const warnings: CheckEnvResult['warnings'] = []
 

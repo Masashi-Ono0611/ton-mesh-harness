@@ -72,6 +72,60 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
+## [Unreleased] – 2026-05-12
+
+[S2.9 polish] Codex pre-GA review pass against rc6. 5 MAJORs + 1
+MINOR resolved at the SDK public-surface level. Lands as rc7 (or
+straight into GA depending on V3/V4 timing).
+
+### Fixed (Codex pre-GA review 2026-05-12)
+
+- **[MAJOR]** `DeployOptionsSchema` had dead public fields
+  `daemon_backend` and `skip_verify`. Schema said they did
+  something; the SDK never read either (`daemon_backend` was
+  silently ignored — `'ton-core'` would still run on tonutils;
+  `skip_verify` had no callsite at all). Removed both from
+  `DeployOptionsSchema`. The CLI's `--daemon-backend=ton-core` is
+  a separate code path that bypasses the SDK and stays. The
+  `daemon_backend_installed` field in `CheckEnvResult` is
+  informational (which backends are present on the machine) and
+  stays.
+- **[MAJOR]** Stale `testnet` error message referenced the now-
+  removed `daemon_backend` option. Updated to point CLI users at
+  the CLI's separate `--daemon-backend=ton-core` flag while
+  making clear the SDK path is mainnet-only in v0.8.
+- **[MAJOR]** `src/sdk/check.ts::checkEnv()` threw raw `ZodError`
+  on malformed SDK input — violating the SdkError-on-every-error
+  contract that `deploy()` / `status()` honour. Wrapped the
+  `CheckEnvOptionsSchema.parse()` call in try/catch that
+  re-throws as `SdkError(ERR_INVALID_INPUT)`. MCP server already
+  wrapped this, but the npm SDK consumer surface was leaking.
+- **[MAJOR]** `src/sdk/deploy.ts` manually iterated the inner DNS
+  generator and never called `inner.return()` if the outer
+  consumer broke out of the `for await` (e.g. agent disconnects
+  mid-deploy). Inner's own `finally` (TonConnect bridge dispose,
+  AbortController cleanup, in-flight Toncenter promises) never
+  ran. Wrapped the iteration loop in `try { ... } finally { await
+  inner.return(undefined).catch(() => {}) }` to cascade cleanup
+  on all exit paths.
+- **[MAJOR]** `docs/v0.8/agent-stack-compose.md` said the final
+  deploy result "carries dns_tx_hash + a tonviewer URL" — the
+  schema actually allows `dns_tx_hash: null` (best-effort
+  Toncenter indexing). Doc now spells out the null semantic +
+  the "re-poll later, don't fail the deploy" guidance.
+- **[MAJOR]** Same doc said `wallet.kind: "agentic"` still works
+  without `@ton/mcp`. True for `type: "standard"` config entries
+  (mnemonic / direct key sign through `@ton/walletkit`); false
+  for `type: "agentic"` config entries (NFT-delegated signing
+  needs `AgenticWalletAdapter` from the optional peer). Doc now
+  distinguishes the two cases + spells out the `ERR_NO_WALLET`
+  fallback signal.
+- **[MINOR]** `DeployInput` and `DeployControl` types were not
+  exported from the public barrel (`src/sdk.ts`) even though the
+  signature of `deploy()` uses them. TS consumers of the npm
+  package would get `deploy: (rawInput: DeployInput, control?: DeployControl) => ...`
+  with both type names unresolvable. Re-exported from the barrel.
+
 ## [0.8.0-rc6] – 2026-05-12
 
 [S2.9] Full v0.8 feature ship: NFT-delegated agentic, `sovereign_status`

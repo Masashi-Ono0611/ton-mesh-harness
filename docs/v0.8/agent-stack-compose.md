@@ -75,8 +75,13 @@ The agent's tool-call sequence:
    }
    ```
 5. Stream the `notifications/progress` events; the final tool result
-   carries `bag_id` + `dns_tx_hash` + a tonviewer URL in
-   `next_actions`.
+   carries `bag_id` + a `next_actions` list. The `dns_tx_hash` field
+   is best-effort: it's the on-chain DNS-update tx hash when Toncenter
+   has indexed the broadcast in time, and `null` otherwise (the bag
+   *is* live; only the hash field is unresolved). When non-null, a
+   tonviewer URL using it appears in `next_actions`. Treat `null` as
+   "deploy succeeded, hash will index within a few minutes; re-poll
+   if you need it." Don't fail the deploy on a null hash.
 
 ## Flow 2: Human-signed deploy (TonConnect)
 
@@ -129,9 +134,20 @@ User prompt: *"I changed the homepage. Re-deploy."*
   does not create, modify, or delete entries. Wallet management is
   always via `@ton/mcp`.
 - **No MCP-to-MCP calls.** Each server is a standalone process the
-  agent talks to. If `@ton/mcp` isn't loaded, `ton-sovereign-deploy`
-  with `wallet.kind: "agentic"` still works (it reads the file
-  directly); it just can't help the agent create new wallets.
+  agent talks to.
+- **`@ton/mcp` is an OPTIONAL peer dep of `ton-sovereign-deploy`.**
+  When it isn't loaded:
+  - `wallet.kind: "agentic"` with a `type: "standard"` config entry
+    (mnemonic / direct private key) **still works** — the SDK reads
+    the file directly and signs via `@ton/walletkit`.
+  - `wallet.kind: "agentic"` with a `type: "agentic"` config entry
+    (NFT-delegated, operator-key signing through the agentic
+    collection contract) **fails with `ERR_NO_WALLET`** — that path
+    dynamically imports `AgenticWalletAdapter` from `@ton/mcp` and
+    can't proceed without it. Agents should install `@ton/mcp` (or
+    fall back to a non-delegated wallet) on that error code.
+  - Wallet creation always requires `@ton/mcp` — `ton-sovereign-deploy`
+    never writes to `~/.config/ton/config.json`.
 - **F5 errors are stable.** Codes like `ERR_NO_WALLET`,
   `ERR_NO_DOMAIN`, `ERR_DNS_TX_TIMEOUT` are part of the public
   contract — agents can branch on them. See

@@ -21,12 +21,15 @@ describe('SDK schemas (zod)', () => {
     it('DeployOptions defaults: tonconnect/Tonkeeper, all flags false, nullables null', () => {
       const o = DeployOptionsSchema.parse({ source_dir: './dist' })
       expect(o.wallet).toEqual({ kind: 'tonconnect', connector: 'Tonkeeper' })
-      expect(o.daemon_backend).toBe('tonutils')
       expect(o.testnet).toBe(false)
       expect(o.keep_alive).toBe(false)
-      expect(o.skip_verify).toBe(false)
       expect(o.domain).toBeNull()
       expect(o.tunnel_config).toBeNull()
+      // daemon_backend / skip_verify were removed from DeployOptionsSchema in
+      // the rc6 → GA polish — see CHANGELOG. Reaching for either key on a
+      // parsed DeployOptions is now a TS error AND a runtime undefined.
+      expect('daemon_backend' in o).toBe(false)
+      expect('skip_verify' in o).toBe(false)
     })
 
     it('agentic accepts config_path + wallet_label overrides', () => {

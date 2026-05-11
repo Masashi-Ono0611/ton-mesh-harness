@@ -147,14 +147,6 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
     "DeployOptions": {
       "additionalProperties": false,
       "properties": {
-        "daemon_backend": {
-          "default": "tonutils",
-          "enum": [
-            "tonutils",
-            "ton-core",
-          ],
-          "type": "string",
-        },
         "description": {
           "default": null,
           "type": [
@@ -170,10 +162,6 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
           ],
         },
         "keep_alive": {
-          "default": false,
-          "type": "boolean",
-        },
-        "skip_verify": {
           "default": false,
           "type": "boolean",
         },

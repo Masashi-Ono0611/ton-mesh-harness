@@ -18,10 +18,10 @@ describe('SDK deploy() — input validation + error contract', () => {
     })
   })
 
-  it('rejects --testnet on the tonutils-storage backend', async () => {
+  it('rejects testnet=true on the tonutils-storage backend', async () => {
     await expect(deploy({ source_dir: './dist', testnet: true }).next()).rejects.toMatchObject({
       code: 'ERR_INVALID_INPUT',
-      message: expect.stringContaining('--testnet is not supported'),
+      message: expect.stringContaining('testnet deploys are not supported'),
     })
   })
 

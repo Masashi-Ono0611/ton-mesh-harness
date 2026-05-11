@@ -39,7 +39,12 @@
 
 // ─── Core SDK functions ──────────────────────────────────────────────────────
 export { checkEnv } from './sdk/check'
-export { deploy, SdkError } from './sdk/deploy'
+export {
+  deploy,
+  SdkError,
+  type DeployInput,
+  type DeployControl,
+} from './sdk/deploy'
 export { status } from './sdk/status'
 
 // ─── Public types ────────────────────────────────────────────────────────────
