@@ -48,3 +48,24 @@ export function resolveCliOutputMode(opts: CliOutputModeInput): CliOutputMode {
     log: jsonMode ? () => {} : (...args) => console.log(...args),
   }
 }
+
+/**
+ * Wire SIGINT and SIGTERM to run a cleanup hook before exiting. Exit
+ * codes follow the POSIX `128 + signal` convention:
+ *   - SIGINT (Ctrl+C) → 130
+ *   - SIGTERM         → 143
+ *
+ * Idempotent w.r.t. multiple installs (Node naturally fans handlers).
+ * Use the same cleanup function in CLI deploy entry points so the
+ * daemon is killed regardless of which signal arrives first.
+ */
+export function installCleanupOnExit(cleanup: () => void): void {
+  process.on('SIGINT', () => {
+    cleanup()
+    process.exit(130)
+  })
+  process.on('SIGTERM', () => {
+    cleanup()
+    process.exit(143)
+  })
+}

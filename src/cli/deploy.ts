@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import type { DaemonHandle } from '../daemon'
 import type { CliOptions } from '../types/cli'
-import { resolveCliOutputMode } from './output-mode'
+import { installCleanupOnExit, resolveCliOutputMode } from './output-mode'
 import { detectBuildDir } from '../detect'
 import { ensureBinaries, startDaemon } from '../daemon'
 import { createBag } from '../upload'
@@ -20,8 +20,7 @@ export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise
     if (daemon) daemon.kill()
   }
 
-  process.on('SIGINT', () => { cleanup(); process.exit(130) })
-  process.on('SIGTERM', () => { cleanup(); process.exit(143) })
+  installCleanupOnExit(cleanup)
   process.on('uncaughtException', (err) => {
     cleanup()
     console.error(chalk.red('\nUnexpected error:'), err.message)

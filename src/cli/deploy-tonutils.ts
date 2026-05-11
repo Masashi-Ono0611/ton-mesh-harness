@@ -8,7 +8,7 @@
 import path from 'path'
 import chalk from 'chalk'
 import type { CliOptions } from '../types/cli'
-import { resolveCliOutputMode } from './output-mode'
+import { installCleanupOnExit, resolveCliOutputMode } from './output-mode'
 import { detectBuildDir } from '../detect'
 import {
   tonutilsCreate,
@@ -326,8 +326,7 @@ export async function runWatchModeTonutils(
     opts.proxyHandle?.kill()
   }
 
-  process.on('SIGINT',  () => { cleanup(); process.exit(130) })
-  process.on('SIGTERM', () => { cleanup(); process.exit(143) })
+  installCleanupOnExit(cleanup)
 
   // Hold the process alive until SIGINT/SIGTERM
   await new Promise<void>(() => { /* never resolves */ })
