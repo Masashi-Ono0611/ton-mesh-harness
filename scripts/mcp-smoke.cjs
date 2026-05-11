@@ -124,7 +124,7 @@ async function main() {
   }
   if (!list) throw new Error(`no tools/list response within ${TIMEOUT_MS}ms`)
   const names = (list.result?.tools ?? []).map((t) => t.name).sort()
-  const expected = ['sovereign_check_env', 'sovereign_deploy']
+  const expected = ['sovereign_check_env', 'sovereign_deploy', 'sovereign_status']
   if (JSON.stringify(names) !== JSON.stringify(expected)) {
     throw new Error(`tools/list mismatch: expected ${expected.join(', ')} got ${names.join(', ')}`)
   }

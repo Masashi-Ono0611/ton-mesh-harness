@@ -3,6 +3,7 @@ import {
   ALL_TOOLS,
   SOVEREIGN_CHECK_ENV_TOOL,
   SOVEREIGN_DEPLOY_TOOL,
+  SOVEREIGN_STATUS_TOOL,
   SUPPLEMENTARY_SCHEMAS,
   SCHEMA_VERSION,
 } from '../src/sdk/json-schemas'
@@ -13,11 +14,12 @@ import {
  * `npx vitest run test/sdk-json-schemas.test.ts -u`.
  */
 describe('SDK JSON Schemas (V1 snapshot)', () => {
-  it('ships exactly the two GA tools with the kit minor as SCHEMA_VERSION', () => {
+  it('ships exactly the three GA tools with the kit minor as SCHEMA_VERSION', () => {
     expect(SCHEMA_VERSION).toBe('0.8.0')
     expect(ALL_TOOLS.map((t) => t.name).sort()).toEqual([
       'sovereign_check_env',
       'sovereign_deploy',
+      'sovereign_status',
     ])
   })
 
@@ -29,6 +31,11 @@ describe('SDK JSON Schemas (V1 snapshot)', () => {
   it('sovereign_check_env schemas (input + output)', () => {
     expect(SOVEREIGN_CHECK_ENV_TOOL.input).toMatchSnapshot()
     expect(SOVEREIGN_CHECK_ENV_TOOL.output).toMatchSnapshot()
+  })
+
+  it('sovereign_status schemas (input + output)', () => {
+    expect(SOVEREIGN_STATUS_TOOL.input).toMatchSnapshot()
+    expect(SOVEREIGN_STATUS_TOOL.output).toMatchSnapshot()
   })
 
   it('supplementary schemas (WalletSpec, DeployEvent, ErrorPayload)', () => {

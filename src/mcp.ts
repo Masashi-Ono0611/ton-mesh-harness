@@ -27,10 +27,12 @@ import {
 
 import { checkEnv } from './sdk/check'
 import { deploy, SdkError } from './sdk/deploy'
+import { status } from './sdk/status'
 import {
   ALL_TOOLS,
   SOVEREIGN_CHECK_ENV_TOOL,
   SOVEREIGN_DEPLOY_TOOL,
+  SOVEREIGN_STATUS_TOOL,
 } from './sdk/json-schemas'
 import { CheckEnvOptionsSchema, DeployOptionsSchema } from './sdk/schemas'
 
@@ -89,6 +91,9 @@ const CHECK_ENV_DESCRIPTION =
 const DEPLOY_DESCRIPTION =
   'Deploy a static site to .ton by uploading a build directory to TON Storage AND writing the .ton DNS records (storage + optional site/ADNL). Censorship-resistant — no server, no CDN, no domain registrar. Supports two signing modes: human-signed (TonConnect — agent surfaces a wallet URL via awaiting_signature.data.signing_url) and agentic (autonomous signing via a key in ~/.config/ton/config.json, shared with @ton/mcp). End-to-end since v0.8.0-rc3; real on-chain dns_tx_hash since rc4 (resolved via Toncenter v3 transactionsByMessage). Returns bag_id, dns_tx_hash, daemon_api_url, daemon_pid (when keep_alive=true), seed_status, and next_actions.'
 
+const STATUS_DESCRIPTION =
+  'One-shot snapshot of a bag\'s network state. Given a bag_id (and optionally a .ton domain), queries TONAPI to report whether the bag is propagated, its current size + file count, and — when a domain is passed — whether the on-chain DNS storage record points at this bag. Use AFTER a sovereign_deploy with keep_alive=false to check propagation status without keeping a daemon alive. Network failures absorb into bag_accessible=false rather than throwing, so the answer is always a clean snapshot, never a partial-state error.'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Server bootstrap (low-level handlers)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,6 +118,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         description: DEPLOY_DESCRIPTION,
         inputSchema: SOVEREIGN_DEPLOY_TOOL.input,
       },
+      {
+        name: SOVEREIGN_STATUS_TOOL.name,
+        description: STATUS_DESCRIPTION,
+        inputSchema: SOVEREIGN_STATUS_TOOL.input,
+      },
     ],
   }
 })
@@ -131,12 +141,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any, extra: any)
       return handleCheckEnv(args)
     case 'sovereign_deploy':
       return handleDeploy(args, extra)
+    case 'sovereign_status':
+      return handleStatus(args)
     default:
       return structuredErr(
         new SdkError('ERR_INVALID_INPUT', `Unknown tool: ${name}`, { severity: 'fatal' }),
       )
   }
 })
+
+async function handleStatus(args: unknown): Promise<CallToolResult> {
+  try {
+    const result = await status(args)
+    return structuredOk(result)
+  } catch (err) {
+    return structuredErr(err)
+  }
+}
 
 // ─── sovereign_check_env ────────────────────────────────────────────────────
 
@@ -253,9 +274,9 @@ async function handleDeploy(
 // Assert at startup that ALL_TOOLS still has exactly the two GA tools we
 // wire above; if [D5] adds a new tool to the SDK without wiring here,
 // the smoke test should fail loud.
-if (ALL_TOOLS.length !== 2) {
+if (ALL_TOOLS.length !== 3) {
   process.stderr.write(
-    `ton-sovereign-mcp: ALL_TOOLS has ${ALL_TOOLS.length} entries; expected 2 (sovereign_check_env + sovereign_deploy). ` +
+    `ton-sovereign-mcp: ALL_TOOLS has ${ALL_TOOLS.length} entries; expected 3 (sovereign_check_env + sovereign_deploy + sovereign_status). ` +
       `Wire any new tools in src/mcp.ts before shipping.\n`,
   )
   process.exit(1)

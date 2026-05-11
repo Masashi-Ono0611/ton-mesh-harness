@@ -18,6 +18,8 @@ import {
   DeployResultSchema,
   DeployEventSchema,
   ErrorPayloadSchema,
+  StatusOptionsSchema,
+  StatusResultSchema,
   WalletSpecSchema,
 } from './schemas'
 
@@ -63,7 +65,17 @@ export const SOVEREIGN_CHECK_ENV_TOOL: ToolJsonSchema = {
   output: toJson(CheckEnvResultSchema, 'CheckEnvResult'),
 }
 
-export const ALL_TOOLS: readonly ToolJsonSchema[] = [SOVEREIGN_DEPLOY_TOOL, SOVEREIGN_CHECK_ENV_TOOL]
+export const SOVEREIGN_STATUS_TOOL: ToolJsonSchema = {
+  name: 'sovereign_status',
+  input: toJson(StatusOptionsSchema, 'StatusOptions'),
+  output: toJson(StatusResultSchema, 'StatusResult'),
+}
+
+export const ALL_TOOLS: readonly ToolJsonSchema[] = [
+  SOVEREIGN_DEPLOY_TOOL,
+  SOVEREIGN_CHECK_ENV_TOOL,
+  SOVEREIGN_STATUS_TOOL,
+]
 
 export const SUPPLEMENTARY_SCHEMAS = {
   WalletSpec: toJson(WalletSpecSchema, 'WalletSpec'),

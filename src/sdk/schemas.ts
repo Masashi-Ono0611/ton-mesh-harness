@@ -183,6 +183,44 @@ export const CheckEnvResultSchema = z
 export type CheckEnvResult = z.infer<typeof CheckEnvResultSchema>
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Status — input + output for sovereign_status
+//
+// One-shot snapshot of a bag's network state via TONAPI, and (optionally) the
+// .ton DNS record currently pointing at it. Used by agents that ran a
+// `keep_alive: false` deploy and want to know whether the bag has propagated.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const StatusOptionsSchema = z.strictObject({
+  bag_id: z.string().min(1),
+  /** Optional `.ton` domain to also check (resolves NFT + reads storage record). */
+  domain: z.string().nullable().default(null),
+  testnet: z.boolean().default(false),
+})
+export type StatusOptions = z.infer<typeof StatusOptionsSchema>
+
+const StatusDomainSchema = z.strictObject({
+  name: z.string(),
+  nft_address: z.string().nullable(),
+  /** Bag id currently pointed to by the `storage` DNS record (lowercase hex). */
+  resolved_bag_id: z.string().nullable(),
+  /** `resolved_bag_id === bag_id` (lowercased compare). */
+  matches: z.boolean(),
+})
+
+export const StatusResultSchema = z.strictObject({
+  bag_id: z.string(),
+  /** TONAPI reports the bag is visible / not "not_found". */
+  bag_accessible: z.boolean(),
+  /** Bag size in bytes if TONAPI returned it; null when accessible=false. */
+  bag_size_bytes: z.number().int().nonnegative().nullable(),
+  /** File count if TONAPI returned it; null when accessible=false. */
+  bag_file_count: z.number().int().nonnegative().nullable(),
+  /** Present iff `domain` was passed. */
+  domain: StatusDomainSchema.nullable(),
+})
+export type StatusResult = z.infer<typeof StatusResultSchema>
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DeployEvent — typed progress events emitted from `deploy(opts)` AsyncIterable
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -50,6 +50,16 @@ can drive a full deploy with one command / one tool call.
 
 ### Added
 
+- **`sovereign_status` MCP tool** — third GA tool. One-shot snapshot
+  of a bag's network state: input `{bag_id, domain?, testnet?}`,
+  output `{bag_id, bag_accessible, bag_size_bytes, bag_file_count,
+  domain?: {name, nft_address, resolved_bag_id, matches}}`. Designed
+  for agents that ran a `keep_alive: false` deploy and want to
+  poll whether the bag has propagated. Network failures are absorbed
+  (bag_accessible=false), not thrown — so the answer is always a
+  clean snapshot. New SDK module: `src/sdk/status.ts`. 11 new mocked
+  unit tests cover happy path, TONAPI 404, network-failure absorb,
+  domain-NFT lookup failure paths, case-insensitive bag-id match.
 - **NFT-delegated agentic signing** — `wallet.kind: "agentic"` with a
   `type: "agentic"` entry in `~/.config/ton/config.json` now signs
   through `@ton/mcp`'s `AgenticWalletAdapter`. The operator key

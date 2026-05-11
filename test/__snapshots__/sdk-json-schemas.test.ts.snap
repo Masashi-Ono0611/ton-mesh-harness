@@ -317,6 +317,126 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
 }
 `;
 
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_status schemas (input + output) 1`] = `
+{
+  "$ref": "#/definitions/StatusOptions",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "StatusOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "bag_id": {
+          "minLength": 1,
+          "type": "string",
+        },
+        "domain": {
+          "default": null,
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "testnet": {
+          "default": false,
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "bag_id",
+      ],
+      "type": "object",
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_status schemas (input + output) 2`] = `
+{
+  "$ref": "#/definitions/StatusResult",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "StatusResult": {
+      "additionalProperties": false,
+      "properties": {
+        "bag_accessible": {
+          "type": "boolean",
+        },
+        "bag_file_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "bag_id": {
+          "type": "string",
+        },
+        "bag_size_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "matches": {
+                  "type": "boolean",
+                },
+                "name": {
+                  "type": "string",
+                },
+                "nft_address": {
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "resolved_bag_id": {
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+              },
+              "required": [
+                "name",
+                "nft_address",
+                "resolved_bag_id",
+                "matches",
+              ],
+              "type": "object",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
+      },
+      "required": [
+        "bag_id",
+        "bag_accessible",
+        "bag_size_bytes",
+        "bag_file_count",
+        "domain",
+      ],
+      "type": "object",
+    },
+  },
+}
+`;
+
 exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, DeployEvent, ErrorPayload) 1`] = `
 {
   "$ref": "#/definitions/WalletSpec",
