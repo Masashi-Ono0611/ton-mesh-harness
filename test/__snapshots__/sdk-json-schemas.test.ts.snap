@@ -386,6 +386,20 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_status schemas (input + outp
             },
           ],
         },
+        "bag_unavailable_reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "not_found",
+                "network_error",
+              ],
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+        },
         "domain": {
           "anyOf": [
             {
@@ -429,6 +443,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_status schemas (input + outp
         "bag_accessible",
         "bag_size_bytes",
         "bag_file_count",
+        "bag_unavailable_reason",
         "domain",
       ],
       "type": "object",

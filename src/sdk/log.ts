@@ -43,11 +43,23 @@ function parseDebugPattern(raw: string): {
     if (!segment) continue
     const isExclude = segment.startsWith('-')
     const body = isExclude ? segment.slice(1) : segment
-    // Convert glob `*` → regex `.*`; escape `:` (literal in namespaces).
+    if (!body) continue // skip a bare '-' segment
+    // Escape ALL regex metas except `*` (we convert that to `.*` next).
+    // The class explicitly lists `?` — without it, `DEBUG='?'` crashes
+    // `require('ton-sovereign-deploy')` with SyntaxError: Nothing to
+    // repeat. Caught by Codex review on 2026-05-12.
     const pattern = body
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
       .replace(/\*/g, '.*')
-    const re = new RegExp(`^${pattern}$`)
+    let re: RegExp
+    try {
+      re = new RegExp(`^${pattern}$`)
+    } catch {
+      // The new char-class above covers every standard meta. A throw
+      // here would mean an unknown unicode-flag interaction or
+      // similar; skip the segment rather than fail import.
+      continue
+    }
     if (isExclude) excluders.push(re)
     else matchers.push(re)
   }

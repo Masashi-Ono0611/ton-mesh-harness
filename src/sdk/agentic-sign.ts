@@ -156,15 +156,22 @@ async function loadAgenticWalletAdapter(): Promise<{
   // a different AgenticWalletAdapter shape (or remove the export). The
   // type cast hides this from tsc but a missing `.create` would crash
   // later with a confusing TypeError. Surface a clean F5 error here.
+  //
+  // NOTE: AgenticWalletAdapter is a CLASS (typeof === 'function'), so the
+  // shape check accepts BOTH 'object' (e.g. a namespace object) and
+  // 'function' (the class itself). A prior version of this guard rejected
+  // 'function' and would have rejected the real installed @ton/mcp export
+  // — caught by Codex review on 2026-05-12 before any consumer hit it.
   const adapter = mod.AgenticWalletAdapter
+  const adapterType = typeof adapter
   if (
     !adapter ||
-    typeof adapter !== 'object' ||
+    (adapterType !== 'object' && adapterType !== 'function') ||
     typeof (adapter as { create?: unknown }).create !== 'function'
   ) {
     throw new SdkError(
       'ERR_NO_WALLET',
-      'Installed @ton/mcp does not export AgenticWalletAdapter.create — likely a major version skew.',
+      `Installed @ton/mcp does not export AgenticWalletAdapter.create (got typeof=${adapterType}) — likely a major version skew.`,
       {
         severity: 'fatal',
         fixHint:

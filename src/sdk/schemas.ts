@@ -215,6 +215,14 @@ export const StatusResultSchema = z.strictObject({
   bag_size_bytes: z.number().int().nonnegative().nullable(),
   /** File count if TONAPI returned it; null when accessible=false. */
   bag_file_count: z.number().int().nonnegative().nullable(),
+  /**
+   * When `bag_accessible: false`, why. `not_found` = TONAPI returned
+   * status=not_found (genuine "not propagated"). `network_error` =
+   * TONAPI was unreachable or returned 5xx for both attempts. Lets
+   * callers distinguish "the bag isn't on the network yet" from
+   * "TONAPI itself is down / endpoint drifted." `null` when accessible.
+   */
+  bag_unavailable_reason: z.enum(['not_found', 'network_error']).nullable(),
   /** Present iff `domain` was passed. */
   domain: StatusDomainSchema.nullable(),
 })

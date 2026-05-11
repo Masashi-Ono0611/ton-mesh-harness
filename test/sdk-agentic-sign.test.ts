@@ -36,9 +36,18 @@ vi.mock('@ton/walletkit', () => ({
   SendModeFlag: { PAY_GAS_SEPARATELY: 1, IGNORE_ERRORS: 2 },
 }))
 
-vi.mock('@ton/mcp', () => ({
-  AgenticWalletAdapter: { create: mocks.agenticCreateMock },
-}))
+vi.mock('@ton/mcp', () => {
+  // Mirror @ton/mcp's real export shape: AgenticWalletAdapter is a CLASS
+  // (typeof === 'function') with a static `create` method, NOT a plain
+  // object. The guard in agentic-sign.ts::loadAgenticWalletAdapter must
+  // accept BOTH 'function' and 'object' shapes — verified by Codex
+  // review 2026-05-12 against an installed @ton/mcp.
+  const AgenticWalletAdapter = function AgenticWalletAdapter() {} as unknown as {
+    create: typeof mocks.agenticCreateMock
+  }
+  AgenticWalletAdapter.create = mocks.agenticCreateMock
+  return { AgenticWalletAdapter }
+})
 
 const {
   signerFromMnemonicMock,

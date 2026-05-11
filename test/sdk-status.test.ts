@@ -172,4 +172,32 @@ describe('status()', () => {
     expect(r.bag_accessible).toBe(false)
     expect(mocks.httpsGetMock).toHaveBeenCalledTimes(2)
   })
+
+  // Codex review 2026-05-12 MAJOR: status() absorbed both "not_found"
+  // (the genuine "bag not propagated yet" state) AND "network error"
+  // (TONAPI unreachable / endpoint drifted) into bag_accessible=false.
+  // bag_unavailable_reason now lets callers distinguish.
+
+  it('not_found → bag_unavailable_reason="not_found"', async () => {
+    mocks.httpsGetMock.mockResolvedValueOnce({ status: 'not_found' })
+    const r = await status({ bag_id: 'abc' })
+    expect(r.bag_accessible).toBe(false)
+    expect(r.bag_unavailable_reason).toBe('not_found')
+  })
+
+  it('network 5xx (persistent) → bag_unavailable_reason="network_error"', async () => {
+    mocks.httpsGetMock
+      .mockRejectedValueOnce(new Error('503 down'))
+      .mockRejectedValueOnce(new Error('503 still down'))
+    const r = await status({ bag_id: 'abc' })
+    expect(r.bag_accessible).toBe(false)
+    expect(r.bag_unavailable_reason).toBe('network_error')
+  })
+
+  it('accessible bag → bag_unavailable_reason=null', async () => {
+    mocks.httpsGetMock.mockResolvedValueOnce({ status: 'active', size: 1, file_count: 1 })
+    const r = await status({ bag_id: 'abc' })
+    expect(r.bag_accessible).toBe(true)
+    expect(r.bag_unavailable_reason).toBeNull()
+  })
 })

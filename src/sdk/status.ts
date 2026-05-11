@@ -48,6 +48,10 @@ async function probeBag(
   accessible: boolean
   size: number | null
   files: number | null
+  /** Reason the probe absorbed into accessible=false. null on success. */
+  unavailable_reason: 'not_found' | 'network_error' | null
+  /** Last error message from a thrown probe (network_error case). */
+  last_error: string | null
 }> {
   // TONAPI v2 storage-bag endpoint. The working route (mainnet-proven via
   // src/verify.ts since v0.3) is `/v2/storage/bag/{id}` — singular, NOT
@@ -55,21 +59,39 @@ async function probeBag(
   // landed in this module's first commit (caught by codex self-review
   // before any consumer hit it).
   const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/storage/bag/${encodeURIComponent(bagId)}`
+  let lastError: string | null = null
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const data = await httpsGet<TonApiBagResponse>(url, { timeout: 10_000 })
-      const accessible = data.status !== 'not_found'
-      return {
-        accessible,
-        size: accessible && typeof data.size === 'number' ? data.size : null,
-        files: accessible && typeof data.file_count === 'number' ? data.file_count : null,
+      if (data.status === 'not_found') {
+        return {
+          accessible: false,
+          size: null,
+          files: null,
+          unavailable_reason: 'not_found',
+          last_error: null,
+        }
       }
-    } catch {
+      return {
+        accessible: true,
+        size: typeof data.size === 'number' ? data.size : null,
+        files: typeof data.file_count === 'number' ? data.file_count : null,
+        unavailable_reason: null,
+        last_error: null,
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err)
       if (attempt === 2) break
       await new Promise((r) => setTimeout(r, 1_000))
     }
   }
-  return { accessible: false, size: null, files: null }
+  return {
+    accessible: false,
+    size: null,
+    files: null,
+    unavailable_reason: 'network_error',
+    last_error: lastError,
+  }
 }
 
 async function probeDomain(
@@ -140,6 +162,7 @@ export async function status(rawInput: unknown): Promise<StatusResult> {
     bag_accessible: bag.accessible,
     bag_size_bytes: bag.size,
     bag_file_count: bag.files,
+    bag_unavailable_reason: bag.unavailable_reason,
     domain: domainBag,
   }
 

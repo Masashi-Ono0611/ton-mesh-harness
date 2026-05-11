@@ -51,6 +51,41 @@ describe('isNamespaceEnabledForTesting (DEBUG-grammar parser)', () => {
   it('handles only an exclusion (no match without explicit include)', () => {
     expect(isNamespaceEnabledForTesting('sovereign:deploy', '-sovereign:deploy')).toBe(false)
   })
+
+  // Codex review 2026-05-12 found that DEBUG='?' crashed `require()` of
+  // the published bundle with SyntaxError: Nothing to repeat. The fix
+  // added `?` to the regex-meta escape list AND wrapped the
+  // RegExp constructor in try/catch. These regressions guard both.
+  it('does NOT throw on DEBUG="?" (regex quantifier in pattern)', () => {
+    expect(() => isNamespaceEnabledForTesting('sovereign:test', '?')).not.toThrow()
+    // `?` as a literal segment doesn't match a normal namespace.
+    expect(isNamespaceEnabledForTesting('sovereign:test', '?')).toBe(false)
+  })
+
+  it('does NOT throw on DEBUG with other regex metas', () => {
+    for (const meta of ['+', '(', ')', '{', '}', '[', ']', '$', '^', '|', '\\']) {
+      expect(() => isNamespaceEnabledForTesting('sovereign:test', meta)).not.toThrow()
+    }
+  })
+
+  it('skips bare "-" segments cleanly', () => {
+    expect(() => isNamespaceEnabledForTesting('sovereign:test', '-')).not.toThrow()
+    expect(isNamespaceEnabledForTesting('sovereign:test', '-')).toBe(false)
+  })
+
+  it('importing the SDK with DEBUG="?" does not crash module load', async () => {
+    const savedDebug = process.env.DEBUG
+    process.env.DEBUG = '?'
+    try {
+      // Force a fresh logger construction via dynamic require of the
+      // module path. If parseDebugPattern throws, this throws.
+      const { createSdkLogger } = await import('../src/sdk/log')
+      expect(() => createSdkLogger('sovereign:smoke')).not.toThrow()
+    } finally {
+      if (savedDebug === undefined) delete process.env.DEBUG
+      else process.env.DEBUG = savedDebug
+    }
+  })
 })
 
 describe('createSdkLogger', () => {

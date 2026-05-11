@@ -74,6 +74,30 @@ GA-PREDRAFT-END -->
 
 ## [Unreleased] (target: 0.8.0-rc6) – 2026-05-12
 
+### Fixed (Codex review 2026-05-12)
+
+- **[BLOCKER]** `src/sdk/agentic-sign.ts::loadAgenticWalletAdapter` —
+  the version-skew guard rejected the real `@ton/mcp` export. The
+  installed `AgenticWalletAdapter` is a CLASS (`typeof === 'function'`),
+  but the guard required `typeof === 'object'`. Every NFT-delegated
+  agentic deploy would have hit `ERR_NO_WALLET` despite a correctly
+  installed peer dep. Probe-verified by Codex: `{ adapterType:
+  'function', createType: 'function', guardRejects: true }`. Fix:
+  accept both `'object'` and `'function'`; test mock now mirrors the
+  real class shape (function with a static `create`).
+- **[MAJOR]** `src/sdk/log.ts::parseDebugPattern` — `DEBUG='?'`
+  crashed module import with `SyntaxError: Nothing to repeat`. The
+  regex-meta escape list omitted `?`. Fix: added `?` to the escape
+  list AND wrapped `new RegExp()` in try/catch so any future unknown
+  meta gets skipped instead of crashing import. 4 new tests
+  (DEBUG='?' / metas / bare '-' / live `require()` round-trip).
+- **[MAJOR]** `src/sdk/status.ts` — `bag_accessible: false` could
+  mean either "TONAPI says not_found" (genuine "bag not propagated")
+  or "TONAPI unreachable / endpoint drifted" (which would silently
+  mask future endpoint changes as "not propagated"). New schema
+  field `bag_unavailable_reason: 'not_found' | 'network_error' |
+  null` distinguishes. 3 new tests; snapshot updated.
+
 ### Added
 
 - **Programmatic SDK entry** — `import { deploy, checkEnv, status,
