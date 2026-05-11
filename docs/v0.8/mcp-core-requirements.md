@@ -121,7 +121,7 @@ CLI backwards compat:
 | `bag_id` | string | hex |
 | `bag_size_bytes` | number | |
 | `dns_tx_hash` | string \| null | null if `domain` was null |
-| `dashboard_url` | string | local dashboard while daemon alive |
+| `daemon_api_url` | string | tonutils-storage daemon's local HTTP API base (renamed from `dashboard_url` in [S3] review — the daemon serves JSON, not a dashboard) |
 | `daemon_pid` | number \| null | non-null only when `keep_alive=true` |
 | `seed_status` | `"seeding" \| "stopped"` | |
 | `next_actions` | `{ description: string }[]` | hints (e.g. "set up detached daemon" — informational only in v0.8.0) |
@@ -293,7 +293,7 @@ the calling agent via `may_have_published: true`.
 6. `tools/list` returns exactly two tools, both with valid JSON Schemas matching the tables above. Tool descriptions include "deploy a static site to .ton" (or close paraphrase) for [V4] discoverability.
 7. From a Claude Code session connected to the server:
    a. `sovereign_check_env` returns a structured result.
-   b. `sovereign_deploy` against a sample `dist/` on testnet (Path 1 *and* Path 2) completes end-to-end, receiving `bag_id`, `dashboard_url`, and a non-error result.
+   b. `sovereign_deploy` against a sample `dist/` on testnet (Path 1 *and* Path 2) completes end-to-end, receiving `bag_id`, `daemon_api_url`, and a non-error result.
    c. **Path 1:** the agent sees `awaiting_signature` progress with a `signing_url` and can hand it off.
    d. **Path 2:** the agent sees `awaiting_signature` with `signing_mode: "agentic"` and `signing_url: null`; signing proceeds autonomously.
    e. Cancelling mid-deploy returns `ERR_CANCELLED`. If cancelled before `awaiting_signature`, no daemon is left running. If cancelled after, `data.may_have_published` is set per F4.
