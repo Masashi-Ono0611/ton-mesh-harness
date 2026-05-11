@@ -126,6 +126,7 @@ export async function runDnsRegistrationAgentic(
   }
 
   log()
-  log(chalk.green(`✓ ${domain} now resolves to bag ${bagId.slice(0, 12)}…`))
+  log(chalk.green(`  ✅ ${domain} now points to your site!`))
+  log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
   log()
 }
