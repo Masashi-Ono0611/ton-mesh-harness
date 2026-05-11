@@ -227,7 +227,11 @@ export async function runDeployTonutils(
         case 'done':
           // Final logging happens after the for-await loop.
           break
-        // other phases are not emitted in rc2 scope (DNS / watch / verify).
+        // DNS-related phases (awaiting_signature / dns_signing /
+        // dns_confirmed / verifying) are emitted by the SDK when
+        // opts.domain is set; the CLI's deploy step does NOT pass
+        // domain (DNS is handled by runDnsRegistration[Agentic]
+        // after the bag upload), so they never fire here.
       }
     }
   } catch (err: unknown) {

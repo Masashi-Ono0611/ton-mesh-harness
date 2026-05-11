@@ -2,8 +2,8 @@
   "_note_schema": "This is an experimental shape — there is no published JSON Schema at https://modelcontextprotocol.io/.well-known/ at the time of writing. Treat the file as a kit-specific self-description until/unless a standard MCP well-known schema lands. If a standard does land, add a $schema reference and update consumers.",
   "_note_template": "This file is a TEMPLATE. Users who self-host the kit's dashboard at <domain>.ton can copy it into their build dir's .well-known/ so an agent visiting their site can discover the kit that published it (the 'View Source + Redeploy' axis from concept update 2026-05-10 Codex C proposal). The kit does NOT auto-write this file — copying is opt-in.",
   "name": "ton-sovereign-mcp",
-  "version": "0.8.0-rc2",
-  "description": "Deploy a static site to .ton (TON Storage + .ton DNS). Censorship-resistant, no server, no CDN, no domain registrar. Agent-callable via MCP; composes with @ton/mcp for autonomous (agentic) wallet flows.",
+  "version": "0.8.0-rc5",
+  "description": "Deploy a static site to .ton (TON Storage + .ton DNS, end-to-end). Censorship-resistant, no server, no CDN, no domain registrar. Agent-callable via MCP. Supports human-signed (TonConnect) and autonomous (agentic, reads ~/.config/ton/config.json shared with @ton/mcp) signing modes. Real on-chain dns_tx_hash via Toncenter v3 lookup.",
   "homepage": "https://github.com/Masashi-Ono0611/sovereign-deploy-kit",
   "install": {
     "command": "npx",
@@ -16,7 +16,7 @@
     },
     {
       "name": "sovereign_deploy",
-      "summary": "Deploy a static site to .ton by uploading a build directory to TON Storage."
+      "summary": "Deploy a static site to .ton (bag upload + DNS write, end-to-end) via TonConnect or agentic signing."
     }
   ],
   "compose": {

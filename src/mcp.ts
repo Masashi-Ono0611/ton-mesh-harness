@@ -86,7 +86,7 @@ const CHECK_ENV_DESCRIPTION =
   'Pre-flight readiness probe for ton-sovereign-deploy. Call BEFORE sovereign_deploy to surface fixable problems early. Reports: daemon binary install state, network reachability (TONAPI / TonConnect manifest), UDP port 17555 availability, wallet signers available (tonconnect / agentic via @ton/mcp shared config), disk free, source_dir validity, and any blocking issues with fix hints.'
 
 const DEPLOY_DESCRIPTION =
-  'Deploy a static site to .ton by uploading a build directory to TON Storage. Censorship-resistant — no server, no CDN, no domain registrar. Supports two signing modes: human-signed (TonConnect — agent surfaces a wallet URL) and agentic (autonomous signing via a key in ~/.config/ton/config.json, shared with @ton/mcp). v0.8.0-rc2 bag-creation only; .ton DNS write currently chained by the CLI (SDK DNS support lands at GA). Returns bag_id, daemon_api_url, daemon_pid (when keep_alive=true), and seed_status.'
+  'Deploy a static site to .ton by uploading a build directory to TON Storage AND writing the .ton DNS records (storage + optional site/ADNL). Censorship-resistant — no server, no CDN, no domain registrar. Supports two signing modes: human-signed (TonConnect — agent surfaces a wallet URL via awaiting_signature.data.signing_url) and agentic (autonomous signing via a key in ~/.config/ton/config.json, shared with @ton/mcp). End-to-end since v0.8.0-rc3; real on-chain dns_tx_hash since rc4 (resolved via Toncenter v3 transactionsByMessage). Returns bag_id, dns_tx_hash, daemon_api_url, daemon_pid (when keep_alive=true), seed_status, and next_actions.'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Server bootstrap (low-level handlers)

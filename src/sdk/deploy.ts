@@ -5,11 +5,13 @@
  *
  * Spec: docs/v0.8/mcp-core-requirements.md §F2 / §F3 / §F4 / §F5.
  *
- * v0.8.0-rc2 scope: bag creation core path only (env_check → daemon_starting
- * → bag_creating → bag_uploaded → done). DNS write integration + watch +
- * site-auto orchestration are scheduled for follow-up commits ([S2.5] /
- * [S2.6]) — the CLI will continue to chain DNS / site-host / watch via
- * its existing helpers in this iteration.
+ * Scope (rc5):
+ *   env_check → daemon_starting → bag_creating → bag_uploaded →
+ *   [awaiting_signature → dns_signing → dns_confirmed → verifying]? →
+ *   done. The DNS phases fire iff `opts.domain` is set, routed through
+ *   writeDnsRecord (TonConnect) or writeDnsRecordAgentic depending on
+ *   wallet.kind. watch + site-auto remain CLI-only orchestration —
+ *   they have no MCP-callable equivalent.
  *
  * NO `console.*` ANYWHERE IN THIS FILE — lint-enforced.
  */
@@ -58,8 +60,12 @@ export interface DeployControl {
    *    occurred before any yield).
    *
    * Per F4: `may_have_published` is `false` for any cancellation that
-   * occurs before `awaiting_signature` fires (this iteration never reaches
-   * that phase — DNS write is out of scope for rc2).
+   * occurs before `awaiting_signature` fires. Once that phase yields,
+   * the flag is path-aware:
+   *   - tonconnect: `true` (the QR is shown; user may have approved
+   *     out-of-band by the time we abort)
+   *   - agentic: `dnsBroadcastEnqueued` (set when `dns_signing` fires,
+   *     i.e. after Toncenter accepted the BOC)
    */
   signal?: AbortSignal
 
