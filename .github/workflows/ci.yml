@@ -1,0 +1,96 @@
+# [D1] #19 — CI workflow.
+# Runs the full quality bar on every PR + main push:
+#   - Lint (eslint src/sdk, no-console rule)
+#   - Type-check (tsc --noEmit with noUnusedLocals + strict)
+#   - Tests (vitest, RUN_DAEMON_TESTS skipped — those spawn real daemons)
+#   - Build (tsup, dual bin)
+#   - MCP smoke (initialize + tools/list via stdio)
+#
+# Matrix: Node 18 / 20 / 22 × ubuntu-latest / macos-latest.
+# Windows is in scope per `package.json` "os" but we skip in CI — the
+# kit's daemon binaries are platform-pinned and the network probes have
+# different timing; cover Windows manually before tagging GA.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags-ignore: ['**']  # tags trigger their own publish flow elsewhere
+  pull_request:
+    branches: [main]
+
+# Cancel in-flight runs for the same ref when a new commit lands.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: ci (node ${{ matrix.node }} / ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [18, 20, 22]
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (SDK no-console gate)
+        run: npm run lint
+
+      - name: Type-check
+        run: npx tsc --noEmit
+        env:
+          # Some transitive packages push tsc memory usage; bump headroom.
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Tests
+        run: npm test
+        env:
+          # RUN_DAEMON_TESTS gates the live tonutils-storage spawn tests.
+          # CI does NOT spawn daemons (they download a 12 MB binary on
+          # first run and the network is flaky in GitHub runners); the
+          # 11 skipped tests are expected.
+          RUN_DAEMON_TESTS: ''
+
+      - name: Build
+        run: npm run build
+
+      - name: MCP smoke (initialize + tools/list)
+        # The kit's MCP server should boot, complete the initialize
+        # handshake, and return both GA tools. A regression in the
+        # server bootstrap would fail loud here without needing a real
+        # agent client.
+        shell: bash
+        run: |
+          OUT=$(
+            (
+              printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0.0.0"}}}'
+              sleep 0.3
+              printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+              sleep 0.3
+              printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+              sleep 0.5
+            ) | timeout 8 node dist/mcp.js 2>&1 || true
+          )
+          echo "$OUT"
+          echo "$OUT" | grep -q '"serverInfo":{"name":"ton-sovereign-mcp"' \
+            || { echo "MCP initialize regression"; exit 1; }
+          echo "$OUT" | grep -q 'sovereign_check_env' \
+            || { echo "MCP tools/list missing sovereign_check_env"; exit 1; }
+          echo "$OUT" | grep -q 'sovereign_deploy' \
+            || { echo "MCP tools/list missing sovereign_deploy"; exit 1; }
+          echo "MCP smoke OK"
