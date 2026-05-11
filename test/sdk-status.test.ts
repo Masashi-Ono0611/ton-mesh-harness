@@ -200,4 +200,27 @@ describe('status()', () => {
     expect(r.bag_accessible).toBe(true)
     expect(r.bag_unavailable_reason).toBeNull()
   })
+
+  // Codex review 2026-05-12 (verify pass): TONAPI returns HTTP 404 for
+  // un-indexed bags. httpsGet wraps that as "Not found: <url>". The
+  // catch branch used to classify this as network_error (along with
+  // real 5xx / transport failures), which is wrong — 404 is the
+  // genuine "not propagated" state.
+
+  it('TONAPI 404 (httpsGet throws "Not found") → bag_unavailable_reason="not_found"', async () => {
+    mocks.httpsGetMock.mockRejectedValueOnce(
+      new Error('Not found: https://tonapi.io/v2/storage/bag/abc'),
+    )
+    const r = await status({ bag_id: 'abc' })
+    expect(r.bag_accessible).toBe(false)
+    expect(r.bag_unavailable_reason).toBe('not_found')
+    // 404 short-circuits the retry — only one call.
+    expect(mocks.httpsGetMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('"HTTP 404" error string also maps to not_found', async () => {
+    mocks.httpsGetMock.mockRejectedValueOnce(new Error('HTTP 404: '))
+    const r = await status({ bag_id: 'abc' })
+    expect(r.bag_unavailable_reason).toBe('not_found')
+  })
 })

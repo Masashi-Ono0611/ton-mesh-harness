@@ -80,7 +80,24 @@ async function probeBag(
         last_error: null,
       }
     } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err)
+      const msg = err instanceof Error ? err.message : String(err)
+      lastError = msg
+      // TONAPI returns 404 (HTTP-level) when the bag id isn't indexed —
+      // the working route returns NO body for missing bags, just the
+      // 404 response. httpsGet wraps that as "Not found: <url>" / "HTTP
+      // 404". src/verify.ts has the same handling. Map to not_found
+      // (the genuine "bag not propagated" state), NOT network_error
+      // (which we reserve for transport / 5xx). Codex review
+      // 2026-05-12.
+      if (msg.includes('Not found') || msg.includes('HTTP 404')) {
+        return {
+          accessible: false,
+          size: null,
+          files: null,
+          unavailable_reason: 'not_found',
+          last_error: null,
+        }
+      }
       if (attempt === 2) break
       await new Promise((r) => setTimeout(r, 1_000))
     }
