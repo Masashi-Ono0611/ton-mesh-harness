@@ -11,6 +11,9 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 `~/.config/ton/config.json` (the file `@ton/mcp@alpha` writes) and
 broadcasts via Toncenter v3. No human in the loop.
 
+Codex multi-model review caught 2 BLOCKERs + 3 MAJORs + 1 MINOR + 1 NIT;
+all addressed below.
+
 ### Added
 
 - **`src/sdk/agentic-config.ts`** — strict zod loader for
@@ -44,13 +47,60 @@ broadcasts via Toncenter v3. No human in the loop.
   rc2 behaviour). Schema unchanged; consumers that branch on
   `dns_tx_hash !== null` now see a real value on the agentic path.
 
+### Codex review fixes (BLOCKER + MAJOR + MINOR + NIT)
+
+- **[BLOCKER 1]** `@ton/mcp`'s `saveConfig` ALWAYS writes encrypted via
+  its protected-file format (`\x8aTM\x01` magic + AES-256-GCM with a
+  self-contained key). The rc3-initial assumption that configs are
+  plaintext was wrong — every real `@ton/mcp@alpha` config would have
+  been rejected. Ported the `decodeProtectedConfig` decoder (not
+  passphrase-protected; key is in the file alongside ciphertext) so
+  the loader transparently handles both formats. Updated
+  `src/sdk/check.ts` to use the correct magic bytes too. Original
+  guess (`\x8aTON`) was wrong by 2 bytes.
+- **[BLOCKER 2]** F4 cancellation `may_have_published` was unsound
+  for the agentic path. The TonConnect logic flips `true` on
+  `awaiting_signature` (assumes user might be approving the QR
+  out-of-band), but agentic has no human approval step — only the
+  broadcast inside `agenticSignAndSend` enqueues a BOC. Split the
+  flag: tonconnect → `dnsAwaitingSignatureSeen`; agentic →
+  `dnsBroadcastEnqueued` (set on `dns_signing` after sendBoc
+  returned). Threaded `AbortSignal` through `writeDnsRecordAgentic`
+  with abort checks at each phase boundary so cancel-between-
+  awaiting_signature-and-broadcast yields `may_have_published: false`.
+- **[MAJOR 1]** `dns_tx_hash` was misleading on the agentic path.
+  Toncenter v3 `/api/v3/message` returns the normalized external-in
+  *message* hash, NOT the resulting on-chain transaction hash.
+  Restored `dns_tx_hash: null` on both paths; surface the message
+  hash via `next_actions` with explicit "NOT the on-chain tx hash"
+  wording matching the TonConnect path's BOC disclosure. A future
+  GA can add a TONAPI poll to resolve the actual tx hash.
+- **[MAJOR 2]** Schema was looser than `@ton/mcp`'s `TonConfig`.
+  Made `name`, `created_at`, `updated_at` required on agentic
+  entries; added required `owner_address`; made top-level `networks`
+  required (not defaulted). Strict-mode `passthrough()` only at
+  shape-level, not field-level.
+- **[MAJOR 3]** `agentic-sign.ts` was untested. Added
+  `test/sdk-agentic-sign.test.ts` (10 vitest-mocked unit tests):
+  wallet-version routing (v5 vs v4), Signer.fromMnemonic vs
+  fromPrivateKey, 64-byte combined keypair seed extraction, invalid
+  private_key rejection, validUntil ≤ 5min cap, base64 payload
+  shape, message_hash return, sign-error → ERR_INTERNAL mapping,
+  sendBoc-error → ERR_DNS_TX_TIMEOUT mapping, toncenter_api_key
+  passthrough, testnet endpoint switch.
+- **[MINOR]** Error routing — `ERR_NO_WALLET` was overloaded.
+  Split: ERR_NO_WALLET (no config / no usable wallet),
+  ERR_INVALID_INPUT (malformed JSON, schema version mismatch,
+  corrupt protected-file, NFT-delegated type unsupported).
+- **[NIT]** Removed the explicit `mode: DEFAULT_DNS_SEND_MODE`
+  parameter from `getSignedSendTransaction` calls — walletkit
+  hardcodes `PAY_GAS_SEPARATELY + IGNORE_ERRORS` (=3) internally
+  for V5R1 and V4R2 anyway.
+
 ### Tests
 
-- `test/sdk-agentic-config.test.ts` — 14 new unit tests covering path
-  resolution, selection, encrypted-file rejection, network filtering,
-  removed-entry skip, malformed JSON, schema version mismatch, missing
-  signing material, and NFT-delegated type rejection. Total: 167 pass
-  / 11 skip.
+- 27 new unit tests in this commit (17 config + 10 sign). Total:
+  180 pass / 11 skip.
 
 ### Not yet (deferred to v0.8.x / v0.9)
 
@@ -58,8 +108,6 @@ broadcasts via Toncenter v3. No human in the loop.
   `@ton/mcp`'s parlance, NOT our SDK's `wallet.kind: "agentic"`).
   Requires the `@ton/mcp` collection-contract operator-key dance —
   tracked separately.
-- Encrypted-config decryption (the `\x8aTON` magic-prefixed format).
-  Plaintext only for v0.8.0.
 - TonConnect-path `dns_tx_hash` upgrade (currently null). Would
   require a TONAPI poll on the connected wallet's outgoing tx
   history after the BOC dispatch.

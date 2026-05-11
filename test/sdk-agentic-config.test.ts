@@ -36,6 +36,21 @@ function makeConfig(overrides: Record<string, unknown> = {}): string {
   return JSON.stringify(base)
 }
 
+function makeAgenticEntry(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: 'a1',
+    name: 'AgenticNFT',
+    type: 'agentic',
+    network: 'mainnet',
+    address: 'UQA',
+    owner_address: 'UQB',
+    operator_private_key: 'a'.repeat(64),
+    created_at: ISO,
+    updated_at: ISO,
+    ...overrides,
+  }
+}
+
 function writeTmp(content: string | Buffer): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdk-agentic-'))
   const file = path.join(dir, 'config.json')
@@ -115,36 +130,52 @@ describe('agentic-config', () => {
       ).toThrowError(SdkError)
     })
 
-    it('throws ERR_NO_WALLET on encrypted magic prefix', () => {
-      const encrypted = Buffer.from([0x8a, 0x54, 0x4f, 0x4e, 0x00, 0x00, 0x00])
-      const p = writeTmp(encrypted)
+    it('throws ERR_INVALID_INPUT on corrupt protected-file (good magic, bad payload)', () => {
+      // Magic = \x8aTM\x01 + 60 zero bytes (key+iv+tag) — the GCM auth
+      // tag won't validate, so decryption throws.
+      const corrupt = Buffer.concat([
+        Buffer.from([0x8a, 0x54, 0x4d, 0x01]),
+        Buffer.alloc(32 + 12 + 16, 0),
+        Buffer.from('garbage'),
+      ])
+      const p = writeTmp(corrupt)
       try {
         loadAgenticConfig({ config_path: p, network: 'mainnet' })
         expect.fail('should throw')
       } catch (e) {
         expect(e).toBeInstanceOf(SdkError)
-        expect((e as SdkError).code).toBe('ERR_NO_WALLET')
-        expect((e as SdkError).message).toMatch(/encrypted/i)
+        expect((e as SdkError).code).toBe('ERR_INVALID_INPUT')
+        expect((e as SdkError).message).toMatch(/cannot be decoded/i)
       }
     })
 
-    it('rejects type=agentic (NFT-delegated)', () => {
+    it('decodes a real @ton/mcp protected-file (AES-256-GCM, self-contained key)', () => {
+      // Build a valid protected file the way @ton/mcp does:
+      //   magic + 32B key + 12B iv + 16B authTag + ciphertext.
+      const crypto = require('crypto') as typeof import('crypto')
+      const plaintext = makeConfig()
+      const key = crypto.randomBytes(32)
+      const iv = crypto.randomBytes(12)
+      const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+      const encrypted = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()])
+      const authTag = cipher.getAuthTag()
+      const blob = Buffer.concat([
+        Buffer.from([0x8a, 0x54, 0x4d, 0x01]),
+        key,
+        iv,
+        authTag,
+        encrypted,
+      ])
+      const p = writeTmp(blob)
+      const sel = loadAgenticConfig({ config_path: p, network: 'mainnet' })
+      expect(sel.wallet.id).toBe('w1')
+    })
+
+    it('rejects type=agentic (NFT-delegated) with ERR_INVALID_INPUT', () => {
       const p = writeTmp(
         makeConfig({
           active_wallet_id: 'a1',
-          wallets: [
-            {
-              id: 'a1',
-              name: 'AgenticNFT',
-              type: 'agentic',
-              network: 'mainnet',
-              address: 'UQA',
-              owner_address: 'UQB',
-              operator_private_key: 'a'.repeat(64),
-              created_at: ISO,
-              updated_at: ISO,
-            },
-          ],
+          wallets: [makeAgenticEntry()],
         }),
       )
       try {
@@ -152,6 +183,7 @@ describe('agentic-config', () => {
         expect.fail('should throw')
       } catch (e) {
         expect(e).toBeInstanceOf(SdkError)
+        expect((e as SdkError).code).toBe('ERR_INVALID_INPUT')
         expect((e as SdkError).message).toMatch(/NFT-delegated/i)
       }
     })
@@ -246,14 +278,48 @@ describe('agentic-config', () => {
       expect(() => loadAgenticConfig({ config_path: p, network: 'mainnet' })).toThrowError(SdkError)
     })
 
-    it('rejects malformed JSON', () => {
+    it('rejects malformed JSON with ERR_INVALID_INPUT', () => {
       const p = writeTmp('not valid json')
-      expect(() => loadAgenticConfig({ config_path: p, network: 'mainnet' })).toThrowError(/malformed/)
+      try {
+        loadAgenticConfig({ config_path: p, network: 'mainnet' })
+        expect.fail('should throw')
+      } catch (e) {
+        expect(e).toBeInstanceOf(SdkError)
+        expect((e as SdkError).code).toBe('ERR_INVALID_INPUT')
+        expect((e as SdkError).message).toMatch(/malformed/)
+      }
     })
 
-    it('rejects schema version != 2', () => {
-      const p = writeTmp(JSON.stringify({ version: 1, active_wallet_id: null, wallets: [] }))
-      expect(() => loadAgenticConfig({ config_path: p, network: 'mainnet' })).toThrowError(/malformed/)
+    it('rejects schema version != 2 with ERR_INVALID_INPUT', () => {
+      const p = writeTmp(
+        JSON.stringify({ version: 1, active_wallet_id: null, networks: {}, wallets: [] }),
+      )
+      try {
+        loadAgenticConfig({ config_path: p, network: 'mainnet' })
+        expect.fail('should throw')
+      } catch (e) {
+        expect(e).toBeInstanceOf(SdkError)
+        expect((e as SdkError).code).toBe('ERR_INVALID_INPUT')
+      }
+    })
+
+    it('rejects config missing required `networks` field', () => {
+      // @ton/mcp's TonConfig requires `networks` (not optional). A hand
+      // -rolled config that omits it must fail fast.
+      const p = writeTmp(
+        JSON.stringify({ version: 2, active_wallet_id: null, wallets: [] }),
+      )
+      expect(() => loadAgenticConfig({ config_path: p, network: 'mainnet' })).toThrowError(SdkError)
+    })
+
+    it('rejects agentic entry missing required `owner_address`', () => {
+      const p = writeTmp(
+        makeConfig({
+          active_wallet_id: 'a1',
+          wallets: [makeAgenticEntry({ owner_address: undefined })],
+        }),
+      )
+      expect(() => loadAgenticConfig({ config_path: p, network: 'mainnet' })).toThrowError(SdkError)
     })
   })
 })

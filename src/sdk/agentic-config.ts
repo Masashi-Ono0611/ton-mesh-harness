@@ -15,6 +15,7 @@
  * NO `console.*` IN THIS FILE — lint-enforced.
  */
 
+import { createDecipheriv } from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -48,6 +49,13 @@ export interface AgenticConfigSelection {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Strict zod schema — mirrors @ton/mcp's TonConfig (version 2)
+//
+// Required fields cross-checked against @ton/mcp@0.1.15-alpha.15's
+// `dist/registry/config.d.ts` (StoredWalletBase / StoredStandardWallet /
+// StoredAgenticWallet / TonConfig). We DO NOT `.passthrough()` at any
+// inner-object level so a future @ton/mcp schema bump fails loud rather
+// than silently slipping through — the SDK's signing surface depends on
+// the exact shape it's reading.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const NetworkEnum = z.enum(['mainnet', 'testnet'])
@@ -77,10 +85,17 @@ export type StoredStandardWallet = z.infer<typeof StoredStandardWalletSchema>
 const StoredAgenticWalletSchema = z
   .object({
     id: z.string(),
-    name: z.string().optional(),
+    name: z.string(),
     type: z.literal('agentic'),
     network: NetworkEnum,
     address: z.string(),
+    owner_address: z.string(),
+    operator_private_key: z.string().optional(),
+    operator_public_key: z.string().optional(),
+    removed: z.boolean().optional(),
+    removed_at: z.string().optional(),
+    created_at: z.string(),
+    updated_at: z.string(),
   })
   .passthrough()
 
@@ -89,6 +104,7 @@ const StoredWalletSchema = z.union([StoredStandardWalletSchema, StoredAgenticWal
 const NetworkConfigSchema = z
   .object({
     toncenter_api_key: z.string().optional(),
+    agentic_collection_address: z.string().optional(),
   })
   .passthrough()
 
@@ -96,14 +112,12 @@ const TonConfigSchema = z
   .object({
     version: z.literal(2),
     active_wallet_id: z.string().nullable(),
-    networks: z
-      .object({
-        mainnet: NetworkConfigSchema.optional(),
-        testnet: NetworkConfigSchema.optional(),
-      })
-      .passthrough()
-      .optional()
-      .default({}),
+    // @ton/mcp's TonConfig requires `networks`; keep it required so a
+    // hand-rolled config that omits it fails fast.
+    networks: z.object({
+      mainnet: NetworkConfigSchema.optional(),
+      testnet: NetworkConfigSchema.optional(),
+    }),
     wallets: z.array(StoredWalletSchema),
   })
   .passthrough()
@@ -120,22 +134,53 @@ export function getAgenticConfigPath(override?: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Encrypted-config detection
-// `@ton/mcp` writes encrypted configs prefixed with the magic bytes
-// [138, 84, 79, 78] = "\x8aTON" (see protected-file.js in @ton/mcp source).
-// We refuse encrypted files — v0.8.0 GA does not implement the decryption
-// flow. Users can run `npx @ton/mcp@alpha` in unprotected mode to keep the
-// config plaintext, or unlock the file via @ton/mcp's own tooling first.
+// Protected-file format
+//
+// `@ton/mcp` ALWAYS writes via `writeEncryptedFile` (saveConfig in
+// dist/registry/config.js). The format is NOT passphrase-protected — the
+// encryption key is stored in the file alongside the ciphertext. It is
+// only obfuscated against `cat config.json` casual inspection.
+//
+// Layout (cross-verified against @ton/mcp@0.1.15-alpha.15):
+//   [4 bytes magic = 0x8a 0x54 0x4d 0x01]
+//   [32 bytes AES-256 key]
+//   [12 bytes IV]
+//   [16 bytes GCM auth tag]
+//   [ciphertext]
+//
+// We decode here so the loader transparently handles plaintext and
+// protected configs. NO PASSPHRASE NEEDED.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function isEncryptedConfig(buffer: Buffer): boolean {
-  return (
-    buffer.length >= 4 &&
-    buffer[0] === 0x8a &&
-    buffer[1] === 0x54 &&
-    buffer[2] === 0x4f &&
-    buffer[3] === 0x4e
-  )
+const PROTECTED_FILE_MAGIC = Buffer.from([0x8a, 0x54, 0x4d, 0x01])
+const ENC_KEY_BYTES = 32
+const ENC_IV_BYTES = 12
+const ENC_TAG_BYTES = 16
+const ENC_HEADER_LENGTH = PROTECTED_FILE_MAGIC.length + ENC_KEY_BYTES + ENC_IV_BYTES + ENC_TAG_BYTES
+
+function decodeProtectedConfig(value: Buffer): { content: string; isProtected: boolean } {
+  if (
+    value.length < PROTECTED_FILE_MAGIC.length ||
+    !value.subarray(0, PROTECTED_FILE_MAGIC.length).equals(PROTECTED_FILE_MAGIC)
+  ) {
+    return { content: value.toString('utf-8'), isProtected: false }
+  }
+  if (value.length < ENC_HEADER_LENGTH) {
+    throw new Error('Protected config: header truncated.')
+  }
+  let offset = PROTECTED_FILE_MAGIC.length
+  const key = value.subarray(offset, offset + ENC_KEY_BYTES)
+  offset += ENC_KEY_BYTES
+  const iv = value.subarray(offset, offset + ENC_IV_BYTES)
+  offset += ENC_IV_BYTES
+  const authTag = value.subarray(offset, offset + ENC_TAG_BYTES)
+  offset += ENC_TAG_BYTES
+  const ciphertext = value.subarray(offset)
+
+  const decipher = createDecipheriv('aes-256-gcm', key, iv)
+  decipher.setAuthTag(authTag)
+  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()])
+  return { content: plaintext.toString('utf-8'), isProtected: true }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -169,28 +214,31 @@ export function loadAgenticConfig(lookup: AgenticConfigLookup): AgenticConfigSel
     })
   }
 
-  if (isEncryptedConfig(raw)) {
+  let decoded: string
+  try {
+    decoded = decodeProtectedConfig(raw).content
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
     throw new SdkError(
-      'ERR_NO_WALLET',
-      `Agentic config at ${configPath} is encrypted and v0.8.0 cannot decrypt it.`,
+      'ERR_INVALID_INPUT',
+      `Agentic config at ${configPath} has the protected-file header but cannot be decoded: ${msg}`,
       {
         severity: 'fatal',
         fixHint:
-          `Unlock the config via @ton/mcp's own tooling (its session unlocks decryption ` +
-          `transparently), or re-create the wallet without a passphrase. ` +
-          `Plaintext path planned for v0.8.x.`,
+          `The file is corrupt or was written by an incompatible @ton/mcp version. ` +
+          `Run \`@ton/mcp@alpha\` to regenerate, or remove the file and re-import the wallet.`,
       },
     )
   }
 
   let parsed: z.infer<typeof TonConfigSchema>
   try {
-    const json = JSON.parse(raw.toString('utf-8'))
+    const json = JSON.parse(decoded)
     parsed = TonConfigSchema.parse(json)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     throw new SdkError(
-      'ERR_NO_WALLET',
+      'ERR_INVALID_INPUT',
       `Agentic config at ${configPath} is malformed: ${msg}`,
       {
         severity: 'fatal',
@@ -253,7 +301,7 @@ export function loadAgenticConfig(lookup: AgenticConfigLookup): AgenticConfigSel
   // ─── Reject NFT-delegated agentic wallet type (v0.8.0 scope) ──────────────
   if (selected.type !== 'standard') {
     throw new SdkError(
-      'ERR_NO_WALLET',
+      'ERR_INVALID_INPUT',
       `Wallet "${selected.name ?? selected.id}" is type=agentic (NFT-delegated). ` +
         `v0.8.0 only supports type=standard (mnemonic / private_key direct sign).`,
       {

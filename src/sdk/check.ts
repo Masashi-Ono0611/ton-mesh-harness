@@ -107,7 +107,16 @@ function detectAgenticConfig(overridePath?: string): AgenticProbeOutcome {
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(readFileSync(p, 'utf-8'))
+    const raw = readFileSync(p)
+    // Match @ton/mcp's protected-file format (\x8aTM\x01 + AES-256-GCM).
+    // We don't need to fully parse the contents for the doctor probe —
+    // just sniff for the magic prefix and treat as "found" if present.
+    // The strict loader (`agentic-config.ts`) handles full decode for
+    // signing-time consumers.
+    if (raw.length >= 4 && raw[0] === 0x8a && raw[1] === 0x54 && raw[2] === 0x4d && raw[3] === 0x01) {
+      return { found: true, path: p }
+    }
+    parsed = JSON.parse(raw.toString('utf-8'))
   } catch {
     return { found: false, path: p, reason: 'unparseable' }
   }

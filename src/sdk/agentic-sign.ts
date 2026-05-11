@@ -17,7 +17,6 @@ import type { Address, Cell } from '@ton/core'
 import {
   ApiClientToncenter,
   Network,
-  SendModeFlag,
   Signer,
   WalletV4R2Adapter,
   WalletV5R1Adapter,
@@ -118,11 +117,9 @@ export interface AgenticSignSendInput {
   messages: Array<{ address: Address; amount: bigint; payload: Cell }>
 }
 
-// Equivalent of legacy send mode 3 = PAY_GAS_SEPARATELY (1) + IGNORE_ERRORS (2).
-// Walletkit models send mode as { base?, flags[] } instead of an integer bitfield.
-const DEFAULT_DNS_SEND_MODE = {
-  flags: [SendModeFlag.PAY_GAS_SEPARATELY, SendModeFlag.IGNORE_ERRORS],
-}
+// NOTE on send mode: walletkit's WalletV5R1Adapter / WalletV4R2Adapter
+// internally hardcode `sendMode: PAY_GAS_SEPARATELY + IGNORE_ERRORS` (=3)
+// for transfers. Passing `mode` in the request is ignored. We omit it.
 
 export interface AgenticSignSendResult {
   /** Normalized message hash returned by Toncenter (`0x<hex>`). */
@@ -156,7 +153,6 @@ export async function agenticSignAndSend(
         address: m.address.toString(),
         amount: m.amount.toString(),
         payload: m.payload.toBoc().toString('base64'),
-        mode: DEFAULT_DNS_SEND_MODE,
       })) as never,
     })
   } catch (err) {

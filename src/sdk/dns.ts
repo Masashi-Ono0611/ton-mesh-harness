@@ -337,6 +337,10 @@ export interface DnsWriteAgenticOptions {
   wallet_label?: string
 }
 
+export interface DnsWriteAgenticControl {
+  signal?: AbortSignal
+}
+
 export interface DnsWriteAgenticResult {
   /** Normalized message hash (`0x<hex>`) returned by Toncenter. */
   message_hash: string
@@ -358,9 +362,18 @@ export interface DnsWriteAgenticResult {
  */
 export async function* writeDnsRecordAgentic(
   opts: DnsWriteAgenticOptions,
+  control: DnsWriteAgenticControl = {},
 ): AsyncGenerator<DeployEvent, DnsWriteAgenticResult, void> {
   const network = opts.testnet ? 'testnet' : 'mainnet'
+  const checkAborted = () => {
+    if (control.signal?.aborted) {
+      throw new SdkError('ERR_CANCELLED', 'Agentic DNS write cancelled.', {
+        severity: 'recoverable',
+      })
+    }
+  }
 
+  checkAborted()
   const selection = loadAgenticConfig({
     config_path: opts.config_path,
     wallet_label: opts.wallet_label,
@@ -379,6 +392,8 @@ export async function* writeDnsRecordAgentic(
         `Verify the domain is owned by ${selection.wallet.address} and that TONAPI is reachable.`,
     })
   }
+
+  checkAborted()
 
   // ─── Build payloads ──────────────────────────────────────────────────────
   const messages: Array<{ address: Address; amount: bigint; payload: Cell }> = [
@@ -411,7 +426,16 @@ export async function* writeDnsRecordAgentic(
     },
   }
 
-  // ─── Sign + broadcast atomically (no abortable step here) ────────────────
+  // ─── F4 cancellation window — bug 2 fix ──────────────────────────────────
+  // For agentic, unlike TonConnect, there's no human approval in between.
+  // If the caller cancels between awaiting_signature and the broadcast
+  // (i.e., RIGHT HERE), no BOC has been sent yet — `may_have_published`
+  // must remain false. Check abort before initiating sign+send. Once
+  // `agenticSignAndSend` returns, the broadcast IS enqueued and from
+  // that point may_have_published flips to true.
+  checkAborted()
+
+  // ─── Sign + broadcast atomically (cannot abort mid-send) ─────────────────
   const sent = await agenticSignAndSend({
     wallet: selection.wallet,
     toncenter_api_key: selection.toncenter_api_key,
@@ -428,6 +452,11 @@ export async function* writeDnsRecordAgentic(
     },
   }
 
+  // Post-broadcast: even if the caller now aborts, the BOC has hit Toncenter.
+  // `may_have_published: true` is the honest answer; we still check abort
+  // to short-circuit the long TONAPI polling loop.
+  checkAborted()
+
   // ─── Poll TONAPI for record propagation ──────────────────────────────────
   const confirmedStorage = await pollDnsRecord(
     opts.domain,
@@ -437,6 +466,7 @@ export async function* writeDnsRecordAgentic(
     !!opts.testnet,
     { silent: true },
   )
+  checkAborted()
 
   let confirmedSite = true
   if (opts.site_adnl) {
@@ -448,6 +478,7 @@ export async function* writeDnsRecordAgentic(
       !!opts.testnet,
       { silent: true },
     )
+    checkAborted()
   }
 
   if (!confirmedStorage || !confirmedSite) {
