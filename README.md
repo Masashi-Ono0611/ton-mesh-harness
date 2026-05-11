@@ -249,6 +249,8 @@ Direct competitors: none.
 - 2026-05-10 concept-update log: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md).
 - P-1 `@ton/mcp` compose-contract probe: [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md).
 - **Agentic CLI usage**: [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) — `--wallet-mode agentic` prerequisites / wallet selector / CI/CD example / error codes.
+- **Agent stack compose**: [`docs/v0.8/agent-stack-compose.md`](docs/v0.8/agent-stack-compose.md) — wiring `ton-sovereign-mcp` + `@ton/mcp` together for full agentic flows (wallet management + deploy + status). 4 example flows + F5 error response cookbook.
+- **Release checklist**: [`docs/v0.8/release-checklist.md`](docs/v0.8/release-checklist.md) — D3 ritual from V3/V4-green through `npm publish` + GitHub release, with rollback procedure.
 
 ### v0.9 reserve
 Deferred from v0.7: C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network real-client. Details: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) §C2 / §C3 (originally parked for v0.8; demoted to v0.9 when the agent-surface track took v0.8 on the 2026-05-10 rename).

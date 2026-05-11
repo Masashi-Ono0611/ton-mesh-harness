@@ -153,4 +153,23 @@ describe('status()', () => {
     await status({ bag_id: 'abc', testnet: true })
     expect(mocks.httpsGetMock.mock.calls[1][0]).toContain('testnet.tonapi.io/v2/storage/bag/abc')
   })
+
+  it('retries TONAPI once on transient failure (5xx → success)', async () => {
+    mocks.httpsGetMock
+      .mockRejectedValueOnce(new Error('503 Service Unavailable'))
+      .mockResolvedValueOnce({ status: 'active', size: 1024, file_count: 3 })
+    const r = await status({ bag_id: 'abc' })
+    expect(r.bag_accessible).toBe(true)
+    expect(r.bag_size_bytes).toBe(1024)
+    expect(mocks.httpsGetMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('gives up after exactly 2 attempts on persistent failure', async () => {
+    mocks.httpsGetMock
+      .mockRejectedValueOnce(new Error('503'))
+      .mockRejectedValueOnce(new Error('503'))
+    const r = await status({ bag_id: 'abc' })
+    expect(r.bag_accessible).toBe(false)
+    expect(mocks.httpsGetMock).toHaveBeenCalledTimes(2)
+  })
 })

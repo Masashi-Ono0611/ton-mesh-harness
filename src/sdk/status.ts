@@ -33,6 +33,14 @@ interface TonApiDnsResolveResponse {
   sites?: string[]
 }
 
+/**
+ * Two-shot probe — TONAPI returns 5xx during load spikes and one-shot
+ * `bag_accessible: false` would mislead callers. A single retry after
+ * a 1 s pause covers transient failures without blowing the "snapshot"
+ * semantic out to a real poll loop (that's what `verifyBagOnNetwork`
+ * is for). If both attempts fail, the result still absorbs into
+ * `bag_accessible: false` rather than throwing — see status.ts header.
+ */
 async function probeBag(
   bagId: string,
   testnet: boolean,
@@ -47,17 +55,21 @@ async function probeBag(
   // landed in this module's first commit (caught by codex self-review
   // before any consumer hit it).
   const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/storage/bag/${encodeURIComponent(bagId)}`
-  try {
-    const data = await httpsGet<TonApiBagResponse>(url, { timeout: 10_000 })
-    const accessible = data.status !== 'not_found'
-    return {
-      accessible,
-      size: accessible && typeof data.size === 'number' ? data.size : null,
-      files: accessible && typeof data.file_count === 'number' ? data.file_count : null,
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const data = await httpsGet<TonApiBagResponse>(url, { timeout: 10_000 })
+      const accessible = data.status !== 'not_found'
+      return {
+        accessible,
+        size: accessible && typeof data.size === 'number' ? data.size : null,
+        files: accessible && typeof data.file_count === 'number' ? data.file_count : null,
+      }
+    } catch {
+      if (attempt === 2) break
+      await new Promise((r) => setTimeout(r, 1_000))
     }
-  } catch {
-    return { accessible: false, size: null, files: null }
   }
+  return { accessible: false, size: null, files: null }
 }
 
 async function probeDomain(
