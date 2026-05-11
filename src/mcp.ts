@@ -35,7 +35,7 @@ import {
 import { CheckEnvOptionsSchema, DeployOptionsSchema } from './sdk/schemas'
 
 const SERVER_NAME = 'ton-sovereign-mcp'
-const SERVER_VERSION = '0.8.0-rc2'
+const SERVER_VERSION = '0.8.0-rc5'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Result helpers (F5 structured error contract)

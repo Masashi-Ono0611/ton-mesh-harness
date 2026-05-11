@@ -69,6 +69,16 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: CLI smoke (--help / --version / invalid flag)
+        # Added in rc5 after the rc2-rc4 walletkit dir-import bug. The
+        # MCP smoke only loads dist/mcp.js, so a CLI-side regression
+        # (different require chain) wouldn't trip it. This smoke runs
+        # `dist/cli.js --version` + `--help` + a deliberately-invalid
+        # --wallet-mode value, asserts no ERR_UNSUPPORTED_DIR_IMPORT.
+        # Catches walletkit (or any deep dep) packaging regressions
+        # before they ship.
+        run: node scripts/cli-smoke.cjs
+
       - name: MCP smoke (initialize + tools/list)
         # Portable Node harness (scripts/mcp-smoke.cjs) — replaces the
         # earlier bash + GNU `timeout` + grep recipe. `timeout` isn't on
