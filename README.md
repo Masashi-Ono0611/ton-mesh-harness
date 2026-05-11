@@ -1,8 +1,8 @@
 # Sovereign Deploy Kit
 
-> Digital-resistance web のための CLI: TON Storage / TON DNS スタックに静的サイトを 1 コマンドで公開する。
+> One-command CLI for the digital-resistance web: publish a static site to the TON Storage + TON DNS stack.
 
-TON Foundation が 2025 年に打ち出した **digital-resistance スタック**（[TON Proxy + ADNL Tunnel + Payment Network](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08)、 [xssnick の Resistance Tools](https://github.com/xssnick/TON-Torrent)）と整合する形で、 静的サイトを TON Storage に bag として上げ、 `.ton` DNS から resolve させ、 自前 daemon (= あなたの PC) で seed します。 Tornado Cash / Uniswap UI のように **政府・Cloudflare・ホスティング業者に止められないウェブ**を作るための、 builder 向けの最小限のツールです。
+Aligned with TON Foundation's 2025 **digital-resistance stack** ([TON Proxy + ADNL Tunnel + Payment Network](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08); xssnick's [Resistance Tools](https://github.com/xssnick/TON-Torrent)). This kit uploads a static site to TON Storage as a bag, points a `.ton` domain at it via TON DNS, and seeds it from your own daemon (= your PC). The minimal toolkit for builders who need a **web that governments, Cloudflare, and hosting providers cannot take down** — like Tornado Cash / Uniswap UI.
 
 ```bash
 npx ton-sovereign-deploy ./build/ --watch
@@ -22,29 +22,29 @@ watching ./build/ — daemon stays alive to seed your bag.
 Press Ctrl+C to stop seeding.
 ```
 
-> **`--watch` を first-class として読んでください。** あなたの PC が daemon を稼働させているあいだ、 サイトはネットワーク上で生きています。 24/7 オフラインホスティング（いわゆる「provider 経由」）は v0.5 で実装したものの、 mainnet provider 経済が現状ほぼ稼働していないため experimental です（後述）。 これは TON Foundation 自身も `foundation.ton` を self-host で運用していることと整合します。
+> **Read `--watch` as first-class.** Your site is alive on the network for as long as your machine runs the daemon. The 24/7 "via-provider" path (`--provider`) is implemented but **experimental** — the mainnet provider economy is currently dormant (details below). This mirrors TON Foundation's own approach: they self-host `foundation.ton`.
 
 ---
 
 ## Agent quickstart (v0.8 rc5)
 
-このツールは AI エージェントから直接呼び出せるよう設計されています。Agent runtime に "deploy a static site to .ton" のような prompt を投げたとき、kit を npm 検索 + README + skill registry 経由で見つけてもらうことを *狙っています* — ただしこれは hypothesis で、[V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。発見が外れた場合は明示的に呼び出してください:
+This kit is designed to be invoked directly by AI agents. When an agent runtime gets a prompt like "deploy a static site to .ton", we *aim* for the agent to discover this kit via npm search + README + skill registry — but that's a hypothesis, validated empirically by the [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26). If discovery misses, you can invoke explicitly:
 
-**rc5 で利用可能な 3 つの経路**
+**Three paths available in rc5**
 
 ```bash
-# 1. CLI (TonConnect — 人間が phone wallet で承認):
+# 1. CLI (TonConnect — human approval via phone wallet):
 npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton --json-output
 ```
 
 ```bash
-# 2. CLI (Agentic — autonomous、~/.config/ton/config.json から自動署名):
+# 2. CLI (Agentic — autonomous, signs locally from ~/.config/ton/config.json):
 npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton \
   --wallet-mode agentic --wallet-label main-mainnet --json-output
 ```
 
 ```jsonc
-// 3. MCP server (rc2 から、TonConnect / Agentic 両 path で DNS write 完結):
+// 3. MCP server (since rc2; both TonConnect and Agentic paths complete DNS write end-to-end):
 {
   "mcpServers": {
     "ton-sovereign-deploy": {
@@ -56,233 +56,233 @@ npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton \
 // → tools/call sovereign_check_env → sovereign_deploy
 ```
 
-`--json-output` を付けると 1 行 1 JSON の structured output になり、agent が parse しやすくなります。
+`--json-output` emits one JSON line per event for easy agent parsing.
 
-**rc5 で実装済の MCP flow**
+**MCP flow shipped in rc5**
 
 ```jsonc
-// MCP client config に追加:
+// Add to your MCP client config:
 {
   "mcpServers": {
     "ton-sovereign-deploy": {
       "command": "npx",
       "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
     }
-    // optional: 並列に @ton/mcp を load してエージェントから wallet 管理も行わせる
+    // optional: load @ton/mcp alongside so the agent can also manage wallets
     // "ton": { "command": "npx", "args": ["-y", "@ton/mcp@alpha"] }
   }
 }
 ```
 
-agent は `sovereign_check_env` → `sovereign_deploy` の 2 tool を順に call します。`sovereign_deploy` は SDK が直接 awaiting_signature → dns_signing → dns_confirmed → verifying まで進めます(両 path 対応)。
+The agent calls `sovereign_check_env` → `sovereign_deploy` in order. `sovereign_deploy` runs the SDK end-to-end through `awaiting_signature → dns_signing → dns_confirmed → verifying` (both paths supported).
 
-**Wallet モード** (rc4 で agentic も DNS write 完結、rc5 で CLI からも利用可):
+**Wallet modes** (since rc4 both paths complete DNS write end-to-end; rc5 makes them available from the CLI too):
 
-- **`wallet: {kind: "tonconnect", connector}`** (default) — 人間が phone wallet で QR 経由で承認
-- **`wallet: {kind: "agentic", config_path?, wallet_label?}`** — autonomous、`~/.config/ton/config.json` (the file `@ton/mcp@alpha` manages) のキーで自動署名。`@ton/walletkit` 経由で Toncenter v3 にブロードキャスト。`type: standard` (mnemonic / private_key 直接署名) 対応。`type: agentic` (NFT-delegated operator key) は v0.8.x で対応予定。
+- **`wallet: {kind: "tonconnect", connector}`** (default) — human approves via QR + phone wallet.
+- **`wallet: {kind: "agentic", config_path?, wallet_label?}`** — autonomous, signs with a key in `~/.config/ton/config.json` (the file `@ton/mcp@alpha` manages). Broadcasts via `@ton/walletkit` → Toncenter v3. Supports `type: standard` (mnemonic / private_key direct sign). `type: agentic` (NFT-delegated operator key) is planned for v0.8.x.
 
-**`dns_tx_hash`** (rc4 から): 両 path とも Toncenter v3 の `transactionsByMessage` lookup で実 on-chain tx hash を解決。DNS 伝播の poll と並行で実行するため happy path に追加 latency なし。詳細は [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) §F2。
+**`dns_tx_hash`** (since rc4): both paths resolve the real on-chain tx hash via Toncenter v3's `transactionsByMessage` lookup. The lookup runs in parallel with DNS propagation polling — zero added latency on the happy path. Details: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) §F2.
 
-**Discoverability の前提**: agent が npm 検索 + skill registry でこの kit に到達できるよう README / keywords / `.well-known/mcp.json` template を整備していますが、これは **acceptance hypothesis であって fact ではありません**。[V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26) で実測検証します。失敗したら artifact 側を直して再 ship。
+**Discoverability is a hypothesis.** README copy, npm keywords, the `.well-known/mcp.json` template, and the skill registry submission are all artefacts toward the hypothesis that an agent will find this kit organically. We validate that empirically with the [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26). If discovery fails, we fix the artefacts and re-ship.
 
-> **Note for agents:** `--watch` モードは agent 環境で daemon を維持する責任が生まれます。short-lived agent session では `--no-watch` を使い、bag が伝播するのを別途待ってください。**MCP server は `keep_alive: true` を拒否します**(daemon tracking が未実装)— keep-alive flow が必要なら CLI を使うこと。
-
----
-
-## なぜ必要か
-
-DeFi プロトコルのフロントエンドが繰り返し「強制オフライン」にされている:
-
-- **Tornado Cash** → 米OFAC制裁でフロントエンドが完全削除
-- **Uniswap** → 特定トークンへのフロントエンドアクセスを制限
-- **1inch, Balancer など** → ジオブロック、ドメイン停止
-
-これらは全て同じ構造: **スマートコントラクトは生きているが、Webサイトが死んでいる**。原因は単純で、普通のサーバーとドメインを使っているから。
-
-TON ブロックチェーンにはこれを解決するインフラが既に存在する。ただし、使うには専門知識と複雑な設定が必要だった。このツールはそれをゼロ設定にする。
+> **Note for agents:** `--watch` mode leaves the agent's host responsible for keeping the daemon alive. Short-lived agent sessions should pass `--no-watch` and rely on bag propagation completing out-of-band. **The MCP server rejects `keep_alive: true`** (daemon tracking is unimplemented) — if you need a keep-alive flow, use the CLI.
 
 ---
 
-## 仕組み
+## Why this exists
 
-### TON Storage (分散ファイルストレージ)
+DeFi front-ends have repeatedly been forced offline:
 
-- ファイルをブロックチェーンネットワーク上に分散保存
-- コンテンツアドレス (Bag ID) で識別 — 内容が変わらない限りURLも変わらない
-- サーバーなし、削除不可、永続
+- **Tornado Cash** → US OFAC sanctions removed the front-end entirely.
+- **Uniswap** → restricted front-end access for specific tokens.
+- **1inch, Balancer, etc.** → geo-blocking, domain takedowns.
 
-**アーキテクチャ:**
-- Bag は ADNL プロトコルでアクセス可能（ton:// URL）
-- ネットワークへの伝播には数分〜数時間かかります
-- ton.run などのパブリックゲートウェイは、伝播完了した bag のみアクセス可能
-- セルフホスティング（デフォルト）では、あなたの PC がオフラインだとアクセス不能
+The shape is always the same: **the smart contract is alive but the website is dead.** The cause is also simple: they're served from ordinary servers with ordinary domains.
 
-**実用的なホスティング（v0.5 時点の現実）:**
-- **第一の選択肢は自前 daemon を稼働させ続けること** (`--watch`)。 これは TON Foundation 自身が `foundation.ton` を運用している方法でもあります
-- 24 時間ホストの抜け道として「ストレージプロバイダー契約」 (`--provider`) も実装していますが、 **mainnet provider 経済は現状ほぼ稼働していません**（Round 1〜7 mainnet soak 結果: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md)）。 当面 experimental として扱ってください
-- **将来 (v0.6 ロードマップ)**: ADNL Tunnel 経由で公開 IP を持たない user でも自前 host できるよう拡張予定 ([`docs/v0.6/roadmap-draft.md`](docs/v0.6/roadmap-draft.md))
+TON already has the infrastructure to fix this. Using it required specialist knowledge and complex setup. This tool reduces that to zero.
 
-### TON DNS (.ton ドメイン)
+---
 
-- `myprotocol.ton` のような人間可読ドメインをブロックチェーン上に登録
-- 差し押さえ不可、更新も本人の署名のみ
-- TON Proxy 経由でアクセス可能 (v0.2)
+## How it works
 
-### データフロー
+### TON Storage (decentralized file storage)
+
+- Stores files distributed across the blockchain network.
+- Identified by content address (Bag ID) — the URL doesn't change unless the content does.
+- No servers; no deletion; permanent.
+
+**Architecture:**
+- Bags are accessible via the ADNL protocol (`ton://` URLs).
+- Propagation across the network can take minutes to hours.
+- Public gateways like ton.run can only serve bags that have fully propagated.
+- Self-hosting (the default) means your bag is unreachable while your PC is offline.
+
+**Realistic hosting options (as of v0.5):**
+- **The primary option is running your own daemon continuously** (`--watch`). This is exactly how TON Foundation operates `foundation.ton`.
+- A 24/7 escape hatch is the "storage provider contract" (`--provider`), implemented but **the mainnet provider economy is currently dormant** (Round 1–7 mainnet soak results: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md)). Treat it as experimental for now.
+- **Coming in v0.6**: extension via ADNL Tunnel so users without a public IP can still self-host ([`docs/v0.6/roadmap-draft.md`](docs/v0.6/roadmap-draft.md)).
+
+### TON DNS (.ton domains)
+
+- Register a human-readable domain like `myprotocol.ton` directly on chain.
+- Cannot be seized; updates only with your signature.
+- Accessible via TON Proxy (v0.2).
+
+### Data flow
 
 ```
 npx ton-sovereign-deploy ./build/
          │
-         ├─→ ./build/ を検証 (dist/ | build/ | out/ | public/ を自動検出)
+         ├─→ Validate ./build/ (auto-detects dist/ | build/ | out/ | public/)
          │
-         ├─→ ~/.ton-sovereign/bin/storage-daemon を確認
-         │     なければ TON 公式リリースから自動DL (初回のみ、約30秒)
+         ├─→ Check ~/.ton-sovereign/bin/storage-daemon
+         │     If missing, auto-download from official TON release (first run only, ~30s)
          │
-         ├─→ storage-daemon 経由で TON ネットワークに分散送信
-         │     BitTorrent的なチャンキング + Merkle木でハッシュ化
+         ├─→ Send distributed via storage-daemon to the TON network
+         │     BitTorrent-style chunking + Merkle-tree hashing
          │
-         └─→ Bag ID を取得 → 結果を表示
+         └─→ Receive Bag ID → display result
 ```
 
 ---
 
-## ロードマップ
+## Roadmap
 
-### v0.1 — TON Storage アップロード (Day 1-5) ✅
+### v0.1 — TON Storage upload (Day 1–5) ✅
 
 ```bash
 npx ton-sovereign-deploy ./build/
-# → bag ID + ton:// URL（ADNL アクセス）
+# → bag ID + ton:// URL (ADNL access)
 ```
 
-- ✅ セルフホスティングならウォレット不要
-- ✅ セットアップ不要 (`storage-daemon` は自動DL）
-- ✅ Vite / Next.js export / CRA のビルド出力を自動検出
-- ✅ macOS/Linux/Windows 対応
+- ✅ No wallet needed for self-hosting.
+- ✅ Zero setup (`storage-daemon` is auto-downloaded).
+- ✅ Auto-detects Vite / Next.js export / CRA build output.
+- ✅ macOS/Linux/Windows.
 
-**現在の制限:**
-- ⚠️ ton.run などのパブリックゲートウェイは 404 を返す可能性があります（bag が伝播するまで）
-- ⚠️ セルフホスティングでは PC オフライン時にアクセス不能
-- ⚠️ 24時間ホストにはストレージプロバイダー契約が必要（有料）
+**Current limits:**
+- ⚠️ Public gateways like ton.run may 404 until the bag has propagated.
+- ⚠️ Self-hosting makes the site unreachable when your PC is offline.
+- ⚠️ 24/7 hosting requires a storage-provider contract (paid).
 
-### v0.2 — .ton DNS 登録 (Day 6-10) ✅
+### v0.2 — .ton DNS registration (Day 6–10) ✅
 
 ```bash
 npx ton-sovereign-deploy ./build/ --domain myprotocol.ton
-# → TON Connect でウォレット署名
-# → myprotocol.ton でアクセス可能に
+# → TON Connect wallet signature
+# → myprotocol.ton becomes resolvable
 ```
 
-- ✅ TON Connect ディープリンク生成
-- ✅ QR コード表示（ターミナル内）
-- ✅ DNS レコードオンチェーン確認（ポーリング）
-- ✅ TONAPI 経由のドメイン所有権確認
+- ✅ TON Connect deep-link generation.
+- ✅ Terminal QR code rendering.
+- ✅ On-chain DNS-record polling confirmation.
+- ✅ Domain-ownership check via TONAPI.
 
-### v0.3 — 仕上げ ✅ 完了
+### v0.3 — polish ✅
 
 ```bash
 npx ton-sovereign-deploy ./build/
-# → bag ID + ton:// URL（ADNL アクセス）
-# → bag ID + ton:// URL + 伝播確認
-# → GitHub Actions + Windows サポート + watch モード
+# → bag ID + ton:// URL (ADNL access)
+# → propagation verification
+# → GitHub Actions + Windows + watch mode
 ```
 
-- ✅ TONAPI.io 経由で bag のステータス確認（verifyBagOnNetwork）
-- ✅ GitHub Action サポート（`--ci-mode`, `--json-output`）
-- ✅ Windows サポート（win32-x64, win32-arm64, win32-ia32）
-- ✅ `--watch` モード（ファイル変更時に自動再デプロイ、daemon を動かし続けて伝播を促進）
+- ✅ Bag status check via TONAPI.io (`verifyBagOnNetwork`).
+- ✅ GitHub Actions support (`--ci-mode`, `--json-output`).
+- ✅ Windows support (win32-x64, win32-arm64, win32-ia32).
+- ✅ `--watch` mode (auto-redeploy on file change; keeps the daemon running to accelerate propagation).
 
-**注意:** verify は 60 秒でタイムアウトしますが、実際の伝播には数時間かかる場合があります。
+**Note:** `verify` times out at 60 s, but real propagation can take hours.
 
 ---
 
-## 競合との比較
+## Comparison
 
-| ツール | 分散? | 1コマンド? | .ton DNS? | CI/CD? | Windows? |
+| Tool | Decentralized? | One command? | .ton DNS? | CI/CD? | Windows? |
 |--------|-------|-----------|-----------|---------|---------|
-| Vercel / Netlify | No (中央集権) | Yes | No | Yes | Yes |
-| IPFS / Fleek | Yes | Yes | No (.eth のみ) | Yes | Yes |
-| TON CLI (手動) | Yes | No | 手動設定 | No | No |
+| Vercel / Netlify | No (centralized) | Yes | No | Yes | Yes |
+| IPFS / Fleek | Yes | Yes | No (.eth only) | Yes | Yes |
+| TON CLI (manual) | Yes | No | Manual config | No | No |
 | **Sovereign Deploy Kit** | **Yes** | **Yes** | **Yes (v0.2)** | **Yes (v0.3)** | **Yes (v0.3)** |
 
-直接の競合: ゼロ。
+Direct competitors: none.
 
 ---
 
-## ターゲットユーザー
+## Target users
 
-1. **DeFiプロトコル開発者** — フロントエンドのテイクダウンリスクを排除したい
-2. **TONエコシステム開発者** — .ton サイトを簡単に立ち上げたい
-3. **検閲リスクのあるアプリ全般** — ジャーナリズム、プライバシーツール、DAO フロントエンド
+1. **DeFi protocol developers** — eliminate front-end takedown risk.
+2. **TON ecosystem developers** — easily stand up a .ton site.
+3. **Censorship-exposed apps in general** — journalism, privacy tools, DAO front-ends.
 
 ---
 
-## 開発状況
+## Development status
 
-**ステータス:** v0.8.0-rc5 (2026-05-11) — MCP server、SDK の DNS write (TonConnect + agentic 両 path)、CLI `--wallet-mode agentic`、real `dns_tx_hash` 解決。GA は V3 (Claude Code MCP→testnet E2E) と V4 (agency-transfer red-team test) を通過後。
+**Status:** v0.8.0-rc5 (2026-05-11) — MCP server, SDK DNS write (TonConnect + agentic paths), CLI `--wallet-mode agentic`, real `dns_tx_hash` resolution. GA pending V3 (Claude Code MCP → testnet E2E) and V4 (agency-transfer red-team test).
 
 ### Released
-- **v0.1** ✅ — TON Storage アップロード
-- **v0.2** ✅ — .ton DNS 登録（`storage` レコード）
-- **v0.3** ✅ — 仕上げ（疎通確認、GitHub Actions、Windows、watch モード）
-- **v0.4** ✅ — `--provider` ストレージプロバイダー契約 (mainnet provider 経済は dormant。詳細: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md))
-- **v0.5** ✅ — TonConnect SDK 統合 / 自前 BOC / 防御深化 / `op::close_contract` 救出ルート
-- **v0.6** ✅ — `sites` (ADNL Address) レコード対応 / ADNL Tunnel クライアント統合 / self-host first README / Payment Network 抽象化
-- **v0.7** ✅ — `--site-auto` で rldp-http-proxy 自動 spawn + ADNL identity 自前 mint
-- **v0.8.0-rc1** ✅ (2026-05-10) — agent-surface track の first-useful flag-plant: README "Agent quickstart" + npm keywords + doc rescope
-- **v0.8.0-rc2** ✅ (2026-05-11) — MCP server (`ton-sovereign-mcp`)、SDK 抽出 (`src/sdk/`)、SDK DNS write (TonConnect 経由)、ESLint v9 no-console gate、GitHub Actions CI、プロジェクト全体リファクタリング (-290 LOC)
-- **v0.8.0-rc3** ✅ (2026-05-11) — SDK agentic DNS write (`wallet.kind: "agentic"`): `~/.config/ton/config.json` の protected-file (\x8aTM\x01 AES-256-GCM) decode + `@ton/walletkit` 経由で署名 + Toncenter v3 ブロードキャスト
-- **v0.8.0-rc4** ✅ (2026-05-11) — real on-chain `dns_tx_hash` 解決: TonConnect path は TEP-467 normalized hash 経由、agentic は Toncenter `sendBoc` の返り値経由。DNS 伝播 poll と並列で動かして happy path に latency 追加なし
-- **v0.8.0-rc5** ✅ (2026-05-11) — CLI `--wallet-mode agentic` でターミナルからも autonomous 署名可能。`@ton/walletkit` の Node 22+ runtime regression (`ERR_UNSUPPORTED_DIR_IMPORT`) を `noExternal` で修正。`scripts/cli-smoke.cjs` を CI に追加して再発防止
+- **v0.1** ✅ — TON Storage upload.
+- **v0.2** ✅ — .ton DNS registration (`storage` record).
+- **v0.3** ✅ — polish (verification, GitHub Actions, Windows, watch mode).
+- **v0.4** ✅ — `--provider` storage-provider contracts (mainnet provider economy is dormant; details: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md)).
+- **v0.5** ✅ — TonConnect SDK integration / hand-rolled BOC / defense-in-depth / `op::close_contract` recovery route.
+- **v0.6** ✅ — `sites` (ADNL Address) record support / ADNL Tunnel client integration / self-host-first README / Payment Network abstraction.
+- **v0.7** ✅ — `--site-auto` for rldp-http-proxy auto-spawn + self-minted ADNL identity.
+- **v0.8.0-rc1** ✅ (2026-05-10) — agent-surface track's first-useful flag-plant: README "Agent quickstart" + npm keywords + doc rescope.
+- **v0.8.0-rc2** ✅ (2026-05-11) — MCP server (`ton-sovereign-mcp`), SDK extraction (`src/sdk/`), SDK DNS write (TonConnect), ESLint v9 no-console gate, GitHub Actions CI, project-wide refactor (-290 LOC).
+- **v0.8.0-rc3** ✅ (2026-05-11) — SDK agentic DNS write (`wallet.kind: "agentic"`): `~/.config/ton/config.json` protected-file (\x8aTM\x01 AES-256-GCM) decode + sign via `@ton/walletkit` + broadcast via Toncenter v3.
+- **v0.8.0-rc4** ✅ (2026-05-11) — real on-chain `dns_tx_hash` resolution: TonConnect path via TEP-467 normalized hash, agentic path via Toncenter `sendBoc` return. Runs in parallel with DNS propagation polling so the happy path adds zero latency.
+- **v0.8.0-rc5** ✅ (2026-05-11) — CLI `--wallet-mode agentic` makes autonomous signing available from the terminal. Fixed a Node 22+ `@ton/walletkit` runtime regression (`ERR_UNSUPPORTED_DIR_IMPORT`) via `noExternal`. Added `scripts/cli-smoke.cjs` to CI so the regression class can't recur.
 
 ### Pending for v0.8.0 GA
-- **[V3] #18** — Claude Code MCP client → testnet deploy E2E (S2.5 land 済、agent と testnet TON が必要)
-- **[V4] #26** — Agency-transfer red-team test (fresh agent session、手動実行)
-- **[D3] #21** — 最終 v0.8.0 GA tag (V3+V4 通過後)
-- **NFT-delegated agentic** — `@ton/mcp` の `type: "agentic"` (operator-key + collection contract) 対応。v0.8.x 予定
+- **[V3] #18** — Claude Code MCP client → testnet deploy E2E (S2.5 landed; needs an agent + testnet TON).
+- **[V4] #26** — Agency-transfer red-team test (fresh agent session, manual).
+- **[D3] #21** — Final v0.8.0 GA tag (after V3 + V4).
+- **NFT-delegated agentic** — `@ton/mcp`'s `type: "agentic"` (operator-key + collection contract). Planned for v0.8.x.
 
 ### v0.8 docs
-- 全体ビジョン: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md)
-- MCP server 仕様: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md)
-- 2026-05-10 コンセプト更新ログ: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md)
-- P-1 `@ton/mcp` compose contract probe: [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md)
-- **Agentic CLI 使い方**: [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) — `--wallet-mode agentic` の prerequisites / wallet selector / CI/CD 例 / エラーコード解説
+- Overall vision: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md).
+- MCP server spec: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md).
+- 2026-05-10 concept-update log: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md).
+- P-1 `@ton/mcp` compose-contract probe: [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md).
+- **Agentic CLI usage**: [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) — `--wallet-mode agentic` prerequisites / wallet selector / CI/CD example / error codes.
 
 ### v0.9 reserve
-v0.7 から繰り延べた C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network 実クライアント。詳細: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) の C2 / C3 セクション (もとは v0.8 parked、agent-surface が v0.8 を取った 2026-05-10 の rename で v0.9 に降格)。
+Deferred from v0.7: C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network real-client. Details: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) §C2 / §C3 (originally parked for v0.8; demoted to v0.9 when the agent-surface track took v0.8 on the 2026-05-10 rename).
 
-**リリース:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
+**Release:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 
-**npm:** `npm install -g ton-sovereign-deploy` (CLI) / `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` (MCP server)
+**npm:** `npm install -g ton-sovereign-deploy` (CLI) / `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` (MCP server).
 
 ---
 
-## 困った時のために — 資金救出
+## When things go wrong — fund recovery
 
-`--provider` で sign したのち provider が `accept_storage_contract` を発行しないまま日数が経つ場合、 storage contract に保留された残金は user が `op::close_contract` (0x79f937ea) を送れば回収できます。 mainnet で実証済みのスクリプトを同梱しています:
+If you signed with `--provider` and the provider never issued `accept_storage_contract`, the funds parked in the storage contract are recoverable by sending `op::close_contract` (0x79f937ea) yourself. A mainnet-proven script ships with the kit:
 
 ```bash
 node scripts/close-storage-contract.cjs <storage-contract-address>
 ```
 
-[詳細とフィールド実証ログ](docs/v0.5/round-postmortem.md)。
+[Details and field-verified logs](docs/v0.5/round-postmortem.md).
 
 ---
 
-## CI/CD 連携 (v0.3)
+## CI/CD integration (v0.3)
 
-### GitHub Actions で自動デプロイ
+### Automatic deploy via GitHub Actions
 
-`git push` するだけで TON Storage にデプロイできます。
+`git push` is the only step; the rest deploys to TON Storage automatically.
 
-**2 つのテンプレート:**
+**Two templates:**
 
-| Template | 内容 | DNS write |
+| Template | Scope | DNS write |
 |---|---|---|
-| `templates/github-workflow.yml` | bag アップロードのみ | しない |
-| `templates/github-workflow-agentic.yml` | bag + `.ton` DNS 書き込み (autonomous 署名) | する |
+| `templates/github-workflow.yml` | bag upload only | no |
+| `templates/github-workflow-agentic.yml` | bag + `.ton` DNS write (autonomous signing) | yes |
 
-**セットアップ (bag-only):**
+**Setup (bag only):**
 
 ```bash
 mkdir -p .github/workflows
@@ -293,14 +293,14 @@ git commit -m "Add TON Storage deployment"
 git push origin main
 ```
 
-**セットアップ (agentic — bag + DNS):**
+**Setup (agentic — bag + DNS):**
 
-詳細は [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) を参照。要件:
+Full walkthrough: [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md). Prerequisites:
 
-1. `npx -y @ton/mcp@alpha agentic_import_wallet` で wallet を作成
-2. `~/.config/ton/config.json` の中身を GH secret `TON_AGENTIC_CONFIG` として保存(暗号化済 blob のまま — `@ton/mcp` の protected-file 形式は AES key 同梱で passphrase 保護ではないため、plaintext 秘密鍵と同等に扱うこと)
-3. ドメイン名を GH variable `TON_DOMAIN` として登録
-4. テンプレートをコピー:
+1. Create a wallet via `npx -y @ton/mcp@alpha agentic_import_wallet`.
+2. Save the contents of `~/.config/ton/config.json` as the GH secret `TON_AGENTIC_CONFIG` (encrypted blob as-is — `@ton/mcp`'s protected-file format bundles the AES key with the ciphertext, so it is **not** passphrase-protected; treat the secret like a plaintext private key).
+3. Register your domain as the GH variable `TON_DOMAIN`.
+4. Copy the template:
 
 ```bash
 mkdir -p .github/workflows
@@ -311,15 +311,15 @@ git commit -m "Add autonomous TON deployment"
 git push origin main
 ```
 
-**ワークフローの機能 (両テンプレート共通):**
+**Shared workflow features:**
 
-- `main` ブランチへの push で自動デプロイ
-- `--ci-mode` でスピナー無効化(ログが見やすい)
-- `--json-output` で `bag_id` を後続ステップで参照可能
-- プルリクエストに bag ID をコメント (bag-only テンプレートのみ)
-- agentic テンプレートのみ: 実 on-chain `dns_tx_hash` + tonviewer リンクを GH Step Summary に出力
+- Auto-deploy on push to `main`.
+- `--ci-mode` disables spinners (cleaner logs).
+- `--json-output` exposes `bag_id` for downstream steps.
+- bag-only template only: comments the bag ID back on the PR.
+- agentic template only: writes the real on-chain `dns_tx_hash` + tonviewer link into the GH Step Summary.
 
-**出力例:**
+**Example output:**
 
 ```
 🚀 Deployed to TON Storage
@@ -328,201 +328,203 @@ ton://a3f9c82e...
 Bag may take minutes-hours to propagate through network
 ```
 
-**注意:** CI 環境では verify が失敗しても正常です。bag は作成されていますが、ネットワークへの伝播には時間がかかります。watch モードは CI では使用できません。
+**Note:** In CI, `verify` failure is expected — the bag is created, but propagation takes time. Watch mode is not usable in CI.
 
 ---
 
-## ton:// URL の使い方
+## Using ton:// URLs
 
-### ton:// URL とは
+### What ton:// URLs are
 
-ton:// URL は TON の ADNL プロトコルを使用したコンテンツアドレスです。一度作成された bag は変更不可で、ネットワーク上に永続的に存在します。
+`ton://` URLs are content addresses on TON's ADNL protocol. Once created, a bag is immutable and persists on the network.
 
-### アクセス方法
+### Access methods
 
-**1. Ton HTTP Proxy 経由（推奨）**
+**1. Via Ton HTTP Proxy (recommended)**
 
-ローカルで Ton HTTP Proxy を実行し、ブラウザからアクセスします：
+Run Ton HTTP Proxy locally and visit from a browser:
 
 ```bash
-# Ton HTTP Proxy をインストール
+# Install Ton HTTP Proxy
 npm install -g @ton-community/http-proxy
 
-# プロキシを起動
+# Start the proxy
 ton-http-proxy
 
-# ブラウザでアクセス
+# Open in browser
 open http://localhost:8080/ton://bag-a3f9c82e1b4d...
 ```
 
-**2. storage-daemon が実行中の場合**
+**2. If storage-daemon is running**
 
-このツールの watch モードを使用している場合、bag はあなたの PC から直接アクセス可能です：
-
-```bash
-# ターミナル1: watch モードでデプロイ
-npx ton-sovereign-deploy ./build/ --watch
-
-# ターミナル2: bag にアクセス
-# daemon が ADNL ポートでリクエストを受け付け
-```
-
-**3. 伝播後のパブリックアクセス**
-
-bag がネットワークに伝播した後（数分〜数時間）、以下の方法でアクセス可能になる場合があります：
-
-- ton.run（bag が "active" と認識された場合のみ）
-- その他の TON Storage プロバイダー
-
-ただし、これらは保証されません。24時間アクセス可能にするには、ストレージプロバイダー契約が必要です。
-
-### watch モードで伝播を促進
+When you're using watch mode in this kit, the bag is reachable directly from your PC:
 
 ```bash
-# ファイル変更を監視し、daemon を動かし続ける
+# Terminal 1: deploy in watch mode
 npx ton-sovereign-deploy ./build/ --watch
 
-# daemon が実行中のため、ネットワークは bag を発見しやすくなります
-# Ctrl+C で停止するまで、あなたの PC が bag のシードとなります
+# Terminal 2: hit the bag
+# The daemon listens on its ADNL port
 ```
 
-### 伝播時間の目安
+**3. Public access after propagation**
 
-- **最速:** 数分（既存の活発なノードがある場合）
-- **通常:** 30分〜2時間
-- **最悪:** 数時間（ネットワークの状態による）
+Once the bag has spread across the network (minutes to hours), it may be reachable via:
 
-verify コマンドで 60 秒待機してチェックしますが、これは "minimum viable verification" です。実際にはさらに時間がかかる場合があります。
+- ton.run (only after the bag is recognized as "active").
+- Other TON Storage providers.
+
+These are not guaranteed. For 24/7 access you need a storage-provider contract.
+
+### Speeding up propagation with watch mode
+
+```bash
+# Watch for file changes and keep the daemon running
+npx ton-sovereign-deploy ./build/ --watch
+
+# Because the daemon stays alive, the network finds your bag faster.
+# Your PC seeds the bag until Ctrl+C.
+```
+
+### Propagation-time expectations
+
+- **Fastest:** a few minutes (when active nodes are available).
+- **Typical:** 30 minutes – 2 hours.
+- **Worst:** several hours (network-state dependent).
+
+The `verify` command waits 60 s — that's "minimum viable verification." Reality often takes longer.
 
 ---
 
-## CLI オプション
+## CLI options
 
-### 基本
+### Basics
 
 ```bash
 ton-sovereign-deploy [build-dir] [options]
 ```
 
-| オプション | 説明 |
+| Option | Description |
 |-----------|------|
-| `[build-dir]` | ビルドディレクトリ (省略時は自動検出) |
-| `--testnet` | TON テストネットを使用 |
-| `--desc <text>` | Bag の説明 |
-| `--domain <domain>` | .ton ドメインに登録 (v0.2) |
-| `--ci-mode` | CI 環境向けスピナー無効化 (v0.3) |
-| `--json-output` | JSON 出力 (v0.3)。 `--ci-mode` または `--json-output` のときは `--watch` が **自動的に無効** になり、 upload 完了後に exit します（CI hang 防止） |
-| `--watch` | ファイル変更を監視して自動再デプロイ（**v0.6 以降、 対話実行ではデフォルトで有効**） |
-| `--no-watch` | watch モードを無効化し upload 完了後に exit（CI / one-shot deploy 用）v0.6+ |
-| `--debounce <ms>` | watch モードのデバウンス遅延（デフォルト: 2000ms） |
-| `--daemon-backend <name>` | daemon バックエンド: `tonutils` (デフォルト、 v0.6+) / `ton-core`（C++ レガシー、 `--testnet` や `--provider` を使うときの fallback）|
-| `--tunnel-config <path>` | ADNL Tunnel の `nodes-pool.json` を指定（v0.6+、 tonutils backend のみ）。 NAT 越えに使う。 公開可能なプールはまだないため **bring-your-own-pool**（運営者から個別取得）|
-| `--site-adnl <hex>` | 64 文字 hex の ADNL identity を `dns_adnl_address` (`site` レコード、 magic `0xad01`) として `--domain` 指定の .ton に書き込む（v0.6+ B5）。 **bring-your-own rldp-http-proxy**: 既に動いている proxy の ADNL hash を渡す前提（自動 spawn は v0.7）。 `--domain` と併用すると、 storage と site の 2 record を **1 度の TonConnect 署名** にまとめます。 セットアップ手順: [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md) |
-| `--provider [address]` | **v0.6 では backend に関わらず disabled**（mainnet provider 経済が dormant なため、 daemon migration 中は安全側に倒している）。 v0.5 で動いた実装コードは tree に残っており v0.7 で再有効化予定。 詳細: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md) |
-| `--span <seconds>` | プロバイダー契約期間（秒、デフォルト 86400 = 1 日、最大 4294967295）v0.5+ |
-| `--wallet <name>` | 署名する wallet の希望名（部分一致、 デフォルト "Tonkeeper"）v0.5+ |
-| `--skip-verify` | bag アクセス確認をスキップ（伝播には時間がかかるため） |
+| `[build-dir]` | Build directory (auto-detected if omitted). |
+| `--testnet` | Use TON testnet. |
+| `--desc <text>` | Bag description. |
+| `--domain <domain>` | Register under a .ton domain (v0.2). |
+| `--wallet-mode <mode>` | Signing mode: `tonconnect` (default, QR) or `agentic` (autonomous, reads `~/.config/ton/config.json`). v0.8+ |
+| `--wallet-label <label>` | Selector for agentic mode (id / name / address). Defaults to `active_wallet_id`. v0.8+ |
+| `--wallet-config <path>` | Override path for the agentic config file. v0.8+ |
+| `--ci-mode` | Disable spinners for CI environments (v0.3). |
+| `--json-output` | Emit JSON (v0.3). When `--ci-mode` or `--json-output` is set, `--watch` is **automatically disabled** so the process exits after upload (prevents CI hang). |
+| `--watch` | Watch for file changes and auto-redeploy (**default in interactive runs since v0.6**). |
+| `--no-watch` | Disable watch mode; exit after upload (CI / one-shot). v0.6+ |
+| `--debounce <ms>` | Watch-mode debounce delay (default 2000 ms). |
+| `--daemon-backend <name>` | Daemon backend: `tonutils` (default, v0.6+) or `ton-core` (C++ legacy; fallback when using `--testnet` or `--provider`). |
+| `--tunnel-config <path>` | Path to a `nodes-pool.json` for ADNL Tunnel (v0.6+, tonutils backend only). Used for NAT traversal. No public pools exist yet — **bring-your-own-pool** (obtain from the operator). |
+| `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `dns_adnl_address` (`site` record, magic `0xad01`) under `--domain` (v0.6+ B5). **Bring-your-own rldp-http-proxy** assumed — pass the ADNL hash of an already-running proxy (auto-spawn lands in v0.7). With `--domain`, bundles the storage and site records into **one TonConnect signature**. Setup: [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md). |
+| `--provider [address]` | **Disabled in v0.6 regardless of backend** (mainnet provider economy is dormant; gated off conservatively during daemon migration). The v0.5 working code is still in the tree; re-enable planned for v0.7. Details: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md). |
+| `--span <seconds>` | Provider-contract span in seconds (default 86400 = 1 day; max 4294967295). v0.5+ |
+| `--wallet <name>` | Preferred wallet for sign requests (substring match; default "Tonkeeper"). v0.5+ |
+| `--skip-verify` | Skip bag-access verification (propagation can be slow). |
 
-加えて v0.6 から `ton-sovereign-deploy doctor` で環境チェックができます（daemon バイナリ・ TONAPI・ TonConnect manifest の到達性・ wallet pairing 状態）。 deploy 前のトラブルシュートに。
+Since v0.6 you can also run `ton-sovereign-deploy doctor` for an environment check (daemon binaries, TONAPI / TonConnect manifest reachability, wallet pairing state). Useful when troubleshooting before a deploy.
 
-### CI/CD 向けオプション
+### CI/CD options
 
 ```bash
-# JSON 出力 (スクリプトで解析しやすい)
+# JSON output (easy to parse from scripts)
 ton-sovereign-deploy ./build/ --json-output
-# → {"bagId":"...","tonUrl":"ton://...","fallbackUrl":"https://..."}
+# → {"bag_id":"...","ton_url":"ton://...","fallback_url":"https://..."}
 
-# CI モード (GitHub Actions 等でログが見やすい)
+# CI mode (cleaner logs in GitHub Actions etc.)
 ton-sovereign-deploy ./build/ --ci-mode --json-output
 ```
 
-### バックエンド選択（v0.6 以降）
+### Backend choice (v0.6+)
 
-v0.6 から **bundled daemon を `tonutils-storage` (xssnick / Go)** に切り替えました。 これは [TON-Torrent](https://github.com/xssnick/TON-Torrent) や [Resistance Tools](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08) スタックが使う daemon そのものです。
+From v0.6 onward, the **bundled daemon is `tonutils-storage` (xssnick / Go)** by default — the same daemon used by [TON-Torrent](https://github.com/xssnick/TON-Torrent) and the [Resistance Tools](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08) stack.
 
 ```bash
-# デフォルト = tonutils backend (Go)
+# Default = tonutils backend (Go)
 ton-sovereign-deploy ./build/
 
-# レガシー TON Core C++ daemon に切替（--testnet / --provider を使う場合）
+# Legacy TON Core C++ daemon (for --testnet / --provider)
 ton-sovereign-deploy ./build/ --daemon-backend=ton-core
 ```
 
-| 機能 | tonutils (default) | ton-core (legacy) |
+| Feature | tonutils (default) | ton-core (legacy) |
 |---|---|---|
 | Bag upload + seed | ✅ | ✅ |
-| `--watch` (auto-redeploy) | ✅ (v0.6 step B2.x で実装) | ✅ |
-| `--tunnel-config` (ADNL Tunnel) | ✅ (v0.6 step B3.x で対応) | ❌（C++ daemon に tunnel client なし） |
+| `--watch` (auto-redeploy) | ✅ (v0.6 step B2.x) | ✅ |
+| `--tunnel-config` (ADNL Tunnel) | ✅ (v0.6 step B3.x) | ❌ (no tunnel client in the C++ daemon) |
 | `--testnet` | ❌ | ✅ |
-| `--provider` | ❌（v0.6 は provider 経路全体を一時 disable） | ⚠ experimental（mainnet provider 経済 dormant） |
+| `--provider` | ❌ (v0.6 disables the provider path) | ⚠ experimental (mainnet provider economy is dormant) |
 
-#### ADNL Tunnel — NAT 越え
+#### ADNL Tunnel — NAT traversal
 
-家の WiFi など **公開 IP がない環境** でも bag を seed させるには、 ADNL Tunnel intermediate node を経由します（[TON Foundation 公式 2025-03 発表](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08)）。
+To seed a bag from an environment **without a public IP** (e.g. a home Wi-Fi), route through an ADNL Tunnel intermediate node ([TON Foundation 2025-03 announcement](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08)).
 
 ```bash
-# 運営者から受け取った nodes-pool.json を渡す
+# Pass a nodes-pool.json received from your operator
 ton-sovereign-deploy ./build/ --tunnel-config ./tunnel-pool.json
 ```
 
-**現状の制約**: 公開できる community-run pool が存在しないため、 nodes-pool.json は **tunnel 運営者から個別に取得**する必要があります（[xssnick/TON-Torrent](https://github.com/xssnick/TON-Torrent) と同じ運用）。 運営者の community / Telegram チャンネルから入手してください。 v0.6 では CLI 表面と config 配線まで対応、 default pool curation または自前運営は v0.7 以降の判断です。
+**Current constraint**: there is no public community-run pool, so `nodes-pool.json` must be **obtained from a tunnel operator** (same operating model as [xssnick/TON-Torrent](https://github.com/xssnick/TON-Torrent)). Get one from an operator's community / Telegram channel. v0.6 wires the CLI surface and config plumbing; default-pool curation or running our own pool is a v0.7+ decision.
 
-### Watch モード（v0.6 以降デフォルト）
+### Watch mode (default since v0.6)
 
-**v0.6 から `--watch` が対話実行時の既定挙動です。** 引数なしで実行すると daemon が常駐し、 ファイル変更を監視して自動再デプロイします（ただし auto-redeploy は現状 ton-core backend のみ）。
+**Since v0.6, `--watch` is the default behavior for interactive runs.** With no arguments, the daemon stays resident, watches for file changes, and auto-redeploys (auto-redeploy currently ton-core backend only).
 
 ```bash
-# 既定挙動: watch モードで起動 (= self-host first)
+# Default behavior: watch mode (= self-host first)
 ton-sovereign-deploy ./build/
 
-# 一回限りでデプロイして即 exit したい場合 (CI 向け)
+# One-shot deploy + exit (for CI)
 ton-sovereign-deploy ./build/ --no-watch
 
-# デバウンス3秒（大規模プロジェクト向け）
+# 3-second debounce (for large projects)
 ton-sovereign-deploy ./build/ --debounce 3000
 ```
 
-**watch モードの動作:**
-- ファイル変更を検知すると自動的に再デプロイ
-- 連続する変更を1回のデプロイに集約（デバウンス）
-- **daemon が常駐し、 ADNL でネットワークに seed し続ける** ← これが「self-host」 の中身
-- Ctrl+C で停止
+**Watch-mode behavior:**
+- Auto-redeploys when a file changes.
+- Coalesces consecutive changes into one redeploy (debounced).
+- **Keeps the daemon resident and seeds via ADNL** ← this *is* "self-host."
+- Stop with Ctrl+C.
 
-**重要:** PC をシャットダウンすると seed が止まるため、 bag にアクセスできなくなります。 実用的に常時 host したい場合の方法:
-- ノートをスリープせず常駐 ASCII（最も基本）
-- VPS / RaspberryPi / NAS で 24/7 daemon を稼働（[v0.6 のロードマップ](docs/v0.6/roadmap-draft.md)で ADNL Tunnel 統合し、 公開 IP 不要にする予定）
-- `--no-watch` で one-shot deploy → 別途常駐サーバーで bag を seed
+**Important:** Shutting down your PC stops the seed, making the bag unreachable. For continuous hosting in practice:
+- Don't let your laptop sleep (most basic).
+- Run a 24/7 daemon on a VPS / Raspberry Pi / NAS ([v0.6 roadmap](docs/v0.6/roadmap-draft.md) plans ADNL Tunnel integration so a public IP is unnecessary).
+- One-shot deploy with `--no-watch`, then seed the bag from a separate always-on host.
 
 ---
----
 
-## 動作環境
+## System requirements
 
-### 対応 OS
+### Supported OS
 
-- **macOS** — 10.15+ (Catalina 以上)
-- **Linux** — x86_64, ARM64
-- **Windows** — 10/11 (x64, ARM64) v0.3+
+- **macOS** — 10.15+ (Catalina or newer).
+- **Linux** — x86_64, ARM64.
+- **Windows** — 10/11 (x64, ARM64). v0.3+
 
-### システム要求
+### System requirements
 
-- **Node.js** 18+
-- **PowerShell** 3.0+ (Windows のみ、標準搭載)
-- **ネットワーク** — TON ノードとの通信に必要
+- **Node.js** 18+ (CI matrix covers 18/20/22).
+- **PowerShell** 3.0+ (Windows only; ships with the OS).
+- **Network** — TON node connectivity.
 
-### Windows 固有の注意事項
+### Windows-specific notes
 
-**初回実行時:**
-- PowerShell が `storage-daemon-win-x86-64.exe` のダウンロードを実行
-- Windows Defender または他の Antivirus ソフトが警告を表示する可能性があります
-  - その場合: 「許可」または「除外」を選択してください
-  - ファイルは公式 TON GitHub リリースから取得されます
+**First run:**
+- PowerShell downloads `storage-daemon-win-x86-64.exe`.
+- Windows Defender or other AVs may flag it.
+  - Choose "Allow" or add an exclusion.
+  - The file is fetched from the official TON GitHub release.
 
 **WSL (Windows Subsystem for Linux):**
-- WSL 環境では Linux バイナリが使用されます
-- WSL2 推奨（より良いネットワークパフォーマンス）
+- WSL uses the Linux binaries.
+- WSL2 recommended (better networking).
 
-**パスの長さ:**
-- Windows はデフォルトで 260 文字のパス制限があります
-- `~\.ton-sovereign\` は短いため、通常問題にはなりません
-- プロジェクトのパスが長い場合は、長いパスを有効化してください
+**Path length:**
+- Windows defaults to a 260-character path limit.
+- `~\.ton-sovereign\` is short enough that this rarely matters.
+- Enable long paths if your project path is large.

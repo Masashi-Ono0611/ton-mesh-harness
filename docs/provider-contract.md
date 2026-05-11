@@ -1,205 +1,186 @@
-# ストレージプロバイダー契約 (v0.4 → v0.5)
+# Storage-provider contracts (v0.4 → v0.5)
 
-> **⚠ EXPERIMENTAL — 2026-05-10 mainnet 実証時点で、 mainnet の storage provider 経済はほぼ稼働していません。**
-> 「最安」 5 件すべて `accept_storage_contract` を 1 度も発行したことがなく、 `foundation.ton` 自身も自前 daemon で self-host しています。 当面は `--watch` での自前 host を推奨します。 詳細: [`v0.5/round-postmortem.md`](v0.5/round-postmortem.md)。
+> **⚠ EXPERIMENTAL — as of the 2026-05-10 mainnet field-test, the mainnet storage-provider economy is largely dormant.**
+> The five cheapest providers have never once issued `accept_storage_contract`, and `foundation.ton` itself self-hosts via its own daemon. For the foreseeable future, self-hosting via `--watch` is the recommended path. Details: [`v0.5/round-postmortem.md`](v0.5/round-postmortem.md).
 >
-> このドキュメントは仕組みと将来再生時の動作を記録するためのものです。
+> This document is preserved to record the mechanism and the behaviour it will exhibit if the provider economy revives.
 
-PCをオフにしてもサイトにアクセスできるようにするための手順（実験的）。
-
----
-
-## 概要
-
-デフォルトのデプロイでは、**あなたの PC がシードノードになる**。
-PC がオフラインになると bag にアクセスできなくなる。
-
-`--provider` フラグを使うと、TON ネットワーク上のストレージプロバイダーと契約し、
-**24時間365日** bag をホストしてもらえる（**設計上は**）。対価は TON で支払う。
-v0.5 から **契約期間は秒単位で自由に指定可能**（`--span`、デフォルト 1 日）。
-
-**現状の制約**（再掲）: mainnet の registered provider はほぼ全員稼働しておらず、 sign 後に `accept_storage_contract` が来ない可能性が高いです。 その場合 0.3 TON が contract に保留されますが、 後述の `op::close_contract` で全額回収できます。
+A procedure (experimental) for keeping your site reachable even when your PC is offline.
 
 ---
 
-## 資金救出 (`op::close_contract`)
+## Overview
 
-mainnet で `--provider` を使い contract が active 化しなかった場合は、 同梱スクリプトで残金を回収できます:
+In a default deploy, **your PC is the seed node**. If it goes offline, the bag becomes unreachable.
+
+With the `--provider` flag, you contract with a storage provider on the TON network to host the bag **24/7** (**by design**). Payment is in TON. From v0.5, the **contract duration is specified in seconds** (`--span`; default 1 day).
+
+**Current constraint** (restated): nearly no registered providers on mainnet are active, so after signing, `accept_storage_contract` may never arrive. If that happens, 0.3 TON is held in the contract — fully recoverable via the `op::close_contract` route below.
+
+---
+
+## Fund recovery (`op::close_contract`)
+
+If you signed a `--provider` flow on mainnet and the contract never activated, the bundled script recovers the funds:
 
 ```bash
 node scripts/close-storage-contract.cjs <storage-contract-address>
 ```
 
-**メカニズム** (`storage-contract.fc` より):
-- contract が `is_active=false` の場合、 client (= あなた) または provider が `op::close_contract (0x79f937ea)` を送ると、 contract balance 全額が client に送り返され (mode 128+32)、 contract 自身が self-destruct
-- 実証 (Round 7 → close): 0.05 TON 送金 → `0.3281 TON` 着金 → contract `nonexist`。 net 損失 0.022 TON のみ
+**Mechanism** (from `storage-contract.fc`):
+- When the contract has `is_active=false`, either the client (you) or the provider can send `op::close_contract (0x79f937ea)`. The full contract balance is then returned to the client (mode 128+32) and the contract self-destructs.
+- Field-verified (Round 7 → close): 0.05 TON sent → `0.3281 TON` returned → contract `nonexist`. Net loss only 0.022 TON.
 
-スクリプトは既存の TonConnect セッション (`~/.ton-sovereign/tonconnect.json`) を再利用するため、 wallet pairing は不要です。
+The script reuses your existing TonConnect session (`~/.ton-sovereign/tonconnect.json`), so no wallet pairing is required.
 
 ---
 
-## 使い方
+## Usage
 
 ```bash
-# デプロイ + プロバイダー自動選択（最安値）+ 1 日契約（デフォルト）
+# Deploy + auto-pick the cheapest provider + 1-day contract (default)
 node dist/cli.js ./build/ --provider
 
-# デプロイ + 特定プロバイダー + 30 日契約
+# Deploy + a specific provider + 30-day contract
 node dist/cli.js ./build/ --provider 0:ca5f6e597d3eab8a4e... --span 2592000
 
-# 1 年契約
+# 1-year contract
 node dist/cli.js ./build/ --provider --span 31536000
 ```
 
-`--span` の値域: 正の整数 1 〜 4 294 967 295（uint32 最大、約 136 年）。
+`--span` accepts positive integers 1 – 4 294 967 295 (uint32 max, ≈ 136 years).
 
-### フロー
+### Flow
 
-1. **デプロイ** — `./build/` を TON Storage にアップロード
-2. **プロバイダー選択** — TONAPI から候補リストを取得、最安値を自動選択
-3. **契約メッセージ生成** — daemon CLI に `new-contract-message` を呼ばせて
-   TorrentInfo + microchunk_hash を取り出し、TS 側で `@ton/core` の
-   `beginCell()` を使って **任意 span の BOC を再生成**（自前 BOC ルート）
-4. **QR コード + URL 表示** — TON Connect ディープリンクを表示
-5. **署名** — Tonkeeper などのウォレットアプリで署名
-6. **確認** — TONAPI をポーリングして契約アクティベーションを確認
+1. **Deploy** — upload `./build/` to TON Storage.
+2. **Pick provider** — fetch candidates from TONAPI, auto-select the cheapest.
+3. **Build contract message** — invoke the daemon CLI's `new-contract-message` to extract `TorrentInfo` + `microchunk_hash`, then **regenerate a BOC for any span** on the TS side via `@ton/core`'s `beginCell()` (the self-built-BOC route).
+4. **Show QR + URL** — render the TON Connect deep-link.
+5. **Sign** — approve in Tonkeeper or another wallet.
+6. **Confirm** — poll TONAPI until the contract is active.
 
 ---
 
-## テストネットについて
+## Testnet
 
-**`--provider` はテストネット非対応**（`--testnet` と同時使用不可）。
+**`--provider` does not work on testnet** (mutually exclusive with `--testnet`).
 
-テストネットのプロバイダーリストには 171 件が登録されているが、
-実際の ADNL ノードが存在せず、mainnet との重複もゼロ。
-テスト用エントリのみで実用不可のため、早期終了してエラーを表示する。
+The testnet provider list has 171 entries registered, but no real ADNL nodes exist behind them and there's zero overlap with mainnet. The entries are test fixtures, not functional, so we early-exit with an explicit error.
 
 ```bash
-# これはエラーになる（意図的）
+# Errors out by design
 node dist/cli.js ./build/ --testnet --provider
 # ⚠ --provider is not supported on testnet.
 ```
 
 ---
 
-## 既知の制限・バグ（daemon v2026.02-1）
+## Known limitations / bugs (daemon v2026.02-1)
 
-### `--max-span` の uint8 バグ — v0.5 で迂回完了
+### `--max-span` uint8 bug — worked around in v0.5
 
-`storage-daemon-cli` の `new-contract-message --rate --max-span` モードで、
-`--max-span` の値が **0〜255 しか受け付けない**（オンチェーンの
-storage-provider 契約は `expected_max_span:uint32` を受け取るのに、
-CLI のパーサだけが `uint8` でパースする）。
+`storage-daemon-cli`'s `new-contract-message --rate --max-span` mode **only accepts 0–255** for `--max-span` (the on-chain storage-provider contract takes `expected_max_span:uint32`, but the CLI parser narrows it to `uint8`).
 
-- 該当: `storage/storage-daemon/storage-daemon-cli.cpp:681`（v2026.02-1〜v2026.04-1 全部）
-- 周囲のコードはすべて `uint32` → 明らかなコピペエラー
+- Location: `storage/storage-daemon/storage-daemon-cli.cpp:681` (affects v2026.02-1 through v2026.04-1).
+- Surrounding code uses `uint32` — clearly a copy-paste error.
 
-**v0.5 の対応 — 迂回ルート（自前 BOC 生成）**
+**v0.5 workaround — self-built BOC route**
 
-upstream に依存しないため、TS 側で BOC を組み立てる方針を採用。
-詳細: `docs/v0.5/lane-b-self-generated-boc.md`
+To avoid blocking on upstream, we assemble the BOC in TypeScript. Details: `docs/v0.5/lane-b-self-generated-boc.md`.
 
-1. daemon CLI を `--max-span 200` で呼んで一時 BOC を生成（CLI の許す範囲で動かす）
-2. その BOC を `Cell.fromBoc` でパースし、TorrentInfo（ref Cell）と
-   microchunk_hash（256 ビット）を取り出す
-3. `buildOfferStorageContractMessage`（`src/provider.ts`）で
-   ユーザー指定の span 値を入れた BOC を再生成
-4. `Cell.toBoc({ idx: false, crc32: false })` で
-   daemon の `vm::std_boc_serialize` と**バイト一致するシリアライズ**を実行
+1. Invoke the daemon CLI with `--max-span 200` (within its accepted range) to produce a draft BOC.
+2. Parse that BOC with `Cell.fromBoc` and extract `TorrentInfo` (ref Cell) + `microchunk_hash` (256-bit).
+3. Use `buildOfferStorageContractMessage` (in `src/provider.ts`) to regenerate a BOC with the user's actual `span` value.
+4. Serialize via `Cell.toBoc({ idx: false, crc32: false })` to produce **byte-identical output** to the daemon's `vm::std_boc_serialize`.
 
-`test/provider-parity.integration.test.ts`（`RUN_DAEMON_TESTS=1` で実走）が
-バイト一致と任意 span 投入を実機で証明している。
+`test/provider-parity.integration.test.ts` (live with `RUN_DAEMON_TESTS=1`) proves byte-equality and accepts arbitrary span values against a real daemon.
 
-### `--provider <addr>` の P2P タイムアウト
+### `--provider <addr>` P2P timeout
 
-`new-contract-message --provider <addr>` は、プロバイダーの ADNL ノードへ
-P2P 接続してレートを取得するモード。mainnet でも接続確立に失敗することが多い。
+`new-contract-message --provider <addr>` is a mode that opens a P2P ADNL connection to the provider to fetch its rate. Connections frequently fail to establish even on mainnet.
 
 ```
-# この形式は使わない（タイムアウトするため）
+# Avoid this form (it times out)
 new-contract-message <bagId> <outFile> --provider <addr>
 
-# 代わりにこの形式を使用（手動でレート・期間を指定）
+# Use this form instead (manual rate + span)
 new-contract-message <bagId> <outFile> --rate <rate> --max-span 200
 ```
 
-### フラグの排他性
+### Flag exclusivity
 
-`--provider <addr>` と `--rate --max-span` は**排他フラグ**。
-同時に使うと `Incompatible flags` エラーになる。
+`--provider <addr>` and `--rate --max-span` are **mutually exclusive**. Combining them yields an `Incompatible flags` error.
 
 ---
 
-## 実装詳細
+## Implementation details
 
 ### `src/provider.ts`
 
 ```
 fetchProviders(testnet)  →  TONAPI /v2/storage/providers  →  Provider[]
-  フィルタ: accept_new_contracts && rate_per_mb_day > 10 && max_span >= 3600
-  (rate > 10 で rate=0/1 のダミーエントリを除外)
+  filter: accept_new_contracts && rate_per_mb_day > 10 && max_span >= 3600
+  (rate > 10 excludes dummy entries with rate=0/1)
 
-selectCheapestProvider(providers)  →  providers[0]  (ratePerMbDay 昇順ソート済み)
+selectCheapestProvider(providers)  →  providers[0]   (sorted ascending by ratePerMbDay)
 
 getBagSizeBytes(bagId, daemon)  →  storage-daemon-cli get <bagId> --json
 
 buildOfferStorageContractMessage({ queryId, torrentInfo, microchunkHash,
                                    expectedRateNanoPerMbDay,
                                    expectedMaxSpanSeconds })
-  →  Cell  // op=0x107c49ef, ref=TorrentInfo, span 任意 uint32
+  →  Cell  // op=0x107c49ef, ref=TorrentInfo, span free uint32
 
 generateContractMessage(bagId, sizeBytes, provider, daemon, spanSeconds=86400)
-  1. daemon CLI で new-contract-message を呼ぶ（CLI のバグった span は捨てる）
-  2. その BOC をパースし TorrentInfo + microchunk_hash を抽出
-  3. buildOfferStorageContractMessage で span 自由な BOC を再生成
-  4. amountNano を新 span で再計算
+  1. Invoke daemon CLI's new-contract-message (discard its bugged span)
+  2. Parse the BOC; extract TorrentInfo + microchunk_hash
+  3. Regenerate the BOC with arbitrary span via buildOfferStorageContractMessage
+  4. Recompute amountNano against the new span
   →  ContractMessage { bocBase64, amountNano, providerAddress, spanDays, rateTonPerGbYear }
 ```
 
-### 金額計算
+### Amount calculation
 
 ```
-sizeMb = max(sizeBytes / 1_000_000, 0.1)   ← 最小 0.1 MB
-spanDays = spanSeconds / 86400              ← ユーザー指定（デフォルト 1 日）
+sizeMb = max(sizeBytes / 1_000_000, 0.1)   ← minimum 0.1 MB
+spanDays = spanSeconds / 86400              ← user-specified (default 1 day)
 storageCostNano = ceil(sizeMb * ratePerMbDay * spanDays)
-amountNano = storageCostNano + 300_000_000  ← 0.3 TON バッファ（コントラクトデプロイ費用）
+amountNano = storageCostNano + 300_000_000  ← 0.3 TON buffer (contract deployment cost)
 ```
 
-数 KB の bag では `storageCostNano` は span が長くてもほぼ無視できる量にしかならず、
-実質 **0.3 TON のみ** が支払いになる。サイズが大きい bag や span を年単位にする場合は
-storageCostNano が支配的になるので事前に試算すること。
+For multi-KB bags, `storageCostNano` is negligible even with long spans — essentially **only the 0.3 TON buffer** is paid. For large bags or year-scale spans, `storageCostNano` dominates and should be estimated up front.
 
 ### `src/cli/provider.ts`
 
 ```
 runProviderContract(opts)
-  1. testnet チェック → 早期終了
-  2. fetchProviders + select/find provider
+  1. Testnet check → early exit
+  2. fetchProviders + select / find provider
   3. getBagSizeBytes
   4. generateContractMessage
   5. buildTonConnectDeeplink(provider.address, bagId, { amountNano, payloadBase64: bocBase64 })
   6. displayTonConnectQr(deeplink, ...)
-  7. URL を直接表示（QRが見えない環境向け）
-  8. pollProviderContract (TONAPI /v2/storage/bag/{id}) で5分間ポーリング
+  7. Print the URL directly (for environments without QR rendering)
+  8. pollProviderContract (TONAPI /v2/storage/bag/{id}) — poll 5 minutes
 ```
 
 ---
 
-## ローカルでの手動テスト手順
+## Manual local test procedure
 
 ```bash
-# 1. ビルド
+# 1. Build
 npm run build
 
-# 2. テストサイト作成
+# 2. Create a test site
 mkdir -p /tmp/ton-test-site
 echo '<h1>Hello TON</h1>' > /tmp/ton-test-site/index.html
 
-# 3. mainnet でデプロイ + プロバイダー契約（1 日契約）
+# 3. Mainnet deploy + provider contract (1-day)
 node dist/cli.js /tmp/ton-test-site --provider --span 86400
 ```
 
-実行すると以下が順番に表示される:
+The run prints, in order:
 
 ```
 📦 Storage Provider Contract
@@ -215,7 +196,7 @@ node dist/cli.js /tmp/ton-test-site --provider --span 86400
   → 0:ca5f6e597d3eab8a4e...
 
   Scan with your TON wallet:
-  [QR コード]
+  [QR code]
 
   TON Connect URL (open on mobile or paste in Tonkeeper):
 
@@ -225,19 +206,19 @@ node dist/cli.js /tmp/ton-test-site --provider --span 86400
   (Press Ctrl+C to skip provider contract)
 ```
 
-4. **Tonkeeper で署名**
-   - QR をスキャンするか、`tc://` URL をブラウザで開く
-   - 金額・送金先を確認して署名
+4. **Sign in Tonkeeper**
+   - Scan the QR or open the `tc://` URL in a browser.
+   - Verify amount + recipient, then sign.
 
-5. **確認**
-   - 署名後 1〜3 分でコントラクトがアクティブになる
-   - CLI が自動で検出して終了
+5. **Confirmation**
+   - 1–3 minutes after signing, the contract activates.
+   - The CLI detects it and exits.
 
 ---
 
-## プロバイダーリスト確認
+## Inspecting the provider list
 
-TONAPI で現在のプロバイダーを確認できる:
+You can query current providers via TONAPI:
 
 ```bash
 curl https://tonapi.io/v2/storage/providers | jq '.providers[] | {address, rate_per_mb_day, max_span}'
@@ -245,11 +226,10 @@ curl https://tonapi.io/v2/storage/providers | jq '.providers[] | {address, rate_
 
 ---
 
-## 今後の改善点
+## Future improvements
 
-- ✅ ~~daemon のアップデートで `--max-span` バグが修正されたら、契約期間を設定可能にする~~
-  → v0.5 で自前 BOC ルートにより解消（`--span <seconds>` で任意 uint32 秒）
-- プロバイダー P2P 接続（`--provider <addr>` モード）の安定化
-- 複数プロバイダーへの同時契約オプション
-- mainnet 実 soak テスト（`--span 86400` で 1 日契約を実際に署名・検証）
-- microchunk_hash の派生計算を TS に移植（daemon CLI 完全独立）
+- ✅ ~~Make the contract span configurable once the daemon `--max-span` bug is fixed upstream~~ → resolved in v0.5 via the self-built-BOC route (`--span <seconds>` accepts arbitrary uint32 seconds).
+- Stabilize provider P2P connections (`--provider <addr>` mode).
+- Option to contract with multiple providers in parallel.
+- Mainnet soak test (`--span 86400` 1-day contract end-to-end signed + verified).
+- Port the `microchunk_hash` derivation to TS (full daemon-CLI independence).

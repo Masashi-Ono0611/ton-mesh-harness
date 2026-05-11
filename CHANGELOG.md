@@ -420,8 +420,8 @@ discovery claim is verified by the [V4 red-team test](https://github.com/Masashi
   track now occupies the v0.8 slot; the v0.7-deferred C2 NAT + C3 Payments
   move to a v0.9 reserve slot. CHANGELOG `[0.7.0]` "Out of scope" updated
   from "deferred to v0.8" → "deferred to v0.9" with explanatory note.
-  `src/cli.ts` C1 comment updated. README "v0.9 構想" section
-  rewritten to "v0.8 構想 (agent-surface track)" with a separate
+  `src/cli.ts` C1 comment updated. README "v0.9 vision" section
+  rewritten to "v0.8 vision (agent-surface track)" with a separate
   "v0.9 reserve" pointer.
 
 ### Out of scope (deferred to v0.8.0 GA — week 6)

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import os from 'os'
 import path from 'path'
 
-// モック: fs と child_process を使うテストは実際のファイルシステムには触れない
+// Mocks: tests that touch fs / child_process never hit the real filesystem.
 vi.mock('child_process', () => ({
   spawnSync: vi.fn().mockReturnValue({ status: 0, stdout: '', stderr: '' }),
   spawn: vi.fn().mockReturnValue({
@@ -15,7 +15,7 @@ vi.mock('child_process', () => ({
 describe('getPlatformKey', () => {
   it('returns a supported platform key for the current machine', async () => {
     const { getPlatformKey } = await import('../src/daemon')
-    // macOS arm64 (M1/M2) または x64 で実行されることを想定
+    // Expected to run on macOS arm64 (M1/M2) or x64.
     const key = getPlatformKey()
     expect(key).toMatch(/^(darwin|linux)-(arm64|x64)$/)
   })
