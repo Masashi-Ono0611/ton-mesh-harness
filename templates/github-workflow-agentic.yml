@@ -1,0 +1,94 @@
+# GitHub Actions workflow — autonomous TON deploy with .ton DNS write.
+# Copy this file to your project: .github/workflows/deploy.yml
+#
+# Prerequisites:
+# 1. A wallet set up via `npx -y @ton/mcp@alpha agentic_import_wallet`.
+# 2. The resulting `~/.config/ton/config.json` saved as a GH secret
+#    named TON_AGENTIC_CONFIG (raw bytes — the file is already
+#    encrypted by @ton/mcp's protected-file format; the AES key is
+#    bundled with the ciphertext, so treat the secret like a plaintext
+#    private key).
+# 3. Your .ton domain saved as a GH variable named TON_DOMAIN
+#    (alternatively hardcode below).
+#
+# Security note: @ton/mcp's protected-file format is NOT passphrase-
+# protected. Anyone with read access to the secret can decrypt it.
+# Store in a secret manager, never check into git. See
+# `docs/v0.8/agentic-cli-usage.md` for details.
+
+name: Deploy to .ton (agentic)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    if: contains(github.event.head_commit.message, '[skip deploy]') == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Restore agentic wallet config from secret
+        env:
+          TON_CONFIG: ${{ secrets.TON_AGENTIC_CONFIG }}
+        run: |
+          mkdir -p ~/.config/ton
+          # Secret is the raw bytes of ~/.config/ton/config.json
+          # (encrypted-blob format preserved). chmod 0600 so other
+          # users on the runner can't read.
+          printf '%s' "$TON_CONFIG" > ~/.config/ton/config.json
+          chmod 600 ~/.config/ton/config.json
+
+      - name: Deploy to .ton (bag + DNS, autonomous signing)
+        id: deploy
+        run: |
+          # --wallet-mode agentic: signs locally from the config file.
+          # --no-watch: exit after the deploy completes (no daemon
+          #             tail; the bag still lives on TON Storage).
+          # --json-output: stdout is JSON so we can jq the result.
+          RESULT=$(npx -y ton-sovereign-deploy ./dist \
+            --domain "${{ vars.TON_DOMAIN }}" \
+            --wallet-mode agentic \
+            --no-watch \
+            --json-output \
+            --ci-mode)
+
+          BAG_ID=$(echo "$RESULT" | jq -r '.bag_id')
+          TX_HASH=$(echo "$RESULT" | jq -r '.dns_tx_hash // empty')
+
+          echo "bag_id=$BAG_ID"   >> $GITHUB_OUTPUT
+          echo "tx_hash=$TX_HASH" >> $GITHUB_OUTPUT
+
+          echo "🚀 Deployed to .ton (autonomous)"
+          echo "  Domain:  ${{ vars.TON_DOMAIN }}"
+          echo "  Bag ID:  $BAG_ID"
+          [ -n "$TX_HASH" ] && echo "  Tx:     $TX_HASH"
+
+      - name: Deploy summary
+        run: |
+          echo "### 🚀 Autonomous .ton deploy" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Domain:** ${{ vars.TON_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bag ID:** \`${{ steps.deploy.outputs.bag_id }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.deploy.outputs.tx_hash }}" ]; then
+            echo "- **Tx:** \`${{ steps.deploy.outputs.tx_hash }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Explorer:** https://tonviewer.com/transaction/$(echo '${{ steps.deploy.outputs.tx_hash }}' | sed 's/^0x//')" >> $GITHUB_STEP_SUMMARY
+          fi

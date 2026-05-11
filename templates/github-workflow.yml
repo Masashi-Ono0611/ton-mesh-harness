@@ -1,5 +1,10 @@
 # GitHub Actions workflow for deploying to TON Storage
 # Copy this file to your project: .github/workflows/deploy.yml
+#
+# This template ships the bag-upload path (no .ton DNS write). For an
+# autonomous CI deploy that ALSO writes the .ton DNS record, see the
+# sibling `github-workflow-agentic.yml` (use --wallet-mode agentic +
+# a wallet config stored as a GH secret).
 
 name: Deploy to TON Storage
 
@@ -22,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -34,24 +39,20 @@ jobs:
       - name: Deploy to TON Storage
         id: deploy
         run: |
-          # Deploy and capture JSON output
-          RESULT=$(npx ton-sovereign-deploy ./dist --json-output --ci-mode)
+          # Bag-only deploy (no DNS write). To also write the .ton DNS
+          # record, switch to the agentic template (sibling file).
+          RESULT=$(npx -y ton-sovereign-deploy ./dist --no-watch --json-output --ci-mode)
 
           # Parse bag_id from JSON
-          BAG_ID=$(echo "$RESULT" | jq -r '.bagId')
+          BAG_ID=$(echo "$RESULT" | jq -r '.bag_id')
 
           # Set as GitHub Actions output
           echo "bag_id=$BAG_ID" >> $GITHUB_OUTPUT
 
-          # Display result
           echo "🚀 Deployed to TON Storage"
           echo "Bag ID: $BAG_ID"
           echo "ton://$BAG_ID"
           echo "https://ton.run/$BAG_ID"
-        env:
-          # Optional: Register under your .ton domain
-          # Requires you to own the domain and have a TON wallet
-          DOMAIN: ${{ secrets.TON_DOMAIN }}
 
       - name: Comment result on PR (optional)
         if: github.event_name == 'pull_request'
