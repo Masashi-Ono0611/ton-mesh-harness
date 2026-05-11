@@ -555,3 +555,9 @@ ton-sovereign-deploy ./build/ --debounce 3000
 - Windows defaults to a 260-character path limit.
 - `~\.ton-sovereign\` is short enough that this rarely matters.
 - Enable long paths if your project path is large.
+
+## Security
+
+The kit signs transactions on the user's behalf (CLI `--wallet-mode agentic`,
+MCP `sovereign_deploy` with `wallet.kind: "agentic"`). Threat model + the
+private vulnerability disclosure address are in [`SECURITY.md`](SECURITY.md).
