@@ -87,3 +87,10 @@ jobs:
         # serverInfo + both tool names. Exits non-zero with a clear
         # message on any failure.
         run: node scripts/mcp-smoke.cjs
+
+      - name: npm pack dry-run (tarball manifest sanity)
+        # Surfaces packaging regressions early — e.g. forgetting to add
+        # a new ship-time directory to package.json::files (caught the
+        # templates/ omission in rc5 development). Doesn't publish;
+        # the dry-run just emits the file list.
+        run: npm pack --dry-run
