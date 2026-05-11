@@ -53,8 +53,15 @@ export class TonConnectProvider implements SendProvider {
     this.network = network
   }
 
-  async connect(): Promise<void> {
-    await this.connectWallet()
+  /**
+   * @param onConnectUrl — optional callback fired with the freshly-generated
+   * TonConnect connect URL just before we await the wallet pairing. Used by
+   * the SDK's `deploy()` generator to emit `awaiting_signature` with
+   * `signing_url` set. CLI callers can ignore — the URL is also printed via
+   * the QR code in `connectWallet()`.
+   */
+  async connect(onConnectUrl?: (url: string) => void): Promise<void> {
+    await this.connectWallet(onConnectUrl)
     const formatted = Address.parse(this.connector.wallet!.account.address).toString({
       testOnly: this.network === 'testnet',
       bounceable: false,
@@ -81,7 +88,7 @@ export class TonConnectProvider implements SendProvider {
     } catch { /* best-effort cleanup */ }
   }
 
-  private async connectWallet(): Promise<void> {
+  private async connectWallet(onConnectUrl?: (url: string) => void): Promise<void> {
     const wallets = (await this.connector.getWallets()).filter(isRemote)
 
     await this.connector.restoreConnection()
@@ -94,6 +101,18 @@ export class TonConnectProvider implements SendProvider {
       universalLink: wallet.universalLink,
       bridgeUrl: wallet.bridgeUrl,
     }) as string
+
+    // Fire the SDK-side hook first so `awaiting_signature` lands before the
+    // QR/url payload pollutes the agent's stdout. The CLI's ui.write path
+    // also runs — agent runtimes consume the structured event, humans
+    // consume the QR.
+    if (onConnectUrl) {
+      try {
+        onConnectUrl(url)
+      } catch {
+        /* swallow — hook errors must never break a real wallet flow */
+      }
+    }
 
     this.ui.write('\n')
     qrcode.generate(url, { small: true }, (qr) => this.ui.write(qr))

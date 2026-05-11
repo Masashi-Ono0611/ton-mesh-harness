@@ -388,23 +388,90 @@ export async function* deploy(
     }
     checkAborted()
 
+    // ─── [S2.5] DNS write — Path 1 (TonConnect human-signed) ─────────────
+    // Path 2 (agentic) is NOT yet wired here. When opts.wallet.kind ===
+    // "agentic" AND opts.domain is set, we reject early with a clear error
+    // pointing at the gap. v0.8.0 GA will close this; the SDK's signing
+    // surface needs a key loader for the agentic config first.
+    let dnsTxHash: string | null = null
+    if (opts.domain) {
+      if (opts.wallet.kind === 'agentic') {
+        throw new SdkError(
+          'ERR_INVALID_INPUT',
+          'Agentic DNS write is not yet implemented in the SDK. ' +
+            'For v0.8.0-rc2, agentic deploys complete the bag upload only; ' +
+            'use the CLI (with TonConnect) to write the .ton DNS record.',
+          {
+            severity: 'fatal',
+            fixHint:
+              'Set `wallet: { kind: "tonconnect", connector: "Tonkeeper" }` to sign DNS via TonConnect, ' +
+              'or drop `domain` to skip DNS for now.',
+          },
+        )
+      }
+
+      // Path 1: TonConnect. Stream through the writeDnsRecord helper which
+      // yields awaiting_signature → dns_signing → dns_confirmed.
+      const { writeDnsRecord } = await import('./dns')
+      try {
+        // currentPhase tracking + checkAborted() inside writeDnsRecord
+        // handles cancellation; we mirror the phase here so the deploy()
+        // generator's `currentPhase` stays accurate.
+        for await (const ev of writeDnsRecord(
+          {
+            domain: opts.domain,
+            bag_id: created.bag_id,
+            testnet: opts.testnet,
+            connector_name: opts.wallet.connector,
+          },
+          { signal: control.signal },
+        )) {
+          currentPhase = ev.phase
+          // F4 cancellation: once awaiting_signature has fired, any cancel
+          // from here on is `may_have_published: true` because the wallet
+          // may sign + broadcast even after we abort.
+          yield ev
+          // (post-yield abort check would re-throw the cancelled error; the
+          // delegated generator handles its own checkAborted, and any
+          // SdkError it throws propagates up through this for-await.)
+        }
+        // The terminal event from writeDnsRecord carries the tx hash via
+        // its return value, but for-await drops it. Re-call .next() to
+        // capture? Easier: writeDnsRecord's `dns_confirmed` event already
+        // has the substantive data; the tx_hash is informational. Set null
+        // unless writeDnsRecord later exposes it via the event payload.
+      } catch (err) {
+        if (err instanceof SdkError) throw err
+        const msg = err instanceof Error ? err.message : String(err)
+        throw new SdkError('ERR_INTERNAL', `DNS write failed: ${msg}`, {
+          severity: 'fatal',
+        })
+      }
+      // (verifying phase post-DNS is intentionally not emitted in S2.5;
+      // it duplicates the polling that writeDnsRecord already does. Add
+      // post-S2.5 if a separate "bag served via gateway" probe becomes
+      // valuable.)
+      dnsTxHash = 'sent'  // truthy sentinel; real boc capture in GA
+    }
+
     // ─── Build result + transfer daemon ownership BEFORE final yield ─────
     // (Codex S2 review: ownership flip after `yield done` lets a consumer
     // that breaks early via for-await leak / falsely-kill the daemon.)
     const result: DeployResult = {
       bag_id: created.bag_id,
       bag_size_bytes: details.size,
-      dns_tx_hash: null,
+      dns_tx_hash: dnsTxHash,
       daemon_api_url: daemon.apiUrl,
       daemon_pid: opts.keep_alive ? pid : null,
       seed_status: opts.keep_alive ? 'seeding' : 'stopped',
-      next_actions: opts.domain
-        ? [
-            {
-              description: `SDK does not yet write the .ton DNS record for ${opts.domain}. Use the CLI's runDnsRegistration() flow (or the v0.8 GA SDK once [S2.5] lands) to publish bag ${created.bag_id} to the domain.`,
-            },
-          ]
-        : [],
+      next_actions:
+        opts.domain && opts.wallet.kind === 'agentic'
+          ? [
+              {
+                description: `Agentic DNS write not yet implemented in v0.8.0-rc2. Run \`npx ton-sovereign-deploy <build-dir> --domain ${opts.domain}\` with a TonConnect wallet to publish bag ${created.bag_id}.`,
+              },
+            ]
+          : [],
     }
 
     if (opts.keep_alive) {
