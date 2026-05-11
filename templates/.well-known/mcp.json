@@ -1,0 +1,36 @@
+{
+  "$schema": "https://modelcontextprotocol.io/well-known/mcp.schema.json",
+  "name": "ton-sovereign-mcp",
+  "version": "0.8.0-rc2",
+  "description": "Deploy a static site to .ton (TON Storage + .ton DNS). Censorship-resistant, no server, no CDN, no domain registrar. Agent-callable via MCP; composes with @ton/mcp for autonomous (agentic) wallet flows.",
+  "homepage": "https://github.com/Masashi-Ono0611/sovereign-deploy-kit",
+  "install": {
+    "command": "npx",
+    "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+  },
+  "tools": [
+    {
+      "name": "sovereign_check_env",
+      "summary": "Pre-flight readiness probe — call BEFORE sovereign_deploy."
+    },
+    {
+      "name": "sovereign_deploy",
+      "summary": "Deploy a static site to .ton by uploading a build directory to TON Storage."
+    }
+  ],
+  "compose": {
+    "peer_mcp_servers": [
+      {
+        "name": "@ton/mcp",
+        "purpose": "agentic wallet management (autonomous signing). The kit reads ~/.config/ton/config.json — the same file @ton/mcp manages.",
+        "install": {
+          "command": "npx",
+          "args": ["-y", "@ton/mcp@alpha"]
+        }
+      }
+    ]
+  },
+  "skill_md": "https://github.com/Masashi-Ono0611/sovereign-deploy-kit/blob/main/skills/sovereign-deploy.md",
+  "license": "MIT",
+  "_note": "This file is a TEMPLATE. Users who self-host the kit's dashboard at <domain>.ton can copy it into their build dir's .well-known/ so an agent visiting their site can discover the kit that published it (the 'View Source + Redeploy' axis from concept update 2026-05-10 Codex C proposal). The kit does NOT auto-write this file — copying is opt-in."
+}
