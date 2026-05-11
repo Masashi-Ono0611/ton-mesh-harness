@@ -130,4 +130,27 @@ describe('status()', () => {
     // so any shape drift would throw. Reach here = round-trip OK.
     expect(r).toBeDefined()
   })
+
+  it('hits the canonical TONAPI v2/storage/bag/{id} path (NOT /blockchain/storage/...)', async () => {
+    // Regression guard for a URL-drift bug caught in self-review:
+    // the first commit of this module had `/v2/blockchain/storage/bags/{id}`
+    // (plural, wrong namespace) instead of the working `/v2/storage/bag/{id}`
+    // that src/verify.ts has used since v0.3.
+    mocks.httpsGetMock.mockResolvedValueOnce({ status: 'active', size: 1, file_count: 1 })
+    await status({ bag_id: 'abc' })
+    const calledUrl = mocks.httpsGetMock.mock.calls[0][0] as string
+    expect(calledUrl).toContain('/v2/storage/bag/abc')
+    expect(calledUrl).not.toContain('/v2/blockchain/storage')
+    expect(calledUrl).not.toContain('/bags/')
+  })
+
+  it('uses mainnet TONAPI by default and testnet TONAPI when testnet=true', async () => {
+    mocks.httpsGetMock.mockResolvedValueOnce({ status: 'active' })
+    await status({ bag_id: 'abc' })
+    expect(mocks.httpsGetMock.mock.calls[0][0]).toContain('tonapi.io/v2/storage/bag/abc')
+
+    mocks.httpsGetMock.mockResolvedValueOnce({ status: 'active' })
+    await status({ bag_id: 'abc', testnet: true })
+    expect(mocks.httpsGetMock.mock.calls[1][0]).toContain('testnet.tonapi.io/v2/storage/bag/abc')
+  })
 })

@@ -41,7 +41,12 @@ async function probeBag(
   size: number | null
   files: number | null
 }> {
-  const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/blockchain/storage/bags/${encodeURIComponent(bagId)}`
+  // TONAPI v2 storage-bag endpoint. The working route (mainnet-proven via
+  // src/verify.ts since v0.3) is `/v2/storage/bag/{id}` — singular, NOT
+  // `/v2/blockchain/storage/bags/...`. Drift between these two paths
+  // landed in this module's first commit (caught by codex self-review
+  // before any consumer hit it).
+  const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/storage/bag/${encodeURIComponent(bagId)}`
   try {
     const data = await httpsGet<TonApiBagResponse>(url, { timeout: 10_000 })
     const accessible = data.status !== 'not_found'
