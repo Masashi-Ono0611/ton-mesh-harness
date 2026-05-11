@@ -90,15 +90,31 @@ async function main() {
   // tools/list
   send(child, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} })
 
-  // Wait up to TIMEOUT_MS for both id=1 + id=2 responses to land.
+  // tools/call sovereign_check_env — exercises the actual dispatch path,
+  // not just the metadata surface. source_dir:null skips the build-dir
+  // probe so we don't need a fixture directory. The result is the
+  // structured CheckEnvResult; we'll inspect `ready` etc.
+  send(child, {
+    jsonrpc: '2.0',
+    id: 3,
+    method: 'tools/call',
+    params: {
+      name: 'sovereign_check_env',
+      arguments: { source_dir: null },
+    },
+  })
+
+  // Wait up to TIMEOUT_MS for id=1 + id=2 + id=3 responses to land.
   const deadline = Date.now() + TIMEOUT_MS
   let init
   let list
+  let callRes
   while (Date.now() < deadline) {
     const frames = parseFrames(stdoutBuf)
     init = init ?? frames.find((f) => f.id === 1)
     list = list ?? frames.find((f) => f.id === 2)
-    if (init && list) break
+    callRes = callRes ?? frames.find((f) => f.id === 3)
+    if (init && list && callRes) break
     await wait(100)
   }
 
@@ -128,10 +144,26 @@ async function main() {
   if (JSON.stringify(names) !== JSON.stringify(expected)) {
     throw new Error(`tools/list mismatch: expected ${expected.join(', ')} got ${names.join(', ')}`)
   }
+  if (!callRes) throw new Error(`no tools/call response within ${TIMEOUT_MS}ms`)
+  // The server returns a structured payload via `structuredContent` (per
+  // our F5 contract). For sovereign_check_env, expect a CheckEnvResult
+  // with `ready: boolean`. Any TONAPI / disk / port probe failure makes
+  // `ready` false, but the shape MUST be present.
+  const sc = callRes.result?.structuredContent
+  if (!sc || typeof sc.ready !== 'boolean') {
+    throw new Error(`sovereign_check_env structuredContent missing or shape unexpected: ${JSON.stringify(callRes.result).slice(0, 300)}`)
+  }
+  if (!Array.isArray(sc.blocking) || !Array.isArray(sc.warnings)) {
+    throw new Error(`sovereign_check_env blocking/warnings arrays missing`)
+  }
+  if (sc.ready !== (sc.blocking.length === 0)) {
+    throw new Error(`sovereign_check_env ready ⇔ blocking.length === 0 invariant broken`)
+  }
 
   process.stdout.write(
     `MCP smoke OK — initialize.serverInfo.name=${init.result.serverInfo.name}, ` +
-      `tools=${names.join(', ')}\n`,
+      `tools=${names.join(', ')}, ` +
+      `check_env.ready=${sc.ready}\n`,
   )
 }
 
