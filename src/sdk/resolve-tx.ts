@@ -21,7 +21,10 @@
 
 import { beginCell, Cell, loadMessage, storeMessage } from '@ton/core'
 import type { AgenticNetwork } from './agentic-config'
+import { createSdkLogger } from './log'
 import { buildToncenterClient } from './walletkit-network'
+
+const log = createSdkLogger('sovereign:resolve-tx')
 
 /**
  * Compute the normalized external-in message hash per TEP-467 — the
@@ -111,21 +114,33 @@ export async function resolveTxHashFromMessageHash(
 
   const deadline = Date.now() + (opts.timeout_ms ?? 60_000)
   const intervalMs = opts.interval_ms ?? 2_000
+  log.debug('poll:start', { msg_hash: messageHashHex, network, timeout_ms: opts.timeout_ms })
 
+  let attempts = 0
   while (Date.now() < deadline) {
-    if (opts.signal?.aborted) return null
+    if (opts.signal?.aborted) {
+      log.debug('poll:aborted', { attempts })
+      return null
+    }
+    attempts++
     try {
       const result = await client.getTransactionsByHash({ msgHash: msgHashB64 } as never)
       const txs = (result as { transactions?: Array<{ hash?: string }> }).transactions ?? []
       const hit = txs.find((t) => typeof t.hash === 'string' && t.hash.length > 0)
       if (hit?.hash) {
         const h = hit.hash.replace(/^0x/i, '')
+        log.info('poll:hit', { attempts, tx_hash: `0x${h.toLowerCase()}` })
         return `0x${h.toLowerCase()}`
       }
-    } catch {
+    } catch (err) {
       // 404 / rate-limit / DNS / 5xx — keep polling within the deadline.
+      log.debug('poll:miss', {
+        attempts,
+        error: err instanceof Error ? err.message : String(err),
+      })
     }
     await sleep(intervalMs, opts.signal)
   }
+  log.debug('poll:timeout', { attempts })
   return null
 }

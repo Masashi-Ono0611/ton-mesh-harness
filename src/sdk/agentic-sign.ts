@@ -32,8 +32,11 @@ import type {
   StoredStandardWallet,
 } from './agentic-config'
 import { makeAbortChecker } from './abort'
+import { createSdkLogger } from './log'
 import { buildToncenterClient, getWalletkitNetwork } from './walletkit-network'
 import { signRequestValidUntilSeconds } from '../wallet/constants'
+
+const log = createSdkLogger('sovereign:agentic-sign')
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private-key normalization
@@ -238,10 +241,16 @@ export async function agenticSignAndSend(
   const checkAborted = makeAbortChecker(input.signal, 'Agentic sign+send cancelled.')
 
   checkAborted()
+  log.info('buildAdapter:start', {
+    wallet_type: input.wallet.type,
+    wallet_id: input.wallet.id,
+    network: input.wallet.network,
+  })
   const adapter = await buildAdapter(input.wallet, input.toncenter_api_key)
   checkAborted()
 
   const fromAddress = adapter.getAddress({ testnet: input.wallet.network === 'testnet' })
+  log.info('buildAdapter:done', { from_address: fromAddress })
   const validUntil = signRequestValidUntilSeconds()
 
   let signedBoc: string
@@ -276,9 +285,12 @@ export async function agenticSignAndSend(
 
   let messageHash: string
   try {
+    log.info('sendBoc:start', { messages_count: input.messages.length })
     messageHash = await adapter.getClient().sendBoc(signedBoc as never)
+    log.info('sendBoc:done', { message_hash: messageHash })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
+    log.warn('sendBoc:failed', { error: msg })
     throw new SdkError(
       'ERR_DNS_TX_TIMEOUT',
       `Toncenter rejected the signed BOC: ${msg}`,

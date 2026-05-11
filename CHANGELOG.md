@@ -50,6 +50,15 @@ can drive a full deploy with one command / one tool call.
 
 ### Added
 
+- **Observability log layer** — `DEBUG=sovereign:*` style env var
+  enables structured stderr logs at SDK boundaries. Namespaces
+  available: `sovereign:deploy` (phase transitions),
+  `sovereign:agentic-sign` (adapter build + broadcast),
+  `sovereign:resolve-tx` (Toncenter poll attempts + hits/misses).
+  Grammar matches `debug.js`: `*` wildcard, comma- or space-separated
+  lists, `-prefix` exclusion. Hand-rolled — no `debug` runtime dep.
+  Output ALWAYS on stderr so `--json-output` stdout / MCP stdio
+  framing stay valid. 19 new unit tests in `test/sdk-log.test.ts`.
 - **`sovereign_status` MCP tool** — third GA tool. One-shot snapshot
   of a bag's network state: input `{bag_id, domain?, testnet?}`,
   output `{bag_id, bag_accessible, bag_size_bytes, bag_file_count,

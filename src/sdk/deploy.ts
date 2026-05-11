@@ -38,6 +38,9 @@ import {
   TunnelConfigError,
 } from '../utils/tunnel-config'
 import { tonviewerTxUrl } from './endpoints'
+import { createSdkLogger } from './log'
+
+const log = createSdkLogger('sovereign:deploy')
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public input shape — accepts the full DeployOptions schema, plus a legacy
@@ -277,10 +280,19 @@ export async function* deploy(
   // gate; we kill the daemon iff we still own it.
   let daemonOwned = true
 
+  log.info('deploy:start', {
+    source_dir: opts.source_dir,
+    wallet_kind: opts.wallet.kind,
+    has_domain: Boolean(opts.domain),
+    testnet: opts.testnet,
+    keep_alive: opts.keep_alive,
+  })
+
   try {
     // ─── env_check ────────────────────────────────────────────────────────
     checkAborted()
     currentPhase = 'env_check'
+    log.debug('phase:env_check')
     yield { phase: 'env_check', message: 'preparing tonutils-storage…' }
     checkAborted()
 
@@ -571,6 +583,12 @@ export async function* deploy(
     }
 
     currentPhase = 'done'
+    log.info('deploy:done', {
+      bag_id: result.bag_id,
+      bag_size_bytes: result.bag_size_bytes,
+      dns_tx_hash: result.dns_tx_hash,
+      seed_status: result.seed_status,
+    })
     yield { phase: 'done', message: 'deploy complete', data: result }
 
     return result

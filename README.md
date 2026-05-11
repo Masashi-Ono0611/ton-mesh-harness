@@ -441,6 +441,26 @@ ton-sovereign-deploy ./build/ --json-output
 ton-sovereign-deploy ./build/ --ci-mode --json-output
 ```
 
+### Debug logging (v0.8.x+)
+
+Set the `DEBUG` env var to surface structured logs from the SDK. Format matches `debug.js` conventions:
+
+```bash
+# Everything
+DEBUG="*" ton-sovereign-deploy ./build/ --domain x.ton
+
+# SDK only
+DEBUG="sovereign:*" ton-sovereign-deploy ./build/ --domain x.ton
+
+# Just the deploy + DNS resolve paths
+DEBUG="sovereign:deploy,sovereign:resolve-tx" ton-sovereign-deploy ./build/
+
+# Wildcard with exclusion
+DEBUG="*,-sovereign:resolve-tx" ton-sovereign-deploy ./build/
+```
+
+Available namespaces: `sovereign:deploy`, `sovereign:agentic-sign`, `sovereign:resolve-tx`. Output is always on **stderr** so `--json-output` stdout stays parseable.
+
 ### Backend choice (v0.6+)
 
 From v0.6 onward, the **bundled daemon is `tonutils-storage` (xssnick / Go)** by default — the same daemon used by [TON-Torrent](https://github.com/xssnick/TON-Torrent) and the [Resistance Tools](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08) stack.
