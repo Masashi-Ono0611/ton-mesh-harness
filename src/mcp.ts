@@ -199,10 +199,12 @@ async function handleDeploy(
     // connector: "Tonkeeper"}` for CLI backwards-compat via
     // parseWalletInput(). Without this strict pre-parse, a non-
     // compliant MCP client could send a string wallet and silently
-    // get past the contract. Catch ZodError here so we can include
-    // `data.zod_issues` for richer diagnostics — the SDK's own
-    // wrapping path (which fires for SDK-direct consumers) sets
-    // no data, but MCP clients benefit from the issue list.
+    // get past the contract. Both this path AND the SDK's own
+    // ZodError wrap (src/sdk/deploy.ts::normalize) include
+    // `data.zod_issues` for diagnostics — the explicit MCP gate
+    // here fires first for malformed input, so its zod_issues
+    // (rooted at the structured-object union) are the ones
+    // surfaced.
     //
     // Codex pre-GA review round 4 caught the dropped strictness
     // from the rc7 dedup refactor — restoring with a clarified

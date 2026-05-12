@@ -104,17 +104,37 @@ async function main() {
     },
   })
 
-  // Wait up to TIMEOUT_MS for id=1 + id=2 + id=3 responses to land.
+  // tools/call sovereign_deploy with a bare-string wallet — regression
+  // gate for the MCP-contract strict gate restored in commit 24056e3
+  // (Codex pre-GA review round 4 NEW MAJOR). The SDK lifts strings for
+  // CLI compat, but MCP must reject them with ERR_INVALID_INPUT and
+  // include zod_issues rooted at `['wallet']`. testnet:true is included
+  // to prove the strict parse fires BEFORE the testnet guard: if the
+  // gate were missing, the deploy would fail later with a "testnet not
+  // supported" message instead of the wallet schema rejection.
+  send(child, {
+    jsonrpc: '2.0',
+    id: 4,
+    method: 'tools/call',
+    params: {
+      name: 'sovereign_deploy',
+      arguments: { source_dir: './dist', wallet: 'Tonkeeper', testnet: true },
+    },
+  })
+
+  // Wait up to TIMEOUT_MS for id=1..id=4 responses to land.
   const deadline = Date.now() + TIMEOUT_MS
   let init
   let list
   let callRes
+  let walletStrictRes
   while (Date.now() < deadline) {
     const frames = parseFrames(stdoutBuf)
     init = init ?? frames.find((f) => f.id === 1)
     list = list ?? frames.find((f) => f.id === 2)
     callRes = callRes ?? frames.find((f) => f.id === 3)
-    if (init && list && callRes) break
+    walletStrictRes = walletStrictRes ?? frames.find((f) => f.id === 4)
+    if (init && list && callRes && walletStrictRes) break
     await wait(100)
   }
 
@@ -160,10 +180,33 @@ async function main() {
     throw new Error(`sovereign_check_env ready ⇔ blocking.length === 0 invariant broken`)
   }
 
+  // wallet-strictness regression gate (Codex r4 / r5).
+  if (!walletStrictRes) {
+    throw new Error(`no wallet-strictness response within ${TIMEOUT_MS}ms`)
+  }
+  const ws = walletStrictRes.result?.structuredContent
+  if (!walletStrictRes.result?.isError) {
+    throw new Error(
+      `MCP wallet-strictness gate is OFF — { wallet: "Tonkeeper" } was accepted. ` +
+        `Result: ${JSON.stringify(walletStrictRes.result).slice(0, 300)}`,
+    )
+  }
+  if (ws?.code !== 'ERR_INVALID_INPUT') {
+    throw new Error(`MCP wallet-strictness: expected ERR_INVALID_INPUT, got ${ws?.code}`)
+  }
+  const walletIssue = ws?.data?.zod_issues?.find?.((i) => Array.isArray(i.path) && i.path[0] === 'wallet')
+  if (!walletIssue) {
+    throw new Error(
+      `MCP wallet-strictness: ERR_INVALID_INPUT but no zod issue rooted at ['wallet']. ` +
+        `zod_issues=${JSON.stringify(ws?.data?.zod_issues).slice(0, 300)}`,
+    )
+  }
+
   process.stdout.write(
     `MCP smoke OK — initialize.serverInfo.name=${init.result.serverInfo.name}, ` +
       `tools=${names.join(', ')}, ` +
-      `check_env.ready=${sc.ready}\n`,
+      `check_env.ready=${sc.ready}, ` +
+      `wallet_strict=rejected\n`,
   )
 }
 
