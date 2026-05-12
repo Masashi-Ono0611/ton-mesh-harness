@@ -72,9 +72,11 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
-## [Unreleased] – 2026-05-12
+## [0.8.0-rc11] – 2026-05-12
 
-[S2.16 — Path C polish] User-requested follow-ups after rc10 ship:
+[S2.16 — Path C polish] User-requested follow-ups after rc10 ship.
+**1 additional MAJOR** (Windows installer 404 — pre-existing bug
+caught while pinning legacy hashes) + 3 additive polish items:
 
 ### Added
 

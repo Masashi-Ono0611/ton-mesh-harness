@@ -1,7 +1,7 @@
 {
   "name": "ton-sovereign-deploy",
-  "version": "0.8.0-rc10",
-  "description": "Sovereign one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. v0.8.0-rc10 — full v0.8 feature ship + 11 Codex multi-model review rounds (4 BLOCKERs + 20 MAJORs + 3 MINORs + 4 NITs + 1 LOW resolved). Incl. binary-download SHA-256 integrity, TonConnect signed-BOC stderr leak, wallet-key symlink redirect, daemon orphan-on-signal, http body size cap. 3 MCP tools, SDK external entry, NFT-delegated agentic signing.",
+  "version": "0.8.0-rc11",
+  "description": "Sovereign one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. v0.8.0-rc11 — full v0.8 feature ship + 11 Codex review rounds + Path C polish (legacy installer SHA-256 / Windows naming bug fix / inner-cleanup regression test / RLDP_HTTP_PROXY_SHA256 env-pin). 4 BLOCKERs + 22 MAJORs + 3 MINORs + 4 NITs + 1 LOW resolved cumulatively. 3 MCP tools, SDK external entry, NFT-delegated agentic signing.",
   "main": "./dist/sdk.js",
   "types": "./dist/sdk.d.ts",
   "exports": {
