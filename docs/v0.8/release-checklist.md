@@ -35,8 +35,9 @@ gate:
 3. `CHANGELOG.md` — promotes the `<!-- GA-PREDRAFT-BEGIN ... END -->`
    block to a live `## [0.8.0] – <today>` heading.
 4. `README.md` — flips the status line + Agent-quickstart heading from
-   rc5 → 0.8.0.
-5. `npm run verify` — lint + tsc + tests + build + cli/mcp smoke.
+   the latest rc (rc7 as of 2026-05-12) → 0.8.0.
+5. `npm run verify` — lint + tsc + tests + build + cli + mcp + sdk
+   smokes (+ tarball smoke via `npm run smoke:full`).
 
 If any step fails the script exits non-zero and leaves the rest
 untouched. Inspect, fix, re-run.
@@ -52,7 +53,8 @@ git diff README.md
 Confirm:
 - The `[0.8.0]` heading reads correctly (today's date in UTC).
 - No stray `GA-PREDRAFT` markers remain.
-- Every `0.8.0-rc5` reference is now `0.8.0` (no half-bumps).
+- Every `0.8.0-rcN` reference in README + package.json description
+  is now `0.8.0` (no half-bumps).
 
 ### 3. Commit
 
@@ -168,13 +170,16 @@ scripts/release.sh 0.8.1
 #    is the right tool.
 ```
 
-## Cutting an rc (e.g. rc6)
+## Cutting an rc (e.g. rc7)
 
 Same checklist, with rc-specific differences:
 
-- `scripts/release.sh 0.8.0-rc6` (the script keeps the GA pre-draft
+- `scripts/release.sh 0.8.0-rcN` (the script keeps the GA pre-draft
   intact — only x.y.0 tags promote it).
+- Manually promote `## [Unreleased] – <date>` → `## [0.8.0-rcN] – <date>`
+  in `CHANGELOG.md` (release.sh only auto-promotes GA pre-drafts;
+  rc CHANGELOG bumps stay manual).
 - `npm publish --tag next` (don't claim `latest`).
-- GitHub release marked as pre-release: `gh release create v0.8.0-rc6
+- GitHub release marked as pre-release: `gh release create v0.8.0-rcN
   --prerelease ...`.
 - Skip the Epic close + announce steps.
