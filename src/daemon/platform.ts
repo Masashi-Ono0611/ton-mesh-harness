@@ -25,13 +25,23 @@ export function getPlatformKey(): string {
 }
 
 /**
- * Get the binary name for the current platform
+ * Get the release-asset name for the current platform.
+ *
+ * Asset naming on ton-blockchain/ton GitHub releases:
+ *   - macOS / Linux: `<base>-<platform-suffix>`     (e.g. `storage-daemon-mac-arm64`)
+ *   - Windows:       `<base>.exe`                   (NO platform suffix — single
+ *                                                     x86_64 asset across Win
+ *                                                     architectures)
+ *
+ * Pre-rc11 the Windows branch returned `<base>-<suffix>.exe` (e.g.
+ * `storage-daemon-win-x86-64.exe`) which doesn't exist on GitHub —
+ * Windows users got a 404 from curl. Self-audit caught this while
+ * pinning SHA-256 hashes for the legacy installer.
+ *
  * @param base - Base binary name
- * @returns Full binary name with platform suffix and extension
  */
 export function getBinaryName(base: 'storage-daemon' | 'storage-daemon-cli'): string {
+  if (process.platform === 'win32') return `${base}.exe`
   const platformSuffix = PLATFORM_MAP[getPlatformKey()]
-  const isWindows = process.platform === 'win32'
-  const ext = isWindows ? '.exe' : ''
-  return `${base}-${platformSuffix}${ext}`
+  return `${base}-${platformSuffix}`
 }

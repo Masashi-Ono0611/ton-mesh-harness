@@ -178,21 +178,27 @@ export function installBinary(
 }
 
 /**
- * Verify the downloaded file's SHA-256 against the pinned hash for the
- * current platform-arch. Throws + unlinks on mismatch — the next
- * install attempt is clean. If no hash is pinned for this platform,
- * emit a loud stderr warning and proceed (TOFU). Pre-GA, every
- * supported platform should have a pinned hash.
+ * Verify a downloaded file's SHA-256 against an expected hash. Throws
+ * + `unlinkSync`'s the file on mismatch so the next install attempt
+ * starts fresh. Pass `expected: undefined` to opt into TOFU (emits a
+ * loud stderr warning and proceeds).
+ *
+ * Public helper exported for installers that don't go through
+ * `installBinary` — e.g. `src/daemon/installer.ts` downloads two
+ * binaries + two config files in its own loop. Used inline there
+ * after each `downloadFile` call.
  */
-function verifyDownloadedBinary(
-  spec: BinaryInstallerSpec,
-  platformKey: string,
-  filePath: string,
-): void {
-  const expected = spec.expectedSha256?.[platformKey]
+export function verifyFileSha256(args: {
+  name: string
+  version: string
+  platformKey: string
+  filePath: string
+  expected: string | undefined
+}): void {
+  const { name, version, platformKey, filePath, expected } = args
   if (!expected) {
     process.stderr.write(
-      `  ⚠ ${spec.name} (${spec.version}) for ${platformKey}: no SHA-256 hash pinned; ` +
+      `  ⚠ ${name} (${version}) for ${platformKey}: no SHA-256 hash pinned; ` +
         `skipping integrity check. Run \`shasum -a 256 ${filePath}\` and pin the value in ` +
         `src/daemon/<installer>.ts before GA.\n`,
     )
@@ -202,15 +208,13 @@ function verifyDownloadedBinary(
   try {
     actual = createHash('sha256').update(readFileSync(filePath)).digest('hex')
   } catch (err) {
-    // The downloaded file disappeared between download and verify.
-    // Treat as a verification failure.
     const msg = err instanceof Error ? err.message : String(err)
-    throw new Error(`${spec.name}: failed to read downloaded binary for SHA-256 check: ${msg}`)
+    throw new Error(`${name}: failed to read downloaded binary for SHA-256 check: ${msg}`)
   }
   if (actual !== expected) {
     try { unlinkSync(filePath) } catch { /* best effort */ }
     throw new Error(
-      `${spec.name} (${spec.version}) download integrity check FAILED for ${platformKey}.\n` +
+      `${name} (${version}) download integrity check FAILED for ${platformKey}.\n` +
         `  expected SHA-256: ${expected}\n` +
         `  got SHA-256:      ${actual}\n` +
         `The downloaded file has been deleted. If you believe the pinned hash is stale ` +
@@ -219,4 +223,18 @@ function verifyDownloadedBinary(
         `unpin the hash to bypass the check.`,
     )
   }
+}
+
+function verifyDownloadedBinary(
+  spec: BinaryInstallerSpec,
+  platformKey: string,
+  filePath: string,
+): void {
+  verifyFileSha256({
+    name: spec.name,
+    version: spec.version,
+    platformKey,
+    filePath,
+    expected: spec.expectedSha256?.[platformKey],
+  })
 }

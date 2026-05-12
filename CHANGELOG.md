@@ -72,6 +72,49 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
+## [Unreleased] – 2026-05-12
+
+[S2.16 — Path C polish] User-requested follow-ups after rc10 ship:
+
+### Added
+
+- **Legacy `storage-daemon` SHA-256 verification** — the v0.5
+  legacy `--daemon-backend=ton-core` path (`src/daemon/installer.ts`)
+  was the last installer downloading binaries without integrity
+  checks. Pinned 10 hashes (storage-daemon + storage-daemon-cli ×
+  5 platforms each) for ton-blockchain/ton v2026.02-1. The
+  `verifyDownloadedBinary` helper from `installer-utils.ts` was
+  generalised to a public `verifyFileSha256({ name, version,
+  platformKey, filePath, expected })` so installers that don't go
+  through `installBinary` can use the same machinery inline.
+- **`RLDP_HTTP_PROXY_SHA256` env-var-pin** — users who override the
+  pinned rldp-http-proxy version via `RLDP_HTTP_PROXY_VERSION` can
+  now also pin the expected SHA-256 hash via
+  `RLDP_HTTP_PROXY_SHA256=<hex64>` so the override path gets
+  integrity checking too. Without the hash env var, the override
+  path falls back to TOFU + stderr warning (unchanged).
+- **Inner-generator cleanup regression test**
+  (`test/sdk-deploy-inner-cleanup.test.ts`) — 2 vitest tests
+  exercising the Codex r3 BLOCKER fix (deploy() must cascade
+  `inner.return()` to the DNS-write generator on outer break /
+  abort). Deep-mocks `../src/daemon/tonutils-process` +
+  `../src/sdk/dns` to drive deploy() to the inner-iteration
+  block, then aborts (test 1) or for-await breaks (test 2);
+  asserts the inner generator's `finally` actually fires.
+
+### Fixed
+
+- **`src/daemon/platform.ts::getBinaryName` Windows mismatch** —
+  returned `storage-daemon-win-x86-64.exe` but
+  ton-blockchain/ton releases ship `storage-daemon.exe` (no
+  platform suffix on Windows — single x86_64 asset). Windows
+  legacy ton-core installs would have 404'd at curl. Now returns
+  the suffix-free name on win32. Caught while pinning legacy
+  hashes (`storage-daemon.exe` 404 from concurrent download
+  surfaced the bug).
+
+323 tests pass / 11 skip / 0 fail (+2 inner-cleanup).
+
 ## [0.8.0-rc10] – 2026-05-12
 
 [S2.15] Codex round 11 self-audit (external review daily-cap
