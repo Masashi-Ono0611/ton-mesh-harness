@@ -72,12 +72,87 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
-## [Unreleased] – 2026-05-12
+## [0.8.0-rc9] – 2026-05-12
 
-[S2.11+12] Codex rounds 7 + 8 multi-model audit of v0.8 modules NOT
+[S2.11-14] Codex rounds 7-10 multi-model audit of v0.8 modules NOT
 covered by rounds 1-6 (keyring, TonConnect bridge, daemon process
-lifecycle, legacy DNS helpers). Cumulative across rounds 7+8: **2
-BLOCKERs + 6 MAJORs + 1 MINOR resolved.**
+lifecycle, legacy DNS helpers, CLI signal handlers).
+
+Cumulative across this rc9-target audit thread: **3 BLOCKERs + 7
+MAJORs + 1 MINOR + 1 LOW resolved.** Cumulative across the entire
+v0.8 pre-GA review pipeline (rounds 1-10): **3 BLOCKERs + 15 MAJORs
++ 3 MINORs + 4 NITs**.
+
+Highlights (most-shipstopping first):
+- BLOCKER (r7): `@tonconnect/sdk` v3.4.1 logs unsigned-payload +
+  signed-BOC via console.debug — would leak to stderr.
+- BLOCKER (r8): Round-7's silence fix raced on concurrent calls —
+  reference-counted silence.
+- BLOCKER (r10): tonutils-storage daemon orphan-on-signal because
+  the kit's CLI signal handlers process.exit'd synchronously before
+  the async daemon cleanup (rmSync + SIGKILL escalation) could run.
+
+### Fixed (Codex pre-GA review round 10 — verify pass on round 9)
+
+- **[BLOCKER]** Round 9 fixed `installCleanupOnExit` to drain
+  before exit, but the primary tonutils CLI path
+  (`runDeployTonutils`) has its OWN SIGINT/SIGTERM/uncaughtException
+  handlers that called `process.exit()` synchronously after
+  `daemon.kill()`. Since round 7 made `TonutilsHandle.kill()`
+  schedule async cleanup, this recreated orphan risk on the
+  default deploy path. Fix: `drainExit(code)` — `process.exitCode`
+  + 2.5 s ref'd safety timer. Replaces 4 `process.exit()` sites
+  in `runDeployTonutils`. Mirror of `installCleanupOnExit`'s drain.
+- **Tests**: round-9 tests for `installCleanupOnExit` used real
+  timers, leaking 2.5 s safety setTimeouts that would call real
+  `process.exit()` after the test runner thought it was done.
+  Wrapped in `vi.useFakeTimers()` + `vi.advanceTimersByTime()`
+  to confirm exit fires at the safety deadline.
+
+### Fixed (Codex pre-GA review round 9 — verify pass on round 8)
+
+- **[MAJOR]** `installCleanupOnExit` called `process.exit()`
+  synchronously after `cleanup()`. Since round 7 made
+  `TonutilsHandle.kill()` schedule async cleanup
+  (`child.once('exit', rmSync)` + SIGKILL escalation timer),
+  the immediate exit killed the loop before those tasks ran —
+  a daemon delaying SIGTERM could survive orphaned. Fix:
+  `process.exitCode` + 2.5 s ref'd safety timer (drain pattern).
+- **[LOW]** `writeKeyringFile()` `lstat`'d the final file but
+  not the parent directory. A symlinked keyring dir could
+  redirect creation. Added `lstatSync` on `keyringDir` before
+  `mkdirSync` — reject symlinks/junctions, leave existing dirs
+  alone.
+
+### Fixed (Codex pre-GA review round 8 — verify pass on round 7)
+
+- **[BLOCKER]** Round 7's `withQuietTonConnect()` saved/restored
+  `console.debug` per call — concurrent overlapping calls (e.g.
+  `dispose()` while `sendTransactionMulti()` awaiting) would race:
+  the inner finisher restored the captured value (already the no-op)
+  while the outer was still in scope, reopening the leak.
+  **Fix**: reference-counted silence. Module-level `quietDebugDepth`
+  + `quietDebugSaved`. First entrant (depth 0→1) captures the real
+  original; subsequent entrants just bump the count. Only the last
+  leaver (depth 1→0) restores. Tested via exported
+  `_enterQuiet_FOR_TEST` / `_leaveQuiet_FOR_TEST` helpers.
+- **[MAJOR]** Round 7's `kill()` used `Atomics.wait()` to poll
+  `child.exitCode` on the main thread — but blocking the main
+  thread prevents libuv from delivering the child's `exit` event,
+  so `exitCode` stays `null` until the timeout. `kill()` always
+  waited the full 2 s + SIGKILL even on clean exits.
+  **Fix**: replaced with non-blocking pattern: schedule rmSync via
+  `child.once('exit', ...)`, set a 2 s `setTimeout` (with `.unref()`)
+  for SIGKILL escalation, send SIGTERM and return immediately.
+  Trade-off: rmSync runs after kill() returns — OS cleans tmp dirs
+  on reboot anyway, and rmSync is state cleanliness, not security.
+- **[MAJOR]** Round 7's `O_NOFOLLOW` symlink fix was POSIX-only —
+  Node defines `fsConstants.O_NOFOLLOW` only on macOS/Linux. The
+  `?? 0` fallback meant Windows had no protection.
+  **Fix**: portable pattern — `lstatSync` first to detect symlinks
+  (reject), unlink any regular file (keyring rotation), then
+  `openSync` with `O_CREAT | O_EXCL` (POSIX + Windows). `O_NOFOLLOW`
+  still added where available as defence-in-depth.
 
 ### Fixed (Codex pre-GA review round 8 — verify pass on round 7)
 
