@@ -2,7 +2,16 @@
 // Spike output and TL constructor ID derivation: docs/v0.7/c1-design-notes.md.
 
 import { createHash, createPrivateKey, randomBytes } from 'node:crypto'
-import { closeSync, constants as fsConstants, fchmodSync, mkdirSync, openSync, writeSync } from 'node:fs'
+import {
+  closeSync,
+  constants as fsConstants,
+  fchmodSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  unlinkSync,
+  writeSync,
+} from 'node:fs'
 import path from 'node:path'
 
 // TL constructor IDs derived empirically from `generate-random-id` v2026.04-1
@@ -76,16 +85,50 @@ export function writeKeyringFile(dbDir: string, identity: AdnlIdentity): string 
   if (fileContent.length !== 36) {
     throw new Error(`Internal: keyring file content must be 36 bytes, got ${fileContent.length}`)
   }
-  // Open with O_CREAT | O_WRONLY | O_TRUNC | O_NOFOLLOW so a pre-existing
-  // symlink at filePath fails the open (instead of writeFileSync's default
-  // follow-symlink behaviour, which would let an attacker who controls
-  // dbDir redirect the seed write). O_NOFOLLOW is available on macOS +
-  // Linux; on Windows it's a no-op silently — there the dbDir is under
-  // the user's profile and the attack surface differs anyway.
-  // Codex pre-GA review round 7 MAJOR.
+  // Defence against an attacker who can place a symlink (or, on
+  // Windows, a junction / reparse point) at filePath BEFORE we open
+  // it. Codex pre-GA review round 7 MAJOR; round 8 caught that the
+  // round-7 O_NOFOLLOW fix was POSIX-only — Node defines
+  // `fsConstants.O_NOFOLLOW` only on macOS/Linux. On Windows the
+  // fallback `?? 0` removed any protection.
+  //
+  // Portable approach:
+  //   1. `lstatSync` to see if anything exists at filePath.
+  //   2. If it does and is a regular file → unlink it (recreation
+  //      is the intended semantic: rldp-http-proxy keyring rotation).
+  //      If it's a symlink (or anything else: dir, socket, fifo) →
+  //      refuse, since legitimate keyring entries are only regular
+  //      files written by this function.
+  //   3. Open with `O_CREAT | O_EXCL` — fails if anything raced in
+  //      between unlink and open (TOCTOU window). Works identically
+  //      on POSIX + Windows.
+  //   4. `fchmodSync` via fd to tighten permissions on the open
+  //      descriptor (closes the open-then-chmod TOCTOU window).
+  try {
+    const stat = lstatSync(filePath)
+    if (stat.isSymbolicLink()) {
+      throw new Error(
+        `writeKeyringFile: refusing to write through a symlink at ${filePath} — ` +
+          `keyring entries must be regular files. Delete the symlink and retry.`,
+      )
+    }
+    if (!stat.isFile()) {
+      throw new Error(
+        `writeKeyringFile: refusing to write — ${filePath} exists but is not a regular file (mode=${stat.mode.toString(8)})`,
+      )
+    }
+    // Pre-existing regular file: keyring rotation. Unlink first so
+    // the O_EXCL open below succeeds.
+    unlinkSync(filePath)
+  } catch (err) {
+    // ENOENT is expected — nothing was there, proceed to create.
+    if (!(err instanceof Error) || (err as { code?: string }).code !== 'ENOENT') {
+      throw err
+    }
+  }
   const fd = openSync(
     filePath,
-    fsConstants.O_CREAT | fsConstants.O_WRONLY | fsConstants.O_TRUNC | (fsConstants.O_NOFOLLOW ?? 0),
+    fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY | (fsConstants.O_NOFOLLOW ?? 0),
     0o600,
   )
   try {

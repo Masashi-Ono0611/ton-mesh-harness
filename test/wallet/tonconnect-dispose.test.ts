@@ -85,6 +85,51 @@ describe('TonConnectProvider.dispose()', () => {
     expect(console.debug).toBe(originalDebug)
   })
 
+  // Codex pre-GA review round 8 BLOCKER regression gate.
+  // The round-7 fix saved/restored console.debug per call. If two
+  // TonConnect SDK calls overlapped (e.g. dispose() while
+  // sendTransactionMulti() awaiting), the inner's restore would
+  // expose the still-active outer to console.debug leaks.
+  // The round-8 fix is reference counted — any in-scope caller keeps
+  // the no-op active. Test by driving the internal enter/leave helpers
+  // directly, since simulating the real connect-await + sync-dispose
+  // overlap requires a full TonConnect bridge.
+  it('reference-counted silence: nested enter+leave keeps noop until depth returns to 0', async () => {
+    const mod = await import('../../src/wallet/TonConnectProvider')
+    const originalDebug = console.debug
+
+    // Simulate overlap shape:
+    //   1. Outer enters (depth 0→1) — installs noop
+    //   2. Inner enters (depth 1→2) — noop unchanged
+    //   3. Inner leaves (depth 2→1) — noop STILL active (the bug
+    //      under the round-7 fix: inner's restore would put back
+    //      the captured-noop, breaking the outer's expected silence
+    //      when its own restore later swaps to that captured-noop).
+    //   4. Outer leaves (depth 1→0) — restore original
+
+    mod._enterQuiet_FOR_TEST()
+    expect(console.debug).not.toBe(originalDebug)
+    mod._enterQuiet_FOR_TEST()
+    expect(console.debug).not.toBe(originalDebug)
+    mod._leaveQuiet_FOR_TEST()
+    // Critical assertion: inner-leave must NOT restore — outer is
+    // still in scope.
+    expect(console.debug).not.toBe(originalDebug)
+    mod._leaveQuiet_FOR_TEST()
+    // Final leave: original restored.
+    expect(console.debug).toBe(originalDebug)
+  })
+
+  it('defensive: leaveQuiet without matching enter is a no-op (won\'t corrupt console.debug)', async () => {
+    const mod = await import('../../src/wallet/TonConnectProvider')
+    const originalDebug = console.debug
+    // Unmatched leave — should NOT panic and SHOULD NOT mutate
+    // console.debug. Codex round-8 fix protects via depth === 0
+    // early return.
+    mod._leaveQuiet_FOR_TEST()
+    expect(console.debug).toBe(originalDebug)
+  })
+
   it('TONCONNECT_DEBUG=1 escape hatch lets developers re-enable SDK debug logging', async () => {
     const originalDebug = console.debug
     let inSdkSeen = false

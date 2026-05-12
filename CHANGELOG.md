@@ -74,9 +74,57 @@ GA-PREDRAFT-END -->
 
 ## [Unreleased] – 2026-05-12
 
-[S2.11] Codex round 7 multi-model audit of v0.8 modules NOT covered
-by rounds 1-6 (keyring, TonConnect bridge, daemon process lifecycle,
-legacy DNS helpers). **1 BLOCKER + 4 MAJORs + 1 MINOR resolved.**
+[S2.11+12] Codex rounds 7 + 8 multi-model audit of v0.8 modules NOT
+covered by rounds 1-6 (keyring, TonConnect bridge, daemon process
+lifecycle, legacy DNS helpers). Cumulative across rounds 7+8: **2
+BLOCKERs + 6 MAJORs + 1 MINOR resolved.**
+
+### Fixed (Codex pre-GA review round 8 — verify pass on round 7)
+
+- **[BLOCKER]** Round 7's `withQuietTonConnect()` saved/restored
+  `console.debug` per call — concurrent overlapping calls (e.g.
+  `dispose()` while `sendTransactionMulti()` awaiting) would race:
+  the inner finisher restored the captured value (already the no-op)
+  while the outer was still in scope, reopening the leak.
+  **Fix**: reference-counted silence. Module-level `quietDebugDepth`
+  + `quietDebugSaved`. First entrant (depth 0→1) captures the real
+  original; subsequent entrants just bump the count. Only the last
+  leaver (depth 1→0) restores. Tested via exported
+  `_enterQuiet_FOR_TEST` / `_leaveQuiet_FOR_TEST` helpers.
+- **[MAJOR]** Round 7's `kill()` used `Atomics.wait()` to poll
+  `child.exitCode` on the main thread — but blocking the main
+  thread prevents libuv from delivering the child's `exit` event,
+  so `exitCode` stays `null` until the timeout. `kill()` always
+  waited the full 2 s + SIGKILL even on clean exits.
+  **Fix**: replaced with non-blocking pattern: schedule rmSync via
+  `child.once('exit', ...)`, set a 2 s `setTimeout` (with `.unref()`)
+  for SIGKILL escalation, send SIGTERM and return immediately.
+  Trade-off: rmSync runs after kill() returns — OS cleans tmp dirs
+  on reboot anyway, and rmSync is state cleanliness, not security.
+- **[MAJOR]** Round 7's `O_NOFOLLOW` symlink fix was POSIX-only —
+  Node defines `fsConstants.O_NOFOLLOW` only on macOS/Linux. The
+  `?? 0` fallback meant Windows had no protection.
+  **Fix**: portable pattern — `lstatSync` first to detect symlinks
+  (reject), unlink any regular file (keyring rotation), then
+  `openSync` with `O_CREAT | O_EXCL` (POSIX + Windows). `O_NOFOLLOW`
+  still added where available as defence-in-depth.
+
+### Fixed (Codex pre-GA review round 7)
+
+- **[BLOCKER]** `@tonconnect/sdk` v3.4.1 calls
+  `console.debug('[TON_CONNECT_SDK]', ...)` at bridge request /
+  response boundaries (`node_modules/@tonconnect/sdk/lib/cjs/index.cjs:511`,
+  `:1272`, `:1397`, `:1874`, `:1885`). The arguments include the
+  unsigned payload on send and the wallet-signed BOC on receive.
+  `console.debug` writes to stderr — CLI users see signed wallet
+  messages in their terminal; MCP clients capturing stderr persist
+  signed BOCs to disk. **Fix**: `src/wallet/TonConnectProvider.ts`
+  now wraps every TonConnect SDK API call (`connect`,
+  `sendTransaction`, `dispose`) in `withQuietTonConnect()` which
+  swaps `console.debug` for a no-op for the duration and restores
+  in `finally`. Opt-in escape hatch via `TONCONNECT_DEBUG=1` env
+  var for developers who need the SDK's debug output. (Round 8
+  found this fix had a concurrency hole — see above.)
 The BLOCKER (TonConnect SDK debug logging leaks signed BOCs to
 stderr) and the analytics MAJOR (telemetry includes signed_boc) are
 both wallet-payload exfiltration paths — must NOT ship to GA without

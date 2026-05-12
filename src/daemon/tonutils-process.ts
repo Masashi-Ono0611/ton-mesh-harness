@@ -169,32 +169,59 @@ export async function startTonutilsDaemon(
     dbDir,
     process: child,
     kill: () => {
-      // Codex pre-GA review round 7 MAJOR: the old `kill()` sent SIGTERM
-      // then IMMEDIATELY rmSync'd the session dir. If the Go daemon
-      // ignored or delayed the signal, it could keep its UDP port + DB
-      // open while its on-disk state was deleted (database corruption +
-      // a stuck port). Fix: send SIGTERM, give it up to 2 s to exit,
-      // escalate to SIGKILL, then rmSync. kill() must stay synchronous
-      // (callers in SIGINT handlers / process-exit paths can't await),
-      // so we use Atomics.wait for sleep granularity — a 50 ms tick
-      // until exitCode is set or the deadline passes.
+      // Codex pre-GA review round 7 MAJOR: old kill() sent SIGTERM then
+      // IMMEDIATELY rmSync'd the session dir, so a daemon that delayed
+      // exit kept its UDP port alive while the DB dir was deleted.
+      // Round 8 caught that the round-7 fix (Atomics.wait on main
+      // thread) was also broken: blocking the main thread prevents
+      // libuv from delivering the child's 'exit' event, so the
+      // exitCode check would never see exit before the 2s timeout —
+      // kill() always paid the full 2s + SIGKILL even on clean exits.
+      //
+      // This implementation:
+      //   1. Send SIGTERM synchronously (returns immediately).
+      //   2. Schedule the rmSync via `child.once('exit', ...)` so it
+      //      runs AFTER the daemon's resources are released. The event
+      //      loop delivers 'exit' once the process actually terminates.
+      //   3. Set a 2 s timer that forces SIGKILL + same rmSync if
+      //      'exit' hasn't fired by then.
+      //   4. kill() returns synchronously — callers in SIGINT handlers
+      //      and process-exit paths get the SIGTERM enqueued
+      //      immediately and don't block.
+      //
+      // Trade-off: rmSync happens AFTER kill() returns. In emergency
+      // abort paths (process.exit immediately after kill()) the rmSync
+      // may not run — the OS reclaims the tmp dir on reboot anyway,
+      // and rmSync isn't security-critical (only state cleanliness).
+      // For SDK code that needs guaranteed cleanup, see the async
+      // wrap in src/sdk/deploy.ts's finally.
       if (child.exitCode === null) {
-        try { child.kill('SIGTERM') } catch { /* already exited */ }
-        const deadline = Date.now() + 2_000
-        const lock = new Int32Array(new SharedArrayBuffer(4))
-        while (child.exitCode === null && Date.now() < deadline) {
-          try { Atomics.wait(lock, 0, 0, 50) } catch { /* SAB disabled — fall through */ }
+        let cleanedUp = false
+        const cleanup = (): void => {
+          if (cleanedUp) return
+          cleanedUp = true
+          try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
         }
-        if (child.exitCode === null) {
-          try { child.kill('SIGKILL') } catch { /* ignore */ }
-          // Brief follow-up wait so SIGKILL lands before rmSync.
-          const hardDeadline = Date.now() + 500
-          while (child.exitCode === null && Date.now() < hardDeadline) {
-            try { Atomics.wait(lock, 0, 0, 50) } catch { /* SAB disabled */ }
+        child.once('exit', cleanup)
+        const escalation = setTimeout(() => {
+          if (child.exitCode === null) {
+            try { child.kill('SIGKILL') } catch { /* ignore */ }
+            // SIGKILL is delivered immediately by the kernel — give
+            // libuv one tick to fire 'exit' before forcing cleanup.
+            setImmediate(() => {
+              if (!cleanedUp) cleanup()
+            })
           }
-        }
+        }, 2_000)
+        // Don't keep the Node event loop alive solely for the
+        // escalation timer — if everything else is done, let the
+        // process exit and skip the SIGKILL fallback.
+        escalation.unref()
+        try { child.kill('SIGTERM') } catch { /* already exited */ }
+      } else {
+        // Already exited — clean up the dir synchronously.
+        try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
       }
-      try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
     },
   }
 

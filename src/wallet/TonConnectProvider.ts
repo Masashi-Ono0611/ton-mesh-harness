@@ -54,25 +54,64 @@ export type WalletNetwork = 'mainnet' | 'testnet'
  */
 const noopDebug = (): void => { /* silenced for security — see header */ }
 
+// Reference-counted silence. Codex pre-GA review round 8 caught a
+// concurrency hole in the round-7 fix: a per-call save/restore would
+// race if two TonConnect SDK calls overlap (e.g. dispose() while
+// sendTransactionMulti() is awaiting a wallet response — the inner's
+// finally restores console.debug to its captured value (which is
+// already noop), reopening the leak for the outer call). The shared
+// counter + module-level saved-original closes this: ANY caller in
+// scope keeps the no-op active.
+//
+// Reentry safe: the entry that sees depth 0→1 captures the *real*
+// original; subsequent overlapping entries just bump the count.
+let quietDebugDepth = 0
+let quietDebugSaved: typeof console.debug | null = null
+
+// Exported for the concurrent-safety regression test. The real
+// overlap shape (connect() async-await + dispose() sync mid-flight)
+// is hard to mock without a full TonConnect bridge — testing the
+// ref-counting helpers directly is the cheapest way to lock in the
+// round-8 BLOCKER fix.
+/** @internal */
+export function _enterQuiet_FOR_TEST(): void { enterQuiet() }
+/** @internal */
+export function _leaveQuiet_FOR_TEST(): void { leaveQuiet() }
+
+function enterQuiet(): void {
+  if (process.env.TONCONNECT_DEBUG === '1') return
+  if (quietDebugDepth === 0) {
+    quietDebugSaved = console.debug
+    console.debug = noopDebug
+  }
+  quietDebugDepth++
+}
+
+function leaveQuiet(): void {
+  if (process.env.TONCONNECT_DEBUG === '1') return
+  if (quietDebugDepth === 0) return // defensive: paired leave without entry
+  quietDebugDepth--
+  if (quietDebugDepth === 0 && quietDebugSaved !== null) {
+    console.debug = quietDebugSaved
+    quietDebugSaved = null
+  }
+}
+
 async function withQuietTonConnect<T>(fn: () => Promise<T>): Promise<T> {
-  if (process.env.TONCONNECT_DEBUG === '1') return fn()
-  const original = console.debug
-  console.debug = noopDebug
+  enterQuiet()
   try {
     return await fn()
   } finally {
-    console.debug = original
+    leaveQuiet()
   }
 }
 
 function withQuietTonConnectSync<T>(fn: () => T): T {
-  if (process.env.TONCONNECT_DEBUG === '1') return fn()
-  const original = console.debug
-  console.debug = noopDebug
+  enterQuiet()
   try {
     return fn()
   } finally {
-    console.debug = original
+    leaveQuiet()
   }
 }
 
