@@ -78,6 +78,31 @@ export function writeKeyringFile(dbDir: string, identity: AdnlIdentity): string 
     )
   }
   const keyringDir = path.join(dbDir, 'keyring')
+  // Codex pre-GA review round 9 LOW: defend the parent dir from
+  // symlink/junction redirection too. mkdirSync's `recursive: true`
+  // is idempotent on existing dirs but silently follows symlinks
+  // (mkdir at a symlink-to-elsewhere creates files under that
+  // elsewhere). lstatSync the dir first; if it's a symlink, refuse.
+  // If it's a regular dir, leave it alone. If it doesn't exist,
+  // mkdirSync creates it.
+  try {
+    const dirStat = lstatSync(keyringDir)
+    if (dirStat.isSymbolicLink()) {
+      throw new Error(
+        `writeKeyringFile: refusing to write into a symlinked keyring dir ${keyringDir} — ` +
+          `delete the symlink and retry.`,
+      )
+    }
+    if (!dirStat.isDirectory()) {
+      throw new Error(
+        `writeKeyringFile: ${keyringDir} exists but is not a directory (mode=${dirStat.mode.toString(8)})`,
+      )
+    }
+  } catch (err) {
+    if (!(err instanceof Error) || (err as { code?: string }).code !== 'ENOENT') {
+      throw err
+    }
+  }
   mkdirSync(keyringDir, { recursive: true, mode: 0o700 })
 
   const filePath = path.join(keyringDir, identity.shortIdHex)

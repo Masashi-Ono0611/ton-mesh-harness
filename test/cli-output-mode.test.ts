@@ -112,27 +112,55 @@ describe('installCleanupOnExit', () => {
     expect(process.listenerCount('SIGTERM')).toBe(before.sigterm + 1)
   })
 
-  it('handler calls cleanup then process.exit(130) on SIGINT', () => {
+  // Codex pre-GA review round 9 MAJOR — installCleanupOnExit no longer
+  // calls process.exit() synchronously. It sets process.exitCode + a
+  // 2.5s safety timer, so the event loop drains any async cleanup
+  // (e.g. the tonutils daemon's child.once('exit', rmSync)) before
+  // forced exit. Without this, daemon orphan was possible on signal-
+  // path teardown (round 7 made kill() schedule async cleanup).
+  it('handler runs cleanup AND sets process.exitCode for SIGINT (no immediate process.exit)', () => {
     const cleanup = vi.fn()
     const exitSpy = vi
       .spyOn(process, 'exit')
       .mockImplementation((() => undefined) as never)
+    const originalExitCode = process.exitCode
     installCleanupOnExit(cleanup)
     process.emit('SIGINT', 'SIGINT')
     expect(cleanup).toHaveBeenCalled()
-    expect(exitSpy).toHaveBeenCalledWith(130)
+    // Critical: process.exit must NOT be called immediately. A safety
+    // timer (2.5s) is scheduled but hasn't fired yet.
+    expect(exitSpy).not.toHaveBeenCalled()
+    expect(process.exitCode).toBe(130)
+    process.exitCode = originalExitCode
     exitSpy.mockRestore()
   })
 
-  it('handler calls cleanup then process.exit(143) on SIGTERM', () => {
+  it('handler runs cleanup AND sets process.exitCode for SIGTERM (no immediate process.exit)', () => {
     const cleanup = vi.fn()
     const exitSpy = vi
       .spyOn(process, 'exit')
       .mockImplementation((() => undefined) as never)
+    const originalExitCode = process.exitCode
     installCleanupOnExit(cleanup)
     process.emit('SIGTERM', 'SIGTERM')
     expect(cleanup).toHaveBeenCalled()
-    expect(exitSpy).toHaveBeenCalledWith(143)
+    expect(exitSpy).not.toHaveBeenCalled()
+    expect(process.exitCode).toBe(143)
+    process.exitCode = originalExitCode
+    exitSpy.mockRestore()
+  })
+
+  it('idempotent: a second SIGINT does not re-trigger cleanup', () => {
+    const cleanup = vi.fn()
+    const exitSpy = vi
+      .spyOn(process, 'exit')
+      .mockImplementation((() => undefined) as never)
+    const originalExitCode = process.exitCode
+    installCleanupOnExit(cleanup)
+    process.emit('SIGINT', 'SIGINT')
+    process.emit('SIGINT', 'SIGINT')
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    process.exitCode = originalExitCode
     exitSpy.mockRestore()
   })
 })
