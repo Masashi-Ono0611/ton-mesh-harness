@@ -28,6 +28,17 @@ const SPEC: BinaryInstallerSpec = {
     'linux-x64':    'tonutils-storage-linux-amd64',
     'win32-x64':    'tonutils-storage-x64.exe',
   },
+  // Pinned SHA-256 hashes for xssnick/tonutils-storage v1.4.1.
+  // Computed 2026-05-12 by downloading each release asset and
+  // running `shasum -a 256`. Codex pre-GA review round 11 self-audit
+  // (supply-chain integrity). Bump in lockstep with `version`.
+  expectedSha256: {
+    'darwin-arm64': '59698433588726413a4cb47d5ccdee61b74160e1281851dcf3936f4ed10fb1d3',
+    'darwin-x64':   'e974a64bcc461c90c0b9a550218d56c404741a183badfa5fe2dc014228475d52',
+    'linux-arm64':  '20b0552fc1e29237626d7c6157f72d7f5e6d9f92d55870cb7b08908b0b14f5cb',
+    'linux-x64':    '4bfb878321644e93b7eb6a9d7e2475b6b23899d3e28d369ee6a049ddbd01dc0b',
+    'win32-x64':    '90fbabe36b29a35da92825a953cc485e663c68dd8e2019551feef4d8d103fb78',
+  },
   downloadUrl: (version, asset) =>
     `https://github.com/xssnick/tonutils-storage/releases/download/${version}/${asset}`,
   unsupportedHint:

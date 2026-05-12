@@ -74,6 +74,38 @@ The kit's GA tools (`sovereign_check_env`, `sovereign_deploy`,
 - `dist/` is tarball-install smoke-tested in CI
   (`scripts/tarball-smoke.cjs`) so packaging regressions that could
   ship a non-published file do not slip through.
+- **SHA-256 integrity check on every daemon binary download**
+  (`src/daemon/installer-utils.ts::verifyDownloadedBinary`). The
+  three downloaded binaries — `storage-daemon`, `tonutils-storage`,
+  `rldp-http-proxy` — are verified against pinned SHA-256 hashes
+  before chmod+x and before the version stamp is written.
+  Mismatches delete the partial file and throw with the expected vs
+  actual hash. Protects against a compromised GitHub release asset,
+  a MITM'd CDN endpoint, or a typo-squatted release version.
+  Hashes for each `(version, platform-arch)` pair are pinned in
+  `src/daemon/tonutils-installer.ts` and
+  `src/daemon/rldp-http-proxy-installer.ts` — bumped in lockstep
+  with version pins.
+- **TonConnect SDK debug suppression**
+  (`src/wallet/TonConnectProvider.ts::withQuietTonConnect`).
+  `@tonconnect/sdk` v3.4.1 calls `console.debug` with unsigned
+  payloads and signed BOCs at bridge transport boundaries. The
+  kit installs a reference-counted no-op for the duration of every
+  TonConnect API call. Opt-in escape hatch: `TONCONNECT_DEBUG=1`.
+- **TonConnect telemetry disabled**. The kit passes
+  `analytics: { mode: 'off' }` to the TonConnect constructor, which
+  short-circuits the SDK's AnalyticsManager before construction.
+  The default `'telemetry'` mode would otherwise emit a
+  transaction-signed event including `signed_boc` to
+  `https://analytics.ton.org/events`.
+- **Wallet keyring file integrity**
+  (`src/daemon/keyring.ts::writeKeyringFile`). The Ed25519 operator
+  key is written through an `O_CREAT | O_EXCL` file descriptor with
+  `fchmod` to `0o600`. `lstatSync` rejects pre-existing symlinks
+  (POSIX) and junctions/reparse points (Windows) on both the
+  keyring directory and the final file path. Protects against an
+  attacker who can place a symlink in the user's `~/.ton-sovereign`
+  tree.
 
 ## Related docs
 

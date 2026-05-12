@@ -72,6 +72,42 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
+## [Unreleased] – 2026-05-12
+
+[S2.15] Codex round 11 self-audit (daily-cap blocked external review)
+caught a **supply-chain integrity gap**: the three daemon binaries
+(`storage-daemon`, `tonutils-storage`, `rldp-http-proxy`) were
+downloaded from GitHub releases and chmod+x'd without ANY checksum
+verification. A compromised release asset, MITM'd CDN, or typo-squat
+would execute as the user on a kit that signs TON wallet transactions.
+**Severity**: would have been BLOCKER pre-GA.
+
+### Fixed (Codex pre-GA self-audit round 11)
+
+- **[BLOCKER → fixed]** Added SHA-256 integrity check to
+  `src/daemon/installer-utils.ts::installBinary`. Hashes pinned per
+  `(version, platform-arch)` in
+  `src/daemon/tonutils-installer.ts` (v1.4.1 × 5 platforms) and
+  `src/daemon/rldp-http-proxy-installer.ts` (v2026.04-1 × 5
+  platforms). Hashes computed 2026-05-12 by downloading each
+  release asset and running `shasum -a 256`.
+  - Verification runs AFTER `downloadFile` and BEFORE `chmod +x`
+    + version-stamp write. Mismatches `unlinkSync` the partial
+    file and throw with `expected` vs `actual` hex hashes.
+  - Falls back to TOFU (trust on first use) + a loud stderr
+    warning when no hash is pinned for the current platform-arch
+    — e.g. when a user sets `RLDP_HTTP_PROXY_VERSION` env var to
+    track a newer release than the pinned default.
+  - Threat model: documented in `SECURITY.md`. Mitigates a
+    compromised GitHub release asset, MITM'd CDN endpoint, or
+    typo-squatted release version.
+- Test: `test/daemon/installer-sha256.test.ts` — 4 unit tests
+  exercising the verify path:
+  - Matching hash → install proceeds
+  - Mismatched hash → throws + deletes partial file
+  - Missing hash → TOFU warning fires
+  - Pinned tonutils hashes are 64-char lowercase hex (sanity check)
+
 ## [0.8.0-rc9] – 2026-05-12
 
 [S2.11-14] Codex rounds 7-10 multi-model audit of v0.8 modules NOT

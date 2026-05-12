@@ -7,7 +7,8 @@
 // pasted across all three. This module hosts the shared helpers; per-
 // binary modules call into them with their own URL.
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import os from 'node:os'
@@ -95,6 +96,21 @@ export interface BinaryInstallerSpec {
   downloadUrl: (version: string, asset: string) => string
   /** Trailing line appended to the "no asset for $platform-$arch" error. */
   unsupportedHint: string
+  /**
+   * Pinned SHA-256 hashes per `${platform}-${arch}` key. Verified after
+   * download — mismatch deletes the partial file and throws. Required
+   * for supply-chain integrity: without it, a compromised GitHub
+   * release asset or MITM'd CDN endpoint would execute as the user.
+   * Codex pre-GA review round 11 (self-audit) caught the missing
+   * verification. v0.8 hashes pinned for the version of each binary
+   * embedded above; bump them in lockstep with `version` when
+   * upgrading.
+   *
+   * An empty / missing entry for the current platform-arch falls back
+   * to TOFU (trust on first use) + a loud stderr warning. Hashes for
+   * ALL supported platforms should be pinned before GA tag.
+   */
+  expectedSha256?: Partial<Record<string, string>>
 }
 
 export interface BinaryPaths {
@@ -152,7 +168,55 @@ export function installBinary(
     process.stderr.write(`  Downloading ${spec.name} (${spec.version})…\n`)
   }
   downloadFile(url, paths.daemon)
+  // SHA-256 integrity check BEFORE chmod+x and BEFORE the version
+  // stamp is written. A failed verification deletes the partial
+  // download — the next install attempt starts fresh.
+  verifyDownloadedBinary(spec, key, paths.daemon)
   chmodExecutable(paths.daemon)
   removeQuarantine(paths.daemon)
   writeFileSync(paths.versionFile, spec.version)
+}
+
+/**
+ * Verify the downloaded file's SHA-256 against the pinned hash for the
+ * current platform-arch. Throws + unlinks on mismatch — the next
+ * install attempt is clean. If no hash is pinned for this platform,
+ * emit a loud stderr warning and proceed (TOFU). Pre-GA, every
+ * supported platform should have a pinned hash.
+ */
+function verifyDownloadedBinary(
+  spec: BinaryInstallerSpec,
+  platformKey: string,
+  filePath: string,
+): void {
+  const expected = spec.expectedSha256?.[platformKey]
+  if (!expected) {
+    process.stderr.write(
+      `  ⚠ ${spec.name} (${spec.version}) for ${platformKey}: no SHA-256 hash pinned; ` +
+        `skipping integrity check. Run \`shasum -a 256 ${filePath}\` and pin the value in ` +
+        `src/daemon/<installer>.ts before GA.\n`,
+    )
+    return
+  }
+  let actual: string
+  try {
+    actual = createHash('sha256').update(readFileSync(filePath)).digest('hex')
+  } catch (err) {
+    // The downloaded file disappeared between download and verify.
+    // Treat as a verification failure.
+    const msg = err instanceof Error ? err.message : String(err)
+    throw new Error(`${spec.name}: failed to read downloaded binary for SHA-256 check: ${msg}`)
+  }
+  if (actual !== expected) {
+    try { unlinkSync(filePath) } catch { /* best effort */ }
+    throw new Error(
+      `${spec.name} (${spec.version}) download integrity check FAILED for ${platformKey}.\n` +
+        `  expected SHA-256: ${expected}\n` +
+        `  got SHA-256:      ${actual}\n` +
+        `The downloaded file has been deleted. If you believe the pinned hash is stale ` +
+        `(upstream re-published the asset), open an issue at ` +
+        `https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues — DO NOT ` +
+        `unpin the hash to bypass the check.`,
+    )
+  }
 }

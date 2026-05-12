@@ -35,6 +35,21 @@ const SPEC: BinaryInstallerSpec = {
     'linux-x64':    'rldp-http-proxy-linux-x86_64',
     'win32-x64':    'rldp-http-proxy.exe',
   },
+  // Pinned SHA-256 hashes for ton-blockchain/ton v2026.04-1.
+  // Computed 2026-05-12 by downloading each release asset and
+  // running `shasum -a 256`. Codex pre-GA review round 11 self-audit
+  // (supply-chain integrity). When RLDP_HTTP_PROXY_VERSION env var
+  // overrides DEFAULT_VERSION (rare opt-in for users tracking a
+  // newer release), the pinned hashes won't match — installer falls
+  // back to TOFU with a loud stderr warning. Bump these in lockstep
+  // with DEFAULT_VERSION.
+  expectedSha256: {
+    'darwin-arm64': '451f9941c9f4de7df33a39cfd98f1fd063461ae1d1104dd583351efd3ef754ca',
+    'darwin-x64':   '0fe6fe3f274a0a1594a407ac95d2710a4356858afb92e00f62cbb6f66424230c',
+    'linux-arm64':  'ef6e10d540f2f6b3c628ea01b9dd1beb38e2bb136ba7cedf80c2c7ac3f2ccde4',
+    'linux-x64':    '207d8b30c9d2fb177f9260eb2c116c21db9bee846dd16368bbf8862258ac580e',
+    'win32-x64':    'f2bbef64810e1a28c9cf3520288da0539c501887276e4b0d1d18e6fe1644e0b6',
+  },
   downloadUrl: (version, asset) =>
     `https://github.com/ton-blockchain/ton/releases/download/${version}/${asset}`,
   unsupportedHint:
