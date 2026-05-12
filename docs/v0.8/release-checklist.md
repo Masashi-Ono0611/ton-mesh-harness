@@ -35,7 +35,7 @@ gate:
 3. `CHANGELOG.md` — promotes the `<!-- GA-PREDRAFT-BEGIN ... END -->`
    block to a live `## [0.8.0] – <today>` heading.
 4. `README.md` — flips the status line + Agent-quickstart heading from
-   the latest rc (rc7 as of 2026-05-12) → 0.8.0.
+   the latest rc (rc11 as of 2026-05-12) → 0.8.0.
 5. `npm run verify` — lint + tsc + tests + build + cli + mcp + sdk
    smokes (+ tarball smoke via `npm run smoke:full`).
 
@@ -93,7 +93,7 @@ The kit publishes from `dist/` per `files` allowlist. `npm publish`
 runs `prepublishOnly` if defined (currently none — `npm pack --dry-run`
 is the manual sanity check).
 
-For an rc (e.g. `scripts/release.sh 0.8.0-rc6` → `npm publish`),
+For an rc (e.g. `scripts/release.sh 0.8.0-rc11` → `npm publish`),
 add `--tag next` so the rc doesn't take the `latest` dist-tag:
 
 ```bash
@@ -170,7 +170,7 @@ scripts/release.sh 0.8.1
 #    is the right tool.
 ```
 
-## Cutting an rc (e.g. rc7)
+## Cutting an rc (e.g. rc11)
 
 Same checklist, with rc-specific differences:
 

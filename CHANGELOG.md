@@ -7,7 +7,7 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 <!-- GA-PREDRAFT-BEGIN
 v0.8.0 GA pre-draft. `scripts/release.sh` promotes this block to the
 released `[0.8.0]` heading at D3 once V3 (E2E) + V4 (red-team) pass.
-Aggregates rc1-rc6; do NOT duplicate per-rc details here — those stay
+Aggregates rc1-rc11; do NOT duplicate per-rc details here — those stay
 in the rc subsections below.
 
 ## [0.8.0] – TODO
@@ -49,12 +49,45 @@ can drive a full deploy with one command / one tool call.
 - **Examples** — `examples/hello-ton/` is a one-file reference site
   with TonConnect + Agentic deploy walkthroughs.
 
+### Security hardening (rc6-rc11)
+
+A pre-GA review pipeline ran 11 Codex multi-model audit rounds + 1
+self-audit pass against the kit's SDK / MCP / wallet / daemon /
+installer modules. **Cumulative: 4 BLOCKERs + 22 MAJORs + 3 MINORs
++ 1 LOW + 4 NITs resolved (34 findings).** Headline class fixes:
+
+- **Wallet-payload exfiltration closed.** `@tonconnect/sdk` v3.4.1
+  logged the unsigned-payload + signed-BOC to `console.debug` at
+  bridge boundaries — stderr-capturing MCP clients would persist
+  signed wallet messages. Reference-counted `console.debug`
+  suppression around every TonConnect SDK call; opt-in escape hatch
+  via `TONCONNECT_DEBUG=1`. Telemetry analytics (which also emit
+  `signed_boc`) hard-disabled via `analytics: { mode: 'off' }`.
+- **Wallet-key symlink redirect closed.** `writeKeyringFile()` used
+  `writeFileSync` (follows symlinks; chmod TOCTOU). Now `lstat`s
+  parent dir + final file, opens with `O_CREAT | O_EXCL` (works on
+  POSIX + Windows), `fchmod` via fd.
+- **Daemon binary supply-chain integrity.** All 3 daemon installers
+  (`storage-daemon`, `tonutils-storage`, `rldp-http-proxy`) now
+  verify SHA-256 against pinned hashes (20 hashes across 5 platforms)
+  before chmod+x. Mismatch → delete + throw. Override path via
+  `RLDP_HTTP_PROXY_SHA256` env var pin.
+- **Daemon orphan-on-signal closed.** CLI signal handlers were
+  `process.exit()`-ing synchronously after async-cleanup `kill()` —
+  the daemon's exit listener + SIGKILL escalation never ran. Drain
+  pattern (`process.exitCode` + 2.5 s ref'd safety timer) lets the
+  event loop drain async cleanup before forced exit.
+- **MCP contract enforcement.** Explicit `DeployOptionsSchema.parse`
+  at the MCP boundary rejects bare-string wallets (which the SDK
+  lifts for CLI compat). Smoke test gates the regression.
+
+Threat model + the SECURITY.md "What we've already done" inventory.
+
 ### Stability of new surfaces
 
-- The two MCP tools `sovereign_check_env` and `sovereign_deploy` are
-  GA. Their JSON Schemas are snapshot-tested; breaking changes will
-  bump the minor.
-- `sovereign_status` ships GA. Its TONAPI URL is regression-tested.
+- The three MCP tools `sovereign_check_env`, `sovereign_deploy`, and
+  `sovereign_status` are GA. Their JSON Schemas are snapshot-tested;
+  breaking changes will bump the minor.
 - The programmable SDK (`import from 'ton-sovereign-deploy'`) is GA.
   The exported surface is enumerated in `src/sdk.ts`; semver applies.
 
@@ -68,7 +101,7 @@ can drive a full deploy with one command / one tool call.
 - **C2 NAT traversal** (`adnl-tunnel-client`) and **C3 Payment
   Network real-client** moved to the v0.9 reserve when the agent-
   surface track took the v0.8 slot on 2026-05-10. See
-  `docs/v0.7/roadmap-draft.md`.
+  `docs/v0.7/roadmap-draft.md`. Tracked via issues #29 / #30.
 
 GA-PREDRAFT-END -->
 

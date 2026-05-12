@@ -22,9 +22,11 @@ artifacts that let an agent find the kit without being told its name.**
 4. Programmatic SDK extraction (no console output, no spinners, no
    `process.exit`).
 5. MCP server binary (`ton-sovereign-mcp`) using stdio transport.
-6. Two tools: `sovereign_deploy` and `sovereign_check_env`.
+6. Three tools: `sovereign_deploy`, `sovereign_check_env`, and
+   `sovereign_status`. (Scope expanded from 2 → 3 in rc6 — see
+   "Tool count history" below.)
 7. Progress notifications and cancellation per MCP spec.
-8. Stable error code contract for the two tools.
+8. Stable error code contract for the three tools.
 9. **`@ton/walletkit` filesystem-level compose** — read the agentic wallet
    config at `~/.config/ton/config.json` directly via the same loader
    `@ton/mcp` uses. See [P-1 probe memo](at-mcp-probe.md) for the verified
@@ -49,8 +51,12 @@ Updated per concept-update 2026-05-10:
 - HTTP transport for the MCP server (stdio only in 0.8.0).
 - `mcp.ton.org` registry submission — no submission flow exists today; revisit
   when one does. ([P-1 probe](at-mcp-probe.md) Phase 2.75 landscape findings.)
-- Additional tools (`sovereign_status`, `sovereign_redeploy`,
-  `sovereign_stop`, etc.) — 0.8.x once the two-tool contract is validated.
+- Additional tools beyond the rc6 three-tool surface (e.g.
+  `sovereign_redeploy`, `sovereign_stop`) — 0.8.x once the
+  three-tool contract is validated by V3/V4. `sovereign_status`
+  graduated into 0.8.0 GA scope at rc6 (was originally listed
+  here as deferred — the one-shot bag-propagation snapshot turned
+  out to be small enough to ship in v0.8.0).
 - `.well-known/ton-deploy.json` provenance manifest (Codex C axis from
   concept-update Phase 3.5) — noted as candidate, no commitment.
 - Repo split / monorepo.
@@ -165,6 +171,43 @@ CLI backwards compat:
 **Behavior**:
 - Reuses `cli/doctor.ts` logic, exposed via the SDK.
 - `ready === blocking.length === 0`.
+
+#### `sovereign_status` *(added rc6)*
+
+One-shot snapshot of a bag's network state. Designed for the
+post-`keep_alive: false` deploy "did my bag propagate yet?" question
+an agent asks without spawning a fresh daemon. The SDK boundary lives
+at `src/sdk/status.ts`; the snapshot semantic differs from
+`verifyBagOnNetwork` (which polls).
+
+**Input**:
+
+| field | type | required | default |
+|---|---|---|---|
+| `bag_id` | string (64 hex chars) | ✅ | — |
+| `domain` | string \| null | — | null |
+| `testnet` | boolean | — | false |
+
+**Output**:
+
+| field | type | notes |
+|---|---|---|
+| `bag_id` | string | echo of input |
+| `bag_accessible` | boolean | true iff TONAPI returned a non-`not_found` status |
+| `bag_size_bytes` | number \| null | non-null when `bag_accessible: true` |
+| `bag_file_count` | number \| null | non-null when `bag_accessible: true` |
+| `bag_unavailable_reason` | `"not_found" \| "network_error" \| null` | null when `bag_accessible: true`. `not_found` = TONAPI returned 404 / `status: not_found`. `network_error` = TONAPI / transport failure (timeout, 5xx). Lets agents distinguish "deploy hasn't propagated yet" from "TONAPI is down." |
+| `domain` | `{ name, nft_address, resolved_bag_id, matches } \| null` | null when input `domain` was null |
+
+**Behavior**:
+- Network failures **absorb into `bag_accessible: false`** rather than
+  throwing — so a snapshot always returns a structured result. Bad
+  inputs (malformed bag_id, etc.) still throw `SdkError(ERR_INVALID_INPUT)`.
+- Two-shot probe on transient 5xx: retry once after 1 s. 404 short-
+  circuits (no retry — 404 is definitive).
+- The `domain` field is independent of `bag_unavailable_reason`. An
+  agent can see `bag_accessible: true` paired with `domain.matches:
+  false` (the bag is live, but the .ton record points elsewhere).
 
 ### F3. Progress notifications
 - Sent during `sovereign_deploy` calls.
@@ -294,7 +337,7 @@ the calling agent via `may_have_published: true`.
 
 ### GA (week 6)
 5. `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` (dual-bin invocation) boots and responds to MCP `initialize`.
-6. `tools/list` returns exactly two tools, both with valid JSON Schemas matching the tables above. Tool descriptions include "deploy a static site to .ton" (or close paraphrase) for [V4] discoverability.
+6. `tools/list` returns exactly three tools — `sovereign_check_env`, `sovereign_deploy`, `sovereign_status` — all with valid JSON Schemas matching the tables above. Tool descriptions include "deploy a static site to .ton" (or close paraphrase) for [V4] discoverability. (rc6 expansion: `sovereign_status` was originally deferred; promoted into GA scope when the one-shot bag-propagation snapshot turned out to be small.)
 7. From a Claude Code session connected to the server:
    a. `sovereign_check_env` returns a structured result.
    b. `sovereign_deploy` against a sample `dist/` on testnet (Path 1 *and* Path 2) completes end-to-end, receiving `bag_id`, `daemon_api_url`, and a non-error result.
