@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'fs'
 import { spawn, spawnSync, type ChildProcess } from 'child_process'
 import path from 'path'
 import os from 'os'
@@ -49,7 +49,9 @@ export async function startDaemon(
   const cliPort = await findFreePort(5500, 5600)
   const adnlPort = await findFreePort(5601, 5700)
 
-  const sessionDir = path.join(os.tmpdir(), `ton-sovereign-${process.pid}`)
+  // Self-audit (Codex r11 class): use mkdtempSync so two starts in
+  // the same Node process never collide, mirroring tonutils-process.
+  const sessionDir = mkdtempSync(path.join(os.tmpdir(), `ton-sovereign-${process.pid}-`))
   const dbDir = path.join(sessionDir, 'db')
   mkdirSync(dbDir, { recursive: true })
 
@@ -64,9 +66,11 @@ export async function startDaemon(
     detached: false,
   })
 
-  child.on('error', (err) => {
-    throw new Error(`storage-daemon failed to start: ${err.message}`)
-  })
+  // Capture spawn errors into a checkable variable instead of throwing
+  // from the event handler (which becomes an unhandled exception that
+  // bypasses the caller's try/catch). Same pattern as tonutils-process.
+  let spawnError: Error | undefined
+  child.on('error', (err) => { spawnError = err })
 
   const handle: DaemonHandle = {
     cliPort,
@@ -74,12 +78,35 @@ export async function startDaemon(
     sessionDir,
     dbDir,
     process: child,
+    // Async-safe kill: schedule rmSync via child 'exit', escalate to
+    // SIGKILL after 2 s. Same pattern as tonutils-process (Codex r7-10).
     kill: () => {
+      if (child.exitCode !== null) {
+        try { rmSync(sessionDir, { recursive: true, force: true }) } catch {}
+        return
+      }
+      let cleanedUp = false
+      const cleanup = (): void => {
+        if (cleanedUp) return
+        cleanedUp = true
+        try { rmSync(sessionDir, { recursive: true, force: true }) } catch {}
+      }
+      child.once('exit', cleanup)
+      const escalation = setTimeout(() => {
+        if (child.exitCode === null) {
+          try { child.kill('SIGKILL') } catch {}
+          setImmediate(() => { if (!cleanedUp) cleanup() })
+        }
+      }, 2_000)
+      escalation.unref()
       try { child.kill('SIGTERM') } catch {}
-      try {
-        rmSync(sessionDir, { recursive: true, force: true })
-      } catch {}
     },
+  }
+  // If the spawn error fired synchronously before we attach handle's
+  // listener, surface it now.
+  if (spawnError) {
+    handle.kill()
+    throw new Error(`storage-daemon failed to start: ${spawnError.message}`)
   }
 
   await waitForDaemon(handle, resolvedPaths)
