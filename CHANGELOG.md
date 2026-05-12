@@ -72,11 +72,19 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
-## [Unreleased] – 2026-05-12
+## [0.8.0-rc7] – 2026-05-12
 
-[S2.9 polish] Codex pre-GA review pass against rc6. 5 MAJORs + 1
-MINOR resolved at the SDK public-surface level. Lands as rc7 (or
-straight into GA depending on V3/V4 timing).
+[S2.9 polish] Codex pre-GA review pass against rc6 + mcp.ts dedup
+refactor. 5 MAJORs + 1 MINOR + 1 refactor resolved at the SDK
+public-surface level. Final rc before V3/V4 acceptance gates.
+
+### Refactored
+
+- `src/mcp.ts` removed redundant `Schema.parse()` calls + dead
+  `ZodError`-catch branches in `handleCheckEnv` / `handleDeploy`.
+  Now that `checkEnv()` / `deploy()` both wrap `ZodError` → `SdkError`
+  themselves, the MCP layer was double-parsing every call. -12 lines,
+  single source of validation. No behaviour change.
 
 ### Fixed (Codex pre-GA review 2026-05-12)
 

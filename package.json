@@ -1,7 +1,7 @@
 {
   "name": "ton-sovereign-deploy",
-  "version": "0.8.0-rc6",
-  "description": "Sovereign one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. v0.8.0-rc6 ships the full agent-surface track: 3 MCP tools (sovereign_check_env / sovereign_deploy / sovereign_status), SDK external entry (import { deploy } from 'ton-sovereign-deploy'), NFT-delegated agentic signing via optional @ton/mcp peer, structured logging (DEBUG=sovereign:*).",
+  "version": "0.8.0-rc7",
+  "description": "Sovereign one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. v0.8.0-rc7 — Codex pre-GA review polish on top of rc6's full agent-surface track: 3 MCP tools (sovereign_check_env / sovereign_deploy / sovereign_status), SDK external entry, NFT-delegated agentic signing (optional @ton/mcp peer), structured logging (DEBUG=sovereign:*).",
   "main": "./dist/sdk.js",
   "types": "./dist/sdk.d.ts",
   "exports": {
