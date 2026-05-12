@@ -72,6 +72,57 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
+## [0.8.0-rc8] – 2026-05-12
+
+[S2.10] Codex round 4 + 5 + 6 closure. Round 4 found 1 NEW MAJOR
+introduced by the rc7 mcp.ts dedup refactor; round 5 confirmed fix
++ flagged 2 NITs; round 6 final pass = 0 findings ("Nothing else
+worth flagging for the v0.8.0 GA tag"). Cumulative across all 6
+rounds: **1 BLOCKER + 8 MAJORs + 1 MINOR + 4 NITs resolved**.
+
+### Fixed (Codex review 2026-05-12, rounds 4-5)
+
+- **[MAJOR]** rc7's `src/mcp.ts` dedup refactor lost MCP wallet-
+  strictness defense-in-depth. The removed `DeployOptionsSchema.parse()`
+  was serving two roles: (a) the redundancy Codex round 3 flagged,
+  AND (b) enforcing the MCP contract that `wallet` must be a
+  structured object union. The SDK's `deploy()` is more permissive —
+  `parseWalletInput()` lifts bare strings (`"Tonkeeper"`) into
+  structured objects for CLI backwards-compat. A non-compliant
+  MCP client could send `wallet: "Tonkeeper"` and silently bypass
+  the contract. **Restored explicit parse with a clarified
+  comment about the contract role** (not redundant — defense-in-
+  depth). Probe confirmed: `{wallet: 'Tonkeeper'}` now rejects
+  with `{ code: 'ERR_INVALID_INPUT', firstIssuePath: ['wallet'],
+  firstIssueMessage: 'Expected object, received string' }` BEFORE
+  the testnet guard or any deploy side-effect fires.
+- **[NIT]** F5 diagnostics regression — `SdkError.data.zod_issues`
+  was dropped by the SDK ZodError wraps in `check.ts` / `deploy.ts`
+  normalize(). Enriched both wraps to detect ZodError shape and
+  include `data: { zod_issues }` when applicable. SDK consumers and
+  MCP clients both benefit.
+- **[NIT]** Stale comment in `src/mcp.ts` claiming the SDK wrap
+  "sets no data" — corrected after the above fix.
+
+### Added
+
+- `scripts/mcp-smoke.cjs` adds an `id=4 tools/call sovereign_deploy`
+  step with `{wallet: "Tonkeeper", testnet: true}` and asserts that
+  the MCP gate rejects it BEFORE the testnet guard fires. The
+  `testnet: true` element is critical: if the strict gate were
+  silently dropped, the deploy would later fail with the testnet
+  message — a different failure mode. This makes the wallet-
+  strictness regression catchable in CI.
+- 2 new unit tests in `test/sdk-deploy.test.ts`:
+  - SDK bare-string wallet lift still works (CLI-compat preserved)
+  - `SdkError.data.zod_issues` surfaces on schema parse failures
+
+### Tests
+
+- 310 pass / 11 skip (up from 308 in rc7).
+- MCP smoke ends with `wallet_strict=rejected` token.
+- All 4 smokes (cli + mcp + sdk + tarball) green.
+
 ## [0.8.0-rc7] – 2026-05-12
 
 [S2.9 polish] Codex pre-GA review pass against rc6 + mcp.ts dedup
