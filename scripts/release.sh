@@ -67,8 +67,11 @@ node -e "
 
 # ---------------------------------------------------------------------------
 # 3. CHANGELOG.md — promote GA pre-draft for x.y.0 releases (no pre-release
-#    tag). For rcN, the existing [Unreleased] block stays untouched and the
-#    rc subsection lives below per Keep-a-Changelog convention.
+#    tag). For rcN releases CHANGELOG editing is MANUAL: the operator
+#    renames the existing `## [Unreleased]` section to
+#    `## [0.8.0-rcN] – <date>` before running this script. Automation
+#    here would have to guess what's "in flight" vs "shipped"; the
+#    operator already knows. release-checklist.md spells out the step.
 # ---------------------------------------------------------------------------
 if [[ "$VERSION" != *-* ]]; then
   TODAY="$(date -u +%Y-%m-%d)"
