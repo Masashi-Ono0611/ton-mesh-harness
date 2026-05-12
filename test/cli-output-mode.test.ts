@@ -118,49 +118,65 @@ describe('installCleanupOnExit', () => {
   // (e.g. the tonutils daemon's child.once('exit', rmSync)) before
   // forced exit. Without this, daemon orphan was possible on signal-
   // path teardown (round 7 made kill() schedule async cleanup).
-  it('handler runs cleanup AND sets process.exitCode for SIGINT (no immediate process.exit)', () => {
-    const cleanup = vi.fn()
-    const exitSpy = vi
-      .spyOn(process, 'exit')
-      .mockImplementation((() => undefined) as never)
-    const originalExitCode = process.exitCode
-    installCleanupOnExit(cleanup)
-    process.emit('SIGINT', 'SIGINT')
-    expect(cleanup).toHaveBeenCalled()
-    // Critical: process.exit must NOT be called immediately. A safety
-    // timer (2.5s) is scheduled but hasn't fired yet.
-    expect(exitSpy).not.toHaveBeenCalled()
-    expect(process.exitCode).toBe(130)
-    process.exitCode = originalExitCode
-    exitSpy.mockRestore()
-  })
+  //
+  // The new tests use vi.useFakeTimers() so the 2.5s safety timer
+  // doesn't leak into the test runner and call real process.exit()
+  // mid-suite (round 10 caveat).
+  describe('with fake timers (signal drain)', () => {
+    beforeEach(() => { vi.useFakeTimers() })
+    afterEach(() => { vi.useRealTimers() })
 
-  it('handler runs cleanup AND sets process.exitCode for SIGTERM (no immediate process.exit)', () => {
-    const cleanup = vi.fn()
-    const exitSpy = vi
-      .spyOn(process, 'exit')
-      .mockImplementation((() => undefined) as never)
-    const originalExitCode = process.exitCode
-    installCleanupOnExit(cleanup)
-    process.emit('SIGTERM', 'SIGTERM')
-    expect(cleanup).toHaveBeenCalled()
-    expect(exitSpy).not.toHaveBeenCalled()
-    expect(process.exitCode).toBe(143)
-    process.exitCode = originalExitCode
-    exitSpy.mockRestore()
-  })
+    it('handler runs cleanup AND sets process.exitCode for SIGINT (no immediate process.exit)', () => {
+      const cleanup = vi.fn()
+      const exitSpy = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((() => undefined) as never)
+      const originalExitCode = process.exitCode
+      installCleanupOnExit(cleanup)
+      process.emit('SIGINT', 'SIGINT')
+      expect(cleanup).toHaveBeenCalled()
+      // Critical: process.exit must NOT be called immediately. A safety
+      // timer (2.5s) is scheduled but hasn't fired yet.
+      expect(exitSpy).not.toHaveBeenCalled()
+      expect(process.exitCode).toBe(130)
+      // Advance fake clock past the safety deadline — process.exit fires.
+      vi.advanceTimersByTime(3_000)
+      expect(exitSpy).toHaveBeenCalledWith(130)
+      process.exitCode = originalExitCode
+      exitSpy.mockRestore()
+    })
 
-  it('idempotent: a second SIGINT does not re-trigger cleanup', () => {
-    const cleanup = vi.fn()
-    const exitSpy = vi
-      .spyOn(process, 'exit')
-      .mockImplementation((() => undefined) as never)
-    const originalExitCode = process.exitCode
-    installCleanupOnExit(cleanup)
-    process.emit('SIGINT', 'SIGINT')
-    process.emit('SIGINT', 'SIGINT')
-    expect(cleanup).toHaveBeenCalledTimes(1)
-    process.exitCode = originalExitCode
-    exitSpy.mockRestore()
+    it('handler runs cleanup AND sets process.exitCode for SIGTERM (no immediate process.exit)', () => {
+      const cleanup = vi.fn()
+      const exitSpy = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((() => undefined) as never)
+      const originalExitCode = process.exitCode
+      installCleanupOnExit(cleanup)
+      process.emit('SIGTERM', 'SIGTERM')
+      expect(cleanup).toHaveBeenCalled()
+      expect(exitSpy).not.toHaveBeenCalled()
+      expect(process.exitCode).toBe(143)
+      vi.advanceTimersByTime(3_000)
+      expect(exitSpy).toHaveBeenCalledWith(143)
+      process.exitCode = originalExitCode
+      exitSpy.mockRestore()
+    })
+
+    it('idempotent: a second SIGINT does not re-trigger cleanup', () => {
+      const cleanup = vi.fn()
+      const exitSpy = vi
+        .spyOn(process, 'exit')
+        .mockImplementation((() => undefined) as never)
+      const originalExitCode = process.exitCode
+      installCleanupOnExit(cleanup)
+      process.emit('SIGINT', 'SIGINT')
+      process.emit('SIGINT', 'SIGINT')
+      expect(cleanup).toHaveBeenCalledTimes(1)
+      // Drain the safety timer so it doesn't leak past test boundary.
+      vi.advanceTimersByTime(3_000)
+      process.exitCode = originalExitCode
+      exitSpy.mockRestore()
+    })
   })
 })

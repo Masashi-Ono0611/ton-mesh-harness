@@ -79,6 +79,22 @@ export async function runDeployTonutils(
   // — leaked handlers cause the next caller (watch mode, DNS) to fight
   // with our deploy-phase cleanup.
   let signalCount = 0
+  // Codex pre-GA review round 10 BLOCKER: the v0.6-era handler called
+  // process.exit() synchronously after kill(). Now that
+  // TonutilsHandle.kill() schedules async rmSync via
+  // child.once('exit', ...) (round 7 fix), calling process.exit
+  // immediately would orphan the daemon's rmSync cleanup AND skip
+  // the SIGKILL escalation timer. Use process.exitCode + a 2.5 s
+  // ref'd safety timer to let the loop drain — same drain pattern
+  // as installCleanupOnExit (src/cli/output-mode.ts).
+  const SHUTDOWN_DEADLINE_MS = 2_500
+  let alreadyExiting = false
+  const drainExit = (exitCode: number): void => {
+    if (alreadyExiting) return
+    alreadyExiting = true
+    process.exitCode = exitCode
+    setTimeout(() => process.exit(exitCode), SHUTDOWN_DEADLINE_MS)
+  }
   const onSignal = (exitCode: number) => () => {
     signalCount++
     if (signalCount === 1) {
@@ -87,13 +103,16 @@ export async function runDeployTonutils(
       // the cancellation; finally-block exits with the right code.
       controller.abort()
     } else {
-      // Second signal: hard exit (user is done waiting). Drop the daemon.
+      // Second signal: hard exit (user is done waiting). Drop the
+      // daemon. The drain pattern lets the kill()'s async cleanup
+      // (child exit listener, rmSync, SIGKILL escalation) run before
+      // forced exit. Round 10 fix.
       try {
         capturedDaemon?.kill()
       } catch {
         /* ignore */
       }
-      process.exit(exitCode)
+      drainExit(exitCode)
     }
   }
   const onSigint = onSignal(130)
@@ -105,7 +124,7 @@ export async function runDeployTonutils(
       /* ignore */
     }
     console.error(chalk.red('\nUnexpected error:'), err.message)
-    process.exit(1)
+    drainExit(1)
   }
   process.on('SIGINT', onSigint)
   process.on('SIGTERM', onSigterm)
@@ -252,7 +271,10 @@ export async function runDeployTonutils(
     } else {
       console.error(chalk.red('\nError:'), message)
     }
-    process.exit(1)
+    // Drain pattern (same as round-10 signal-handler fix above): give
+    // kill()'s async rmSync + SIGKILL escalation time to land before
+    // forced exit. Codex pre-GA review round 10 BLOCKER.
+    drainExit(1)
   } finally {
     // Always release the signal handlers we installed at function entry,
     // so subsequent phases (DNS / site-host / watch) can install their own
