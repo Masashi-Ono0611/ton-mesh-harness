@@ -41,6 +41,38 @@ describe('SDK deploy() — input validation + error contract', () => {
     ).rejects.toMatchObject({ code: 'ERR_INVALID_INPUT' })
   })
 
+  it('SDK lifts bare-string wallet for CLI compat (deploy() is permissive)', async () => {
+    // Codex pre-GA review round 4 noted this CLI-compat lift in
+    // src/sdk/deploy.ts::normalize() via parseWalletInput(). The
+    // SDK accepts string wallets; MCP boundary enforces structured
+    // objects separately (see src/mcp.ts::handleDeploy). The SDK
+    // throws on a DIFFERENT reason (`testnet: true` is unsupported
+    // here), proving the string-lift succeeded past the wallet gate.
+    await expect(
+      deploy({ source_dir: './dist', wallet: 'Tonkeeper', testnet: true }).next(),
+    ).rejects.toMatchObject({
+      code: 'ERR_INVALID_INPUT',
+      message: expect.stringContaining('testnet'),
+    })
+  })
+
+  it('ZodError diagnostics surface as SdkError.data.zod_issues', async () => {
+    // Codex pre-GA review round 4 NIT: the SdkError wrap on
+    // src/sdk/deploy.ts::normalize() was dropping zod_issues. Agents
+    // render the issue list to humans, so restoring it.
+    const err = await deploy({
+      source_dir: './dist',
+      source_dri: './oops',
+    } as never)
+      .next()
+      .catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(SdkError)
+    expect((err as SdkError).code).toBe('ERR_INVALID_INPUT')
+    expect((err as SdkError).data).toMatchObject({
+      zod_issues: expect.any(Array),
+    })
+  })
+
   it('rejects an absent --tunnel-config path with ERR_INVALID_INPUT (not ERR_DAEMON_API_TIMEOUT)', async () => {
     await expect(
       deploy({ source_dir: './dist', tunnel_config: '/nonexistent/tunnel.json' }).next(),

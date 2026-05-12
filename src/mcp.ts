@@ -34,6 +34,8 @@ import {
   SOVEREIGN_DEPLOY_TOOL,
   SOVEREIGN_STATUS_TOOL,
 } from './sdk/json-schemas'
+import { DeployOptionsSchema } from './sdk/schemas'
+
 import { SOVEREIGN_DEPLOY_VERSION as SERVER_VERSION } from './version'
 
 const SERVER_NAME = 'ton-sovereign-mcp'
@@ -190,17 +192,43 @@ async function handleDeploy(
   extra: { signal: AbortSignal; sendNotification: (n: unknown) => Promise<void>; _meta?: { progressToken?: string | number } },
 ): Promise<CallToolResult> {
   try {
+    // MCP contract enforcement: the JSON Schema we advertise via
+    // tools/list requires `wallet` to be a structured object union
+    // (no bare-string CLI shortcut). The SDK's `deploy()` is more
+    // permissive — it lifts `"Tonkeeper"` into `{kind: "tonconnect",
+    // connector: "Tonkeeper"}` for CLI backwards-compat via
+    // parseWalletInput(). Without this strict pre-parse, a non-
+    // compliant MCP client could send a string wallet and silently
+    // get past the contract. Catch ZodError here so we can include
+    // `data.zod_issues` for richer diagnostics — the SDK's own
+    // wrapping path (which fires for SDK-direct consumers) sets
+    // no data, but MCP clients benefit from the issue list.
+    //
+    // Codex pre-GA review round 4 caught the dropped strictness
+    // from the rc7 dedup refactor — restoring with a clarified
+    // contract role.
+    let parsed
+    try {
+      parsed = DeployOptionsSchema.parse(args)
+    } catch (err) {
+      if (err && typeof err === 'object' && (err as { name?: string }).name === 'ZodError') {
+        throw new SdkError(
+          'ERR_INVALID_INPUT',
+          `Invalid sovereign_deploy input: ${(err as Error).message}`,
+          {
+            severity: 'fatal',
+            data: { zod_issues: (err as { issues?: unknown }).issues },
+          },
+        )
+      }
+      throw err
+    }
+
     // rc2 hardening: MCP server does NOT track keep-alive daemons. If the
     // client requests keep_alive=true via MCP, the kit would orphan a
     // daemon on server shutdown. Reject until daemon tracking lands
-    // (post-rc2 follow-up). Cheap soft-check — anything that's not a
-    // plain object with keep_alive===true falls through to deploy()
-    // which validates the full shape and throws SdkError(ERR_INVALID_INPUT).
-    if (
-      args &&
-      typeof args === 'object' &&
-      (args as { keep_alive?: unknown }).keep_alive === true
-    ) {
+    // (post-rc2 follow-up).
+    if (parsed.keep_alive) {
       throw new SdkError(
         'ERR_INVALID_INPUT',
         'keep_alive=true is not yet supported via MCP — the server has no per-call daemon-tracking surface. Use the CLI (which owns the daemon) or call sovereign_deploy with keep_alive=false.',
@@ -215,8 +243,9 @@ async function handleDeploy(
     let result: unknown
     let progressIndex = 0
     const totalPhases = 9 // env_check..done per F3
-    // deploy() owns input validation + ZodError → SdkError mapping.
-    for await (const ev of deploy(args as Parameters<typeof deploy>[0], { signal })) {
+    // `parsed` already passed the strict MCP gate above. deploy()
+    // will normalize() it (idempotent on a fully-typed DeployOptions).
+    for await (const ev of deploy(parsed, { signal })) {
       if (progressToken !== undefined) {
         progressIndex++
         try {

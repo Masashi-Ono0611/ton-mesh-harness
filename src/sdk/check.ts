@@ -162,8 +162,16 @@ export async function checkEnv(opts: CheckEnvOptions = { source_dir: null }): Pr
     parsed = CheckEnvOptionsSchema.parse(opts)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
+    // F5: surface zod_issues in data when available — agents render
+    // them to humans. Keep this consistent with the wrap in
+    // src/sdk/deploy.ts::normalize() and src/mcp.ts::handleDeploy().
+    const zodIssues =
+      err && typeof err === 'object' && (err as { name?: string }).name === 'ZodError'
+        ? (err as { issues?: unknown }).issues
+        : undefined
     throw new SdkError('ERR_INVALID_INPUT', `Invalid sovereign_check_env input: ${msg}`, {
       severity: 'fatal',
+      ...(zodIssues !== undefined ? { data: { zod_issues: zodIssues } } : {}),
     })
   }
   const blocking: CheckEnvResult['blocking'] = []

@@ -235,7 +235,18 @@ export async function* deploy(
     } catch (err) {
       if (err instanceof SdkError) throw err
       const msg = err instanceof Error ? err.message : String(err)
-      throw new SdkError('ERR_INVALID_INPUT', `Invalid deploy input: ${msg}`, { severity: 'fatal' })
+      // F5: surface zod_issues in data when the underlying failure
+      // was a ZodError — agents render the issue list to humans.
+      // Matches the wrapping pattern in src/sdk/check.ts::checkEnv()
+      // and src/mcp.ts::handleDeploy().
+      const zodIssues =
+        err && typeof err === 'object' && (err as { name?: string }).name === 'ZodError'
+          ? (err as { issues?: unknown }).issues
+          : undefined
+      throw new SdkError('ERR_INVALID_INPUT', `Invalid deploy input: ${msg}`, {
+        severity: 'fatal',
+        ...(zodIssues !== undefined ? { data: { zod_issues: zodIssues } } : {}),
+      })
     }
   })()
 
