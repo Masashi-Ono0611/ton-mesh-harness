@@ -34,8 +34,6 @@ import {
   SOVEREIGN_DEPLOY_TOOL,
   SOVEREIGN_STATUS_TOOL,
 } from './sdk/json-schemas'
-import { CheckEnvOptionsSchema, DeployOptionsSchema } from './sdk/schemas'
-
 import { SOVEREIGN_DEPLOY_VERSION as SERVER_VERSION } from './version'
 
 const SERVER_NAME = 'ton-sovereign-mcp'
@@ -162,20 +160,13 @@ async function handleStatus(args: unknown): Promise<CallToolResult> {
 // ─── sovereign_check_env ────────────────────────────────────────────────────
 
 async function handleCheckEnv(args: unknown): Promise<CallToolResult> {
+  // checkEnv() owns input validation and wraps ZodError → SdkError(ERR_INVALID_INPUT)
+  // itself (per the v0.8 SDK error contract). Don't pre-parse here — that
+  // would double-validate AND swallow the SDK's wrapping.
   try {
-    const parsed = CheckEnvOptionsSchema.parse(args)
-    const result = await checkEnv(parsed)
+    const result = await checkEnv(args as Parameters<typeof checkEnv>[0])
     return structuredOk(result)
   } catch (err) {
-    // zod parse errors surface as ZodError; map to F5 ERR_INVALID_INPUT.
-    if (err && typeof err === 'object' && (err as { name?: string }).name === 'ZodError') {
-      return structuredErr(
-        new SdkError('ERR_INVALID_INPUT', `Invalid sovereign_check_env input: ${(err as Error).message}`, {
-          severity: 'fatal',
-          data: { zod_issues: (err as { issues?: unknown }).issues },
-        }),
-      )
-    }
     return structuredErr(err)
   }
 }
@@ -199,13 +190,17 @@ async function handleDeploy(
   extra: { signal: AbortSignal; sendNotification: (n: unknown) => Promise<void>; _meta?: { progressToken?: string | number } },
 ): Promise<CallToolResult> {
   try {
-    const parsed = DeployOptionsSchema.parse(args)
-
     // rc2 hardening: MCP server does NOT track keep-alive daemons. If the
     // client requests keep_alive=true via MCP, the kit would orphan a
     // daemon on server shutdown. Reject until daemon tracking lands
-    // (post-rc2 follow-up).
-    if (parsed.keep_alive) {
+    // (post-rc2 follow-up). Cheap soft-check — anything that's not a
+    // plain object with keep_alive===true falls through to deploy()
+    // which validates the full shape and throws SdkError(ERR_INVALID_INPUT).
+    if (
+      args &&
+      typeof args === 'object' &&
+      (args as { keep_alive?: unknown }).keep_alive === true
+    ) {
       throw new SdkError(
         'ERR_INVALID_INPUT',
         'keep_alive=true is not yet supported via MCP — the server has no per-call daemon-tracking surface. Use the CLI (which owns the daemon) or call sovereign_deploy with keep_alive=false.',
@@ -220,7 +215,8 @@ async function handleDeploy(
     let result: unknown
     let progressIndex = 0
     const totalPhases = 9 // env_check..done per F3
-    for await (const ev of deploy(parsed, { signal })) {
+    // deploy() owns input validation + ZodError → SdkError mapping.
+    for await (const ev of deploy(args as Parameters<typeof deploy>[0], { signal })) {
       if (progressToken !== undefined) {
         progressIndex++
         try {
@@ -259,14 +255,6 @@ async function handleDeploy(
 
     return structuredOk(result)
   } catch (err) {
-    if (err && typeof err === 'object' && (err as { name?: string }).name === 'ZodError') {
-      return structuredErr(
-        new SdkError('ERR_INVALID_INPUT', `Invalid sovereign_deploy input: ${(err as Error).message}`, {
-          severity: 'fatal',
-          data: { zod_issues: (err as { issues?: unknown }).issues },
-        }),
-      )
-    }
     return structuredErr(err)
   }
 }
