@@ -1,7 +1,7 @@
 // tonutils-storage daemon process management + HTTP API client.
 // Counterpart of process.ts (TON Core daemon) for the xssnick / Go backend.
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { spawn, type ChildProcess } from 'child_process'
 import path from 'path'
 import os from 'os'
@@ -133,7 +133,13 @@ export async function startTonutilsDaemon(
   }
 
   const apiPort = await findFreeTcpPort(7100, 7199)
-  const sessionDir = path.join(os.tmpdir(), `ton-sovereign-tonutils-${process.pid}`)
+  // Use mkdtempSync so two concurrent startTonutilsDaemon() calls in the
+  // same Node process never collide on the same session dir. Before this,
+  // the dir was `ton-sovereign-tonutils-<pid>` — a second start in the
+  // same process would alias onto the first's DB dir, and either kill()
+  // would rmSync the live one's data out from under it. Codex pre-GA
+  // review round 7 MAJOR.
+  const sessionDir = mkdtempSync(path.join(os.tmpdir(), `ton-sovereign-tonutils-${process.pid}-`))
   const dbDir = path.join(sessionDir, 'db')
   mkdirSync(dbDir, { recursive: true })
 
@@ -163,7 +169,31 @@ export async function startTonutilsDaemon(
     dbDir,
     process: child,
     kill: () => {
-      try { child.kill('SIGTERM') } catch { /* ignore */ }
+      // Codex pre-GA review round 7 MAJOR: the old `kill()` sent SIGTERM
+      // then IMMEDIATELY rmSync'd the session dir. If the Go daemon
+      // ignored or delayed the signal, it could keep its UDP port + DB
+      // open while its on-disk state was deleted (database corruption +
+      // a stuck port). Fix: send SIGTERM, give it up to 2 s to exit,
+      // escalate to SIGKILL, then rmSync. kill() must stay synchronous
+      // (callers in SIGINT handlers / process-exit paths can't await),
+      // so we use Atomics.wait for sleep granularity — a 50 ms tick
+      // until exitCode is set or the deadline passes.
+      if (child.exitCode === null) {
+        try { child.kill('SIGTERM') } catch { /* already exited */ }
+        const deadline = Date.now() + 2_000
+        const lock = new Int32Array(new SharedArrayBuffer(4))
+        while (child.exitCode === null && Date.now() < deadline) {
+          try { Atomics.wait(lock, 0, 0, 50) } catch { /* SAB disabled — fall through */ }
+        }
+        if (child.exitCode === null) {
+          try { child.kill('SIGKILL') } catch { /* ignore */ }
+          // Brief follow-up wait so SIGKILL lands before rmSync.
+          const hardDeadline = Date.now() + 500
+          while (child.exitCode === null && Date.now() < hardDeadline) {
+            try { Atomics.wait(lock, 0, 0, 50) } catch { /* SAB disabled */ }
+          }
+        }
+      }
       try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
     },
   }

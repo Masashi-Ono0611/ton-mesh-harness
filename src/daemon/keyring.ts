@@ -2,7 +2,7 @@
 // Spike output and TL constructor ID derivation: docs/v0.7/c1-design-notes.md.
 
 import { createHash, createPrivateKey, randomBytes } from 'node:crypto'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { closeSync, constants as fsConstants, fchmodSync, mkdirSync, openSync, writeSync } from 'node:fs'
 import path from 'node:path'
 
 // TL constructor IDs derived empirically from `generate-random-id` v2026.04-1
@@ -59,6 +59,15 @@ export function writeKeyringFile(dbDir: string, identity: AdnlIdentity): string 
   if (!path.isAbsolute(dbDir)) {
     throw new Error(`writeKeyringFile: dbDir must be absolute (got ${dbDir})`)
   }
+  // shortIdHex is the keyring filename — used by rldp-http-proxy to look up
+  // the key by ADNL short id. Validate the hex shape strictly so a caller
+  // can never inject a path traversal component (e.g. `..` / `/`) or a
+  // symlink lure. Per computeAdnlShortId() it MUST be 64 hex chars.
+  if (!/^[0-9a-f]{64}$/.test(identity.shortIdHex)) {
+    throw new Error(
+      `writeKeyringFile: malformed shortIdHex (expected 64 hex chars, got ${JSON.stringify(identity.shortIdHex).slice(0, 80)})`,
+    )
+  }
   const keyringDir = path.join(dbDir, 'keyring')
   mkdirSync(keyringDir, { recursive: true, mode: 0o700 })
 
@@ -67,7 +76,27 @@ export function writeKeyringFile(dbDir: string, identity: AdnlIdentity): string 
   if (fileContent.length !== 36) {
     throw new Error(`Internal: keyring file content must be 36 bytes, got ${fileContent.length}`)
   }
-  writeFileSync(filePath, fileContent, { mode: 0o600 })
+  // Open with O_CREAT | O_WRONLY | O_TRUNC | O_NOFOLLOW so a pre-existing
+  // symlink at filePath fails the open (instead of writeFileSync's default
+  // follow-symlink behaviour, which would let an attacker who controls
+  // dbDir redirect the seed write). O_NOFOLLOW is available on macOS +
+  // Linux; on Windows it's a no-op silently — there the dbDir is under
+  // the user's profile and the attack surface differs anyway.
+  // Codex pre-GA review round 7 MAJOR.
+  const fd = openSync(
+    filePath,
+    fsConstants.O_CREAT | fsConstants.O_WRONLY | fsConstants.O_TRUNC | (fsConstants.O_NOFOLLOW ?? 0),
+    0o600,
+  )
+  try {
+    // chmod via fd (fchmod) so we tighten permissions on the open file
+    // descriptor — closes a TOCTOU window where another process could
+    // hardlink an existing file into filePath between open and chmod.
+    fchmodSync(fd, 0o600)
+    writeSync(fd, fileContent)
+  } finally {
+    closeSync(fd)
+  }
   return filePath
 }
 

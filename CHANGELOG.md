@@ -72,6 +72,76 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
+## [Unreleased] – 2026-05-12
+
+[S2.11] Codex round 7 multi-model audit of v0.8 modules NOT covered
+by rounds 1-6 (keyring, TonConnect bridge, daemon process lifecycle,
+legacy DNS helpers). **1 BLOCKER + 4 MAJORs + 1 MINOR resolved.**
+The BLOCKER (TonConnect SDK debug logging leaks signed BOCs to
+stderr) and the analytics MAJOR (telemetry includes signed_boc) are
+both wallet-payload exfiltration paths — must NOT ship to GA without
+these fixes.
+
+### Fixed (Codex pre-GA review round 7)
+
+- **[BLOCKER]** `@tonconnect/sdk` v3.4.1 calls
+  `console.debug('[TON_CONNECT_SDK]', ...)` at bridge request /
+  response boundaries (`node_modules/@tonconnect/sdk/lib/cjs/index.cjs:511`,
+  `:1272`, `:1397`, `:1874`, `:1885`). The arguments include the
+  unsigned payload on send and the wallet-signed BOC on receive.
+  `console.debug` writes to stderr — CLI users see signed wallet
+  messages in their terminal; MCP clients capturing stderr persist
+  signed BOCs to disk. **Fix**: `src/wallet/TonConnectProvider.ts`
+  now wraps every TonConnect SDK API call (`connect`,
+  `sendTransaction`, `dispose`) in `withQuietTonConnect()` which
+  swaps `console.debug` for a no-op for the duration and restores
+  in `finally`. Opt-in escape hatch via `TONCONNECT_DEBUG=1` env
+  var for developers who need the SDK's debug output.
+- **[MAJOR]** Same file — `new TonConnect({...})` omitted
+  `analytics: { mode: 'off' }`. The SDK's default `'telemetry'` mode
+  emits a transaction-signed event including `signed_boc` to
+  `https://analytics.ton.org/events`. The 'analytics' option is
+  honoured by `initAnalytics` (`lib/cjs/index.cjs:5846`) — `'off'`
+  is a hard skip before AnalyticsManager is constructed.
+- **[MAJOR]** `src/daemon/keyring.ts::writeKeyringFile()` —
+  used `writeFileSync(path, ...)` which follows symlinks AND only
+  applies `0o600` on create. An attacker controlling the keyring
+  directory could redirect the Ed25519 seed write via a symlink,
+  or a pre-existing file's mode bits would survive. **Fix**: strict
+  `/^[0-9a-f]{64}$/` regex gate on `shortIdHex` (path-component
+  trust); open with `O_CREAT | O_WRONLY | O_TRUNC | O_NOFOLLOW`;
+  `fchmodSync` via fd to close the TOCTOU window between open
+  and chmod.
+- **[MAJOR]** `src/daemon/tonutils-process.ts` session-dir
+  collision — temp dir was only `process.pid`, so two concurrent
+  `startTonutilsDaemon()` calls in the same Node process would
+  share `dbDir`. Either `kill()` `rmSync`d the live daemon's data
+  out from under it. **Fix**: `mkdtempSync(...-<pid>-)` so every
+  start gets a unique session dir.
+- **[MAJOR]** Same file — `kill()` sent SIGTERM then immediately
+  `rmSync`'d the session dir. If the Go daemon ignored or delayed
+  the signal, it could keep UDP port + DB open while its on-disk
+  state was deleted (database corruption + stuck port). **Fix**:
+  send SIGTERM, poll exitCode for up to 2 s (50 ms Atomics.wait
+  granularity), escalate to SIGKILL on timeout, brief 500 ms
+  follow-up wait, THEN `rmSync`. `kill()` stays synchronous so
+  SIGINT handlers / process-exit paths can still call it.
+- **[MINOR]** `src/dns.ts::buildDnsStorageRecord` —
+  `Buffer.from(bagId, 'hex')` is lax (silently drops invalid
+  chars). A 65-char mixed-garbage string could decode to 32 bytes
+  and slip through the length check. Added `/^[0-9a-fA-F]{64}$/`
+  strict regex gate before parsing — matches the pattern already
+  used in `src/sdk/agentic-sign.ts` for private keys.
+
+### Added
+
+- `test/wallet/tonconnect-dispose.test.ts` — 2 new regression
+  tests for the console.debug silence-and-restore pattern + the
+  `TONCONNECT_DEBUG=1` opt-in escape hatch.
+- `test/dns.test.ts` — 2 new tests for strict hex gate (non-hex
+  64-char rejection + mixed-case acceptance).
+- Total: 314 pass / 11 skip (was 310 in rc8).
+
 ## [0.8.0-rc8] – 2026-05-12
 
 [S2.10] Codex round 4 + 5 + 6 closure. Round 4 found 1 NEW MAJOR

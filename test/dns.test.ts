@@ -27,7 +27,25 @@ describe('buildDnsStorageRecord', () => {
   })
 
   it('throws on invalid bag ID length', () => {
-    expect(() => buildDnsStorageRecord('deadbeef')).toThrow('Invalid bag ID length')
+    // 'deadbeef' is 8 hex chars — fails the new /^[0-9a-fA-F]{64}$/ strict
+    // gate first (Codex pre-GA review round 7 MINOR — the gate fires BEFORE
+    // the length check, which makes the error message more precise).
+    expect(() => buildDnsStorageRecord('deadbeef')).toThrow('Invalid bag ID format')
+  })
+
+  it('throws on a 64-char string with non-hex characters (strict regex gate)', () => {
+    // 64 chars but includes 'Z' — old Buffer.from('hex') would silently
+    // truncate; the strict regex catches it.
+    const bad = 'Z'.repeat(64)
+    expect(() => buildDnsStorageRecord(bad)).toThrow('Invalid bag ID format')
+  })
+
+  it('accepts mixed-case hex (UPPER + lower)', () => {
+    // Per TEP / TON Storage convention bag ids are usually lowercase, but
+    // we accept either case to match the rest of the kit. SAMPLE_BAG_ID
+    // is lowercase; upper-case it manually.
+    const upper = SAMPLE_BAG_ID.toUpperCase()
+    expect(() => buildDnsStorageRecord(upper)).not.toThrow()
   })
 })
 

@@ -42,6 +42,17 @@ function siteRecordKey(): bigint { return recordKey('site') }
 // -----------------------------------------------------------------------
 
 export function buildDnsStorageRecord(bagId: string): Cell {
+  // Strict hex validation: `Buffer.from(s, 'hex')` silently drops invalid
+  // characters AND stops at the first one. `"abc.X"` parses to 1 byte;
+  // `"0xabZ"` parses to 1 byte. The length check below catches the
+  // truncation, but only for short inputs — a 65-char mixed-case-and-
+  // garbage string could decode to exactly 32 bytes and slip through.
+  // Enforce /^[0-9a-fA-F]{64}$/ before parsing — matches what
+  // src/sdk/agentic-sign.ts already does for private keys.
+  // Codex pre-GA review round 7 MINOR.
+  if (!/^[0-9a-fA-F]{64}$/.test(bagId)) {
+    throw new Error(`Invalid bag ID format: expected 64 hex chars, got ${JSON.stringify(bagId).slice(0, 80)}`)
+  }
   const bagIdBuf = Buffer.from(bagId, 'hex')
   if (bagIdBuf.length !== 32) {
     throw new Error(`Invalid bag ID length: expected 32 bytes, got ${bagIdBuf.length}`)

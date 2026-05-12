@@ -35,6 +35,47 @@ function isRemote(walletInfo: WalletInfo): walletInfo is WalletInfoRemote {
 
 export type WalletNetwork = 'mainnet' | 'testnet'
 
+/**
+ * `@tonconnect/sdk` v3.4.1 calls `console.debug('[TON_CONNECT_SDK]', ...)`
+ * inside its bridge transport at request/response boundaries
+ * (`node_modules/@tonconnect/sdk/lib/cjs/index.cjs:511, :1272, :1397, :1874, :1885`).
+ * The arguments include the UNSIGNED PAYLOAD on send and the WALLET-SIGNED
+ * BOC on receive. `console.debug` writes to stderr in Node — which means:
+ *   1. CLI users reading stderr see signed wallet messages.
+ *   2. MCP clients that capture stderr for diagnostics persist signed BOCs
+ *      and pre-sign payloads to disk.
+ * Codex pre-GA review round 7 caught this as a BLOCKER.
+ *
+ * Defence: swap `console.debug` for a no-op around every TonConnect SDK
+ * API call (connect / sendTransaction / dispose / getWallets / restore).
+ * Opt-in escape hatch via `TONCONNECT_DEBUG=1` for developers who actually
+ * want the SDK's debug output (e.g. wallet integration debugging — they
+ * already accept the leak in that mode).
+ */
+const noopDebug = (): void => { /* silenced for security — see header */ }
+
+async function withQuietTonConnect<T>(fn: () => Promise<T>): Promise<T> {
+  if (process.env.TONCONNECT_DEBUG === '1') return fn()
+  const original = console.debug
+  console.debug = noopDebug
+  try {
+    return await fn()
+  } finally {
+    console.debug = original
+  }
+}
+
+function withQuietTonConnectSync<T>(fn: () => T): T {
+  if (process.env.TONCONNECT_DEBUG === '1') return fn()
+  const original = console.debug
+  console.debug = noopDebug
+  try {
+    return fn()
+  } finally {
+    console.debug = original
+  }
+}
+
 export class TonConnectProvider implements SendProvider {
   private readonly connector: TonConnect
   private readonly ui: WalletUI
@@ -49,6 +90,13 @@ export class TonConnectProvider implements SendProvider {
     this.connector = new TonConnect({
       storage: new TonConnectStorage(storage),
       manifestUrl,
+      // Disable telemetry. Default 'telemetry' mode emits a
+      // transaction-signed event including `signed_boc` to
+      // `https://analytics.ton.org/events`. Codex pre-GA review round 7
+      // MAJOR. The 'analytics' option is honoured by @tonconnect/sdk's
+      // initAnalytics (lib/cjs/index.cjs:5846) — 'off' is a hard skip
+      // before AnalyticsManager is constructed.
+      analytics: { mode: 'off' },
     })
     this.ui = ui
     this.network = network
@@ -62,7 +110,7 @@ export class TonConnectProvider implements SendProvider {
    * the QR code in `connectWallet()`.
    */
   async connect(onConnectUrl?: (url: string) => void): Promise<void> {
-    await this.connectWallet(onConnectUrl)
+    await withQuietTonConnect(() => this.connectWallet(onConnectUrl))
     const formatted = Address.parse(this.connector.wallet!.account.address).toString({
       testOnly: this.network === 'testnet',
       bounceable: false,
@@ -85,7 +133,7 @@ export class TonConnectProvider implements SendProvider {
    */
   dispose(): void {
     try {
-      this.connector.pauseConnection()
+      withQuietTonConnectSync(() => this.connector.pauseConnection())
     } catch { /* best-effort cleanup */ }
   }
 
@@ -167,18 +215,20 @@ export class TonConnectProvider implements SendProvider {
     // testnet wallet and vice versa.
     const network = this.network === 'mainnet' ? CHAIN.MAINNET : CHAIN.TESTNET
 
-    const result = await this.connector.sendTransaction({
-      validUntil,
-      network,
-      messages: messages.map((m) => ({
-        address: m.address.toString(),
-        amount: m.amount.toString(),
-        payload: m.payload?.toBoc().toString('base64'),
-        stateInit: m.stateInit
-          ? beginCell().storeWritable(storeStateInit(m.stateInit)).endCell().toBoc().toString('base64')
-          : undefined,
-      })),
-    })
+    const result = await withQuietTonConnect(() =>
+      this.connector.sendTransaction({
+        validUntil,
+        network,
+        messages: messages.map((m) => ({
+          address: m.address.toString(),
+          amount: m.amount.toString(),
+          payload: m.payload?.toBoc().toString('base64'),
+          stateInit: m.stateInit
+            ? beginCell().storeWritable(storeStateInit(m.stateInit)).endCell().toBoc().toString('base64')
+            : undefined,
+        })),
+      }),
+    )
 
     this.ui.clearActionPrompt()
     this.ui.write('Sent transaction\n')
