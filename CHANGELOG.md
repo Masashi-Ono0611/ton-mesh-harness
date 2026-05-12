@@ -74,232 +74,97 @@ GA-PREDRAFT-END -->
 
 ## [Unreleased] – 2026-05-12
 
-[S2.15] Codex round 11 self-audit (daily-cap blocked external review)
-caught a **supply-chain integrity gap**: the three daemon binaries
-(`storage-daemon`, `tonutils-storage`, `rldp-http-proxy`) were
-downloaded from GitHub releases and chmod+x'd without ANY checksum
-verification. A compromised release asset, MITM'd CDN, or typo-squat
-would execute as the user on a kit that signs TON wallet transactions.
-**Severity**: would have been BLOCKER pre-GA.
+[S2.15] Codex round 11 self-audit (external review daily-cap
+blocked) caught supply-chain + process-lifecycle gaps across
+modules rounds 7-10 already touched. **1 BLOCKER-class +
+5 MAJORs resolved** before they could ship.
 
-### Fixed (Codex pre-GA self-audit round 11)
+### Fixed
 
-- **[BLOCKER → fixed]** Added SHA-256 integrity check to
-  `src/daemon/installer-utils.ts::installBinary`. Hashes pinned per
-  `(version, platform-arch)` in
-  `src/daemon/tonutils-installer.ts` (v1.4.1 × 5 platforms) and
-  `src/daemon/rldp-http-proxy-installer.ts` (v2026.04-1 × 5
-  platforms). Hashes computed 2026-05-12 by downloading each
-  release asset and running `shasum -a 256`.
-  - Verification runs AFTER `downloadFile` and BEFORE `chmod +x`
-    + version-stamp write. Mismatches `unlinkSync` the partial
-    file and throw with `expected` vs `actual` hex hashes.
-  - Falls back to TOFU (trust on first use) + a loud stderr
-    warning when no hash is pinned for the current platform-arch
-    — e.g. when a user sets `RLDP_HTTP_PROXY_VERSION` env var to
-    track a newer release than the pinned default.
-  - Threat model: documented in `SECURITY.md`. Mitigates a
-    compromised GitHub release asset, MITM'd CDN endpoint, or
-    typo-squatted release version.
-- Test: `test/daemon/installer-sha256.test.ts` — 4 unit tests
-  exercising the verify path:
-  - Matching hash → install proceeds
-  - Mismatched hash → throws + deletes partial file
-  - Missing hash → TOFU warning fires
-  - Pinned tonutils hashes are 64-char lowercase hex (sanity check)
-
-## [0.8.0-rc9] – 2026-05-12
-
-[S2.11-14] Codex rounds 7-10 multi-model audit of v0.8 modules NOT
-covered by rounds 1-6 (keyring, TonConnect bridge, daemon process
-lifecycle, legacy DNS helpers, CLI signal handlers).
-
-Cumulative across this rc9-target audit thread: **3 BLOCKERs + 7
-MAJORs + 1 MINOR + 1 LOW resolved.** Cumulative across the entire
-v0.8 pre-GA review pipeline (rounds 1-10): **3 BLOCKERs + 15 MAJORs
-+ 3 MINORs + 4 NITs**.
-
-Highlights (most-shipstopping first):
-- BLOCKER (r7): `@tonconnect/sdk` v3.4.1 logs unsigned-payload +
-  signed-BOC via console.debug — would leak to stderr.
-- BLOCKER (r8): Round-7's silence fix raced on concurrent calls —
-  reference-counted silence.
-- BLOCKER (r10): tonutils-storage daemon orphan-on-signal because
-  the kit's CLI signal handlers process.exit'd synchronously before
-  the async daemon cleanup (rmSync + SIGKILL escalation) could run.
-
-### Fixed (Codex pre-GA review round 10 — verify pass on round 9)
-
-- **[BLOCKER]** Round 9 fixed `installCleanupOnExit` to drain
-  before exit, but the primary tonutils CLI path
-  (`runDeployTonutils`) has its OWN SIGINT/SIGTERM/uncaughtException
-  handlers that called `process.exit()` synchronously after
-  `daemon.kill()`. Since round 7 made `TonutilsHandle.kill()`
-  schedule async cleanup, this recreated orphan risk on the
-  default deploy path. Fix: `drainExit(code)` — `process.exitCode`
-  + 2.5 s ref'd safety timer. Replaces 4 `process.exit()` sites
-  in `runDeployTonutils`. Mirror of `installCleanupOnExit`'s drain.
-- **Tests**: round-9 tests for `installCleanupOnExit` used real
-  timers, leaking 2.5 s safety setTimeouts that would call real
-  `process.exit()` after the test runner thought it was done.
-  Wrapped in `vi.useFakeTimers()` + `vi.advanceTimersByTime()`
-  to confirm exit fires at the safety deadline.
-
-### Fixed (Codex pre-GA review round 9 — verify pass on round 8)
-
-- **[MAJOR]** `installCleanupOnExit` called `process.exit()`
-  synchronously after `cleanup()`. Since round 7 made
-  `TonutilsHandle.kill()` schedule async cleanup
-  (`child.once('exit', rmSync)` + SIGKILL escalation timer),
-  the immediate exit killed the loop before those tasks ran —
-  a daemon delaying SIGTERM could survive orphaned. Fix:
-  `process.exitCode` + 2.5 s ref'd safety timer (drain pattern).
-- **[LOW]** `writeKeyringFile()` `lstat`'d the final file but
-  not the parent directory. A symlinked keyring dir could
-  redirect creation. Added `lstatSync` on `keyringDir` before
-  `mkdirSync` — reject symlinks/junctions, leave existing dirs
-  alone.
-
-### Fixed (Codex pre-GA review round 8 — verify pass on round 7)
-
-- **[BLOCKER]** Round 7's `withQuietTonConnect()` saved/restored
-  `console.debug` per call — concurrent overlapping calls (e.g.
-  `dispose()` while `sendTransactionMulti()` awaiting) would race:
-  the inner finisher restored the captured value (already the no-op)
-  while the outer was still in scope, reopening the leak.
-  **Fix**: reference-counted silence. Module-level `quietDebugDepth`
-  + `quietDebugSaved`. First entrant (depth 0→1) captures the real
-  original; subsequent entrants just bump the count. Only the last
-  leaver (depth 1→0) restores. Tested via exported
-  `_enterQuiet_FOR_TEST` / `_leaveQuiet_FOR_TEST` helpers.
-- **[MAJOR]** Round 7's `kill()` used `Atomics.wait()` to poll
-  `child.exitCode` on the main thread — but blocking the main
-  thread prevents libuv from delivering the child's `exit` event,
-  so `exitCode` stays `null` until the timeout. `kill()` always
-  waited the full 2 s + SIGKILL even on clean exits.
-  **Fix**: replaced with non-blocking pattern: schedule rmSync via
-  `child.once('exit', ...)`, set a 2 s `setTimeout` (with `.unref()`)
-  for SIGKILL escalation, send SIGTERM and return immediately.
-  Trade-off: rmSync runs after kill() returns — OS cleans tmp dirs
-  on reboot anyway, and rmSync is state cleanliness, not security.
-- **[MAJOR]** Round 7's `O_NOFOLLOW` symlink fix was POSIX-only —
-  Node defines `fsConstants.O_NOFOLLOW` only on macOS/Linux. The
-  `?? 0` fallback meant Windows had no protection.
-  **Fix**: portable pattern — `lstatSync` first to detect symlinks
-  (reject), unlink any regular file (keyring rotation), then
-  `openSync` with `O_CREAT | O_EXCL` (POSIX + Windows). `O_NOFOLLOW`
-  still added where available as defence-in-depth.
-
-### Fixed (Codex pre-GA review round 8 — verify pass on round 7)
-
-- **[BLOCKER]** Round 7's `withQuietTonConnect()` saved/restored
-  `console.debug` per call — concurrent overlapping calls (e.g.
-  `dispose()` while `sendTransactionMulti()` awaiting) would race:
-  the inner finisher restored the captured value (already the no-op)
-  while the outer was still in scope, reopening the leak.
-  **Fix**: reference-counted silence. Module-level `quietDebugDepth`
-  + `quietDebugSaved`. First entrant (depth 0→1) captures the real
-  original; subsequent entrants just bump the count. Only the last
-  leaver (depth 1→0) restores. Tested via exported
-  `_enterQuiet_FOR_TEST` / `_leaveQuiet_FOR_TEST` helpers.
-- **[MAJOR]** Round 7's `kill()` used `Atomics.wait()` to poll
-  `child.exitCode` on the main thread — but blocking the main
-  thread prevents libuv from delivering the child's `exit` event,
-  so `exitCode` stays `null` until the timeout. `kill()` always
-  waited the full 2 s + SIGKILL even on clean exits.
-  **Fix**: replaced with non-blocking pattern: schedule rmSync via
-  `child.once('exit', ...)`, set a 2 s `setTimeout` (with `.unref()`)
-  for SIGKILL escalation, send SIGTERM and return immediately.
-  Trade-off: rmSync runs after kill() returns — OS cleans tmp dirs
-  on reboot anyway, and rmSync is state cleanliness, not security.
-- **[MAJOR]** Round 7's `O_NOFOLLOW` symlink fix was POSIX-only —
-  Node defines `fsConstants.O_NOFOLLOW` only on macOS/Linux. The
-  `?? 0` fallback meant Windows had no protection.
-  **Fix**: portable pattern — `lstatSync` first to detect symlinks
-  (reject), unlink any regular file (keyring rotation), then
-  `openSync` with `O_CREAT | O_EXCL` (POSIX + Windows). `O_NOFOLLOW`
-  still added where available as defence-in-depth.
-
-### Fixed (Codex pre-GA review round 7)
-
-- **[BLOCKER]** `@tonconnect/sdk` v3.4.1 calls
-  `console.debug('[TON_CONNECT_SDK]', ...)` at bridge request /
-  response boundaries (`node_modules/@tonconnect/sdk/lib/cjs/index.cjs:511`,
-  `:1272`, `:1397`, `:1874`, `:1885`). The arguments include the
-  unsigned payload on send and the wallet-signed BOC on receive.
-  `console.debug` writes to stderr — CLI users see signed wallet
-  messages in their terminal; MCP clients capturing stderr persist
-  signed BOCs to disk. **Fix**: `src/wallet/TonConnectProvider.ts`
-  now wraps every TonConnect SDK API call (`connect`,
-  `sendTransaction`, `dispose`) in `withQuietTonConnect()` which
-  swaps `console.debug` for a no-op for the duration and restores
-  in `finally`. Opt-in escape hatch via `TONCONNECT_DEBUG=1` env
-  var for developers who need the SDK's debug output. (Round 8
-  found this fix had a concurrency hole — see above.)
-The BLOCKER (TonConnect SDK debug logging leaks signed BOCs to
-stderr) and the analytics MAJOR (telemetry includes signed_boc) are
-both wallet-payload exfiltration paths — must NOT ship to GA without
-these fixes.
-
-### Fixed (Codex pre-GA review round 7)
-
-- **[BLOCKER]** `@tonconnect/sdk` v3.4.1 calls
-  `console.debug('[TON_CONNECT_SDK]', ...)` at bridge request /
-  response boundaries (`node_modules/@tonconnect/sdk/lib/cjs/index.cjs:511`,
-  `:1272`, `:1397`, `:1874`, `:1885`). The arguments include the
-  unsigned payload on send and the wallet-signed BOC on receive.
-  `console.debug` writes to stderr — CLI users see signed wallet
-  messages in their terminal; MCP clients capturing stderr persist
-  signed BOCs to disk. **Fix**: `src/wallet/TonConnectProvider.ts`
-  now wraps every TonConnect SDK API call (`connect`,
-  `sendTransaction`, `dispose`) in `withQuietTonConnect()` which
-  swaps `console.debug` for a no-op for the duration and restores
-  in `finally`. Opt-in escape hatch via `TONCONNECT_DEBUG=1` env
-  var for developers who need the SDK's debug output.
-- **[MAJOR]** Same file — `new TonConnect({...})` omitted
-  `analytics: { mode: 'off' }`. The SDK's default `'telemetry'` mode
-  emits a transaction-signed event including `signed_boc` to
-  `https://analytics.ton.org/events`. The 'analytics' option is
-  honoured by `initAnalytics` (`lib/cjs/index.cjs:5846`) — `'off'`
-  is a hard skip before AnalyticsManager is constructed.
-- **[MAJOR]** `src/daemon/keyring.ts::writeKeyringFile()` —
-  used `writeFileSync(path, ...)` which follows symlinks AND only
-  applies `0o600` on create. An attacker controlling the keyring
-  directory could redirect the Ed25519 seed write via a symlink,
-  or a pre-existing file's mode bits would survive. **Fix**: strict
-  `/^[0-9a-f]{64}$/` regex gate on `shortIdHex` (path-component
-  trust); open with `O_CREAT | O_WRONLY | O_TRUNC | O_NOFOLLOW`;
-  `fchmodSync` via fd to close the TOCTOU window between open
-  and chmod.
-- **[MAJOR]** `src/daemon/tonutils-process.ts` session-dir
-  collision — temp dir was only `process.pid`, so two concurrent
-  `startTonutilsDaemon()` calls in the same Node process would
-  share `dbDir`. Either `kill()` `rmSync`d the live daemon's data
-  out from under it. **Fix**: `mkdtempSync(...-<pid>-)` so every
-  start gets a unique session dir.
-- **[MAJOR]** Same file — `kill()` sent SIGTERM then immediately
-  `rmSync`'d the session dir. If the Go daemon ignored or delayed
-  the signal, it could keep UDP port + DB open while its on-disk
-  state was deleted (database corruption + stuck port). **Fix**:
-  send SIGTERM, poll exitCode for up to 2 s (50 ms Atomics.wait
-  granularity), escalate to SIGKILL on timeout, brief 500 ms
-  follow-up wait, THEN `rmSync`. `kill()` stays synchronous so
-  SIGINT handlers / process-exit paths can still call it.
-- **[MINOR]** `src/dns.ts::buildDnsStorageRecord` —
-  `Buffer.from(bagId, 'hex')` is lax (silently drops invalid
-  chars). A 65-char mixed-garbage string could decode to 32 bytes
-  and slip through the length check. Added `/^[0-9a-fA-F]{64}$/`
-  strict regex gate before parsing — matches the pattern already
-  used in `src/sdk/agentic-sign.ts` for private keys.
+- **[BLOCKER-class]** Daemon binaries (`storage-daemon`,
+  `tonutils-storage`, `rldp-http-proxy`) were downloaded from
+  GitHub releases and `chmod +x`'d with **no integrity check**.
+  A compromised release asset / MITM'd CDN / typo-squatted
+  version would execute as the user on a wallet-signing kit.
+  Fix: `installer-utils.ts` now verifies SHA-256 after download,
+  before chmod+x, against hashes pinned in each installer spec
+  (10 hashes pinned: tonutils-storage v1.4.1 × 5 platforms +
+  rldp-http-proxy v2026.04-1 × 5). Mismatch → `unlinkSync` +
+  throw with expected vs actual hex. Missing hash falls back to
+  TOFU + loud stderr warning. Threat model in `SECURITY.md`.
+- **[MAJOR × 3]** Same class as Codex r7 daemon-process bugs,
+  audited across remaining process modules:
+  - `src/daemon/rldp-http-proxy-process.ts` — session dir was
+    NEVER `rmSync`'d (every `--site auto` invocation leaked a
+    `/tmp` dir with ADNL keyring + log); `kill()` was sync.
+    Fix: `mkdtempSync` + async `proxy.once('exit', cleanup)`
+    + 2 s SIGKILL escalation; mode 0o700 on dbDir.
+  - `src/daemon/process.ts` (legacy ton-core) — same class
+    (sync `kill()`, PID-only session dir, throw-from-event-
+    handler). Same fixes applied for consistency.
+  - `src/wallet/FSStorage.ts` — `fs.writeFile` followed
+    symlinks on the TonConnect session JSON. Added `lstatSync`
+    + `unlink` (write) and lstat-refuse (read), mirroring
+    keyring.ts's r7-r8 fix.
+- **[MAJOR]** `src/utils/http.ts::httpsGet` accumulated the
+  response body unboundedly. Added 8 MiB default cap
+  (`maxBodyBytes` configurable). Defends against malicious /
+  buggy servers OOM-ing the Node process.
 
 ### Added
 
-- `test/wallet/tonconnect-dispose.test.ts` — 2 new regression
-  tests for the console.debug silence-and-restore pattern + the
-  `TONCONNECT_DEBUG=1` opt-in escape hatch.
-- `test/dns.test.ts` — 2 new tests for strict hex gate (non-hex
-  64-char rejection + mixed-case acceptance).
-- Total: 314 pass / 11 skip (was 310 in rc8).
+- `test/daemon/installer-sha256.test.ts` — 4 tests covering the
+  SHA-256 verify path (match / mismatch+unlink / TOFU warning /
+  pinned-hash shape sanity). 321 pass / 11 skip total.
+
+## [0.8.0-rc9] – 2026-05-12
+
+[S2.11-14] Codex rounds 7-10 audited v0.8 modules NOT covered by
+rounds 1-6: keyring, TonConnect bridge, daemon process lifecycle,
+legacy DNS helpers, CLI signal handlers. **3 BLOCKERs + 7 MAJORs
++ 1 MINOR + 1 LOW resolved.** Cumulative across rounds 1-10:
+3 BLOCKERs + 15 MAJORs + 3 MINORs + 4 NITs.
+
+### Fixed
+
+Per-finding detail in `git log --grep=codex-r[7-9]` and per-commit
+messages. Class summary:
+
+- **BLOCKER × 3** — wallet payload / signing key exfiltration paths:
+  - r7 `@tonconnect/sdk` v3.4.1 `console.debug` logs unsigned-payload
+    + signed-BOC at bridge boundaries → reference-counted `withQuietTonConnect()`
+    silence + `TONCONNECT_DEBUG=1` opt-in escape hatch.
+  - r8 round-7 silence raced on concurrent calls → module-level depth
+    counter + saved-original.
+  - r10 round-7 daemon `kill()` made cleanup async, but primary CLI
+    path's signal handler called `process.exit()` synchronously after
+    `kill()` → `drainExit()` pattern (`process.exitCode` + 2.5 s
+    ref'd safety timer) replaces all 4 `process.exit` sites.
+- **MAJOR × 7**:
+  - r7 TonConnect telemetry leaks `signed_boc` to analytics.ton.org →
+    `analytics: { mode: 'off' }` short-circuits `initAnalytics`.
+  - r7 `writeKeyringFile` follows symlinks + chmod TOCTOU → `lstatSync`
+    + `O_EXCL` + `fchmod` via fd (portable POSIX + Windows).
+  - r7 daemon session-dir collision via `process.pid` only → `mkdtempSync`.
+  - r7 daemon `kill()` rmSync'd before SIGTERM took effect → `child.once('exit', cleanup)`
+    + 2 s `setTimeout` SIGKILL escalation (unref'd).
+  - r8 round-7 `Atomics.wait` blocked main thread → non-blocking
+    listener pattern (above).
+  - r8 round-7 `O_NOFOLLOW` POSIX-only → portable `lstatSync` +
+    `O_EXCL` (above).
+  - r9 `installCleanupOnExit` `process.exit` killed loop before
+    async cleanup → same `drainExit` pattern.
+- **MINOR**: r7 `buildDnsStorageRecord` lax hex parse → strict
+  `/^[0-9a-fA-F]{64}$/` regex gate.
+- **LOW**: r9 keyring parent dir not lstat'd → added.
+
+### Added
+
+- 4 regression tests across `test/wallet/tonconnect-dispose.test.ts`
+  (silence + restore + concurrent-safety + escape hatch),
+  `test/dns.test.ts` (strict hex), `test/cli-output-mode.test.ts`
+  (drain timer with `vi.useFakeTimers()`).
+- 317 pass / 11 skip (was 310 in rc8).
 
 ## [0.8.0-rc8] – 2026-05-12
 
