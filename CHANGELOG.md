@@ -72,7 +72,7 @@ can drive a full deploy with one command / one tool call.
 
 GA-PREDRAFT-END -->
 
-## [Unreleased] – 2026-05-12
+## [0.8.0-rc10] – 2026-05-12
 
 [S2.15] Codex round 11 self-audit (external review daily-cap
 blocked) caught supply-chain + process-lifecycle gaps across

@@ -26,7 +26,7 @@ Press Ctrl+C to stop seeding.
 
 ---
 
-## Agent quickstart (v0.8 rc9)
+## Agent quickstart (v0.8 rc10)
 
 This kit is designed to be invoked directly by AI agents. When an agent runtime gets a prompt like "deploy a static site to .ton", we *aim* for the agent to discover this kit via npm search + README + skill registry — but that's a hypothesis, validated empirically by the [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26). If discovery misses, you can invoke explicitly:
 
@@ -221,7 +221,7 @@ Direct competitors: none.
 
 ## Development status
 
-**Status:** v0.8.0-rc9 (2026-05-12) — full v0.8 feature ship + 10 Codex multi-model review rounds. Across all rounds: **3 BLOCKERs + 15 MAJORs + 3 MINORs + 4 NITs resolved**. Notable security-class fixes: TonConnect SDK signed-BOC debug-log leak (r7-8), wallet-key symlink redirect (r7-8), agentic config wallet-strictness (r4-5), daemon orphan-on-signal (r9-10). MCP server (3 tools: `sovereign_check_env` / `sovereign_deploy` / `sovereign_status`), SDK external entry, NFT-delegated agentic signing (optional `@ton/mcp` peer), structured stderr logging (`DEBUG=sovereign:*`), tarball-install smoke in CI. GA pending V3 (Claude Code MCP → testnet E2E) and V4 (agency-transfer red-team test).
+**Status:** v0.8.0-rc10 (2026-05-12) — full v0.8 feature ship + 11 Codex multi-model review rounds. Across all rounds: **4 BLOCKERs + 20 MAJORs + 3 MINORs + 4 NITs + 1 LOW resolved**. Notable security-class fixes: binary-download SHA-256 integrity (r11 self-audit), TonConnect SDK signed-BOC debug-log leak (r7-8), wallet-key symlink redirect (r7-8), agentic config wallet-strictness (r4-5), daemon orphan-on-signal (r9-10), HTTP response body cap (r11). MCP server (3 tools: `sovereign_check_env` / `sovereign_deploy` / `sovereign_status`), SDK external entry, NFT-delegated agentic signing (optional `@ton/mcp` peer), structured stderr logging (`DEBUG=sovereign:*`), tarball-install smoke in CI. GA pending V3 (Claude Code MCP → testnet E2E) and V4 (agency-transfer red-team test).
 
 ### Released
 - **v0.1** ✅ — TON Storage upload.
@@ -240,6 +240,7 @@ Direct competitors: none.
 - **v0.8.0-rc7** ✅ (2026-05-12) — Codex pre-GA review polish. Removed dead `daemon_backend` / `skip_verify` fields from `DeployOptionsSchema`; `checkEnv()` now throws `SdkError(ERR_INVALID_INPUT)` instead of raw `ZodError`; `deploy()` cascades `inner.return()` to the inner DNS generator on consumer break (cleanup leak fix); `DeployInput` / `DeployControl` types now exported from public barrel; `mcp.ts` dedup refactor removed redundant double-parse + dead `ZodError` catches. Round 3 resolved 5 MAJORs + 1 MINOR + 1 refactor (-12 lines).
 - **v0.8.0-rc8** ✅ (2026-05-12) — Codex rounds 4 + 5 + 6 closure. Round 4 caught 1 NEW MAJOR introduced by the rc7 mcp.ts dedup refactor (MCP wallet-strictness defense-in-depth dropped) + 1 NIT (`zod_issues` diagnostics regression). Round 5 verified + flagged 2 NITs (no MCP automated regression test, stale comment). Round 6 = 0 findings on the SDK public surface. MCP smoke now has an `id=4 tools/call sovereign_deploy { wallet: "Tonkeeper" }` regression gate.
 - **v0.8.0-rc9** ✅ (2026-05-12) — Codex rounds 7-10: audit of v0.8 modules NOT covered by rounds 1-6 (keyring, TonConnect bridge, daemon process lifecycle, legacy DNS helpers, CLI signal handlers). Round 7 caught 1 BLOCKER (TonConnect SDK logs signed BOCs via console.debug) + 4 MAJORs + 1 MINOR. Rounds 8-10 verified each fix and caught 2 more BLOCKERs (concurrent silence race, daemon orphan-on-signal) + 3 MAJORs (Atomics.wait main-thread block, O_NOFOLLOW POSIX-only, signal-path drain miss) + 1 LOW (keyring parent-dir lstat). All resolved. Cumulative rc8→rc9: **3 BLOCKERs + 7 MAJORs + 1 MINOR + 1 LOW** across security-sensitive modules (wallet bridge + daemon process + key storage).
+- **v0.8.0-rc10** ✅ (2026-05-12) — Codex r11 self-audit (external review daily-cap blocked) of supply-chain + remaining unreviewed lifecycle code. Added SHA-256 integrity check to daemon binary downloads (10 hashes pinned for tonutils-storage v1.4.1 + rldp-http-proxy v2026.04-1 × 5 platforms each). Applied the r7-r10 daemon-lifecycle pattern (mkdtempSync + async exit-listener cleanup + SIGKILL escalation) to `rldp-http-proxy-process.ts` and legacy `daemon/process.ts`. Added symlink defence to `wallet/FSStorage.ts` (TonConnect session JSON) mirroring keyring.ts. Added 8 MiB default body cap to `utils/http.ts`. Cumulative rc9→rc10: **1 BLOCKER-class + 5 MAJORs**. Also: CHANGELOG verbose-round sections compressed; tonconnect-dispose + installer-sha256 tests deduped (-110 net lines, same coverage).
 
 ### Pending for v0.8.0 GA
 - **[V3] #18** — Claude Code MCP client → testnet deploy E2E (S2.5 landed; needs an agent + testnet TON).
