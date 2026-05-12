@@ -2,7 +2,7 @@
 // static-file server → cleanup. Pairs with v0.7's `--site auto` flag.
 
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { createReadStream, existsSync, mkdirSync, renameSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import http, { type Server } from 'node:http'
@@ -56,9 +56,18 @@ export async function startRldpHttpProxy(
     throw new Error(`rldp-http-proxy binary not found at ${proxyPaths.daemon}; call ensureRldpHttpProxyBinary() first`)
   }
 
-  // Per-process db dir under the OS temp; cleaned up on kill().
-  const dbDir = path.join(tmpdir(), `ton-sovereign-proxy-${process.pid}-${Date.now()}`)
-  mkdirSync(dbDir, { recursive: true })
+  // Per-process db dir under the OS temp. Self-audit (Codex r11 class):
+  //   - `mkdtempSync` for collision-free naming, mirroring tonutils-process
+  //     (the PID+Date.now() approach could theoretically collide on
+  //     sub-ms restarts).
+  //   - The dir holds the ADNL keyring + a proxy.log that may contain
+  //     request paths / IDs. mkdtempSync creates with 0o700 on POSIX
+  //     by default; on Windows the user-profile ACL is the protection.
+  //   - Cleaned up via rmSync in kill() (previously LEAKED on every
+  //     run — every --site auto invocation left a stray dir in /tmp).
+  const sessionDir = mkdtempSync(path.join(tmpdir(), `ton-sovereign-proxy-${process.pid}-`))
+  const dbDir = path.join(sessionDir, 'db')
+  mkdirSync(dbDir, { recursive: true, mode: 0o700 })
 
   // Mainnet config (lightweight 12 KB JSON, refreshed if missing).
   const globalCfgPath = path.join(dbDir, 'ton-global.config.json')
@@ -107,15 +116,22 @@ export async function startRldpHttpProxy(
   proxy.on('error', (err) => { spawnError = err })
 
   await sleep(2_000)
+  // Cleanup helper for the startup-failure paths below: close the
+  // static server AND drop the session dir. Previously the session
+  // dir leaked on every failed startup. Self-audit class.
+  const cleanupStartupFailure = (): void => {
+    try { staticServer.close() } catch { /* ignore */ }
+    try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
+  }
   if (proxy.exitCode !== null && proxy.exitCode !== 0) {
-    staticServer.close()
+    cleanupStartupFailure()
     throw new Error(
       `rldp-http-proxy exited with code ${proxy.exitCode} during startup. ` +
       `Check ${path.join(dbDir, 'proxy.log')} for details.`,
     )
   }
   if (spawnError) {
-    staticServer.close()
+    cleanupStartupFailure()
     throw new Error(`rldp-http-proxy spawn failed: ${spawnError.message}`)
   }
 
@@ -126,13 +142,40 @@ export async function startRldpHttpProxy(
     )
   }
 
+  // Async-safe teardown mirroring src/daemon/tonutils-process.ts::kill.
+  // Codex pre-GA self-audit (round 11 class). The proxy is a Go binary
+  // that should exit on SIGTERM within ~100ms, but a hung daemon could
+  // hold its UDP port. Schedule rmSync via child 'exit' event so the
+  // session dir survives until the proxy releases the keyring file
+  // handle. Escalate to SIGKILL on 2s timeout. Static server closes
+  // immediately (no async resources to wait on).
   const kill = (() => {
     let killed = false
     return () => {
       if (killed) return
       killed = true
-      try { proxy.kill('SIGTERM') } catch { /* ignore */ }
       try { staticServer.close() } catch { /* ignore */ }
+
+      if (proxy.exitCode !== null) {
+        // Already exited — clean up synchronously.
+        try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
+        return
+      }
+      let cleanedUp = false
+      const cleanup = (): void => {
+        if (cleanedUp) return
+        cleanedUp = true
+        try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
+      }
+      proxy.once('exit', cleanup)
+      const escalation = setTimeout(() => {
+        if (proxy.exitCode === null) {
+          try { proxy.kill('SIGKILL') } catch { /* ignore */ }
+          setImmediate(() => { if (!cleanedUp) cleanup() })
+        }
+      }, 2_000)
+      escalation.unref()
+      try { proxy.kill('SIGTERM') } catch { /* ignore */ }
     }
   })()
 
