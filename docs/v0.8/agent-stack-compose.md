@@ -117,6 +117,23 @@ Result tells the agent whether the bag is visible on TONAPI and whether
 the DNS record matches. The agent can summarise to the user: "Yes, your
 bag is propagated and `myprotocol.ton` points to it."
 
+When `bag_accessible: false`, the agent should branch on
+`bag_unavailable_reason`:
+
+- `"not_found"` — TONAPI returned `status: not_found` (or HTTP 404).
+  This means the bag hasn't propagated yet OR the bag_id is wrong.
+  If the deploy returned this same bag_id less than a few minutes ago,
+  it's normal propagation lag — tell the user to re-poll in 30-60s.
+- `"network_error"` — TONAPI / network probe failed (5xx, timeout).
+  Tells you nothing about propagation. Retry the status call later.
+- `null` — bag IS accessible (in which case `bag_accessible: true`);
+  this field is null on the happy path.
+
+The bag-vs-DNS `matches` field is independent of `bag_unavailable_reason`.
+A successful `bag_accessible: true` paired with `domain.matches: false`
+means the bag is up but the DNS record points elsewhere (e.g. a stale
+`tonsite` record from a previous deploy).
+
 ## Flow 4: Re-publish updates
 
 User prompt: *"I changed the homepage. Re-deploy."*
