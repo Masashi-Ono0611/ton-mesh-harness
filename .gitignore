@@ -6,6 +6,11 @@ dist/
 .env
 .env.local
 
+# Example build outputs (examples/ are clone-and-run; node_modules/ + dist/
+# are already ignored globally above — these cover the framework-specific ones)
+examples/*/out/
+examples/*/.next/
+
 # OS / editor / agent metadata — never belongs in the repo
 .DS_Store
 .claude/
