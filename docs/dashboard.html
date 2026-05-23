@@ -614,8 +614,8 @@
     </div>
   </div>
   <div class="meta">
-    <strong>v0.5 shipped · v0.6 in progress (B1–B5 done)</strong><br>
-    Updated 2026-05-10 · <code>ton-projects/sovereign-deploy-kit</code>
+    <strong>v0.8.0-rc11 · agent-native track · GA gates pending</strong><br>
+    Updated 2026-05-23 · <code>ton-projects/sovereign-deploy-kit</code>
   </div>
 </header>
 
@@ -779,33 +779,45 @@
     <div class="when">May 2026</div>
     <span class="status">✅ Shipped</span>
   </div>
-  <div class="phase next">
+  <div class="phase done">
     <div class="num">v0.6</div>
     <div class="name">Resistance stack alignment</div>
     <div class="when">May 2026</div>
-    <span class="status">▶ B1–B5 done</span>
+    <span class="status">✅ Shipped</span>
+  </div>
+  <div class="phase done">
+    <div class="num">v0.7</div>
+    <div class="name">ADNL tunnel · self-host lifecycle</div>
+    <div class="when">May 2026</div>
+    <span class="status">✅ Shipped</span>
+  </div>
+  <div class="phase next">
+    <div class="num">v0.8</div>
+    <div class="name">Agent-native: MCP server + agentic signing</div>
+    <div class="when">May 2026</div>
+    <span class="status">▶ rc11 · GA gated</span>
   </div>
 </section>
 
-<!-- v0.6 in-progress callout -->
+<!-- v0.8 agent-native GA callout -->
 <section class="concept-hero" style="padding: 24px 28px; margin-bottom: 28px;">
   <div style="display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap;">
-    <div style="flex-shrink: 0; font-size: 32px; line-height: 1;">🛰️</div>
+    <div style="flex-shrink: 0; font-size: 32px; line-height: 1;">🤖</div>
     <div style="flex: 1; min-width: 260px;">
       <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; color: var(--ton); text-transform: uppercase; margin-bottom: 6px;">
-        v0.6 B5 · landed 2026-05-10
+        v0.8 agent-native · rc11 · 2026-05-23
       </div>
       <div style="font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; margin-bottom: 10px;">
-        <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">--site-adnl</code> writes the <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">dns_adnl_address</code> record alongside <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">storage</code> in one signature.
+        An AI agent can now drive the whole deploy via the <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">ton-sovereign-mcp</code> server — no tool named by the user.
       </div>
       <div style="font-size: 13px; color: var(--text-dim); line-height: 1.65;">
-        On-chain probing showed <strong>piracy.ton, tonnet-sync-check.ton and most Telegram-visible <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">.ton</code> sites use <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">dns_adnl_address</code></strong> records, not <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">dns_storage_address</code>. TONAPI was <em>lying</em> about <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">sites: []</code> on the high-level resolver. v0.6 closes the gap on the <strong>write path</strong>: pass an ADNL hex from your <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">rldp-http-proxy</code> and the CLI bundles <em>two</em> <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">change_dns_record</code> messages into one TonConnect tx (Tonkeeper supports up to 4 per sign).
-        Auto-spawning the proxy + minting an ADNL identity + NAT traversal moves to <strong>v0.7</strong>.
+        The v0.8 pivot turns the CLI into an <strong>agent surface</strong>. An MCP server exposes three tools — <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">sovereign_check_env</code>, <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">sovereign_deploy</code>, <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">sovereign_status</code> — with two signing paths: <strong>TonConnect</strong> (human-approved) and <strong>agentic</strong> (autonomous, key shared with <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">@ton/mcp</code>). Real on-chain <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">dns_tx_hash</code>, NFT-delegated agentic signing, full SDK external entry.
+        Hardened across <strong>11 Codex review rounds</strong> (4 BLOCKERs + 22 MAJORs resolved). CI is green again on Node 18/20/22 × ubuntu/macos after the chokidar↓ fix.
       </div>
       <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <span class="chip blue">aligned with reference .ton sites</span>
-        <span class="chip green">one signature, both records</span>
-        <span class="chip purple">BYO rldp-http-proxy</span>
+        <span class="chip blue">3 MCP tools</span>
+        <span class="chip green">agentic + TonConnect signing</span>
+        <span class="chip purple">323 tests green · CI green</span>
       </div>
     </div>
   </div>
@@ -814,24 +826,22 @@
 <!-- v0.5 in-progress callout -->
 <section class="concept-hero" style="padding: 24px 28px; margin-bottom: 28px;">
   <div style="display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap;">
-    <div style="flex-shrink: 0; font-size: 32px; line-height: 1;">🔧</div>
+    <div style="flex-shrink: 0; font-size: 32px; line-height: 1;">🛰️</div>
     <div style="flex: 1; min-width: 260px;">
       <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.18em; color: var(--ton); text-transform: uppercase; margin-bottom: 6px;">
-        v0.5 lane B · landed 2026-05-10
+        v0.7 · shipped May 2026
       </div>
       <div style="font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; margin-bottom: 10px;">
-        <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">--max-span</code> uint8 cap is gone — provider contracts now take any uint32 span.
+        Self-host lifecycle: auto-spawned <code style="background:rgba(0,152,234,0.14);padding:1px 7px;border-radius:4px;color:var(--ton);font-size:15px;border:1px solid rgba(0,152,234,0.25);">rldp-http-proxy</code> + ADNL identity, NAT traversal via ADNL Tunnel.
       </div>
       <div style="font-size: 13px; color: var(--text-dim); line-height: 1.65;">
-        Instead of waiting on an upstream daemon fix, we found that the on-chain provider contract already accepts <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">expected_max_span: uint32</code> &mdash; only the daemon CLI parser was buggy.
-        We now <strong>build the offer-storage-contract BOC ourselves in TypeScript</strong>, using the daemon only to extract <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">TorrentInfo</code> and <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">microchunk_hash</code>.
-        New CLI flag: <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">--span &lt;seconds&gt;</code> (default 86 400 = 1 day, max 4 294 967 295 ≈ 136 years).
-        Verified by a byte-equal parity test against the daemon CLI&rsquo;s output, plus 11 TL-B unit tests &mdash; <strong>77/77 green</strong>.
+        v0.7 closed the gap v0.6 left open: the kit now <strong>mints an ADNL identity and spawns the proxy itself</strong>, so the <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">dns_adnl_address</code> site record points at a daemon you don&rsquo;t hand-configure. The ADNL Tunnel route (BYO <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">nodes-pool.json</code>) lets the seed survive behind NAT — the resistance-stack alignment that v0.6 began.
+        This is the foundation v0.8 builds the agent surface on top of.
       </div>
       <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <span class="chip green">no upstream dependency</span>
-        <span class="chip blue">parity proven</span>
-        <span class="chip purple">mainnet soak still pending</span>
+        <span class="chip green">proxy + ADNL auto-spawn</span>
+        <span class="chip blue">ADNL Tunnel NAT route</span>
+        <span class="chip purple">daemon lifecycle owned</span>
       </div>
     </div>
   </div>
@@ -845,28 +855,28 @@
     <h2>At a glance</h2>
     <dl class="kv">
       <dt>Package</dt><dd><code>ton-sovereign-deploy</code></dd>
-      <dt>Current version</dt><dd>v0.4.0</dd>
-      <dt>Language</dt><dd>TypeScript · ESM · Node ≥ 18</dd>
+      <dt>Current version</dt><dd>v0.8.0-rc11 (GA gated)</dd>
+      <dt>Surfaces</dt><dd>CLI · MCP server · SDK entry</dd>
+      <dt>Language</dt><dd>TypeScript · CJS build · Node ≥ 18</dd>
       <dt>OS support</dt><dd>macOS · Linux · Windows</dd>
-      <dt>Lines of code</dt><dd>~2,300 (src)</dd>
+      <dt>Lines of code</dt><dd>~8,950 (src)</dd>
+      <dt>Tests</dt><dd>323 pass / 12 skip · CI green</dd>
       <dt>License</dt><dd>MIT</dd>
-      <dt>Author</dt><dd>masashi.ono</dd>
       <dt>Repository</dt><dd><code>Masashi-Ono0611/sovereign-deploy-kit</code></dd>
     </dl>
   </div>
 
   <!-- Ship status -->
   <div class="card span-4">
-    <h2>Status snapshot</h2>
+    <h2>Status snapshot <span class="chip blue">GA gate</span></h2>
     <ul class="check">
-      <li>v0.1 — Storage upload, auto daemon DL</li>
-      <li>v0.2 — <code>.ton</code> DNS via TON Connect</li>
-      <li>v0.3 — verify · Actions · Windows · <code>--watch</code></li>
-      <li>v0.4 — <code>--provider</code> 24/7 hosting contract</li>
-      <li class="warn"><code>--max-span</code> pinned to 200s (daemon bug)</li>
-      <li class="warn">Provider P2P (<code>--provider &lt;addr&gt;</code>) often times out</li>
-      <li class="pending">Public gateway propagation UX (ton.run 404 window)</li>
-      <li class="pending">First public launch: Gateway 2026</li>
+      <li>v0.1–v0.7 — upload · <code>.ton</code> DNS · provider · ADNL tunnel</li>
+      <li>v0.8 — MCP server (3 tools) + agentic signing</li>
+      <li>11 Codex review rounds resolved (4 BLOCKER + 22 MAJOR)</li>
+      <li>CI green: Node 18/20/22 × ubuntu/macos</li>
+      <li class="pending">#18 V3 — mainnet MCP E2E (user-run acceptance)</li>
+      <li class="pending">#26 V4 — agency-transfer red-team (user-run)</li>
+      <li class="pending">#21 D3 — GA cut: <code>release.sh 0.8.0</code> + npm</li>
     </ul>
   </div>
 
@@ -1026,7 +1036,7 @@
 
   <!-- Roadmap detail -->
   <div class="card span-12">
-    <h2>Roadmap <span class="chip blue">v0.1 → v0.5</span></h2>
+    <h2>Roadmap <span class="chip blue">v0.1 → v0.8</span></h2>
     <table>
       <thead>
         <tr>
@@ -1069,16 +1079,37 @@
         <tr>
           <td><strong>v0.5</strong></td>
           <td>Hardening &amp; visibility</td>
-          <td><span class="chip blue">Next</span></td>
-          <td>May → Jun 2026</td>
-          <td>Propagation monitor · multi-provider · daemon upgrade unlocking <code>--max-span</code></td>
+          <td><span class="chip green">Shipped</span></td>
+          <td>May 2026</td>
+          <td>Self-built provider BOC (<code>--span</code> uint32) · parity test · verbosity</td>
         </tr>
         <tr>
-          <td><strong>v0.6+</strong></td>
-          <td>Distribution</td>
-          <td><span class="chip purple">Soon</span></td>
-          <td>Jun &nbsp;2026 +</td>
-          <td>Public launch (Gateway 2026) · template gallery · provider directory UI</td>
+          <td><strong>v0.6</strong></td>
+          <td>Resistance-stack alignment</td>
+          <td><span class="chip green">Shipped</span></td>
+          <td>May 2026</td>
+          <td><code>--site-adnl</code> · two <code>change_dns_record</code> msgs in one signature</td>
+        </tr>
+        <tr>
+          <td><strong>v0.7</strong></td>
+          <td>Self-host lifecycle</td>
+          <td><span class="chip green">Shipped</span></td>
+          <td>May 2026</td>
+          <td>Auto-spawn <code>rldp-http-proxy</code> + ADNL identity · ADNL Tunnel NAT route</td>
+        </tr>
+        <tr>
+          <td><strong>v0.8</strong></td>
+          <td>Agent-native surface</td>
+          <td><span class="chip blue">rc11 · GA gated</span></td>
+          <td>May 2026</td>
+          <td>MCP server (3 tools) · agentic + TonConnect signing · real <code>dns_tx_hash</code> · SDK entry</td>
+        </tr>
+        <tr>
+          <td><strong>v0.9+</strong></td>
+          <td>Reserve (#28)</td>
+          <td><span class="chip purple">Parked</span></td>
+          <td>post-GA</td>
+          <td>testnet-via-MCP · HTTP transport · launchd/systemd · cross-agent compat</td>
         </tr>
       </tbody>
     </table>
@@ -1136,7 +1167,7 @@
 
   <!-- Open issues -->
   <div class="card span-6">
-    <h2>Known issues &amp; tracking <span class="pill">v0.5 inbox</span></h2>
+    <h2>Known issues &amp; tracking <span class="pill">parked → v0.9 reserve (#28)</span></h2>
     <div class="issues">
       <div class="issue idea" style="border-left-color: var(--green);">
         <div class="iname"><span style="color: var(--green);">✓</span> daemon <code>--max-span</code> uint8 bug — <span style="color: var(--green);">routed around</span></div>
@@ -1222,7 +1253,7 @@
 
   <!-- CLI options -->
   <div class="card span-12">
-    <h2>CLI surface <span class="pill">v0.4.0</span></h2>
+    <h2>CLI surface <span class="pill">v0.8.0-rc11</span></h2>
     <table>
       <thead>
         <tr>
@@ -1248,11 +1279,12 @@
         <tr><td><code>--tunnel-config &lt;path&gt;</code></td><td>nodes-pool.json for ADNL Tunnel client (NAT traversal). Bring-your-own pool — public community pool TBD.</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--site-adnl &lt;hex&gt;</code></td><td>64-hex ADNL identity to publish as the <code>site</code> (<code>dns_adnl_address</code>) DNS record. Combined with <code>--domain</code>, ships <code>storage</code> + <code>site</code> records in <strong>one</strong> TonConnect signature. BYO <code>rldp-http-proxy</code>; auto-spawn is v0.7.</td><td>v0.6 (B5)</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>doctor</code> (subcommand)</td><td>Pre-flight env check: daemon binaries, TONAPI/manifest reachability, TonConnect pairing, ~/.ton-sovereign dir.</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
+        <tr><td><code>--wallet-mode &lt;mode&gt;</code></td><td>Signing path: <code>tonconnect</code> (human-approved, default) or <code>agentic</code> (autonomous, key from <code>~/.config/ton/config.json</code> shared with <code>@ton/mcp</code>). Agentic requires the <code>tonutils</code> backend.</td><td>v0.8</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--debounce &lt;ms&gt;</code></td><td>Watch debounce delay (default <code>2000</code>)</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
       </tbody>
     </table>
     <div class="note">
-      Source: <code>src/cli.ts</code>. Three internal subcommands (<code>cli/deploy.ts</code>, <code>cli/dns.ts</code>, <code>cli/provider.ts</code>, <code>cli/watch.ts</code>) compose into the one-shot run.
+      Source: <code>src/cli.ts</code>. v0.8 adds the <strong>MCP server</strong> (<code>ton-sovereign-mcp</code>, <code>src/mcp.ts</code>) exposing the same deploy surface as 3 agent tools — <code>sovereign_check_env</code> / <code>sovereign_deploy</code> / <code>sovereign_status</code> — plus an SDK external entry (<code>src/sdk/</code>).
     </div>
   </div>
 
@@ -1354,18 +1386,18 @@
 
   <!-- This week's loop -->
   <div class="card span-6">
-    <h2>Resuming today <span class="chip blue">2026-05-10</span></h2>
+    <h2>Path to GA <span class="chip blue">2026-05-23</span></h2>
     <ul class="check">
-      <li>Lane B · self-generated BOC route landed (<code>--max-span</code> bypassed)</li>
-      <li>Lane B · <code>--span</code> CLI flag wired through, 77/77 tests green</li>
-      <li class="pending">Lane B · mainnet soak test: sign a real <code>--span 86400</code> contract on a small bag</li>
-      <li class="pending">Lane A · cut <code>doctor</code> subcommand scope (daemon + TONAPI + providers)</li>
-      <li class="pending">Lane A · design propagation-monitor JSON shape (compatible with <code>--json-output</code>)</li>
-      <li class="pending">Lane B · port <code>microchunk_hash</code> derivation to TS (drop daemon CLI dependency in BOC path)</li>
-      <li class="pending">Lane C · prepare a single end-to-end demo dApp for Gateway 2026</li>
+      <li>CI green again (chokidar↓, Node 18 <code>require()</code> restored)</li>
+      <li>#18/#40 mainnet MCP E2E scaffold + runbook landed</li>
+      <li>#39 GA announcement playbook drafted</li>
+      <li class="pending">#18 V3 — run mainnet E2E once, attach transcript (user)</li>
+      <li class="pending">#26 V4 — fresh-session red-team, record result (user)</li>
+      <li class="pending">#21 D3 — <code>release.sh 0.8.0</code> → npm publish + GitHub release (user)</li>
+      <li class="pending">Execute #39 announcement playbook on GA day (user)</li>
     </ul>
     <div class="note">
-      Five days of low-risk, parallelizable work — <strong>doctor + propagation monitor</strong> is the lane A wedge. None of these blocks public launch but each one materially improves the &ldquo;why didn&rsquo;t this work?&rdquo; experience.
+      The code / CI / docs blockers are cleared. What remains is <strong>real-machine acceptance</strong> (#18 + #26) and the <strong>operator-run GA cut</strong> (#21) — both are human-judgement steps (real TON spend,外部発信), not agent-automatable.
     </div>
   </div>
 
@@ -1382,7 +1414,7 @@
     <a href="https://tonconnect.network">TON Connect</a>
   </div>
   <div>
-    Generated 2026-05-10 from <code>v0.4.0</code> (<code>main</code> @ <code>8857ba4</code>). Layout takes design cues from Telegram night mode and the TON brand palette (<code>#0098EA</code>). Light mode follows automatically via <code>prefers-color-scheme</code>.
+    Updated 2026-05-23 for <code>v0.8.0-rc11</code> (<code>main</code> @ <code>91e3203</code>). Layout takes design cues from Telegram night mode and the TON brand palette (<code>#0098EA</code>). Light mode follows automatically via <code>prefers-color-scheme</code>.
   </div>
 </footer>
 
