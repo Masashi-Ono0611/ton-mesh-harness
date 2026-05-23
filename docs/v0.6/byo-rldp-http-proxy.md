@@ -106,7 +106,7 @@ fees.
 
 - This is the same pattern piracy.ton, tonnet-sync-check.ton, and
   most Telegram-visible `.ton` sites use today (see
-  `docs/v0.6/sites-record-discovery.md`).
+  `docs/archive/v0.6/sites-record-discovery.md`).
 - Behind NAT? You need either a port-forward, a public-IP VPS, or
   an `adnl-tunnel-client` in server mode. The latter is v0.7 work.
 - Want to run only the storage record (no `--site-adnl`)? That still

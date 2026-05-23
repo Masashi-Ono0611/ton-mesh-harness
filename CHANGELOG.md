@@ -149,7 +149,7 @@ Threat model + the SECURITY.md "What we've already done" inventory.
 - **C2 NAT traversal** (`adnl-tunnel-client`) and **C3 Payment
   Network real-client** moved to the v0.9 reserve when the agent-
   surface track took the v0.8 slot on 2026-05-10. See
-  `docs/v0.7/roadmap-draft.md`. Tracked via issues #29 / #30.
+  `docs/archive/v0.7/roadmap-draft.md`. Tracked via issues #29 / #30.
 
 GA-PREDRAFT-END -->
 
@@ -837,7 +837,7 @@ Notable architectural pivots from review:
 First-useful flag-plant for the **agent-surface track**. v0.8.0-rc1 ships
 no MCP server yet — the GA tag (week 6) introduces `ton-sovereign-mcp`.
 This rc tag plants discoverability artifacts and the rescoped design docs
-that encode the [P-1 probe](docs/v0.8/at-mcp-probe.md) verdict, so an agent
+that encode the [P-1 probe](docs/archive/v0.8/at-mcp-probe.md) verdict, so an agent
 that later searches for `"deploy a static site to .ton"` can already find
 the kit (via the existing CLI). The acceptance hypothesis behind that
 discovery claim is verified by the [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26)
@@ -858,12 +858,12 @@ discovery claim is verified by the [V4 red-team test](https://github.com/Masashi
 - **package description rewritten** to lead with the deploy-static-site-to-.ton
   capability and to flag the rc1 / GA scope honestly (no MCP server yet
   at rc1; planned for GA).
-- **Concept update doc** at `docs/v0.8/concept-update-2026-05-10.md`
+- **Concept update doc** at `docs/archive/v0.8/concept-update-2026-05-10.md`
   capturing the dual-track (v0.8 agent surface / v0.9 C2 NAT + C3 Payments)
   framing, premises P1–P5' (Codex-refined), OQ#0–#7 resolutions, the
   agency-transfer red-team test definition, and the canonical compose
   model after the P-1 verdict.
-- **P-1 probe memo** at `docs/v0.8/at-mcp-probe.md`. Verdict: B (with
+- **P-1 probe memo** at `docs/archive/v0.8/at-mcp-probe.md`. Verdict: B (with
   nuance). The original `@ton/mcp::wallet_connect` handoff doesn't exist
   — `@ton/mcp` is agentic-wallet-first (keys at `~/.config/ton/config.json`,
   no TonConnect tool). The workable composition is **filesystem-level**:
@@ -873,7 +873,7 @@ discovery claim is verified by the [V4 red-team test](https://github.com/Masashi
 
 ### Changed
 
-- **`docs/v0.8/agent-native-pivot.md` rewritten** ("v0.9 plan — agent-native
+- **`docs/archive/v0.8/agent-native-pivot.md` rewritten** ("v0.9 plan — agent-native
   pivot" → "v0.8 plan — agent-surface track parallel to self-host UX
   track"). Removes the `mcp.ton.org`-as-third-party-registry claim
   (it's a curated landing page for the official `@ton/mcp`, not a
@@ -949,13 +949,13 @@ your build directory end-to-end without manual VPS setup.
   `writeKeyringFile` + `adnlIdEncode` / `adnlIdDecode` (TON's
   base32+CRC16 user-friendly form, the value `-A` actually expects).
   Constants captured from a `generate-random-id` v2026.04-1 spike
-  and pinned in `docs/v0.7/c1-design-notes.md`.
+  and pinned in `docs/archive/v0.7/c1-design-notes.md`.
 - **`src/daemon/rldp-http-proxy-installer.ts`** + **`-process.ts`**
   mirror the tonutils-storage installer / spawn pattern.
 - **`scripts/probe-providers.cjs`** (C4): re-ran the storage-provider
   liveness probe under v0.7. Verdict: still **dormant** (top-8
   cheapest, zero `accept_storage_contract` ops in 30d). `--provider`
-  stays disabled. Snapshot: `docs/v0.7/provider-probe-2026-05-10.md`.
+  stays disabled. Snapshot: `docs/archive/v0.7/provider-probe-2026-05-10.md`.
 - **doctor extension** (C5.1): surfaces the rldp-http-proxy binary
   + the persisted site ADNL hex from `~/.ton-sovereign/site-adnl.txt`.
 
@@ -973,7 +973,7 @@ your build directory end-to-end without manual VPS setup.
 
 > **Renumbered 2026-05-10:** originally targeted v0.8. The v0.8 slot is now
 > the agent-surface track (formerly drafted as v0.9; see
-> `docs/v0.8/concept-update-2026-05-10.md`). C2 / C3 moved one slot down.
+> `docs/archive/v0.8/concept-update-2026-05-10.md`). C2 / C3 moved one slot down.
 
 - **C2 NAT traversal via tunnel** — TON Foundation's `rldp-http-proxy`
   is C++ and doesn't import `adnl-tunnel`; xssnick's tunnel only
@@ -1055,7 +1055,7 @@ place for v0.7.
   only). Use `--daemon-backend=ton-core` if you need testnet.
 - **`--provider` is temporarily disabled in v0.6** during the daemon
   migration. The mainnet provider economy is dormant (see
-  `docs/v0.5/round-postmortem.md`); v0.7 will reintroduce provider
+  `docs/archive/v0.5/round-postmortem.md`); v0.7 will reintroduce provider
   support against whichever protocol has liveness by then. The
   `op::close_contract` recovery path remains documented (and a
   one-shot script is shipped) for users who need to recover funds
@@ -1077,7 +1077,7 @@ place for v0.7.
 - **`pollDnsSiteRecord`** watches TONAPI's `data.sites[]` for the
   expected ADNL hex with a fail-open behaviour (TONAPI is known to
   lag/lie for site records — see
-  `docs/v0.6/sites-record-discovery.md`).
+  `docs/archive/v0.6/sites-record-discovery.md`).
 - **`--tunnel-config <path>`** wires an ADNL Tunnel `nodes-pool.json`
   into the tonutils-storage daemon (NAT-traversal). Bring-your-own
   pool: no public community pool exists yet. Tilde expansion (`~/`)
@@ -1133,13 +1133,13 @@ place for v0.7.
 ### Docs
 - Reframed README / dashboard around **self-host first** and the
   digital-resistance stack.
-- `docs/v0.5/round-postmortem.md`: detailed Round 1–7 mainnet soak
+- `docs/archive/v0.5/round-postmortem.md`: detailed Round 1–7 mainnet soak
   results, the dormant provider economy finding, and the on-chain
   cost ledger.
-- `docs/v0.5/lane-b-self-generated-boc.md`: design + verification of
+- `docs/archive/v0.5/lane-b-self-generated-boc.md`: design + verification of
   the self-generated `op::offer_storage_contract` BOC route around
   the daemon CLI's `--max-span` uint8 bug.
-- `docs/v0.6/roadmap-draft.md`: v0.6 plan + B3.x design + B4 hand-off
+- `docs/archive/v0.6/roadmap-draft.md`: v0.6 plan + B3.x design + B4 hand-off
   to v0.7.
 
 ### Internal
@@ -1187,8 +1187,8 @@ on mainnet before the v0.6 ecosystem realignment.
   session secret).
 
 ### Docs
-- `docs/v0.5/round-postmortem.md` (Round 1–7 mainnet soak record)
-- `docs/v0.5/lane-b-self-generated-boc.md`
+- `docs/archive/v0.5/round-postmortem.md` (Round 1–7 mainnet soak record)
+- `docs/archive/v0.5/lane-b-self-generated-boc.md`
 - `docs/dashboard.html` v0.5 status banner
 
 ## [0.4.0] – 2026-04-26
@@ -1204,7 +1204,7 @@ the contracts).
 ### Known issues
 - mainnet provider economy is empty; the flag works at the protocol
   level but nobody on the other end accepts the contract. Documented
-  in `docs/v0.5/round-postmortem.md`.
+  in `docs/archive/v0.5/round-postmortem.md`.
 
 ## [0.3.0] – 2026-03-28
 

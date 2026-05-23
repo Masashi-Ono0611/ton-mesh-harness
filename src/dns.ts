@@ -230,7 +230,7 @@ export async function pollDnsRecord(
 // Site record propagation poller
 // TONAPI's resolver is known to be flaky for `dns_adnl_address` records
 // (`sites: []` for famous .ton domains we cross-checked via on-chain
-// `dnsresolve` — see docs/v0.6/sites-record-discovery.md). When it works,
+// `dnsresolve` — see docs/archive/v0.6/sites-record-discovery.md). When it works,
 // `data.sites` is an array of ADNL hex strings; when it lies, we surface a
 // "verify manually" hint instead of looping forever.
 // -----------------------------------------------------------------------

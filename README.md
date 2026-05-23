@@ -122,7 +122,7 @@ TON already has the infrastructure to fix this. Using it required specialist kno
 **Realistic hosting options:**
 - **The primary option is running your own daemon continuously** (`--watch`, or `--daemon-mode service` to hand it to launchd/systemd). This is exactly how TON Foundation operates `foundation.ton`.
 - **Behind NAT / no public IP**: `--tunnel-config` routes the daemon through an ADNL Tunnel pool (shipped in v0.6; bring-your-own pool — see [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md)).
-- A 24/7 escape hatch is the "storage provider contract" (`--provider`), implemented but **the mainnet provider economy is currently dormant** (Round 1–7 mainnet soak results: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md)) and gated off pending the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30)). Treat it as experimental.
+- A 24/7 escape hatch is the "storage provider contract" (`--provider`), implemented but **the mainnet provider economy is currently dormant** (Round 1–7 mainnet soak results: [`docs/archive/v0.5/round-postmortem.md`](docs/archive/v0.5/round-postmortem.md)) and gated off pending the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30)). Treat it as experimental.
 
 ### TON DNS (.ton domains)
 
@@ -227,7 +227,7 @@ Direct competitors: none.
 - **v0.1** ✅ — TON Storage upload.
 - **v0.2** ✅ — .ton DNS registration (`storage` record).
 - **v0.3** ✅ — polish (verification, GitHub Actions, Windows, watch mode).
-- **v0.4** ✅ — `--provider` storage-provider contracts (mainnet provider economy is dormant; details: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md)).
+- **v0.4** ✅ — `--provider` storage-provider contracts (mainnet provider economy is dormant; details: [`docs/archive/v0.5/round-postmortem.md`](docs/archive/v0.5/round-postmortem.md)).
 - **v0.5** ✅ — TonConnect SDK integration / hand-rolled BOC / defense-in-depth / `op::close_contract` recovery route.
 - **v0.6** ✅ — `sites` (ADNL Address) record support / ADNL Tunnel client integration / self-host-first README / Payment Network abstraction.
 - **v0.7** ✅ — `--site-auto` for rldp-http-proxy auto-spawn + self-minted ADNL identity.
@@ -257,11 +257,11 @@ Full map + Current/Reference/Historical classification: **[`docs/README.md`](doc
 - **Agent stack compose**: [`docs/v0.8/agent-stack-compose.md`](docs/v0.8/agent-stack-compose.md) — wiring `ton-sovereign-mcp` + `@ton/mcp` for full agentic flows.
 - **Release checklist**: [`docs/v0.8/release-checklist.md`](docs/v0.8/release-checklist.md) — the GA cut ritual + rollback.
 - **v0.9 features**: [HTTP transport](docs/v0.9/mcp-http-transport.md) · [provenance](docs/v0.9/provenance.md) · [service-mode daemons](docs/v0.9/daemon-service-mode.md) · [cross-agent compat](docs/v0.9/agent-compat.md).
-- **Design history** (point-in-time, not current): the agent-native pivot — [`agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md), [`concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md), [`at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md).
+- **Design history** (point-in-time, not current): the agent-native pivot — [`agent-native-pivot.md`](docs/archive/v0.8/agent-native-pivot.md), [`concept-update-2026-05-10.md`](docs/archive/v0.8/concept-update-2026-05-10.md), [`at-mcp-probe.md`](docs/archive/v0.8/at-mcp-probe.md).
 
 ### v0.9 reserve
 **Shipped post-rc11** (see CHANGELOG `[Unreleased]`): MCP HTTP transport (`--http`), testnet on the tonutils/MCP path, signed provenance manifest (`.well-known/ton-deploy.json`), Vite/Next examples, daemon-hash bump helper, MCP cancel-cleanup test.
-**Still reserved** — both blocked on upstream C++ binaries maturing: C2 NAT traversal (`adnl-tunnel-client`, #29) + C3 Payment Network real-client (#30). Details: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) §C2 / §C3. launchd/systemd daemon ownership (#37) is a parked deploy-lifecycle feature.
+**Still reserved** — both blocked on upstream C++ binaries maturing: C2 NAT traversal (`adnl-tunnel-client`, #29) + C3 Payment Network real-client (#30). Details: [`docs/archive/v0.7/roadmap-draft.md`](docs/archive/v0.7/roadmap-draft.md) §C2 / §C3. launchd/systemd daemon ownership (#37) is a parked deploy-lifecycle feature.
 
 **Release:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 
@@ -280,7 +280,7 @@ If you signed with `--provider` and the provider never issued `accept_storage_co
 node scripts/close-storage-contract.cjs <storage-contract-address>
 ```
 
-[Details and field-verified logs](docs/v0.5/round-postmortem.md).
+[Details and field-verified logs](docs/archive/v0.5/round-postmortem.md).
 
 ---
 
@@ -437,7 +437,7 @@ ton-sovereign-deploy [build-dir] [options]
 | `--daemon-backend <name>` | Daemon backend: `tonutils` (default, v0.6+; supports `--testnet` since post-rc11) or `ton-core` (C++ legacy; opt-in, needed only for `--provider`). |
 | `--tunnel-config <path>` | Path to a `nodes-pool.json` for ADNL Tunnel (v0.6+, tonutils backend only). Used for NAT traversal. No public pools exist yet — **bring-your-own-pool** (obtain from the operator). |
 | `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `dns_adnl_address` (`site` record, magic `0xad01`) under `--domain` (v0.6+ B5). **Bring-your-own rldp-http-proxy** — pass the ADNL hash of an already-running proxy, or use `--site-auto` to auto-spawn one (shipped v0.7). With `--domain`, bundles the storage and site records into **one TonConnect signature**. Setup: [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md). |
-| `--provider [address]` | **Disabled regardless of backend** (mainnet provider economy is dormant). The v0.5 working code stays in the tree; re-enabling waits on the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30), v0.9-reserve, upstream-blocked). Details: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md). |
+| `--provider [address]` | **Disabled regardless of backend** (mainnet provider economy is dormant). The v0.5 working code stays in the tree; re-enabling waits on the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30), v0.9-reserve, upstream-blocked). Details: [`docs/archive/v0.5/round-postmortem.md`](docs/archive/v0.5/round-postmortem.md). |
 | `--daemon-mode <mode>` | Daemon ownership: `detached` (default) · `embedded` (one-shot) · `service` (hand to launchd/systemd, keeps seeding after exit). v0.9 ([#37](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/37)). |
 | `--span <seconds>` | Provider-contract span in seconds (default 86400 = 1 day; max 4294967295). v0.5+ |
 | `--wallet <name>` | Preferred wallet for sign requests (substring match; default "Tonkeeper"). v0.5+ |

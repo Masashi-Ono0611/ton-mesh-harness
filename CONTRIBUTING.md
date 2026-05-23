@@ -93,7 +93,7 @@ You should see `tools/list` return `sovereign_check_env` and
 
 Significant PRs (anything touching `src/sdk/` or the MCP wiring) should
 run a Codex review before merge. The session history under
-[`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md)
+[`docs/archive/v0.8/concept-update-2026-05-10.md`](docs/archive/v0.8/concept-update-2026-05-10.md)
 shows the pattern: assemble the diff + spec context, ask Codex for
 severity-tagged findings, fix BLOCKERs and MAJORs in the same PR. The
 2 BLOCKERs + 14 MAJORs caught in v0.8 cycles were caught this way.

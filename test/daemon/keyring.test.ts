@@ -13,7 +13,7 @@ import {
 } from '../../src/daemon/keyring'
 
 // ----- captured fixture from `generate-random-id -m keys` v2026.04-1 -----
-// Source: docs/v0.7/c1-design-notes.md spike.
+// Source: docs/archive/v0.7/c1-design-notes.md spike.
 const FIXTURE_PRIV_FILE_HEX = (
   '17236849' +                                                              // pk.ed25519 TL id (LE)
   '7ff7d210cfe8755fbea5dfb3213a73e143e2b75e90cc80341228bd971f661f77'        // 32B seed

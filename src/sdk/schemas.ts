@@ -6,7 +6,7 @@
  *   - the SDK's TypeScript types (`z.infer<typeof DeployOptionsSchema>`)
  *
  * Spec: docs/v0.8/mcp-core-requirements.md §F2 / §F3 / §F5 / §NF6
- * Verdict context: docs/v0.8/at-mcp-probe.md (P-1 probe, dual-path WalletSpec)
+ * Verdict context: docs/archive/v0.8/at-mcp-probe.md (P-1 probe, dual-path WalletSpec)
  *
  * NO `console.*` ANYWHERE IN THIS FILE OR src/sdk/* — lint-enforced (planned [S4]).
  */

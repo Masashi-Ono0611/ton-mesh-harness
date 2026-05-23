@@ -1,7 +1,7 @@
 # v0.8 core requirements — MCP server contract
 
 **Scope:** what 0.8.0 actually ships. Updated 2026-05-10 after the
-[concept update](concept-update-2026-05-10.md) and [P-1 probe](at-mcp-probe.md)
+[concept update](../archive/v0.8/concept-update-2026-05-10.md) and [P-1 probe](../archive/v0.8/at-mcp-probe.md)
 landed.
 
 The single deliverable of 0.8.0 is: **an MCP server that an AI agent can
@@ -29,7 +29,7 @@ artifacts that let an agent find the kit without being told its name.**
 8. Stable error code contract for the three tools.
 9. **`@ton/walletkit` filesystem-level compose** — read the agentic wallet
    config at `~/.config/ton/config.json` directly via the same loader
-   `@ton/mcp` uses. See [P-1 probe memo](at-mcp-probe.md) for the verified
+   `@ton/mcp` uses. See [P-1 probe memo](../archive/v0.8/at-mcp-probe.md) for the verified
    contract. `@ton/mcp` is NOT a runtime dep; it's a peer MCP server an
    agent may load alongside `ton-sovereign-mcp`.
 10. In-repo skill markdown at `skills/sovereign-deploy.md` referencing
@@ -45,12 +45,12 @@ Updated per concept-update 2026-05-10:
 
 - **Agentic Wallet integration via `@ton/mcp` MCP-RPC handoff** — *delegated*
   via the filesystem-level compose described above (item 9). `@ton/mcp` does
-  not expose its session via inter-MCP RPC ([P-1 probe](at-mcp-probe.md));
+  not expose its session via inter-MCP RPC ([P-1 probe](../archive/v0.8/at-mcp-probe.md));
   the integration is at `~/.config/ton/config.json`.
 - Daemon detached / launchd / systemd / remote — 0.8.x.
 - HTTP transport for the MCP server (stdio only in 0.8.0).
 - `mcp.ton.org` registry submission — no submission flow exists today; revisit
-  when one does. ([P-1 probe](at-mcp-probe.md) Phase 2.75 landscape findings.)
+  when one does. ([P-1 probe](../archive/v0.8/at-mcp-probe.md) Phase 2.75 landscape findings.)
 - Additional tools beyond the rc6 three-tool surface (e.g.
   `sovereign_redeploy`, `sovereign_stop`) — 0.8.x once the
   three-tool contract is validated by V3/V4. `sovereign_status`
@@ -102,7 +102,7 @@ The literal phrase **"deploy a static site to .ton"** (or close paraphrase) must
 > path. The CLI's `--daemon-backend=ton-core` is a separate code path that
 > doesn't go through the SDK.
 
-**`WalletSpec`** (discriminated union per [P-1 verdict](at-mcp-probe.md)):
+**`WalletSpec`** (discriminated union per [P-1 verdict](../archive/v0.8/at-mcp-probe.md)):
 
 ```ts
 const WalletSpec = z.discriminatedUnion("kind", [
