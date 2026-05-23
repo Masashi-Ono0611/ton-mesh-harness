@@ -96,6 +96,12 @@ jobs:
         # message on any failure.
         run: node scripts/mcp-smoke.cjs
 
+      - name: MCP HTTP smoke (initialize + tools/list over --http)
+        # #33 — spawns `dist/mcp.js --http :18765`, drives initialize →
+        # notifications/initialized → tools/list over the Streamable-HTTP
+        # transport (loopback, no token), asserts serverInfo + 3 tools.
+        run: node scripts/mcp-http-smoke.cjs
+
       - name: SDK smoke (programmatic require shape)
         # The SDK external entry (dist/sdk.js) is the surface npm
         # consumers see via `require('ton-sovereign-deploy')`. This
