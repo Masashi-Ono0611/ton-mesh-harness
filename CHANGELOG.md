@@ -4,6 +4,46 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Post-rc11 work pulled forward from the v0.9 reserve (#28). These landed on
+`main` after the 0.8.0 GA pre-draft below; final version assignment (0.8.x
+vs 0.9.0) is the maintainer's call at release time.
+
+### Added
+
+- **HTTP transport for `ton-sovereign-mcp` (#33)** — opt-in `--http <addr>`
+  binds a Streamable-HTTP MCP endpoint at `/mcp` (stdio stays the default;
+  mutually exclusive). Binds `127.0.0.1` by default; a non-loopback bind
+  requires `MCP_HTTP_TOKEN` (bearer auth) or refuses to start. CORS off
+  unless `MCP_HTTP_CORS_ORIGINS` lists origins. DNS-rebinding protection on.
+  Docs: `docs/v0.9/mcp-http-transport.md`.
+- **testnet deploys on the tonutils/MCP path** — `sovereign_deploy`
+  (and the CLI tonutils backend) now accept `testnet: true`: the daemon is
+  started with the testnet `--network-config` and DNS writes use testnet
+  endpoints. Removes the prior "mainnet-only / use ton-core" guard.
+- **Signed provenance manifest (#34)** — a deploy with a domain emits
+  `.well-known/ton-deploy.json` into the bag (signed on the agentic path
+  via Ed25519; unsigned on TonConnect). New `verify-provenance <file>` CLI
+  subcommand. Opt out with `--no-provenance` / `provenance: false`.
+  Docs: `docs/v0.9/provenance.md`.
+- **Real-world examples (#36)** — `examples/vite-spa/` (Vite + React,
+  `base: './'`) and `examples/nextjs-static-export/` (Next.js
+  `output: 'export'`), each with build → deploy (TonConnect + agentic) →
+  watch → DNS walkthroughs.
+
+### Tooling / tests
+
+- **`scripts/bump-daemon-hashes.cjs` (#32)** — recompute + patch the pinned
+  daemon `expectedSha256` after a version bump (`--check` dry-run).
+  Docs: `docs/v0.9/release-runbook.md`.
+- **MCP cancellation cleanup integration test (#31)** —
+  `test/mcp-cancel.integration.test.ts` (gated by `RUN_MCP_INTEGRATION=1`):
+  drives a real daemon, cancels mid-flight, asserts no orphaned daemon.
+- **Cross-agent compatibility groundwork (#35)** —
+  `docs/v0.9/agent-compat.md`: per-agent MCP discovery config + red-team
+  protocol (runs are manual + publish-gated).
+
 <!-- GA-PREDRAFT-BEGIN
 v0.8.0 GA pre-draft. `scripts/release.sh` promotes this block to the
 released `[0.8.0]` heading at D3 once V3 (E2E) + V4 (red-team) pass.
