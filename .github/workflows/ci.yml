@@ -66,8 +66,13 @@ jobs:
           # RUN_DAEMON_TESTS gates the live tonutils-storage spawn tests.
           # CI does NOT spawn daemons (they download a 12 MB binary on
           # first run and the network is flaky in GitHub runners); the
-          # 11 skipped tests are expected.
+          # skipped daemon tests are expected.
           RUN_DAEMON_TESTS: ''
+          # RUN_MCP_INTEGRATION gates test/mcp-cancel.integration.test.ts
+          # (#31 — real daemon + MCP notifications/cancelled cleanup). Same
+          # policy as RUN_DAEMON_TESTS: off in the default matrix (spawns the
+          # real daemon). Flip to '1' on a dedicated runner to exercise it.
+          RUN_MCP_INTEGRATION: ''
 
       - name: Build
         run: npm run build
