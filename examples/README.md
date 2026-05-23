@@ -1,23 +1,26 @@
 # `examples/` — runnable reference sites
 
-Each subdirectory here is a real, deploy-ready static site. They are
-intentionally tiny so the kit's own end-to-end tests (V3) and any
-agent doing autonomous discovery (V4) can deploy them without a
-build step.
+Each subdirectory is a real, deploy-ready site. `hello-ton/` is build-free
+(used by the kit's own V3 / V4 tests); the others mirror a realistic
+"build, then deploy" workflow for a real frontend framework.
 
 ## Index
 
-| Example | Purpose |
-|---|---|
-| [`hello-ton/`](./hello-ton/) | Minimal "hello world" — one `index.html`. The default V3 reference site. |
+| Example | Build step | Purpose |
+|---|---|---|
+| [`hello-ton/`](./hello-ton/) | none | Minimal "hello world" — one `index.html`. The default V3 reference site. |
+| [`vite-spa/`](./vite-spa/) | `npm run build` → `dist/` | Vite + React SPA. The realistic "I have a real frontend" flow, with the `base: './'` setting that makes assets resolve under both a `.ton` domain and a gateway prefix. |
+| [`nextjs-static-export/`](./nextjs-static-export/) | `next build` → `out/` | Next.js `output: 'export'`. Static export flow + Next-specific routing caveats (no SSR, absolute `/_next/` asset paths). |
 
 ## What goes in `examples/`
 
-- Self-contained sites (no `npm install`, no build).
+- Either build-free sites (`hello-ton/`) or realistic apps with a
+  documented `npm install` + build step (`vite-spa/`,
+  `nextjs-static-export/`).
 - One purpose per directory.
-- A README that documents the TonConnect + Agentic deploy invocations
-  side-by-side, so the directory works as both a learning aid and an
-  E2E test fixture.
+- A README that documents the build step and the TonConnect + Agentic
+  deploy invocations side-by-side, so the directory works as both a
+  learning aid and (for the build-free ones) an E2E test fixture.
 
 ## Not shipped in the npm tarball
 
