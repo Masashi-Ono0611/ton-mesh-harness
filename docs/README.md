@@ -1,9 +1,8 @@
 # `docs/` index
 
-A map of the project's documentation. Docs are kept **in place** (they're
-tightly cross-referenced — see the historical record for design rationale),
-and classified here as **Current**, **Reference**, or **Historical** so it's
-obvious what reflects the shipped product vs. what's a point-in-time record.
+A map of the project's documentation. **Current** + **Reference** docs live
+here under `docs/`; **Historical** point-in-time records are archived under
+[`docs/archive/`](./archive/) (all inbound links were updated on the move).
 
 > The live status dashboard is [`dashboard.html`](./dashboard.html).
 > Release notes live in the repo-root [`CHANGELOG.md`](../CHANGELOG.md).
@@ -34,21 +33,21 @@ These describe how the kit works today; keep them accurate.
 | [`v0.8/announcements-draft.md`](./v0.8/announcements-draft.md) | GA-day announcement copy (execute post-publish, #39) |
 | [`v0.8/ton-org-skills-pr-draft.md`](./v0.8/ton-org-skills-pr-draft.md) | draft PR body for the ton-org/skills listing |
 
-## Historical — point-in-time records (archived in place; not current)
+## Historical — point-in-time records → [`docs/archive/`](./archive/)
 
-Kept for design rationale + provenance. They describe a past state and are
-**not** maintained against the shipped product.
+Kept for design rationale + provenance; **not** maintained against the
+shipped product. See [`archive/README.md`](./archive/README.md) for the full
+list. Summary:
 
-- **v0.8 planning** — `v0.8/agent-native-pivot.md`, `v0.8/concept-update-2026-05-10.md`,
-  `v0.8/at-mcp-probe.md` (the agent-surface pivot design; the pivot has shipped).
-- **v0.7** — `v0.7/roadmap-draft.md` (C2/C3 → #29/#30 reserve),
-  `v0.7/c1-design-notes.md`, `v0.7/provider-probe-2026-05-10.md`.
-- **v0.6** — `v0.6/roadmap-draft.md`, `v0.6/ecosystem-watch-2026-05.md`,
-  `v0.6/sites-record-discovery.md`.
-- **v0.5** — `v0.5/round-postmortem.md` (provider-economy dormancy, still cited),
-  `v0.5/lane-b-self-generated-boc.md` (the `--span` BOC design), and the
-  resolved max-span upstream saga (`v0.5/lane-b-max-span-status.md`,
-  `v0.5/upstream-issue-max-span.md`, `v0.5/next-research-plan.md`).
+- **[`archive/v0.8/`](./archive/v0.8/)** — the agent-surface pivot design
+  (`agent-native-pivot`, `concept-update-2026-05-10`, `at-mcp-probe`). Shipped.
+- **[`archive/v0.7/`](./archive/v0.7/)** — `roadmap-draft` (C2/C3 → #29/#30),
+  `c1-design-notes`, `provider-probe-2026-05-10`.
+- **[`archive/v0.6/`](./archive/v0.6/)** — `roadmap-draft`,
+  `ecosystem-watch-2026-05`, `sites-record-discovery`.
+- **[`archive/v0.5/`](./archive/v0.5/)** — `round-postmortem` (provider
+  dormancy), `lane-b-self-generated-boc` (the `--span` BOC design), + the
+  resolved max-span upstream saga.
 
 > `docs/research/` is per-developer scratch (telegram archives, etc.) and is
 > **git-ignored** — not part of the published docs.

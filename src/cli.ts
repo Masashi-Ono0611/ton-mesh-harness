@@ -152,14 +152,14 @@ program
 
     // v0.6: --provider is temporarily disabled while the daemon backend is
     // being migrated. The mainnet provider economy was already dormant
-    // (docs/v0.5/round-postmortem.md), so this gate costs no real
+    // (docs/archive/v0.5/round-postmortem.md), so this gate costs no real
     // functionality. v0.7 will reintroduce provider support against
     // whichever protocol turns out to have liveness.
     if (opts.provider) {
       throw new Error(
         `--provider is temporarily disabled in v0.6 during the daemon backend migration. ` +
-        `Background: docs/v0.5/round-postmortem.md (mainnet provider economy is dormant). ` +
-        `Plan: docs/v0.6/roadmap-draft.md (re-enabled in v0.7).`,
+        `Background: docs/archive/v0.5/round-postmortem.md (mainnet provider economy is dormant). ` +
+        `Plan: docs/archive/v0.6/roadmap-draft.md (re-enabled in v0.7).`,
       )
     }
 

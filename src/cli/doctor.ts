@@ -168,7 +168,7 @@ export async function runDoctor(): Promise<void> {
     lines.push({
       status: 'pass',
       label: 'TON Storage provider registry',
-      detail: `${providers.providers.length} entries (registry only — see docs/v0.5/round-postmortem.md re: liveness)`,
+      detail: `${providers.providers.length} entries (registry only — see docs/archive/v0.5/round-postmortem.md re: liveness)`,
     })
   } else {
     lines.push({ status: 'warn', label: 'TON Storage provider registry', detail: 'could not fetch' })

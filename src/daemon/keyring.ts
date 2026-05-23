@@ -1,5 +1,5 @@
 // Pure-JS port of `generate-random-id -m keys` for `rldp-http-proxy` keyrings.
-// Spike output and TL constructor ID derivation: docs/v0.7/c1-design-notes.md.
+// Spike output and TL constructor ID derivation: docs/archive/v0.7/c1-design-notes.md.
 
 import { createHash, createPrivateKey, randomBytes } from 'node:crypto'
 import {
@@ -43,7 +43,7 @@ export interface AdnlIdentity {
 /**
  * Mint a fresh Ed25519 ADNL identity. Matches the byte-for-byte format
  * `generate-random-id -m keys` produces — see the captured fixture in
- * docs/v0.7/c1-design-notes.md.
+ * docs/archive/v0.7/c1-design-notes.md.
  */
 export function generateAdnlIdentity(seed?: Buffer): AdnlIdentity {
   const privSeed = seed ?? randomBytes(32)

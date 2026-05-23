@@ -1,7 +1,7 @@
 # Storage-provider contracts (v0.4 → v0.5)
 
 > **⚠ EXPERIMENTAL — as of the 2026-05-10 mainnet field-test, the mainnet storage-provider economy is largely dormant.**
-> The five cheapest providers have never once issued `accept_storage_contract`, and `foundation.ton` itself self-hosts via its own daemon. For the foreseeable future, self-hosting via `--watch` is the recommended path. Details: [`v0.5/round-postmortem.md`](v0.5/round-postmortem.md).
+> The five cheapest providers have never once issued `accept_storage_contract`, and `foundation.ton` itself self-hosts via its own daemon. For the foreseeable future, self-hosting via `--watch` is the recommended path. Details: [`v0.5/round-postmortem.md`](archive/v0.5/round-postmortem.md).
 >
 > This document is preserved to record the mechanism and the behaviour it will exhibit if the provider economy revives.
 
@@ -86,7 +86,7 @@ node dist/cli.js ./build/ --testnet --provider
 
 **v0.5 workaround — self-built BOC route**
 
-To avoid blocking on upstream, we assemble the BOC in TypeScript. Details: `docs/v0.5/lane-b-self-generated-boc.md`.
+To avoid blocking on upstream, we assemble the BOC in TypeScript. Details: `docs/archive/v0.5/lane-b-self-generated-boc.md`.
 
 1. Invoke the daemon CLI with `--max-span 200` (within its accepted range) to produce a draft BOC.
 2. Parse that BOC with `Cell.fromBoc` and extract `TorrentInfo` (ref Cell) + `microchunk_hash` (256-bit).
