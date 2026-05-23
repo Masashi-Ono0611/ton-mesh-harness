@@ -3,16 +3,27 @@ import chalk from 'chalk'
 import { verifyManifest, type ProvenanceManifest } from '../sdk/provenance'
 
 /**
- * `ton-sovereign-deploy verify-provenance <file>` (#34).
+ * `ton-sovereign-deploy verify-provenance <file|url>` (#34).
  *
- * Reads a `.well-known/ton-deploy.json` manifest from disk and verifies its
- * Ed25519 signature over the deployer claim. Prints the claim + verdict.
+ * Reads a `.well-known/ton-deploy.json` manifest — from a local path, or
+ * fetched from an `http(s)://` URL (e.g. a gateway serving the deployed
+ * `.ton` site) — and verifies its Ed25519 signature over the deployer
+ * claim. Prints the claim + verdict.
  * Exit 0 = signed & valid; 1 = unsigned, invalid, or unreadable.
  */
-export async function runVerifyProvenance(file: string): Promise<void> {
+async function readManifestSource(target: string): Promise<string> {
+  if (/^https?:\/\//i.test(target)) {
+    const res = await fetch(target)
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${target}`)
+    return await res.text()
+  }
+  return fs.readFileSync(target, 'utf8')
+}
+
+export async function runVerifyProvenance(target: string): Promise<void> {
   let manifest: ProvenanceManifest
   try {
-    manifest = JSON.parse(fs.readFileSync(file, 'utf8')) as ProvenanceManifest
+    manifest = JSON.parse(await readManifestSource(target)) as ProvenanceManifest
   } catch (err) {
     console.error(chalk.red(`Could not read manifest: ${err instanceof Error ? err.message : String(err)}`))
     process.exit(1)

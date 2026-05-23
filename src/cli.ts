@@ -311,8 +311,8 @@ serviceCmd
 
 program
   .command('verify-provenance')
-  .argument('<file>', 'Path to a .well-known/ton-deploy.json manifest')
+  .argument('<file-or-url>', 'Path to (or http(s):// URL of) a .well-known/ton-deploy.json manifest')
   .description('Verify a provenance manifest (#34): checks the Ed25519 signature over the deployer claim')
-  .action(async (file: string) => { await runVerifyProvenance(file) })
+  .action(async (target: string) => { await runVerifyProvenance(target) })
 
 program.parse()
