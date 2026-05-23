@@ -117,3 +117,13 @@ jobs:
         # This would have flagged the rc5 templates/ omission AT
         # CI time, not via post-pack inspection.
         run: node scripts/tarball-smoke.cjs
+
+      - name: E2E MCP stage 1 (V3 #18 — handshake + tools/list + check_env)
+        # The V3 acceptance driver (scripts/e2e-mcp-deploy.cjs). Unarmed
+        # in CI: with no E2E_AUTO_SIGN it exercises the zero-cost MCP
+        # surface (initialize → tools/list → sovereign_check_env) and
+        # gracefully skips the deploy stage, exiting 0. The armed
+        # mainnet deploy stage spends real TON and stays a manual,
+        # operator-run step (see docs/v0.8/e2e-runbook.md) — there is
+        # deliberately no mainnet seed in CI secrets.
+        run: node scripts/e2e-mcp-deploy.cjs
