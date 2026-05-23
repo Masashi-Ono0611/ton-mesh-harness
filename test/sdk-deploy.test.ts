@@ -18,13 +18,6 @@ describe('SDK deploy() — input validation + error contract', () => {
     })
   })
 
-  it('rejects testnet=true on the tonutils-storage backend', async () => {
-    await expect(deploy({ source_dir: './dist', testnet: true }).next()).rejects.toMatchObject({
-      code: 'ERR_INVALID_INPUT',
-      message: expect.stringContaining('testnet deploys are not supported'),
-    })
-  })
-
   it('rejects unknown wallet kind through schema parse', async () => {
     await expect(
       deploy({ source_dir: './dist', wallet: { kind: 'bogus' as 'tonconnect' } }).next(),
@@ -43,17 +36,20 @@ describe('SDK deploy() — input validation + error contract', () => {
 
   it('SDK lifts bare-string wallet for CLI compat (deploy() is permissive)', async () => {
     // Codex pre-GA review round 4 noted this CLI-compat lift in
-    // src/sdk/deploy.ts::normalize() via parseWalletInput(). The
-    // SDK accepts string wallets; MCP boundary enforces structured
-    // objects separately (see src/mcp.ts::handleDeploy). The SDK
-    // throws on a DIFFERENT reason (`testnet: true` is unsupported
-    // here), proving the string-lift succeeded past the wallet gate.
-    await expect(
-      deploy({ source_dir: './dist', wallet: 'Tonkeeper', testnet: true }).next(),
-    ).rejects.toMatchObject({
-      code: 'ERR_INVALID_INPUT',
-      message: expect.stringContaining('testnet'),
-    })
+    // src/sdk/deploy.ts::normalize() via parseWalletInput(). The SDK
+    // accepts string wallets; the MCP boundary enforces structured objects
+    // separately (see src/mcp.ts::handleDeploy). Proof the lift succeeded
+    // past the wallet gate: deploy() does NOT reject — it progresses to the
+    // first `env_check` yield. We then return() the generator to release
+    // the process-local in-flight lock without spawning a daemon.
+    const gen = deploy({ source_dir: './dist', wallet: 'Tonkeeper' })
+    try {
+      const first = await gen.next()
+      expect(first.done).toBe(false)
+      expect(first.value).toMatchObject({ phase: 'env_check' })
+    } finally {
+      await gen.return(undefined)
+    }
   })
 
   it('ZodError diagnostics surface as SdkError.data.zod_issues', async () => {

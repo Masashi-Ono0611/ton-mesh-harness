@@ -3,20 +3,19 @@
 The reproducible recipe for the single GA acceptance gate: an MCP client
 drives `ton-sovereign-mcp` through a real on-chain deploy.
 
-## ⚠️ Network scope: the MCP path is mainnet-only in v0.8
+## ⚠️ Network scope
 
-The V3 issue and the release-checklist originally said *testnet*. The v0.8
-SDK does **not** implement a testnet deploy path: `sovereign_deploy` with
-`testnet:true` is rejected with `ERR_INVALID_INPUT`
-(`src/sdk/deploy.ts:253` — the tonutils-storage backend is mainnet-only).
-Testnet exists **only** on the legacy CLI path
-(`--daemon-backend=ton-core`), which is outside the MCP boundary and is
-TonConnect-only (no agentic signing).
+The V3 GA gate is run on **mainnet** (§1) — it's the acceptance proof for
+the real agent-native deploy.
 
-So the MCP-path E2E gate is **mainnet** (§1). A free testnet rehearsal of
-the *upload + DNS* mechanics — useful for shaking out the flow without
-spending real TON, but **not** the MCP gate — is documented separately in
-§2.
+> **Note (v0.9):** testnet is now also supported on the MCP/tonutils path —
+> `sovereign_deploy` with `testnet:true` starts the daemon with the testnet
+> `--network-config` and writes DNS via testnet endpoints. It needs testnet
+> TON + a testnet `.ton` domain, and bag propagation depends on testnet
+> ADNL liveness (self-host via your own daemon). The earlier "mainnet-only"
+> guard is gone. The legacy `--daemon-backend=ton-core` testnet path (§2)
+> still exists for the C++ backend, but the tonutils/MCP path no longer
+> requires it.
 
 The automated driver is `scripts/e2e-mcp-deploy.cjs` (a portable `.cjs`,
 matching `scripts/mcp-smoke.cjs` — GNU `timeout` is not on macOS runners).

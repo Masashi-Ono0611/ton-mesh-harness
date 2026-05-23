@@ -7,6 +7,8 @@ import path from 'path'
 import os from 'os'
 import { findFreeTcpPort, findFreeUdpPort } from './ports'
 import { getTonutilsPaths } from './tonutils-installer'
+import { BIN_DIR } from './installer-utils'
+import { getNetworkConfig } from '../network'
 
 export interface TonutilsHandle {
   apiUrl: string                // e.g. http://127.0.0.1:8192
@@ -24,6 +26,31 @@ export interface TonutilsHandle {
 // importing from `./tonutils-process`. New callers should import from
 // `./ports` directly.
 export { findFreeTcpPort as findFreePort, findFreeUdpPort }
+
+// -----------------------------------------------------------------------
+// Network config (#33 testnet-via-MCP)
+//
+// tonutils-storage defaults to mainnet. For testnet it needs a global
+// config file passed via `-network-config`. We download + cache the
+// testnet config in BIN_DIR. Mainnet returns undefined (daemon default).
+// -----------------------------------------------------------------------
+
+const TESTNET_CONFIG_CACHE = path.join(BIN_DIR, 'testnet-global.config.json')
+
+export async function ensureTonutilsNetworkConfig(testnet: boolean): Promise<string | undefined> {
+  if (!testnet) return undefined
+  if (existsSync(TESTNET_CONFIG_CACHE)) return TESTNET_CONFIG_CACHE
+  const url = getNetworkConfig(true).daemonConfigUrl
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`failed to fetch testnet global config from ${url} (HTTP ${res.status})`)
+  }
+  const text = await res.text()
+  JSON.parse(text) // sanity: must be valid JSON before we cache it
+  mkdirSync(BIN_DIR, { recursive: true })
+  writeFileSync(TESTNET_CONFIG_CACHE, text)
+  return TESTNET_CONFIG_CACHE
+}
 
 export interface EnsureTonutilsConfigOptions {
   // Absolute path to a nodes-pool.json that the bundled tunnel client
@@ -122,6 +149,8 @@ async function ensureTonutilsConfig(
 
 export interface StartTonutilsDaemonOptions {
   tunnelConfigPath?: string
+  /** Path to a global network config (testnet); omit for mainnet default. */
+  networkConfigPath?: string
 }
 
 export async function startTonutilsDaemon(
@@ -154,6 +183,8 @@ export async function startTonutilsDaemon(
     [
       '--api', `127.0.0.1:${apiPort}`,
       '--db', dbDir,
+      // testnet: hand the daemon a global config (mainnet is its default).
+      ...(opts.networkConfigPath ? ['--network-config', opts.networkConfigPath] : []),
     ],
     { stdio: 'ignore', detached: false },
   )

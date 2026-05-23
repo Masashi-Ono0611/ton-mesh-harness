@@ -32,6 +32,9 @@ vi.mock('../src/daemon/tonutils-process', () => ({
   startTonutilsDaemon: startTonutilsDaemonMock,
   tonutilsCreate: tonutilsCreateMock,
   tonutilsDetails: tonutilsDetailsMock,
+  // #33: deploy() resolves the testnet network config before spawning; the
+  // mainnet path returns undefined (no network access).
+  ensureTonutilsNetworkConfig: vi.fn().mockResolvedValue(undefined),
 }))
 
 // Mock the dynamically-imported ./dns module — return a controllable

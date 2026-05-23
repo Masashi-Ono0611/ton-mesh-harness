@@ -28,6 +28,7 @@ import {
 } from './schemas'
 import { ensureTonutilsBinary } from '../daemon/tonutils-installer'
 import {
+  ensureTonutilsNetworkConfig,
   startTonutilsDaemon,
   tonutilsCreate,
   tonutilsDetails,
@@ -251,14 +252,10 @@ export async function* deploy(
     }
   })()
 
-  if (opts.testnet) {
-    throw new SdkError(
-      'ERR_INVALID_INPUT',
-      'testnet deploys are not supported by the SDK in v0.8 (the tonutils-storage backend is mainnet-only).' +
-        ' For testnet, use the CLI with `--daemon-backend=ton-core` — that path lives outside the SDK boundary.',
-      { severity: 'fatal' },
-    )
-  }
+  // testnet is supported on the tonutils backend since the daemon takes a
+  // `--network-config` (resolved + passed at daemon_starting below). The SDK
+  // DNS path is already network-aware (networkFromTestnetFlag → testnet
+  // toncenter / tonapi / NFT resolution).
 
   const resolvedTunnel = opts.tunnel_config ? validateTunnelConfig(opts.tunnel_config) : undefined
 
@@ -325,8 +322,19 @@ export async function* deploy(
     yield { phase: 'daemon_starting', message: 'starting tonutils-storage…' }
     checkAborted()
 
+    let networkConfigPath: string | undefined
     try {
-      daemon = await startTonutilsDaemon({ tunnelConfigPath: resolvedTunnel })
+      networkConfigPath = await ensureTonutilsNetworkConfig(opts.testnet)
+    } catch (err) {
+      throw new SdkError(
+        'ERR_DAEMON_SPAWN',
+        `Could not fetch the testnet global config for tonutils-storage: ${err instanceof Error ? err.message : String(err)}`,
+        { severity: 'fatal', fixHint: 'Check network reachability to ton.org, or deploy to mainnet.' },
+      )
+    }
+
+    try {
+      daemon = await startTonutilsDaemon({ tunnelConfigPath: resolvedTunnel, networkConfigPath })
     } catch (err) {
       throw mapDaemonStartError(err)
     }

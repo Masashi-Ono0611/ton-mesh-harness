@@ -76,9 +76,11 @@ export const DeployOptionsSchema = z.strictObject({
    */
   wallet: WalletSpecSchema.default({ kind: 'tonconnect', connector: 'Tonkeeper' }),
   /**
-   * Use TON testnet instead of mainnet. v0.8 SDK does not yet support the
-   * testnet path on the tonutils backend; the SDK throws `ERR_INVALID_INPUT`
-   * when this is true. Reserved for v0.9. Status / check_env honour it.
+   * Use TON testnet instead of mainnet. Supported on the tonutils backend
+   * since v0.9: the daemon is started with the testnet `--network-config`
+   * and the DNS write uses testnet endpoints. Requires testnet TON in the
+   * signing wallet and a testnet `.ton` domain. Bag propagation depends on
+   * testnet ADNL/storage liveness (self-host via the deployer's own daemon).
    */
   testnet: z.boolean().default(false),
   /** Path to ADNL Tunnel client config (nodes-pool.json). */

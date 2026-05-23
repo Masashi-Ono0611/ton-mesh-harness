@@ -140,12 +140,9 @@ export async function runDeployTonutils(
   const { createSpinner } = resolveCliOutputMode(opts)
 
   try {
-    if (opts.testnet) {
-      throw new Error(
-        `--testnet is not supported on the tonutils-storage backend in v0.6. ` +
-        `Use --daemon-backend=ton-core for testnet, or drop --testnet for mainnet self-host.`,
-      )
-    }
+    // testnet on the tonutils backend is supported since v0.9 (the daemon
+    // takes a --network-config; the SDK deploy() resolves + passes the
+    // testnet global config). DNS registration below is already testnet-aware.
 
     const tunnel = deployOpts.tunnelConfigPath
       ? resolveTunnelConfig(deployOpts.tunnelConfigPath)
@@ -198,6 +195,7 @@ export async function runDeployTonutils(
       description,
       keep_alive: true as const,
       tunnel_config: tunnel?.absPath ?? null,
+      testnet: Boolean(opts.testnet),
     }
 
     try {
