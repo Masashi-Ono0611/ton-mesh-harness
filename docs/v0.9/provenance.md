@@ -57,7 +57,9 @@ bag). The manifest adds the orthogonal fact "who deployed it, and when."
 ## Verifying
 
 ```bash
+# a local file, or fetch it straight from the deployed site:
 ton-sovereign-deploy verify-provenance ./path/to/ton-deploy.json
+ton-sovereign-deploy verify-provenance https://yourname.ton/.well-known/ton-deploy.json
 ```
 
 Exit `0` = signed and valid; `1` = unsigned, tampered, or unreadable.
@@ -88,6 +90,4 @@ A verifier (a TON Browser plugin, an RLDP-HTTP-Proxy, a CI gate) would:
 - TON-native signature schemes (ton_proof-style) — currently raw Ed25519.
 - A `.well-known/ton-deploy-history.json` keeping all historical manifests
   across re-deploys.
-- Fetching the manifest from the live bag inside `verify-provenance`
-  (today it verifies a local file).
 - TonConnect-path signing (needs a wallet that can sign arbitrary data).
