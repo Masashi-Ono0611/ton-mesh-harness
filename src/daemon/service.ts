@@ -57,6 +57,18 @@ function assertSupported(): void {
   }
 }
 
+// A bag id is a TON Storage content hash — 64 hex chars. Validate before
+// using it in filesystem paths / service labels / unit filenames so a
+// hostile value (e.g. `../../etc` passed to `service stop --purge`) can't
+// path-traverse out of SEEDS_ROOT in rmSync, or smuggle odd chars into a
+// launchd/systemd label.
+const BAG_ID_RE = /^[0-9a-fA-F]{64}$/
+function assertBagId(bagId: string): void {
+  if (!BAG_ID_RE.test(bagId)) {
+    throw new ServiceError(`invalid bag id: expected 64 hex chars, got ${JSON.stringify(String(bagId)).slice(0, 48)}`)
+  }
+}
+
 export function serviceLabel(bagId: string): string {
   return `ton-sovereign.${bagId}`
 }
@@ -142,6 +154,7 @@ function run(cmd: string, args: string[]): void {
  */
 export function installService(meta: ServiceMeta): void {
   assertSupported()
+  assertBagId(meta.bag_id)
   mkdirSync(seedDir(meta.bag_id), { recursive: true })
   writeFileSync(metaPath(meta.bag_id), JSON.stringify(meta, null, 2) + '\n')
 
@@ -212,6 +225,7 @@ export function listServices(): ServiceStatus[] {
  */
 export function stopService(bagId: string, opts: { removeDb?: boolean } = {}): void {
   assertSupported()
+  assertBagId(bagId) // guard rmSync(seedDir(bagId)) against path traversal
   const meta = readMeta(bagId)
   if (!meta) throw new ServiceError(`no service found for bag ${bagId}`)
 

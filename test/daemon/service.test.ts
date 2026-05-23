@@ -4,6 +4,8 @@ import {
   buildSystemdUnit,
   serviceLabel,
   seedDir,
+  stopService,
+  ServiceError,
   type ServiceMeta,
 } from '../../src/daemon/service'
 
@@ -45,6 +47,17 @@ describe('buildLaunchdPlist', () => {
     expect(p).toContain('<string>--network-config</string>')
     expect(p).toContain('<string>/cfg/testnet.json</string>')
   })
+})
+
+describe('bag-id validation (path-traversal guard)', () => {
+  // stopService → rmSync(seedDir(bagId)) when --purge; a hostile bagId must
+  // be rejected before it can escape SEEDS_ROOT.
+  it.each(['../../etc', '..', 'a/b', '', 'nothex', 'g'.repeat(64), 'abc'])(
+    'stopService rejects non-hex bag id %j',
+    (bad) => {
+      expect(() => stopService(bad)).toThrow(ServiceError)
+    },
+  )
 })
 
 describe('buildSystemdUnit', () => {

@@ -52,6 +52,16 @@ vs 0.9.0) is the maintainer's call at release time.
   `docs/v0.9/agent-compat.md`: per-agent MCP discovery config + red-team
   protocol (runs are manual + publish-gated).
 
+### Security
+
+- **Post-sprint hardening of the new v0.9 attack surface.**
+  - `service` mode: validate the bag id is 64 hex chars before using it in a
+    filesystem path / unit label — guards `service stop --purge` against a
+    `path.join(SEEDS_ROOT, "../…")` traversal in `rmSync`.
+  - MCP HTTP transport: constant-time bearer-token comparison
+    (`timingSafeEqual`) + a 4 MiB request-body cap (413), so a hostile client
+    can't recover the token byte-by-byte or exhaust memory.
+
 ### Changed
 
 - **tonutils-storage daemon `v1.4.1` → `v1.5.0`** — upstream perf/reliability

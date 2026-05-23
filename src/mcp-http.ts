@@ -17,11 +17,20 @@
  */
 
 import { createServer } from 'node:http'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
 
 export const MCP_HTTP_PATH = '/mcp'
+/** Cap on a single request body — MCP JSON-RPC messages are tiny. */
+const MAX_BODY_BYTES = 4 * 1024 * 1024
+
+/** Constant-time bearer-token check (avoids byte-by-byte timing recovery). */
+function bearerOk(header: string | undefined, token: string): boolean {
+  const got = Buffer.from(header ?? '')
+  const want = Buffer.from(`Bearer ${token}`)
+  return got.length === want.length && timingSafeEqual(got, want)
+}
 
 export interface HttpAddr {
   host: string
@@ -100,19 +109,33 @@ export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<
         return
       }
 
-      // Bearer auth (enforced whenever a token is configured).
-      if (token) {
-        if (req.headers.authorization !== `Bearer ${token}`) {
-          res.writeHead(401, { 'www-authenticate': 'Bearer', 'content-type': 'text/plain' }).end('unauthorized')
-          return
-        }
+      // Bearer auth (enforced whenever a token is configured). Constant-time
+      // compare so the token can't be recovered byte-by-byte via timing.
+      if (token && !bearerOk(req.headers.authorization, token)) {
+        res.writeHead(401, { 'www-authenticate': 'Bearer', 'content-type': 'text/plain' }).end('unauthorized')
+        return
       }
 
-      // Parse a JSON body for POST; GET/DELETE carry none.
+      // Parse a JSON body for POST; GET/DELETE carry none. Cap the body so a
+      // hostile client can't exhaust memory — MCP JSON-RPC messages are small.
       let body: unknown
       if (req.method === 'POST') {
         const chunks: Buffer[] = []
-        for await (const c of req) chunks.push(c as Buffer)
+        let size = 0
+        let tooLarge = false
+        for await (const c of req) {
+          size += (c as Buffer).length
+          if (size > MAX_BODY_BYTES) {
+            tooLarge = true
+            break
+          }
+          chunks.push(c as Buffer)
+        }
+        if (tooLarge) {
+          res.writeHead(413, { 'content-type': 'text/plain' }).end('payload too large')
+          req.destroy()
+          return
+        }
         const raw = Buffer.concat(chunks).toString('utf8')
         if (raw) {
           try {
