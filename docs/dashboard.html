@@ -614,7 +614,7 @@
     </div>
   </div>
   <div class="meta">
-    <strong>v0.8.0-rc11 · agent-native track · GA gates pending</strong><br>
+    <strong>v0.8.0-rc11 · V3 PASS · v0.9 reserve shipping · GA publish-gated</strong><br>
     Updated 2026-05-23 · <code>ton-projects/sovereign-deploy-kit</code>
   </div>
 </header>
@@ -813,11 +813,12 @@
       <div style="font-size: 13px; color: var(--text-dim); line-height: 1.65;">
         The v0.8 pivot turns the CLI into an <strong>agent surface</strong>. An MCP server exposes three tools — <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">sovereign_check_env</code>, <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">sovereign_deploy</code>, <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">sovereign_status</code> — with two signing paths: <strong>TonConnect</strong> (human-approved) and <strong>agentic</strong> (autonomous, key shared with <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">@ton/mcp</code>). Real on-chain <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">dns_tx_hash</code>, NFT-delegated agentic signing, full SDK external entry.
         Hardened across <strong>11 Codex review rounds</strong> (4 BLOCKERs + 22 MAJORs resolved). CI is green again on Node 18/20/22 × ubuntu/macos after the chokidar↓ fix.
+        <strong>V3 acceptance PASSED</strong> on mainnet (domain <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">masashi-ono0611.ton</code>, on-chain <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">change_dns_record</code>). Post-rc11 the v0.9 reserve is shipping early: <strong>HTTP transport, testnet-via-MCP, signed provenance, OS service-mode daemons, Vite/Next examples</strong> (CHANGELOG <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--ton-2);font-size:12px;border:1px solid var(--border);">[Unreleased]</code>). GA itself waits only on the operator-run npm publish.
       </div>
       <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <span class="chip blue">3 MCP tools</span>
-        <span class="chip green">agentic + TonConnect signing</span>
-        <span class="chip purple">323 tests green · CI green</span>
+        <span class="chip blue">3 MCP tools · stdio + HTTP</span>
+        <span class="chip green">V3 mainnet PASS</span>
+        <span class="chip purple">337 tests green · CI green</span>
       </div>
     </div>
   </div>
@@ -870,13 +871,13 @@
   <div class="card span-4">
     <h2>Status snapshot <span class="chip blue">GA gate</span></h2>
     <ul class="check">
-      <li>v0.1–v0.7 — upload · <code>.ton</code> DNS · provider · ADNL tunnel</li>
-      <li>v0.8 — MCP server (3 tools) + agentic signing</li>
-      <li>11 Codex review rounds resolved (4 BLOCKER + 22 MAJOR)</li>
-      <li>CI green: Node 18/20/22 × ubuntu/macos</li>
-      <li class="pending">#18 V3 — mainnet MCP E2E (user-run acceptance)</li>
-      <li class="pending">#26 V4 — agency-transfer red-team (user-run)</li>
-      <li class="pending">#21 D3 — GA cut: <code>release.sh 0.8.0</code> + npm</li>
+      <li>v0.1–v0.8 — upload · <code>.ton</code> DNS · MCP server + agentic signing</li>
+      <li>#18 V3 — mainnet MCP E2E <strong>PASS</strong> (real on-chain tx)</li>
+      <li>v0.9 shipped: HTTP transport · testnet-via-MCP · provenance</li>
+      <li>v0.9 shipped: OS service-mode · Vite/Next examples · cancel test</li>
+      <li>CI green: Node 18/20/22 × ubuntu/macos · 337 tests</li>
+      <li class="pending">#26 V4 — agency-transfer red-team (user-run, post-publish)</li>
+      <li class="pending">#38/#21 — npm publish → GA cut (operator-run)</li>
     </ul>
   </div>
 
@@ -1036,7 +1037,7 @@
 
   <!-- Roadmap detail -->
   <div class="card span-12">
-    <h2>Roadmap <span class="chip blue">v0.1 → v0.8</span></h2>
+    <h2>Roadmap <span class="chip blue">v0.1 → v0.9</span></h2>
     <table>
       <thead>
         <tr>
@@ -1105,11 +1106,11 @@
           <td>MCP server (3 tools) · agentic + TonConnect signing · real <code>dns_tx_hash</code> · SDK entry</td>
         </tr>
         <tr>
-          <td><strong>v0.9+</strong></td>
+          <td><strong>v0.9</strong></td>
           <td>Reserve (#28)</td>
-          <td><span class="chip purple">Parked</span></td>
-          <td>post-GA</td>
-          <td>testnet-via-MCP · HTTP transport · launchd/systemd · cross-agent compat</td>
+          <td><span class="chip green">Shipping</span></td>
+          <td>post-rc11</td>
+          <td>✅ testnet-via-MCP · HTTP transport · provenance · service-mode · examples — ⏳ #29/#30 (upstream C++ binaries)</td>
         </tr>
       </tbody>
     </table>
@@ -1253,7 +1254,7 @@
 
   <!-- CLI options -->
   <div class="card span-12">
-    <h2>CLI surface <span class="pill">v0.8.0-rc11</span></h2>
+    <h2>CLI surface <span class="pill">v0.8.0-rc11 + v0.9</span></h2>
     <table>
       <thead>
         <tr>
@@ -1280,11 +1281,15 @@
         <tr><td><code>--site-adnl &lt;hex&gt;</code></td><td>64-hex ADNL identity to publish as the <code>site</code> (<code>dns_adnl_address</code>) DNS record. Combined with <code>--domain</code>, ships <code>storage</code> + <code>site</code> records in <strong>one</strong> TonConnect signature. BYO <code>rldp-http-proxy</code>; auto-spawn is v0.7.</td><td>v0.6 (B5)</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>doctor</code> (subcommand)</td><td>Pre-flight env check: daemon binaries, TONAPI/manifest reachability, TonConnect pairing, ~/.ton-sovereign dir.</td><td>v0.6</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--wallet-mode &lt;mode&gt;</code></td><td>Signing path: <code>tonconnect</code> (human-approved, default) or <code>agentic</code> (autonomous, key from <code>~/.config/ton/config.json</code> shared with <code>@ton/mcp</code>). Agentic requires the <code>tonutils</code> backend.</td><td>v0.8</td><td><span class="chip blue">New</span></td></tr>
+        <tr><td><code>--daemon-mode &lt;mode&gt;</code></td><td>Daemon ownership: <code>detached</code> (default) · <code>embedded</code> (one-shot) · <code>service</code> (hand to launchd/systemd, keeps seeding). #37</td><td>v0.9</td><td><span class="chip blue">New</span></td></tr>
+        <tr><td><code>--no-provenance</code></td><td>Skip emitting the <code>.well-known/ton-deploy.json</code> provenance manifest (#34).</td><td>v0.9</td><td><span class="chip blue">New</span></td></tr>
+        <tr><td><code>service list|stop</code> (subcommand)</td><td>Manage <code>--daemon-mode service</code> seed daemons (#37).</td><td>v0.9</td><td><span class="chip blue">New</span></td></tr>
+        <tr><td><code>verify-provenance &lt;file&gt;</code> (subcommand)</td><td>Verify a provenance manifest's Ed25519 signature (#34).</td><td>v0.9</td><td><span class="chip blue">New</span></td></tr>
         <tr><td><code>--debounce &lt;ms&gt;</code></td><td>Watch debounce delay (default <code>2000</code>)</td><td>v0.3</td><td><span class="chip green">Stable</span></td></tr>
       </tbody>
     </table>
     <div class="note">
-      Source: <code>src/cli.ts</code>. v0.8 adds the <strong>MCP server</strong> (<code>ton-sovereign-mcp</code>, <code>src/mcp.ts</code>) exposing the same deploy surface as 3 agent tools — <code>sovereign_check_env</code> / <code>sovereign_deploy</code> / <code>sovereign_status</code> — plus an SDK external entry (<code>src/sdk/</code>).
+      Source: <code>src/cli.ts</code>. v0.8 adds the <strong>MCP server</strong> (<code>ton-sovereign-mcp</code>, <code>src/mcp.ts</code>) — 3 agent tools (<code>sovereign_check_env</code> / <code>sovereign_deploy</code> / <code>sovereign_status</code>) over <strong>stdio (default) or HTTP</strong> (<code>--http</code>, #33) — plus an SDK external entry (<code>src/sdk/</code>).
     </div>
   </div>
 
@@ -1388,16 +1393,19 @@
   <div class="card span-6">
     <h2>Path to GA <span class="chip blue">2026-05-23</span></h2>
     <ul class="check">
-      <li>CI green again (chokidar↓, Node 18 <code>require()</code> restored)</li>
-      <li>#18/#40 mainnet MCP E2E scaffold + runbook landed</li>
-      <li>#39 GA announcement playbook drafted</li>
-      <li class="pending">#18 V3 — run mainnet E2E once, attach transcript (user)</li>
-      <li class="pending">#26 V4 — fresh-session red-team, record result (user)</li>
-      <li class="pending">#21 D3 — <code>release.sh 0.8.0</code> → npm publish + GitHub release (user)</li>
-      <li class="pending">Execute #39 announcement playbook on GA day (user)</li>
+      <li>CI green (chokidar↓, Node 18 restored) · 337 tests</li>
+      <li>#18 V3 — mainnet MCP E2E <strong>PASS</strong> (transcript on #18)</li>
+      <li>#40 runbook · #39 announcement playbook landed</li>
+      <li>v0.9 reserve shipped early (#31–#37 + testnet-via-MCP)</li>
+      <li class="pending">#38 — <code>npm publish --tag next</code> (operator; OTP)</li>
+      <li class="pending">#26 V4 — fresh-session red-team, post-publish (user)</li>
+      <li class="pending">#21 — <code>release.sh 0.8.0</code> → publish + GitHub release (user)</li>
     </ul>
     <div class="note">
-      The code / CI / docs blockers are cleared. What remains is <strong>real-machine acceptance</strong> (#18 + #26) and the <strong>operator-run GA cut</strong> (#21) — both are human-judgement steps (real TON spend,外部発信), not agent-automatable.
+      All agent-implementable work (code / CI / docs / tests) is done — including
+      the v0.9 reserve. GA now waits only on the <strong>operator-run npm publish</strong>
+      (#38 → #26 → #21); #29/#30 stay parked on upstream C++ binaries. The
+      remaining steps are human-judgement (npm auth, 対外発信), not agent-automatable.
     </div>
   </div>
 
@@ -1414,7 +1422,7 @@
     <a href="https://tonconnect.network">TON Connect</a>
   </div>
   <div>
-    Updated 2026-05-23 for <code>v0.8.0-rc11</code> (<code>main</code> @ <code>91e3203</code>). Layout takes design cues from Telegram night mode and the TON brand palette (<code>#0098EA</code>). Light mode follows automatically via <code>prefers-color-scheme</code>.
+    Updated 2026-05-23 for <code>v0.8.0-rc11</code> + v0.9 reserve shipping (<code>main</code> @ <code>68bb85a</code>). Layout takes design cues from Telegram night mode and the TON brand palette (<code>#0098EA</code>). Light mode follows automatically via <code>prefers-color-scheme</code>.
   </div>
 </footer>
 
