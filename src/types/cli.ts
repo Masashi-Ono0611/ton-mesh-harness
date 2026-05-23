@@ -8,6 +8,7 @@ export interface CliOptions {
   ciMode?: boolean
   jsonOutput?: boolean
   skipVerify?: boolean
+  provenance?: boolean       // #34: emit .well-known/ton-deploy.json (default true; --no-provenance → false)
   watch?: boolean
   debounce?: string
   daemonBackend?: 'tonutils' | 'ton-core'  // v0.6: which backend daemon to run

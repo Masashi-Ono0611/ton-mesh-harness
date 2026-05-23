@@ -165,6 +165,10 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
           "default": false,
           "type": "boolean",
         },
+        "provenance": {
+          "default": true,
+          "type": "boolean",
+        },
         "source_dir": {
           "type": "string",
         },

@@ -17,6 +17,7 @@ import {
 import { buildUrls, printResult, exportAsJson, type DeployResult } from '../output'
 import { watchBuildDir } from '../watch'
 import { deploy as sdkDeploy } from '../sdk/deploy'
+import { emitProvenanceManifest } from '../sdk/provenance'
 import type { DeployEvent, DeployResult as SdkDeployResult } from '../sdk/schemas'
 import {
   resolveTunnelConfig as resolveTunnelConfigCore,
@@ -164,6 +165,29 @@ export async function runDeployTonutils(
       console.log(chalk.dim(`  Build dir: ${buildDir}`))
       if (opts.domain) console.log(chalk.dim(`  Domain:    ${opts.domain}`))
       console.log()
+    }
+
+    // Provenance manifest (#34): emit BEFORE the SDK creates the bag so the
+    // bag includes it. The CLI drives DNS itself (so it passes no `domain`
+    // to the SDK), hence we emit here rather than relying on the SDK hook.
+    if (opts.provenance !== false && opts.domain) {
+      const r = emitProvenanceManifest({
+        sourceDir: buildDir,
+        domain: opts.domain,
+        walletKind: opts.walletMode === 'agentic' ? 'agentic' : 'tonconnect',
+        testnet: Boolean(opts.testnet),
+        agentic:
+          opts.walletMode === 'agentic'
+            ? { config_path: opts.walletConfig, wallet_label: opts.walletLabel }
+            : undefined,
+      })
+      if (!opts.jsonOutput) {
+        console.log(
+          r.written
+            ? chalk.dim(`  Provenance: .well-known/ton-deploy.json (${r.signed ? 'signed' : 'unsigned'})`)
+            : chalk.dim(`  Provenance: skipped (${r.reason})`),
+        )
+      }
     }
 
     let spinner: ReturnType<typeof createSpinner.start> | undefined

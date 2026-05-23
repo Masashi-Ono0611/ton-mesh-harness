@@ -89,6 +89,15 @@ export const DeployOptionsSchema = z.strictObject({
    * before the call returns (one-shot semantics).
    */
   keep_alive: z.boolean().default(false),
+  /**
+   * Emit a provenance manifest into `<source_dir>/.well-known/ton-deploy.json`
+   * before bag creation (so the bag includes it). On the agentic path it is
+   * signed with the operator/standard key; on TonConnect it is unsigned
+   * (the wallet can't sign arbitrary bytes). Only emitted when `domain` is
+   * set. Best-effort: any failure is logged and skipped, never fatal.
+   * Pass false to opt out (CLI `--no-provenance`).
+   */
+  provenance: z.boolean().default(true),
 })
 
 export type DeployOptions = z.infer<typeof DeployOptionsSchema>

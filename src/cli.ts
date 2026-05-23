@@ -6,6 +6,7 @@ import { runDeployTonutils, runWatchModeTonutils } from './cli/deploy-tonutils'
 import { runDnsRegistration } from './cli/dns'
 import { runDnsRegistrationAgentic } from './cli/dns-agentic'
 import { runDoctor } from './cli/doctor'
+import { runVerifyProvenance } from './cli/verify-provenance'
 import { runSiteHost } from './cli/site-host'
 import { runWatchMode } from './cli/watch'
 
@@ -33,6 +34,7 @@ program
   .option('--ci-mode', 'Disable spinners for CI environments')
   .option('--json-output', 'Output result as JSON (for CI/CD pipelines)')
   .option('--skip-verify', 'Skip bag accessibility verification')
+  .option('--no-provenance', 'Do not emit the .well-known/ton-deploy.json provenance manifest into the bag')
   // --watch is the default since v0.6 (self-host first). The daemon stays
   // alive and the build dir is watched for changes. `--no-watch` exits as
   // soon as the bag is uploaded (one-shot deploy).
@@ -274,5 +276,11 @@ program
   .command('doctor')
   .description('Pre-flight environment check: daemon binaries, TONAPI / manifest reachability, TonConnect session')
   .action(async () => { await runDoctor() })
+
+program
+  .command('verify-provenance')
+  .argument('<file>', 'Path to a .well-known/ton-deploy.json manifest')
+  .description('Verify a provenance manifest (#34): checks the Ed25519 signature over the deployer claim')
+  .action(async (file: string) => { await runVerifyProvenance(file) })
 
 program.parse()
