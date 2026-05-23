@@ -306,6 +306,14 @@ if (ALL_TOOLS.length !== 3) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
+  // Opt-in HTTP transport (#33): `--http <addr>` replaces stdio (mutually
+  // exclusive). stdio stays the default for local-host MCP clients.
+  const httpIdx = process.argv.indexOf('--http')
+  if (httpIdx !== -1) {
+    const { parseHttpAddr, runHttpTransport } = await import('./mcp-http.js')
+    await runHttpTransport(server, parseHttpAddr(process.argv[httpIdx + 1]))
+    return
+  }
   const transport = new StdioServerTransport()
   await server.connect(transport)
 }
