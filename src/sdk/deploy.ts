@@ -39,6 +39,7 @@ import {
 } from '../utils/tunnel-config'
 import { tonviewerTxUrl } from './endpoints'
 import { createSdkLogger } from './log'
+import { emitProvenanceManifest } from './provenance'
 
 const log = createSdkLogger('sovereign:deploy')
 
@@ -379,6 +380,26 @@ export async function* deploy(
       data: { source_dir: opts.source_dir, daemon_api_url: daemon.apiUrl },
     }
     checkAborted()
+
+    // ─── provenance manifest (#34) ──────────────────────────────────────
+    // Written BEFORE bag creation so the bag includes it. Best-effort: the
+    // helper never throws — a skip is logged, never fatal. Only when a
+    // domain is set (an address-less claim for an undeployed bag carries no
+    // value). Signed only on the agentic path; TonConnect → unsigned claim.
+    if (opts.provenance && opts.domain) {
+      const r = emitProvenanceManifest({
+        sourceDir: opts.source_dir,
+        domain: opts.domain,
+        walletKind: opts.wallet.kind,
+        testnet: opts.testnet,
+        agentic:
+          opts.wallet.kind === 'agentic'
+            ? { config_path: opts.wallet.config_path, wallet_label: opts.wallet.wallet_label }
+            : undefined,
+      })
+      if (r.written) log.info('provenance:written', { file: r.file, signed: r.signed })
+      else log.warn('provenance:skipped', { reason: r.reason })
+    }
 
     let created
     try {
