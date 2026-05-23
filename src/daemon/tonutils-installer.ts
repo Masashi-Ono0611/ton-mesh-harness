@@ -10,7 +10,7 @@ import {
   type InstallBinaryOptions,
 } from './installer-utils'
 
-const TONUTILS_VERSION = 'v1.4.1'
+const TONUTILS_VERSION = 'v1.5.0'
 
 // xssnick/tonutils-storage release asset naming. Note: the project's asset
 // names don't follow Node's `process.platform-process.arch` convention
@@ -28,16 +28,15 @@ const SPEC: BinaryInstallerSpec = {
     'linux-x64':    'tonutils-storage-linux-amd64',
     'win32-x64':    'tonutils-storage-x64.exe',
   },
-  // Pinned SHA-256 hashes for xssnick/tonutils-storage v1.4.1.
-  // Computed 2026-05-12 by downloading each release asset and
-  // running `shasum -a 256`. Codex pre-GA review round 11 self-audit
-  // (supply-chain integrity). Bump in lockstep with `version`.
+  // Pinned SHA-256 hashes for xssnick/tonutils-storage v1.5.0.
+  // Computed 2026-05-23 via `scripts/bump-daemon-hashes.cjs` (#32) from each
+  // release asset (supply-chain integrity). Bump in lockstep with `version`.
   expectedSha256: {
-    'darwin-arm64': '59698433588726413a4cb47d5ccdee61b74160e1281851dcf3936f4ed10fb1d3',
-    'darwin-x64':   'e974a64bcc461c90c0b9a550218d56c404741a183badfa5fe2dc014228475d52',
-    'linux-arm64':  '20b0552fc1e29237626d7c6157f72d7f5e6d9f92d55870cb7b08908b0b14f5cb',
-    'linux-x64':    '4bfb878321644e93b7eb6a9d7e2475b6b23899d3e28d369ee6a049ddbd01dc0b',
-    'win32-x64':    '90fbabe36b29a35da92825a953cc485e663c68dd8e2019551feef4d8d103fb78',
+    'darwin-arm64': '6c2f67817deda79595746be672f1e5cd12a578154029a72e53742192b7427f03',
+    'darwin-x64':   'dcf0f82d8df4f265868f8123c158dde0dbc6162ac2364a74b138019341e6e9f6',
+    'linux-arm64':  '039ffca391ec82a46fcfcb3d8a75a28e048a56fd4cf070aae370f6d0981c8d2f',
+    'linux-x64':    'bb080f0b0918721fbeca5af20d5e5dba64d387228758c00887254cbf2feccb2f',
+    'win32-x64':    '9d21ed2c283e50b2f5be7c8ef5ccf685353ed94bb4439475e4190f4db0e0bd20',
   },
   downloadUrl: (version, asset) =>
     `https://github.com/xssnick/tonutils-storage/releases/download/${version}/${asset}`,

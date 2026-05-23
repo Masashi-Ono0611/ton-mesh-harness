@@ -52,6 +52,26 @@ vs 0.9.0) is the maintainer's call at release time.
   `docs/v0.9/agent-compat.md`: per-agent MCP discovery config + red-team
   protocol (runs are manual + publish-gated).
 
+### Changed
+
+- **tonutils-storage daemon `v1.4.1` → `v1.5.0`** — upstream perf/reliability
+  release (faster fresh-bag availability, download tuning, RLDP queue split;
+  no breaking changes to the `--api`/`--db`/`--network-config` flags or HTTP
+  API the kit uses). Pinned SHA-256 hashes refreshed via
+  `scripts/bump-daemon-hashes.cjs` (#32) and validated against a live
+  download + daemon-spawn integration run.
+
+### Removed
+
+- Vestigial `@types/chokidar` devDependency — `chokidar@4` ships its own
+  types; the ancient `@types/chokidar@1.7.5` stub was dead weight.
+
+### Docs
+
+- `docs/archive/` — historical/point-in-time records (v0.5–v0.7 + v0.8
+  planning) physically separated from current docs, with all inbound links
+  updated. New `docs/README.md` index (Current/Reference/Historical).
+
 <!-- GA-PREDRAFT-BEGIN
 v0.8.0 GA pre-draft. `scripts/release.sh` promotes this block to the
 released `[0.8.0]` heading at D3 once V3 (E2E) + V4 (red-team) pass.

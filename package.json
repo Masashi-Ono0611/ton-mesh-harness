@@ -86,7 +86,6 @@
   },
   "devDependencies": {
     "@ton/mcp": "^0.1.15-alpha.15",
-    "@types/chokidar": "^1.7.5",
     "@types/node": "^25.5.0",
     "@types/qrcode-terminal": "^0.12.2",
     "eslint": "^9.39.4",
