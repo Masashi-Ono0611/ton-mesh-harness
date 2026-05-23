@@ -2,6 +2,10 @@ node_modules/
 dist/
 *.tgz
 
+# Local secrets / E2E env — only .env.example is tracked
+.env
+.env.local
+
 # OS / editor / agent metadata — never belongs in the repo
 .DS_Store
 .claude/

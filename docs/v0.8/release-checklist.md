@@ -9,8 +9,11 @@ release).
 Pre-conditions (none are negotiable):
 
 - [ ] **V3** — `#18` E2E acceptance has passed at least once. Transcript
-      attached to the issue. Real testnet deploy completed end-to-end
-      via the MCP server.
+      attached to the issue. Real **mainnet** deploy completed end-to-end
+      via the MCP server. (Re-defined from "testnet" 2026-05-23: the v0.8
+      SDK rejects `testnet:true` — the MCP path is mainnet-only. Testnet
+      lives only on the legacy CLI `--daemon-backend=ton-core` path, which
+      bypasses MCP + agentic signing. See `docs/v0.8/e2e-runbook.md`.)
 - [ ] **V4** — `#26` agency-transfer red-team test passed in a fresh
       Claude Code session. Transcript attached.
 - [ ] **Working tree clean** — `git status` shows nothing pending.
