@@ -21,13 +21,18 @@
  *     initialized → tools/list (assert 3 tools) → tools/call
  *     sovereign_check_env (assert shape). Proves the MCP surface is live.
  *
- *   Stage 2 — DEPLOY, only when `E2E_AUTO_SIGN=1`: requires an agentic
- *     wallet already configured via @ton/mcp (detected by check_env
- *     reporting `agentic` in wallet_signers_available — we never read a
- *     raw seed from env). Calls sovereign_deploy on test/fixtures/
- *     minimal-site against E2E_MAINNET_DOMAIN (optional). Asserts the
- *     deploy reaches a `done` payload with a bag_id; if a domain was
- *     given, asserts a non-null dns_tx_hash.
+ *   Stage 2 — DEPLOY, when armed with ONE signing path:
+ *       • `E2E_TONCONNECT=1` — human-approved: surfaces the
+ *         awaiting_signature signing_url + a terminal QR; you approve in
+ *         Tonkeeper. No key stored anywhere.
+ *       • `E2E_AUTO_SIGN=1` — agentic: requires an agentic wallet already
+ *         configured via @ton/mcp (detected by check_env reporting
+ *         `agentic` in wallet_signers_available — we never read a raw seed
+ *         from env).
+ *     Calls sovereign_deploy on test/fixtures/minimal-site against
+ *     E2E_MAINNET_DOMAIN (optional). Asserts the deploy reaches a `done`
+ *     payload with a bag_id; if a domain was given, asserts a non-null
+ *     dns_tx_hash.
  *
  *   Stage 3 — CANCELLATION, only when `E2E_AUTO_SIGN=1` AND
  *     `E2E_CANCEL=1`: starts a deploy, sends notifications/cancelled
@@ -48,7 +53,9 @@ const FIXTURE_DIR = path.resolve(__dirname, '..', 'test', 'fixtures', 'minimal-s
 const HANDSHAKE_TIMEOUT_MS = 10_000
 const DEPLOY_TIMEOUT_MS = 5 * 60_000 // mainnet deploy: upload + DNS confirm
 
-const ARMED = process.env.E2E_AUTO_SIGN === '1'
+const AGENTIC = process.env.E2E_AUTO_SIGN === '1'
+const TONCONNECT = process.env.E2E_TONCONNECT === '1'
+const ARMED = AGENTIC || TONCONNECT
 const CANCEL = process.env.E2E_CANCEL === '1'
 const DOMAIN = process.env.E2E_MAINNET_DOMAIN || null
 
@@ -165,8 +172,28 @@ function leakedDaemons() {
   }
 }
 
+function renderSigningUrl(url) {
+  log('')
+  log('  ┌─────────────────────────────────────────────────────────────')
+  log('  │ AWAITING SIGNATURE — open this in Tonkeeper and approve:')
+  log(`  │ ${url}`)
+  log('  └─────────────────────────────────────────────────────────────')
+  try {
+    // Reuse the CLI's QR renderer so a phone wallet can scan it.
+    const qr = require('qrcode-terminal')
+    qr.generate(url, { small: true })
+  } catch {
+    log('  (qrcode-terminal unavailable — copy the URL above into Tonkeeper)')
+  }
+  log('')
+}
+
 async function stage2Deploy(srv, checkEnv) {
-  if (!checkEnv.wallet_signers_available.includes('agentic')) {
+  const wallet = TONCONNECT
+    ? { kind: 'tonconnect', connector: 'Tonkeeper' }
+    : { kind: 'agentic' }
+
+  if (!TONCONNECT && !checkEnv.wallet_signers_available.includes('agentic')) {
     throw new Error(
       'Stage 2 armed (E2E_AUTO_SIGN=1) but no agentic signer is configured. ' +
         'Set up an agentic wallet via @ton/mcp (writes ~/.config/ton/config.json) ' +
@@ -174,6 +201,7 @@ async function stage2Deploy(srv, checkEnv) {
     )
   }
   log(`Stage 2: deploying ${FIXTURE_DIR} → domain=${DOMAIN ?? '(storage-only, dns_tx_hash will be null)'} on MAINNET`)
+  log(`Stage 2: signing path = ${wallet.kind}${TONCONNECT ? ' (approve on your phone when the QR appears)' : ''}`)
 
   const progressToken = 'e2e-deploy-1'
   send(srv.child, {
@@ -185,7 +213,7 @@ async function stage2Deploy(srv, checkEnv) {
       arguments: {
         source_dir: FIXTURE_DIR,
         domain: DOMAIN,
-        wallet: { kind: 'agentic' },
+        wallet,
         testnet: false,
         keep_alive: false,
       },
@@ -193,12 +221,19 @@ async function stage2Deploy(srv, checkEnv) {
     },
   })
 
-  // Surface progress as it streams so the run is observable.
+  // Surface progress as it streams so the run is observable. For TonConnect,
+  // surface the signing_url + QR from the awaiting_signature event.
   let lastProgressSeen = 0
+  let signingUrlShown = false
   const pump = setInterval(() => {
     const progs = srv.frames().filter((f) => f.method === 'notifications/progress')
     for (const p of progs.slice(lastProgressSeen)) {
       log(`  progress: ${p.params?.message ?? ''}`)
+      const url = p.params?._meta?.data?.signing_url
+      if (url && !signingUrlShown && !String(url).includes('restored-session')) {
+        signingUrlShown = true
+        renderSigningUrl(url)
+      }
     }
     lastProgressSeen = progs.length
   }, 500)
@@ -286,7 +321,9 @@ async function main() {
     } catch {
       /* ignore */
     }
-    log('Stage 2/3 SKIPPED (set E2E_AUTO_SIGN=1 with a configured agentic wallet to run the real mainnet deploy).')
+    log('Stage 2/3 SKIPPED. To run the real mainnet deploy, set ONE signing path:')
+    log('  • E2E_TONCONNECT=1  — human-approved (scan the QR in Tonkeeper)')
+    log('  • E2E_AUTO_SIGN=1   — agentic (requires a configured @ton/mcp wallet)')
     log('PASS (stage 1 only).')
     return
   }
