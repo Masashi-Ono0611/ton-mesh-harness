@@ -119,10 +119,10 @@ TON already has the infrastructure to fix this. Using it required specialist kno
 - Public gateways like ton.run can only serve bags that have fully propagated.
 - Self-hosting (the default) means your bag is unreachable while your PC is offline.
 
-**Realistic hosting options (as of v0.5):**
-- **The primary option is running your own daemon continuously** (`--watch`). This is exactly how TON Foundation operates `foundation.ton`.
-- A 24/7 escape hatch is the "storage provider contract" (`--provider`), implemented but **the mainnet provider economy is currently dormant** (Round 1–7 mainnet soak results: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md)). Treat it as experimental for now.
-- **Coming in v0.6**: extension via ADNL Tunnel so users without a public IP can still self-host ([`docs/v0.6/roadmap-draft.md`](docs/v0.6/roadmap-draft.md)).
+**Realistic hosting options:**
+- **The primary option is running your own daemon continuously** (`--watch`, or `--daemon-mode service` to hand it to launchd/systemd). This is exactly how TON Foundation operates `foundation.ton`.
+- **Behind NAT / no public IP**: `--tunnel-config` routes the daemon through an ADNL Tunnel pool (shipped in v0.6; bring-your-own pool — see [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md)).
+- A 24/7 escape hatch is the "storage provider contract" (`--provider`), implemented but **the mainnet provider economy is currently dormant** (Round 1–7 mainnet soak results: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md)) and gated off pending the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30)). Treat it as experimental.
 
 ### TON DNS (.ton domains)
 
@@ -248,14 +248,16 @@ Direct competitors: none.
 - **[V4] #26** — Agency-transfer red-team test (fresh agent session, manual).
 - **[D3] #21** — Final v0.8.0 GA tag (after V3 + V4) — `scripts/release.sh 0.8.0` one-shot ritual ready.
 
-### v0.8 docs
-- Overall vision: [`docs/v0.8/agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md).
-- MCP server spec: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md).
-- 2026-05-10 concept-update log: [`docs/v0.8/concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md).
-- P-1 `@ton/mcp` compose-contract probe: [`docs/v0.8/at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md).
-- **Agentic CLI usage**: [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) — `--wallet-mode agentic` prerequisites / wallet selector / CI/CD example / error codes.
-- **Agent stack compose**: [`docs/v0.8/agent-stack-compose.md`](docs/v0.8/agent-stack-compose.md) — wiring `ton-sovereign-mcp` + `@ton/mcp` together for full agentic flows (wallet management + deploy + status). 4 example flows + F5 error response cookbook.
-- **Release checklist**: [`docs/v0.8/release-checklist.md`](docs/v0.8/release-checklist.md) — D3 ritual from V3/V4-green through `npm publish` + GitHub release, with rollback procedure.
+### Documentation
+
+Full map + Current/Reference/Historical classification: **[`docs/README.md`](docs/README.md)**. Highlights:
+
+- **MCP server spec**: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) — the authoritative F1–F5/NF contract.
+- **Agentic CLI usage**: [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) — `--wallet-mode agentic` prerequisites / selectors / CI.
+- **Agent stack compose**: [`docs/v0.8/agent-stack-compose.md`](docs/v0.8/agent-stack-compose.md) — wiring `ton-sovereign-mcp` + `@ton/mcp` for full agentic flows.
+- **Release checklist**: [`docs/v0.8/release-checklist.md`](docs/v0.8/release-checklist.md) — the GA cut ritual + rollback.
+- **v0.9 features**: [HTTP transport](docs/v0.9/mcp-http-transport.md) · [provenance](docs/v0.9/provenance.md) · [service-mode daemons](docs/v0.9/daemon-service-mode.md) · [cross-agent compat](docs/v0.9/agent-compat.md).
+- **Design history** (point-in-time, not current): the agent-native pivot — [`agent-native-pivot.md`](docs/v0.8/agent-native-pivot.md), [`concept-update-2026-05-10.md`](docs/v0.8/concept-update-2026-05-10.md), [`at-mcp-probe.md`](docs/v0.8/at-mcp-probe.md).
 
 ### v0.9 reserve
 **Shipped post-rc11** (see CHANGELOG `[Unreleased]`): MCP HTTP transport (`--http`), testnet on the tonutils/MCP path, signed provenance manifest (`.well-known/ton-deploy.json`), Vite/Next examples, daemon-hash bump helper, MCP cancel-cleanup test.
@@ -434,8 +436,9 @@ ton-sovereign-deploy [build-dir] [options]
 | `--debounce <ms>` | Watch-mode debounce delay (default 2000 ms). |
 | `--daemon-backend <name>` | Daemon backend: `tonutils` (default, v0.6+; supports `--testnet` since post-rc11) or `ton-core` (C++ legacy; opt-in, needed only for `--provider`). |
 | `--tunnel-config <path>` | Path to a `nodes-pool.json` for ADNL Tunnel (v0.6+, tonutils backend only). Used for NAT traversal. No public pools exist yet — **bring-your-own-pool** (obtain from the operator). |
-| `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `dns_adnl_address` (`site` record, magic `0xad01`) under `--domain` (v0.6+ B5). **Bring-your-own rldp-http-proxy** assumed — pass the ADNL hash of an already-running proxy (auto-spawn lands in v0.7). With `--domain`, bundles the storage and site records into **one TonConnect signature**. Setup: [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md). |
-| `--provider [address]` | **Disabled in v0.6 regardless of backend** (mainnet provider economy is dormant; gated off conservatively during daemon migration). The v0.5 working code is still in the tree; re-enable planned for v0.7. Details: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md). |
+| `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `dns_adnl_address` (`site` record, magic `0xad01`) under `--domain` (v0.6+ B5). **Bring-your-own rldp-http-proxy** — pass the ADNL hash of an already-running proxy, or use `--site-auto` to auto-spawn one (shipped v0.7). With `--domain`, bundles the storage and site records into **one TonConnect signature**. Setup: [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md). |
+| `--provider [address]` | **Disabled regardless of backend** (mainnet provider economy is dormant). The v0.5 working code stays in the tree; re-enabling waits on the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30), v0.9-reserve, upstream-blocked). Details: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md). |
+| `--daemon-mode <mode>` | Daemon ownership: `detached` (default) · `embedded` (one-shot) · `service` (hand to launchd/systemd, keeps seeding after exit). v0.9 ([#37](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/37)). |
 | `--span <seconds>` | Provider-contract span in seconds (default 86400 = 1 day; max 4294967295). v0.5+ |
 | `--wallet <name>` | Preferred wallet for sign requests (substring match; default "Tonkeeper"). v0.5+ |
 | `--skip-verify` | Skip bag-access verification (propagation can be slow). |
@@ -527,7 +530,9 @@ ton-sovereign-deploy ./build/ --debounce 3000
 
 **Important:** Shutting down your PC stops the seed, making the bag unreachable. For continuous hosting in practice:
 - Don't let your laptop sleep (most basic).
-- Run a 24/7 daemon on a VPS / Raspberry Pi / NAS ([v0.6 roadmap](docs/v0.6/roadmap-draft.md) plans ADNL Tunnel integration so a public IP is unnecessary).
+- `--daemon-mode service` hands the daemon to launchd/systemd so it keeps seeding after the CLI exits + across reboots ([daemon-service-mode](docs/v0.9/daemon-service-mode.md)).
+- Behind NAT / no public IP: route through an ADNL Tunnel pool with `--tunnel-config` (v0.6+).
+- Run a 24/7 daemon on a VPS / Raspberry Pi / NAS.
 - One-shot deploy with `--no-watch`, then seed the bag from a separate always-on host.
 
 ---
