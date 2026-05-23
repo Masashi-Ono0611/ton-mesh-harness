@@ -147,6 +147,15 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
     "DeployOptions": {
       "additionalProperties": false,
       "properties": {
+        "daemon_mode": {
+          "default": "embedded",
+          "enum": [
+            "embedded",
+            "detached",
+            "service",
+          ],
+          "type": "string",
+        },
         "description": {
           "default": null,
           "type": [
@@ -263,6 +272,13 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
             {
               "type": "null",
             },
+          ],
+        },
+        "daemon_service": {
+          "default": null,
+          "type": [
+            "string",
+            "null",
           ],
         },
         "dns_tx_hash": {
@@ -596,6 +612,13 @@ exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, Dep
                     {
                       "type": "null",
                     },
+                  ],
+                },
+                "daemon_service": {
+                  "default": null,
+                  "type": [
+                    "string",
+                    "null",
                   ],
                 },
                 "dns_tx_hash": {

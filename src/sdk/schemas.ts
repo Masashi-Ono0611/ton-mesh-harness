@@ -92,6 +92,19 @@ export const DeployOptionsSchema = z.strictObject({
    */
   keep_alive: z.boolean().default(false),
   /**
+   * Daemon ownership (#37):
+   *   - `embedded` (default): daemon killed before the call returns.
+   *   - `detached`: daemon survives; the CALLER owns its lifecycle (the
+   *     legacy `keep_alive: true` behaviour — a bare `keep_alive: true`
+   *     with the default mode is normalized to `detached`). Rejected by
+   *     the MCP server (it can't own a long-lived daemon).
+   *   - `service`: hand the daemon to the OS service manager (launchd /
+   *     systemd --user) seeding a persistent db under
+   *     ~/.ton-sovereign/seeds/<bag_id>/. The CLI/MCP return cleanly; manage
+   *     via `ton-sovereign-deploy service list|stop`. Not on Windows yet.
+   */
+  daemon_mode: z.enum(['embedded', 'detached', 'service']).default('embedded'),
+  /**
    * Emit a provenance manifest into `<source_dir>/.well-known/ton-deploy.json`
    * before bag creation (so the bag includes it). On the agentic path it is
    * signed with the operator/standard key; on TonConnect it is unsigned
@@ -125,9 +138,15 @@ export const DeployResultSchema = z.strictObject({
    * may open in a browser.
    */
   daemon_api_url: z.string(),
-  /** Non-null only when `keep_alive=true`. */
+  /** Non-null only for `daemon_mode: "detached"` (the caller owns the pid). */
   daemon_pid: z.number().int().nullable(),
   seed_status: z.enum(['seeding', 'stopped']),
+  /**
+   * OS service label when `daemon_mode: "service"` handed the daemon to
+   * launchd / systemd (e.g. `ton-sovereign.<bag_id>`); null otherwise.
+   * Manage via `ton-sovereign-deploy service list | stop`.
+   */
+  daemon_service: z.string().nullable().default(null),
   next_actions: z.array(NextActionSchema).default([]),
 })
 
