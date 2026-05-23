@@ -193,7 +193,10 @@ export async function runDeployTonutils(
     const sdkInput = {
       source_dir: buildDir,
       description,
-      keep_alive: true as const,
+      // #37: daemon ownership. Default 'detached' preserves the historic
+      // keep_alive:true behaviour (CLI owns the daemon for watch / one-shot
+      // kill). 'service' hands it to launchd/systemd; 'embedded' is one-shot.
+      daemon_mode: opts.daemonMode ?? 'detached',
       tunnel_config: tunnel?.absPath ?? null,
       testnet: Boolean(opts.testnet),
     }

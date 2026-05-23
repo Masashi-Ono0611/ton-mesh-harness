@@ -18,6 +18,12 @@ describe('SDK deploy() — input validation + error contract', () => {
     })
   })
 
+  it('rejects an invalid daemon_mode through schema parse (#37)', async () => {
+    await expect(
+      deploy({ source_dir: './dist', daemon_mode: 'bogus' as 'service' }).next(),
+    ).rejects.toMatchObject({ code: 'ERR_INVALID_INPUT' })
+  })
+
   it('rejects unknown wallet kind through schema parse', async () => {
     await expect(
       deploy({ source_dir: './dist', wallet: { kind: 'bogus' as 'tonconnect' } }).next(),

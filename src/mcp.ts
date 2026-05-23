@@ -226,14 +226,18 @@ async function handleDeploy(
       throw err
     }
 
-    // rc2 hardening: MCP server does NOT track keep-alive daemons. If the
-    // client requests keep_alive=true via MCP, the kit would orphan a
-    // daemon on server shutdown. Reject until daemon tracking lands
-    // (post-rc2 follow-up).
-    if (parsed.keep_alive) {
+    // The MCP server can't OWN a long-lived daemon (it would orphan it on
+    // server shutdown), so `detached` (≡ legacy keep_alive:true) is still
+    // rejected. But `service` mode (#37) hands the daemon to launchd /
+    // systemd, so the OS owns the lifecycle — that IS allowed via MCP.
+    const effectiveMode =
+      parsed.daemon_mode === 'embedded' && parsed.keep_alive ? 'detached' : parsed.daemon_mode
+    if (effectiveMode === 'detached') {
       throw new SdkError(
         'ERR_INVALID_INPUT',
-        'keep_alive=true is not yet supported via MCP — the server has no per-call daemon-tracking surface. Use the CLI (which owns the daemon) or call sovereign_deploy with keep_alive=false.',
+        'daemon_mode "detached" (a.k.a. keep_alive:true) is not supported via MCP — the server ' +
+          'has no per-call daemon-tracking surface and would orphan the daemon on shutdown. Use ' +
+          'daemon_mode "service" (hands ownership to launchd/systemd) or "embedded" (one-shot).',
         { severity: 'fatal' },
       )
     }

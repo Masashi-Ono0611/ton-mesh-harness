@@ -151,6 +151,13 @@ export interface StartTonutilsDaemonOptions {
   tunnelConfigPath?: string
   /** Path to a global network config (testnet); omit for mainnet default. */
   networkConfigPath?: string
+  /**
+   * Persistent db dir (#37 service mode). When set, the daemon uses this
+   * dir instead of an ephemeral mkdtemp one, and kill() does NOT delete it
+   * (the OS service unit resumes seeding from here). Omit for the default
+   * ephemeral behaviour.
+   */
+  dbDir?: string
 }
 
 export async function startTonutilsDaemon(
@@ -162,15 +169,26 @@ export async function startTonutilsDaemon(
   }
 
   const apiPort = await findFreeTcpPort(7100, 7199)
-  // Use mkdtempSync so two concurrent startTonutilsDaemon() calls in the
-  // same Node process never collide on the same session dir. Before this,
-  // the dir was `ton-sovereign-tonutils-<pid>` — a second start in the
-  // same process would alias onto the first's DB dir, and either kill()
-  // would rmSync the live one's data out from under it. Codex pre-GA
-  // review round 7 MAJOR.
-  const sessionDir = mkdtempSync(path.join(os.tmpdir(), `ton-sovereign-tonutils-${process.pid}-`))
-  const dbDir = path.join(sessionDir, 'db')
-  mkdirSync(dbDir, { recursive: true })
+  // Default: an ephemeral mkdtemp session dir, rm'd on kill(). mkdtempSync
+  // so two concurrent startTonutilsDaemon() calls in the same Node process
+  // never collide (Codex pre-GA review round 7 MAJOR).
+  //
+  // #37 service mode: when `opts.dbDir` is given, the daemon uses that
+  // PERSISTENT db and kill() must NOT delete it — the OS service unit will
+  // resume seeding from the same dir after this embedded daemon is stopped.
+  // `cleanupDir` is the dir kill() rm's; null = persistent (keep).
+  let dbDir: string
+  let cleanupDir: string | null
+  if (opts.dbDir) {
+    dbDir = opts.dbDir
+    mkdirSync(dbDir, { recursive: true })
+    cleanupDir = null
+  } else {
+    const sessionDir = mkdtempSync(path.join(os.tmpdir(), `ton-sovereign-tonutils-${process.pid}-`))
+    dbDir = path.join(sessionDir, 'db')
+    mkdirSync(dbDir, { recursive: true })
+    cleanupDir = sessionDir
+  }
 
   // Pre-stage config with a non-conflicting UDP ListenAddr (and tunnel
   // pool path if provided).
@@ -231,7 +249,10 @@ export async function startTonutilsDaemon(
         const cleanup = (): void => {
           if (cleanedUp) return
           cleanedUp = true
-          try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
+          // cleanupDir is null for a persistent (#37 service) db — keep it.
+          if (cleanupDir) {
+            try { rmSync(cleanupDir, { recursive: true, force: true }) } catch { /* ignore */ }
+          }
         }
         child.once('exit', cleanup)
         const escalation = setTimeout(() => {
@@ -249,9 +270,10 @@ export async function startTonutilsDaemon(
         // process exit and skip the SIGKILL fallback.
         escalation.unref()
         try { child.kill('SIGTERM') } catch { /* already exited */ }
-      } else {
-        // Already exited — clean up the dir synchronously.
-        try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
+      } else if (cleanupDir) {
+        // Already exited — clean up the ephemeral dir synchronously.
+        // (cleanupDir is null for a persistent #37 service db — keep it.)
+        try { rmSync(cleanupDir, { recursive: true, force: true }) } catch { /* ignore */ }
       }
     },
   }

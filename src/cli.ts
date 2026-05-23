@@ -7,6 +7,7 @@ import { runDnsRegistration } from './cli/dns'
 import { runDnsRegistrationAgentic } from './cli/dns-agentic'
 import { runDoctor } from './cli/doctor'
 import { runVerifyProvenance } from './cli/verify-provenance'
+import { runServiceList, runServiceStop } from './cli/service'
 import { runSiteHost } from './cli/site-host'
 import { runWatchMode } from './cli/watch'
 
@@ -45,6 +46,7 @@ program
   // TON-Torrent and the Resistance Tools stack use. ton-core is the legacy
   // C++ daemon, kept as a fallback during the migration.
   .option('--daemon-backend <name>', 'Daemon backend: tonutils (default) | ton-core', 'tonutils')
+  .option('--daemon-mode <mode>', 'Daemon ownership: detached (default; CLI/watch owns it) | embedded (one-shot, killed on exit) | service (hand to launchd/systemd, keeps seeding). #37', 'detached')
   // v0.6: ADNL Tunnel client. Pass a nodes-pool.json (obtained from the
   // tunnel operator you trust) and the daemon will route bag traffic
   // through that pool — useful when the host is behind NAT or wants to
@@ -170,11 +172,28 @@ program
     const watchExplicitlyOff = opts.watch === false
     const watchExplicitlyOn  = opts.watch === true
     const nonInteractive = isCI || !!opts.jsonOutput
-    const watchEnabled = watchExplicitlyOn
+    let watchEnabled = watchExplicitlyOn
       ? true
       : watchExplicitlyOff
         ? false
         : !nonInteractive
+
+    // #37: daemon ownership mode. Only `detached` keeps a CLI-owned live
+    // daemon for watch mode; `embedded` (one-shot) and `service` (handed to
+    // the OS) have no live handle to watch with, so they force one-shot.
+    const daemonMode = opts.daemonMode ?? 'detached'
+    if (daemonMode !== 'detached' && daemonMode !== 'embedded' && daemonMode !== 'service') {
+      throw new Error(`--daemon-mode must be detached | embedded | service (got ${JSON.stringify(opts.daemonMode)}).`)
+    }
+    if (daemonMode !== 'detached') {
+      if (watchExplicitlyOn) {
+        throw new Error(`--watch requires --daemon-mode detached (got ${daemonMode}). The watch loop needs a CLI-owned daemon.`)
+      }
+      if (daemonMode === 'service' && opts.siteAuto) {
+        throw new Error('--daemon-mode service is not compatible with --site-auto (the rldp-http-proxy stays CLI-owned and would die on exit). Run them separately for now.')
+      }
+      watchEnabled = false
+    }
 
     // -----------------------------------------------------------------
     // Backend dispatch
@@ -276,6 +295,19 @@ program
   .command('doctor')
   .description('Pre-flight environment check: daemon binaries, TONAPI / manifest reachability, TonConnect session')
   .action(async () => { await runDoctor() })
+
+const serviceCmd = program
+  .command('service')
+  .description('Manage --daemon-mode service seed daemons (launchd / systemd). #37')
+serviceCmd
+  .command('list')
+  .description('List installed service-mode seed daemons + their running state')
+  .action(async () => { await runServiceList() })
+serviceCmd
+  .command('stop')
+  .argument('<bag_id>', 'Bag id of the seed service to stop')
+  .option('--purge', 'Also remove the seed db (default: keep it for re-deploy)')
+  .action(async (bagId: string, o: { purge?: boolean }) => { await runServiceStop(bagId, o) })
 
 program
   .command('verify-provenance')

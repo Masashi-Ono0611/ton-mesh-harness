@@ -41,6 +41,17 @@ import {
 import { tonviewerTxUrl } from './endpoints'
 import { createSdkLogger } from './log'
 import { emitProvenanceManifest } from './provenance'
+import { getTonutilsPaths } from '../daemon/tonutils-installer'
+import {
+  SEEDS_ROOT,
+  installService,
+  seedDir,
+  serviceLabel,
+  stopService,
+  type ServiceMeta,
+} from '../daemon/service'
+import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { join as pathJoin } from 'node:path'
 
 const log = createSdkLogger('sovereign:deploy')
 
@@ -150,7 +161,15 @@ function normalize(rawInput: DeployInput): DeployOptions {
   // Pass the full input to the strict parser (with `wallet` lifted) so
   // unknown top-level keys are rejected by `z.strictObject`.
   const candidate = { ...rawInput, wallet: parseWalletInput(rawInput.wallet) }
-  return DeployOptionsSchema.parse(candidate)
+  const parsed = DeployOptionsSchema.parse(candidate)
+  // Back-compat: a bare `keep_alive: true` (no explicit daemon_mode) maps to
+  // the `detached` ownership mode (#37). daemon_mode is the source of truth
+  // downstream; keep `keep_alive` in sync so the field stays meaningful.
+  if (parsed.daemon_mode === 'embedded' && parsed.keep_alive) {
+    parsed.daemon_mode = 'detached'
+  }
+  parsed.keep_alive = parsed.daemon_mode !== 'embedded'
+  return parsed
 }
 
 /**
@@ -259,6 +278,16 @@ export async function* deploy(
 
   const resolvedTunnel = opts.tunnel_config ? validateTunnelConfig(opts.tunnel_config) : undefined
 
+  // #37: fail fast on `service` mode where the OS service manager isn't
+  // wired (Windows) — BEFORE we spawn a daemon / create a bag.
+  if (opts.daemon_mode === 'service' && process.platform === 'win32') {
+    throw new SdkError(
+      'ERR_INVALID_INPUT',
+      'daemon_mode "service" is not yet supported on Windows. Use "detached" (CLI) or "embedded".',
+      { severity: 'fatal' },
+    )
+  }
+
   // ─── F5 ERR_BUSY: process-local serialisation gate. We acquire AFTER
   //     synchronous input validation so a malformed call doesn't hold
   //     the lock; we release in finally below.
@@ -283,6 +312,10 @@ export async function* deploy(
 
   let daemon: TonutilsHandle | undefined
   let signalListener: (() => void) | undefined
+  // #37 service mode: provisional persistent db dir (function-scoped so the
+  // finally can clean it up if the deploy fails before the rename to
+  // seeds/<bag_id>). Set only when daemon_mode === 'service'.
+  let provisionalServiceDir: string | undefined
 
   // Generator-wide cleanup. Runs on every termination path: normal close,
   // throw, return(), and consumer-break. We always release the in-flight
@@ -333,8 +366,23 @@ export async function* deploy(
       )
     }
 
+    // #37 service mode: stage the daemon db in a PROVISIONAL persistent dir
+    // under SEEDS_ROOT (same filesystem as the final seeds/<bag_id> → the
+    // post-deploy rename is atomic, no EXDEV). bag_id isn't known yet, so we
+    // name by pid+time and rename to seeds/<bag_id> once the bag exists.
+    let serviceDbDir: string | undefined
+    if (opts.daemon_mode === 'service') {
+      provisionalServiceDir = pathJoin(SEEDS_ROOT, `.pending-${process.pid}-${Date.now()}`)
+      serviceDbDir = pathJoin(provisionalServiceDir, 'db')
+      mkdirSync(serviceDbDir, { recursive: true })
+    }
+
     try {
-      daemon = await startTonutilsDaemon({ tunnelConfigPath: resolvedTunnel, networkConfigPath })
+      daemon = await startTonutilsDaemon({
+        tunnelConfigPath: resolvedTunnel,
+        networkConfigPath,
+        dbDir: serviceDbDir,
+      })
     } catch (err) {
       throw mapDaemonStartError(err)
     }
@@ -615,28 +663,92 @@ export async function* deploy(
       })
     }
 
-    const result: DeployResult = {
-      bag_id: created.bag_id,
-      bag_size_bytes: details.size,
-      dns_tx_hash: dnsTxHash,
-      daemon_api_url: daemon.apiUrl,
-      daemon_pid: opts.keep_alive ? pid : null,
-      seed_status: opts.keep_alive ? 'seeding' : 'stopped',
-      next_actions: nextActions,
-    }
+    // ─── daemon ownership (#37: embedded | detached | service) ───────────
+    let daemonPid: number | null = null
+    let seedStatus: 'seeding' | 'stopped'
+    let daemonService: string | null = null
 
-    if (opts.keep_alive) {
-      // Consumer takes ownership — finally-block must NOT kill the daemon.
-      daemonOwned = false
-    } else {
-      // keep_alive: false → kill the daemon BEFORE yielding `done` so the
-      // event's seed_status: "stopped" is honest.
+    if (opts.daemon_mode === 'service') {
+      // Stop the embedded daemon — its persistent db survives (kill() does
+      // NOT rm a caller-supplied dbDir) — then hand the db to the OS service
+      // manager so it keeps seeding after we return.
       try {
         daemon.kill()
       } catch {
         /* ignore */
       }
       daemonOwned = false
+      // Let the daemon release its UDP/API ports before the unit re-binds them.
+      await new Promise((r) => setTimeout(r, 1500))
+
+      const finalDir = seedDir(created.bag_id)
+      if (existsSync(finalDir)) {
+        // Re-deploy of the same bag — tear down the prior service + dir.
+        try {
+          stopService(created.bag_id, { removeDb: true })
+        } catch {
+          /* best-effort */
+        }
+        try {
+          rmSync(finalDir, { recursive: true, force: true })
+        } catch {
+          /* ignore */
+        }
+      }
+      renameSync(provisionalServiceDir as string, finalDir)
+      const meta: ServiceMeta = {
+        bag_id: created.bag_id,
+        label: serviceLabel(created.bag_id),
+        db_dir: pathJoin(finalDir, 'db'),
+        api_port: Number(new URL(daemon.apiUrl).port),
+        network_config_path: networkConfigPath ?? null,
+        daemon_path: getTonutilsPaths().daemon,
+        created_at: new Date().toISOString(),
+      }
+      try {
+        installService(meta)
+      } catch (err) {
+        throw new SdkError(
+          'ERR_INTERNAL',
+          `Bag created (${created.bag_id}) and staged at ${finalDir}, but installing the OS ` +
+            `service unit failed: ${err instanceof Error ? err.message : String(err)}. ` +
+            `The daemon is NOT seeding. Retry, or run with --daemon-mode detached.`,
+          { severity: 'fatal' },
+        )
+      }
+      daemonService = meta.label
+      seedStatus = 'seeding'
+      nextActions.push({
+        description:
+          `Daemon handed to the OS service manager as '${meta.label}', seeding from ${meta.db_dir}. ` +
+          `Manage with: \`ton-sovereign-deploy service list\` / \`service stop ${created.bag_id}\`.`,
+      })
+    } else if (opts.daemon_mode === 'detached') {
+      // Consumer takes ownership — finally-block must NOT kill the daemon.
+      daemonOwned = false
+      daemonPid = pid
+      seedStatus = 'seeding'
+    } else {
+      // embedded → kill the daemon BEFORE yielding `done` so the event's
+      // seed_status: "stopped" is honest.
+      try {
+        daemon.kill()
+      } catch {
+        /* ignore */
+      }
+      daemonOwned = false
+      seedStatus = 'stopped'
+    }
+
+    const result: DeployResult = {
+      bag_id: created.bag_id,
+      bag_size_bytes: details.size,
+      dns_tx_hash: dnsTxHash,
+      daemon_api_url: daemon.apiUrl,
+      daemon_pid: daemonPid,
+      seed_status: seedStatus,
+      daemon_service: daemonService,
+      next_actions: nextActions,
     }
 
     currentPhase = 'done'
@@ -660,6 +772,15 @@ export async function* deploy(
     if (daemonOwned && daemon) {
       try {
         daemon.kill()
+      } catch {
+        /* ignore */
+      }
+    }
+    // #37: if a service-mode deploy failed before the provisional db was
+    // renamed to seeds/<bag_id>, remove the leftover provisional dir.
+    if (provisionalServiceDir && existsSync(provisionalServiceDir)) {
+      try {
+        rmSync(provisionalServiceDir, { recursive: true, force: true })
       } catch {
         /* ignore */
       }

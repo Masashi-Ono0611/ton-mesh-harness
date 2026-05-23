@@ -12,6 +12,14 @@ vs 0.9.0) is the maintainer's call at release time.
 
 ### Added
 
+- **OS-managed daemon ownership (#37)** — `--daemon-mode <embedded|detached|service>`
+  (SDK/MCP `daemon_mode`). `service` hands the seeding daemon to launchd
+  (macOS) / systemd `--user` (Linux) with a persistent db under
+  `~/.ton-sovereign/seeds/<bag_id>/`, so it keeps seeding after the CLI
+  exits / across reboots. New `service list` / `service stop [--purge]`
+  subcommands. The **MCP server now accepts `daemon_mode: "service"`** (the
+  OS owns the lifecycle) while still rejecting `detached` / `keep_alive`.
+  Windows: TODO. Docs: `docs/v0.9/daemon-service-mode.md`.
 - **HTTP transport for `ton-sovereign-mcp` (#33)** — opt-in `--http <addr>`
   binds a Streamable-HTTP MCP endpoint at `/mcp` (stdio stays the default;
   mutually exclusive). Binds `127.0.0.1` by default; a non-loopback bind
