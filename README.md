@@ -258,7 +258,8 @@ Direct competitors: none.
 - **Release checklist**: [`docs/v0.8/release-checklist.md`](docs/v0.8/release-checklist.md) — D3 ritual from V3/V4-green through `npm publish` + GitHub release, with rollback procedure.
 
 ### v0.9 reserve
-Deferred from v0.7: C2 NAT traversal (`adnl-tunnel-client`) + C3 Payment Network real-client. Details: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) §C2 / §C3 (originally parked for v0.8; demoted to v0.9 when the agent-surface track took v0.8 on the 2026-05-10 rename).
+**Shipped post-rc11** (see CHANGELOG `[Unreleased]`): MCP HTTP transport (`--http`), testnet on the tonutils/MCP path, signed provenance manifest (`.well-known/ton-deploy.json`), Vite/Next examples, daemon-hash bump helper, MCP cancel-cleanup test.
+**Still reserved** — both blocked on upstream C++ binaries maturing: C2 NAT traversal (`adnl-tunnel-client`, #29) + C3 Payment Network real-client (#30). Details: [`docs/v0.7/roadmap-draft.md`](docs/v0.7/roadmap-draft.md) §C2 / §C3. launchd/systemd daemon ownership (#37) is a parked deploy-lifecycle feature.
 
 **Release:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 
@@ -425,12 +426,13 @@ ton-sovereign-deploy [build-dir] [options]
 | `--wallet-mode <mode>` | Signing mode: `tonconnect` (default, QR) or `agentic` (autonomous, reads `~/.config/ton/config.json`). v0.8+ |
 | `--wallet-label <label>` | Selector for agentic mode (id / name / address). Defaults to `active_wallet_id`. v0.8+ |
 | `--wallet-config <path>` | Override path for the agentic config file. v0.8+ |
+| `--no-provenance` | Skip emitting the `.well-known/ton-deploy.json` provenance manifest into the bag (post-rc11). |
 | `--ci-mode` | Disable spinners for CI environments (v0.3). |
 | `--json-output` | Emit JSON (v0.3). When `--ci-mode` or `--json-output` is set, `--watch` is **automatically disabled** so the process exits after upload (prevents CI hang). |
 | `--watch` | Watch for file changes and auto-redeploy (**default in interactive runs since v0.6**). |
 | `--no-watch` | Disable watch mode; exit after upload (CI / one-shot). v0.6+ |
 | `--debounce <ms>` | Watch-mode debounce delay (default 2000 ms). |
-| `--daemon-backend <name>` | Daemon backend: `tonutils` (default, v0.6+) or `ton-core` (C++ legacy; fallback when using `--testnet` or `--provider`). |
+| `--daemon-backend <name>` | Daemon backend: `tonutils` (default, v0.6+; supports `--testnet` since post-rc11) or `ton-core` (C++ legacy; opt-in, needed only for `--provider`). |
 | `--tunnel-config <path>` | Path to a `nodes-pool.json` for ADNL Tunnel (v0.6+, tonutils backend only). Used for NAT traversal. No public pools exist yet — **bring-your-own-pool** (obtain from the operator). |
 | `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `dns_adnl_address` (`site` record, magic `0xad01`) under `--domain` (v0.6+ B5). **Bring-your-own rldp-http-proxy** assumed — pass the ADNL hash of an already-running proxy (auto-spawn lands in v0.7). With `--domain`, bundles the storage and site records into **one TonConnect signature**. Setup: [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md). |
 | `--provider [address]` | **Disabled in v0.6 regardless of backend** (mainnet provider economy is dormant; gated off conservatively during daemon migration). The v0.5 working code is still in the tree; re-enable planned for v0.7. Details: [`docs/v0.5/round-postmortem.md`](docs/v0.5/round-postmortem.md). |
@@ -479,7 +481,7 @@ From v0.6 onward, the **bundled daemon is `tonutils-storage` (xssnick / Go)** by
 # Default = tonutils backend (Go)
 ton-sovereign-deploy ./build/
 
-# Legacy TON Core C++ daemon (for --testnet / --provider)
+# Legacy TON Core C++ daemon (opt-in; needed only for --provider)
 ton-sovereign-deploy ./build/ --daemon-backend=ton-core
 ```
 
@@ -488,7 +490,7 @@ ton-sovereign-deploy ./build/ --daemon-backend=ton-core
 | Bag upload + seed | ✅ | ✅ |
 | `--watch` (auto-redeploy) | ✅ (v0.6 step B2.x) | ✅ |
 | `--tunnel-config` (ADNL Tunnel) | ✅ (v0.6 step B3.x) | ❌ (no tunnel client in the C++ daemon) |
-| `--testnet` | ❌ | ✅ |
+| `--testnet` | ✅ (daemon `--network-config`; post-rc11) | ✅ |
 | `--provider` | ❌ (v0.6 disables the provider path) | ⚠ experimental (mainnet provider economy is dormant) |
 
 #### ADNL Tunnel — NAT traversal
