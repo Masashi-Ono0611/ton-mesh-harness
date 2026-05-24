@@ -199,6 +199,11 @@ export async function startTonutilsDaemon(
   const child = spawn(
     paths.daemon,
     [
+      // `-daemon` = non-interactive: suppress the command-line REPL. We drive
+      // the daemon over the HTTP API, never the prompt; without this the REPL
+      // can busy-loop at ~100% CPU when stdin is unusable (esp. long-running
+      // --watch / service-mode handoff). See service.ts for the launchd story.
+      '-daemon',
       '--api', `127.0.0.1:${apiPort}`,
       '--db', dbDir,
       // testnet: hand the daemon a global config (mainnet is its default).

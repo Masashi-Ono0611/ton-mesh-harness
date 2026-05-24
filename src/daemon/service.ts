@@ -82,7 +82,13 @@ function metaPath(bagId: string): string {
 // ── unit file generation (pure) ──────────────────────────────────────────
 
 export function buildLaunchdPlist(meta: ServiceMeta): string {
-  const args = [meta.daemon_path, '--api', `127.0.0.1:${meta.api_port}`, '--db', meta.db_dir]
+  // `-daemon` = non-interactive mode (no command-line REPL). Without it the
+  // binary starts its interactive prompt; under launchd/systemd (no usable
+  // stdin) that prompt busy-loops at ~100% CPU and floods StandardOutPath with
+  // `Command:` redraws (filled an 823 MB log + KeepAlive resurrection in the
+  // wild). The daemon is driven purely over the HTTP API, so the REPL is dead
+  // weight here. See #53 follow-up.
+  const args = [meta.daemon_path, '-daemon', '--api', `127.0.0.1:${meta.api_port}`, '--db', meta.db_dir]
   if (meta.network_config_path) args.push('--network-config', meta.network_config_path)
   const logPath = path.join(seedDir(meta.bag_id), 'daemon.log')
   const argXml = args.map((a) => `    <string>${escapeXml(a)}</string>`).join('\n')
@@ -110,7 +116,13 @@ ${argXml}
 }
 
 export function buildSystemdUnit(meta: ServiceMeta): string {
-  const args = [meta.daemon_path, '--api', `127.0.0.1:${meta.api_port}`, '--db', meta.db_dir]
+  // `-daemon` = non-interactive mode (no command-line REPL). Without it the
+  // binary starts its interactive prompt; under launchd/systemd (no usable
+  // stdin) that prompt busy-loops at ~100% CPU and floods StandardOutPath with
+  // `Command:` redraws (filled an 823 MB log + KeepAlive resurrection in the
+  // wild). The daemon is driven purely over the HTTP API, so the REPL is dead
+  // weight here. See #53 follow-up.
+  const args = [meta.daemon_path, '-daemon', '--api', `127.0.0.1:${meta.api_port}`, '--db', meta.db_dir]
   if (meta.network_config_path) args.push('--network-config', meta.network_config_path)
   const execStart = args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ')
   return `[Unit]

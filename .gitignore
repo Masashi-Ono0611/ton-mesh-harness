@@ -11,6 +11,8 @@ dist/
 examples/*/out/
 examples/*/.next/
 examples/*/.astro/
+# provenance manifest written at deploy time
+examples/*/.well-known/
 
 # OS / editor / agent metadata — never belongs in the repo
 .DS_Store
