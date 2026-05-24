@@ -10,6 +10,7 @@ dist/
 # are already ignored globally above — these cover the framework-specific ones)
 examples/*/out/
 examples/*/.next/
+examples/*/.astro/
 
 # OS / editor / agent metadata — never belongs in the repo
 .DS_Store

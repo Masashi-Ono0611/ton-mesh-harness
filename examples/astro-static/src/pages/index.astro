@@ -1,0 +1,25 @@
+---
+const builtAt = new Date().toISOString()
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astro (static) on .ton</title>
+  </head>
+  <body style="font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 4rem auto; padding: 0 1rem; line-height: 1.6;">
+    <h1>💎 Astro (static) on .ton</h1>
+    <p>
+      A statically-generated site served from <strong>TON Storage</strong> — no
+      server, no CDN, no DNS registrar.
+    </p>
+    <p>
+      Flow: <code>astro build</code> → <code>dist/</code> →
+      <code>npx ton-sovereign-deploy ./dist</code>.
+    </p>
+    <p>See this directory's <code>README.md</code> for the deploy commands.</p>
+    <p><small>Built at {builtAt}</small></p>
+  </body>
+</html>
