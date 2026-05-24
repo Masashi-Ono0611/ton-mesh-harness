@@ -56,6 +56,9 @@ npm run build
 npx -y ton-sovereign-deploy ./out --domain <yours>.ton
 ```
 
+To keep seeding after you close the terminal, hand the daemon to the OS:
+`npx -y ton-sovereign-deploy ./out --domain <yours>.ton --daemon-mode service --no-watch`.
+
 ## Next-specific routing caveats
 
 - **No SSR / no API routes / no Server Actions**: static export is
