@@ -11,6 +11,7 @@ Each subdirectory is a real, deploy-ready site. `hello-ton/` is build-free
 | [`hello-ton/`](./hello-ton/) | none | Minimal "hello world" — one `index.html`. The default V3 reference site. |
 | [`vite-spa/`](./vite-spa/) | `npm run build` → `dist/` | Vite + React SPA. The realistic "I have a real frontend" flow, with the `base: './'` setting that makes assets resolve under both a `.ton` domain and a gateway prefix. |
 | [`nextjs-static-export/`](./nextjs-static-export/) | `next build` → `out/` | Next.js `output: 'export'`. Static export flow + Next-specific routing caveats (no SSR, absolute `/_next/` asset paths). |
+| [`astro-static/`](./astro-static/) | `astro build` → `dist/` | Astro (static by default). Static-site-generator flow; same absolute-asset-path caveat as Next. |
 
 ## What goes in `examples/`
 
