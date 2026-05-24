@@ -22,13 +22,13 @@ Scan the QR with Tonkeeper / MyTonWallet on your phone, approve the
 npx -y ton-sovereign-deploy ./examples/hello-ton \
   --testnet \
   --domain <yours>.ton \
-  --no-watch \
-  --daemon-backend=ton-core
+  --no-watch
 ```
 
-Note: `--testnet` requires the legacy `ton-core` backend (tonutils
-backend is mainnet-only in v0.8). You'll need testnet TON in the
-signing wallet and ownership of `<yours>.ton` on testnet TON DNS.
+Note: `--testnet` runs on the default `tonutils` backend since post-rc11
+(the daemon is started with the testnet `--network-config`). You'll need
+testnet TON in the signing wallet and ownership of `<yours>.ton` on
+testnet TON DNS.
 
 ## Agentic deploy (mainnet, no human in the loop)
 
