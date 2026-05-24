@@ -60,6 +60,9 @@ npx -y ton-sovereign-deploy ./dist --domain <yours>.ton
 to seed your bag, and a fresh `bag_id` is published whenever the build
 output changes (the Bag ID is a content hash).
 
+To keep seeding after you close the terminal, hand the daemon to the OS:
+`npx -y ton-sovereign-deploy ./dist --domain <yours>.ton --daemon-mode service --no-watch`.
+
 ## Caveats
 
 - **Client-side routing**: a pure SPA serves `index.html` for `/`. Deep
