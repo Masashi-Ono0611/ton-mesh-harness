@@ -92,7 +92,7 @@ The literal phrase **"deploy a static site to .ton"** (or close paraphrase) must
 | `domain` | string \| null | — | null | e.g. `"myprotocol.ton"` |
 | `description` | string \| null | — | dir name | bag description |
 | `wallet` | `WalletSpec` | — | `{kind: "tonconnect", connector: "Tonkeeper"}` | discriminated union, see below |
-| `testnet` | boolean | — | false | reserved for v0.9 — SDK rejects `true` with `ERR_INVALID_INPUT` in v0.8 (tonutils-storage backend is mainnet-only). CLI testnet route lives outside the SDK. |
+| `testnet` | boolean | — | false | testnet TON. Supported on the tonutils backend since post-rc11 (the daemon is started with the testnet `--network-config`; DNS uses testnet endpoints). Needs testnet TON + a testnet `.ton` domain. |
 | `tunnel_config` | string \| null | — | null | path to nodes-pool.json |
 | `keep_alive` | boolean | — | false | true = daemon keeps seeding after the call returns; false = one-shot |
 
