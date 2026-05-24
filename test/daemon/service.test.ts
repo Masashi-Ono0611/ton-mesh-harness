@@ -34,6 +34,9 @@ describe('buildLaunchdPlist', () => {
     const p = buildLaunchdPlist(meta())
     expect(p).toContain('<key>Label</key>')
     expect(p).toContain('<string>ton-sovereign.abc123</string>')
+    // `-daemon` (non-interactive) is mandatory: without it the REPL busy-loops
+    // at ~100% CPU under launchd and floods the log. Regression guard.
+    expect(p).toContain('<string>-daemon</string>')
     expect(p).toContain('<string>--db</string>')
     expect(p).toContain('<string>/home/u/.ton-sovereign/seeds/abc123/db</string>')
     expect(p).toContain('<string>--api</string>')
@@ -63,7 +66,7 @@ describe('bag-id validation (path-traversal guard)', () => {
 describe('buildSystemdUnit', () => {
   it('emits ExecStart with the daemon args + restart policy', () => {
     const u = buildSystemdUnit(meta())
-    expect(u).toContain('ExecStart=/home/u/.ton-sovereign/bin/tonutils-storage --api 127.0.0.1:7123 --db /home/u/.ton-sovereign/seeds/abc123/db')
+    expect(u).toContain('ExecStart=/home/u/.ton-sovereign/bin/tonutils-storage -daemon --api 127.0.0.1:7123 --db /home/u/.ton-sovereign/seeds/abc123/db')
     expect(u).toContain('Restart=on-failure')
     expect(u).toContain('WantedBy=default.target')
     expect(u).not.toContain('--network-config')
