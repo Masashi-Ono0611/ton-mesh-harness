@@ -2376,3 +2376,118 @@ Validators, please [participate](https://t.me/tonstatus/211) in the vote.
 Follow the voting progress [here](https://vote.lagus.cooking/).
 
 ---
+
+## [108] 2026-05-11T11:26:12+00:00
+
+- Permalink: https://t.me/toncore/108
+- Author: TON Core
+- Views: 4.37K
+
+**Tolk 1.4 Programming Language **
+
+Introducing source maps, debugger support, ABI export, and auto-generated TypeScript wrappers.
+
+—** ABI export **for toolchains, explorers, SDKs, and UI integrations.
+
+— **Auto-generated TypeScript wrappers** for Tolk smart contracts.
+
+— **Source maps **that connect TVM execution back to Tolk source code, variables, stack layout, and call frames.
+
+— **Debugger** **marks** that enable step-by-step debugging of fully optimized production contracts.
+
+— **Language enhancements **continuing Tolk’s evolution toward a general-purpose smart contract language.
+
+[Release »](https://github.com/ton-blockchain/ton/releases/tag/tolk-1.4.0)
+**🔥***28**❤***12**🤯***3**👨‍💻***3**🦄***3**😱***2**🐳***2**🆒***1
+
+---
+
+## [109] 2026-05-11T11:26:12+00:00
+
+- Permalink: https://t.me/toncore/109
+- Author: TON Core
+- Views: 7.08K
+
+**Introducing** **Acton — a new, modern toolchain for developing smart contracts on TON** 
+
+Acton covers the full development lifecycle: project creation, testing, debugging, dApp integration, deployment, and verification.
+
+CLI-first by design, it works naturally for both developers and AI agents.
+
+**1.** **One toolchain, not a bunch of utilities**
+Create, build, test, lint, format, deploy, and verify TON contracts in a single coherent environment around Tolk.
+
+**2.** **A tighter build-test-debug loop**
+Write tests directly in Tolk programming language, run them fast, debug failed transactions, and inspect what actually happened on-chain.
+
+**3.** **Security built in**
+Coverage, fuzzing, mutation testing, gas profiling, and CI help catch regressions early.
+
+**4. A native debugger**
+Step in, step over, step out, watch variables, and inspect the call stack. A smooth Web2-style developer experience, now inside a blockchain language.
+
+**5.** **Friendly for AI agents**
+A modern CLI tool that becomes an agent's runtime, with skills and manuals bundled.
+
+**6. IDE integtation
+**Use it with VS Code, JetBrains, Cursor, Zed, and other LSP‑based editors.
+
+[Read more »](https://ton-blockchain.github.io/acton/)
+
+[Docs »](https://ton-blockchain.github.io/acton/docs/welcome)
+
+[Author's notes »](https://t.me/tolk_lang/29)[
+  
+  ton-blockchain.github.io
+  *
+  Acton — a unified toolchain for TON
+  Acton is an all-in-one CLI built around Tolk — from project creation to tests, debugging, dApp integration, deployment, and verification.
+](https://ton-blockchain.github.io/acton/)
+**🔥***27**🤯***16**❤***9**😱***7**❤‍🔥***3**🐳***2**🦄***2**👨‍💻***1
+
+**Photos:**
+- https://cdn4.telesco.pe/file/bturCcWa5rTswjWpj5361hk0bVrh6qi2AeKkMcbbKQ2VHJ6rmVwXPYYtfpDG94eXs-npzMu8RKq-5VvNTFSiEyyY2s9sEm3QPJKW8mB7Gm0EQgQnTzsuXf8EVZxLuA1odeBU8MBHdUbeUmA1di9zQFHl_WUu6CjgaH8V5IAnHVZWJ01cnNchjZQmx95BfuOjroDguytMk3z8E5_D5rH54IyVEh-EURm5XCqydzOCVfK_UrOntffti4NOFIOs5il0EaydMAxpIEwXKJddhh0OBhYooc64HasuSV0V1m10BkqWwHc4g6qbg73HM9cPKe5PsN3khoDgq4DPIqhS9VeITw.jpg
+
+**Link preview:**
+- [Acton — a unified toolchain for TON](https://ton-blockchain.github.io/acton/)
+  - Acton is an all-in-one CLI built around Tolk — from project creation to tests, debugging, dApp integration, deployment, and verification.
+
+---
+
+## [110] 2026-05-11T11:26:13+00:00
+
+- Permalink: https://t.me/toncore/110
+- Author: TON Core
+- Views: 11.6K
+
+One of [Acton](https://ton-blockchain.github.io/acton/)’s key features is its advanced support for developing TON smart contracts using AI.
+**🤯***74**❤‍🔥***62**😱***36**🔥***16**❤***13**👍***7**🍌***6**🐳***4**👨‍💻***3**🦄***3**🖕***2
+
+**Photos:**
+- https://cdn4.telesco.pe/file/Kgv2qPDbrXkmwemxXaYJef5NkW0u99dMeNb-qgWE_T0_f8CS_xcGFMnXtyqY8tNXDU3AS45B2jGHBt9G4Frqqm5vGWbwzVdr6KnLqvkXlE6ytssWXXUqhygsCc87vJg2vayBVpwO7aAyfes8nsqCx2pGMrUh8vh-abV7oxWuAOxIwiOuFIyH5SPjWvmFsBtLTiUjk-1bFiTR5VZBfAOCyhU1i8JeLzOdNORUbJP6tkAepWlyTjdzsQ_Oq6koxLce-MlraMxF6OQ8_YN5dPmcP9PZrs4R0D4FMmAHtkjlMLXzx0dCxUxdmKzoexdFlFhI4m04xD0_8zEVsR0TrMGctQ
+
+**Videos:**
+- https://cdn4.telesco.pe/file/f37ba23343.mp4?token=J3SrQ05XpN2a5IxXoq-r7Ug6Si1GiUQ99B1vsXNF51susfBWIlG8HlJnnTb8yrT_AIEAdEz-mFDgqXwaMCdX3cM2ml4Geiya_4BlQxQlt2TpeEOz59XyyqfHhDl2MlnGEqlsyuaanx5AvjmTa0-ESNNel8tr9L5RK4FkqeZ9D3T0Ofes4RToaUbe7KgJy0dQENgvVw1yVz9Njcg26Dil5jQS0Z7N3EnncucG8_cw0zUDg3UU9tRLKODMNNDSsGKTA5Guurdq7ronMfHr3jXJuJ4cMCfFNgeUEVa9jdcUckVDhQy8hzp7ErxquYJBRPkrVuGlS-pZBwR7q6H7c1NhHQ
+
+---
+
+## [111] 2026-05-25T14:52:01+00:00
+
+- Permalink: https://t.me/toncore/111
+- Author: TON Core
+- Views: 5.24K
+
+**Next technical objective: increasing shardchain performance
+**
+Under normal load, TON operates on a single shardchain. Under peak load, dynamic sharding is activated: the network splits into multiple shardchains, increasing throughput while maintaining static fees. In this mode, operation execution time may increase by several seconds.
+
+With **TON 2026.05** we start a new series of updates focused on performance improvement of a single shardchain
+
+The objective is to activate dynamic sharding at a load level at which other blockchains cannot operate effectively.
+
+[TON 2026.05-rc »](https://github.com/ton-blockchain/ton/releases/tag/v2026.05-rc)
+
+[Update timeline »](https://t.me/tonstatus/216)
+**❤***55**⚡***27**🤩***11**🖕***8**💩***6**😱***5**😁***2**🤬***2**👍***1
+
+---

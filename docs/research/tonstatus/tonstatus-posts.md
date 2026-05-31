@@ -4319,3 +4319,60 @@ The TON network currently runs on the reference [C++ implementation](https://git
 For the main network, operators should use the C++ version of the TON node.
 
 ---
+
+## [215] 2026-05-23T14:25:02+00:00
+
+- Permalink: https://t.me/tonstatus/215
+- Author: TON Status
+- Views: 5.02K
+
+**Final shutdown stage for Toncoin and Token Bridge**
+
+Toncoin and Token Bridge at [bridge-v3.ton.org](http://bridge-v3.ton.org/) will be permanently shut down on **September 1, 2026**.
+
+All percentage-based transfer fees have been waived for the remaining bridge withdrawal period.
+
+Users who have previously used the bridge should check their wallets and withdraw any remaining bridged assets before the shutdown date.
+
+**Required action**
+
+If you have Wrapped Toncoin in your [Ethereum](https://etherscan.io/token/0x582d872a1b094fc48f5de31d3b73f2d9be47def1) or [BNB Smart Chain](https://bscscan.com/token/0x76A797A59Ba2C17726896976B7B3747BfD1d220f) wallet, please bridge it back to TON using [bridge-v3.ton.org](http://bridge-v3.ton.org/) before September 1, 2026.
+
+If you have jUSDT, jUSDC, jDAI, jWBTC, or any other j-tokens in your TON wallet, please bridge them back to Ethereum using [bridge-v3.ton.org](http://bridge-v3.ton.org/) before September 1, 2026.
+
+After this date, the bridge will no longer be available for any transfers.
+
+**Current status**
+
+All previously submitted user transfers have been processed.
+
+For transfers that had been executed but not claimed by users, the required TON and EVM network fees were covered, and those transfers have also been completed.
+
+On June 2026, bridge oracles will withdraw their stakes from the bridge contracts. The oracles will continue processing bridge transfers until the final shutdown on September 1, 2026.
+
+---
+
+## [216] 2026-05-25T14:43:14+00:00
+
+- Permalink: https://t.me/tonstatus/216
+- Author: TON Status
+- Views: 7.05K
+
+**Mainnet validators and node owners**
+Scheduled network update on June 1
+
+We ask all validators and node owners to schedule time on **Monday, June 1, at 10:00 UTC** to update their validator software.
+
+This update is mandatory and introduces security and performance-related changes to consensus.
+
+On **June 3**, we expect to propose corresponding network configuration changes for voting, including:
+
+- **Config8**: set TVM version to 14 and activate the full_collated_date capability to improve validation performance.
+- **Config17**: increase max_stake_factor from 3 to 4.5, allowing validators with smaller stakes to continue participating in network maintenance despite higher maximum stakes.
+- **Config29**: set max_collated_bytes to 10 MB.
+- **Config30**: set enable_observers from 0 to 1, introducing a separate overlay for fast candidate broadcasts among validators.
+- **Config79, 80, 81**: change of addresses to proceed with bridge [closure](https://t.me/tonstatus/215).
+
+These changes will increase overall network performance and won't affect validation rewards
+
+---

@@ -2,9 +2,10 @@
 
 - Source: https://t.me/tonstatus
 - Captured at: 2026-05-10 16:11:45 JST
-- Total posts captured: 209
+- Refreshed at: 2026-05-31
+- Total posts captured: 211
 - Earliest: 2021-11-25T23:38:35+00:00 (msg 1)
-- Latest:   2026-05-04T13:42:35+00:00 (msg 214)
+- Latest:   2026-05-25T14:43:14+00:00 (msg 216)
 
 Public channel preview (`t.me/s/<channel>`) covers text + photo URLs + link previews. 
 Native videos / large files / comments are not available via this path.
@@ -220,3 +221,5 @@ Native videos / large files / comments are not available via this path.
 - [`212`](https://t.me/tonstatus/212) · 2026-05-01T11:19:55+00:00 · **Mainnet validators**
 - [`213`](https://t.me/tonstatus/213) · 2026-05-02T11:10:56+00:00 · **Mainnet Validators**
 - [`214`](https://t.me/tonstatus/214) · 2026-05-04T13:42:35+00:00 · **Clarification for TON Node Operators
+- [`215`](https://t.me/tonstatus/215) · 2026-05-23T14:25:02+00:00 · **Final shutdown stage for Toncoin and Token Bridge**
+- [`216`](https://t.me/tonstatus/216) · 2026-05-25T14:43:14+00:00 · **Mainnet validators and node owners**

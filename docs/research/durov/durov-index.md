@@ -2,9 +2,10 @@
 
 - Source: https://t.me/durov
 - Captured at: 2026-05-10 16:11:01 JST
-- Total posts captured: 389
+- Refreshed at: 2026-05-31
+- Total posts captured: 401
 - Earliest: 2015-10-28T18:20:58+00:00 (msg 1)
-- Latest:   2026-05-09T22:24:14+00:00 (msg 507)
+- Latest:   2026-05-23T13:26:07+00:00 (msg 520)
 
 Public channel preview (`t.me/s/<channel>`) covers text + photo URLs + link previews. 
 Native videos / large files / comments are not available via this path.
@@ -400,3 +401,15 @@ Native videos / large files / comments are not available via this path.
 - [`505`](https://t.me/durov/505) · 2026-05-08T17:41:53+00:00 · **🫴*** TON is **#1 in annual staking rewards** among the 50 largest cryptocurrencies. 
 - [`506`](https://t.me/durov/506) · 2026-05-09T15:32:17+00:00 · **🏆*** We’ve distributed **$75,000** among the best designers who imagined a new way to communicate — Telegram Nodes ([s
 - [`507`](https://t.me/durov/507) · 2026-05-09T22:24:14+00:00 · **🥖*** The French government [is accusing](https://www.wsj.com/tech/elon-musk-summoned-to-france-to-face-criminal-charge
+- [`508`](https://t.me/durov/508) · 2026-05-10T18:42:03+00:00 · **📊***** **Channel admins can now run massive polls limited to subscribers or specific countries — making fake-vote inflation much harder.
+- [`509`](https://t.me/durov/509) · 2026-05-11T19:32:24+00:00 · **🛠*** Developing for TON just became **10x faster**. The [new toolchain](https://ton-blockchain.github.io/acton/) makes smart contracts easy to create, test, and deploy.
+- [`510`](https://t.me/durov/510) · 2026-05-12T17:28:39+00:00 · **🌍*** With 400 validators across 6 continents, TON is one of the most decentralized blockchain networks on the planet.
+- [`512`](https://t.me/durov/512) · 2026-05-14T12:38:57+00:00 · **🕵️‍♂️*** Now you can search 100M+ Telegram stickers and emoji by keyword — in 36 languages.
+- [`513`](https://t.me/durov/513) · 2026-05-15T18:14:32+00:00 · **$100,400** just went to the **15 winners** of the [TON Consensus Challenge](https://t.me/contest/452).
+- [`514`](https://t.me/durov/514) · 2026-05-16T13:57:49+00:00 · **🇦🇪*** Dubai is full of traffic and crowds again. Already missing the Iranian fireworks — they helped clear the city of the easily impressed.
+- [`515`](https://t.me/durov/515) · 2026-05-17T14:44:56+00:00 · **🏆*** We just awarded **$52,420** to the winners of the Telegram [Art Contest](https://t.me/contest/453).
+- [`516`](https://t.me/durov/516) · 2026-05-17T14:55:50+00:00 · **🎁***
+- [`517`](https://t.me/durov/517) · 2026-05-18T14:56:21+00:00 · **🧠*** AI devs asked for this — and we delivered.
+- [`518`](https://t.me/durov/518) · 2026-05-19T18:02:53+00:00 · **💪*** Anyone can now prompt their own text transformation style — for example, **“Gym Bro”** — and turn any message into motivational protein poetry.
+- [`519`](https://t.me/durov/519) · 2026-05-20T15:38:10+00:00 · **🤖*** Your Telegram inbox can now run itself.
+- [`520`](https://t.me/durov/520) · 2026-05-23T13:26:07+00:00 · **🎭*** WhatsApp encryption is a giant fraud.

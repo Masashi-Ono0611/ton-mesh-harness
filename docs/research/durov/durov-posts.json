@@ -5912,5 +5912,211 @@
     "views": "700K",
     "forwarded_from": "",
     "reply_to": ""
+  },
+  {
+    "msg_id": 508,
+    "datetime_iso": "2026-05-10T18:42:03+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5231200819986047254\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F938A.png')\"><b>📊</b></i></tg-emoji><b> </b>Channel admins can now run massive polls limited to subscribers or specific countries — making fake-vote inflation much harder.<br/><br/>Now people in places like Russia can see real results. For example, <a href=\"https://t.me/cb_economics/24591\" target=\"_blank\" rel=\"noopener\" onclick=\"return confirm('Open this link?\\n\\n'+this.href);\">only 5% support internet restrictions</a> — not 52%, as old rigged polls claimed <tg-emoji emoji-id=\"5384214488809490070\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F988F.png')\"><b>😏</b></i></tg-emoji></div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/508\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>4.97K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>57.1K</span><span class=\"tgme_reaction\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FABA1.png')\"><b>🫡</b></i>17.8K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447193685919811994\"></tg-emoji>11.7K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447458260200214425\"></tg-emoji>4.17K</span>",
+    "text_md": "**📊***** **Channel admins can now run massive polls limited to subscribers or specific countries — making fake-vote inflation much harder.\n\nNow people in places like Russia can see real results. For example, [only 5% support internet restrictions](https://t.me/cb_economics/24591) — not 52%, as old rigged polls claimed **😏***\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/508)\n  \n\n*4.97K57.1K**🫡***17.8K11.7K4.17K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/XPTN0vLPJhk1hgxAnAlVYjnJYAh11m8H5lfw7Bv62AoBCL2Js7NThyTEomS8Em4Kj-xPUmD8w7xOIu9UTZBQaexaKm5m8tqZSxBMrubUzypqjBos6v9Gs5M_J0hORI_5tXcxih5yDfG1uV_FwMglf3U-jAAEH8fQA6TEZux9fJNjfqZiULu_Pw2y0S16dVeUYvA-vmrifQkkYzXd7hR08Eb9ntLzb9smdbjVdt5kD4VQCnnZiB7aDIgDXSFg2xRRfoK5bjtkhNOKjBeC3NaMjVnrxnBosicXRQd1Zuz6ShjEwTRhElZ-2PkXxd5Ot8byUphNNv6wYFmHpFV-48CpRg.jpg"
+    ],
+    "videos": [],
+    "links_preview": [],
+    "views": "2.6M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 509,
+    "datetime_iso": "2026-05-11T19:32:24+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5389060311430999304\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F9BA0.png')\"><b>🛠</b></i></tg-emoji> Developing for TON just became <b>10x faster</b>. The <a href=\"https://ton-blockchain.github.io/acton/\" target=\"_blank\" rel=\"noopener\" onclick=\"return confirm('Open this link?\\n\\n'+this.href);\">new toolchain</a> makes smart contracts easy to create, test, and deploy.<br/><br/>Most importantly, fully AI-ready.<br/><br/>It replaces TON’s fragmented tooling stack with one developer flow. Start building&#33;</div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/509\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div><a class=\"tgme_widget_message_link_preview\" href=\"https://ton-blockchain.github.io/acton/\">\n  \n  <div class=\"link_preview_site_name accent_color\" dir=\"auto\">ton-blockchain.github.io</div>\n  <i class=\"link_preview_image\" style=\"background-image:url('https://cdn4.telesco.pe/file/HQusq9qx-DmLEdo8B9_6qa5YAhxoR4z7uBCmsyfI-AdfrpbIKz2s9ALtaMLnnwkaWDMLNPnM2Bz0AifwqgeKQUUnqJDz-cKclhEvcCYVAx-IpitpSSmhzWYaw0VPHoUPCQIrjlERP1a46lum349fubFlQy_4JSCIyh9ZiRPEdBCd4QAYwLom4B12cWDxYj8hlpOstyy56xx0FZuEv8B3nPqaO9bIuojjCItpUlfKNl8XjZeMT1lifR30Vi2l83hERTtduhT38R7O4ZSRY4sy2nWhoF_Q4GrPMLnjVKgEqNvMl5PFbvPhlwCaZbx19NQhjzzbFxY8mf71jZznDPdnig.jpg');padding-top:50%\"></i>\n  <div class=\"link_preview_title\" dir=\"auto\">Acton — a unified toolchain for TON</div>\n  <div class=\"link_preview_description\" dir=\"auto\">Acton is an all-in-one CLI built around Tolk — from project creation to tests, debugging, dApp integration, deployment, and verification.</div>\n</a>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>5.76K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>17.2K</span><span class=\"tgme_reaction\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FABA1.png')\"><b>🫡</b></i>5.27K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447193685919811994\"></tg-emoji>3.81K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447458260200214425\"></tg-emoji>2.27K</span>",
+    "text_md": "**🛠*** Developing for TON just became **10x faster**. The [new toolchain](https://ton-blockchain.github.io/acton/) makes smart contracts easy to create, test, and deploy.\n\nMost importantly, fully AI-ready.\n\nIt replaces TON’s fragmented tooling stack with one developer flow. Start building!\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/509)\n  \n[\n  \n  ton-blockchain.github.io\n  *\n  Acton — a unified toolchain for TON\n  Acton is an all-in-one CLI built around Tolk — from project creation to tests, debugging, dApp integration, deployment, and verification.\n](https://ton-blockchain.github.io/acton/)\n*5.76K17.2K**🫡***5.27K3.81K2.27K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/HQusq9qx-DmLEdo8B9_6qa5YAhxoR4z7uBCmsyfI-AdfrpbIKz2s9ALtaMLnnwkaWDMLNPnM2Bz0AifwqgeKQUUnqJDz-cKclhEvcCYVAx-IpitpSSmhzWYaw0VPHoUPCQIrjlERP1a46lum349fubFlQy_4JSCIyh9ZiRPEdBCd4QAYwLom4B12cWDxYj8hlpOstyy56xx0FZuEv8B3nPqaO9bIuojjCItpUlfKNl8XjZeMT1lifR30Vi2l83hERTtduhT38R7O4ZSRY4sy2nWhoF_Q4GrPMLnjVKgEqNvMl5PFbvPhlwCaZbx19NQhjzzbFxY8mf71jZznDPdnig.jpg"
+    ],
+    "videos": [],
+    "links_preview": [
+      {
+        "url": "https://ton-blockchain.github.io/acton/",
+        "title": "Acton — a unified toolchain for TON",
+        "site": "ton-blockchain.github.io",
+        "desc": "Acton is an all-in-one CLI built around Tolk — from project creation to tests, debugging, dApp integration, deployment, and verification."
+      }
+    ],
+    "views": "2.24M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 510,
+    "datetime_iso": "2026-05-12T17:28:39+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5399898266265475100\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F8C8D.png')\"><b>🌍</b></i></tg-emoji> With 400 validators across 6 continents, TON is one of the most decentralized blockchain networks on the planet. <br/><br/><tg-emoji emoji-id=\"5431795571033645908\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FA791E2808DF09F92BB.png')\"><b>🧑‍💻</b></i></tg-emoji> Telegram becoming the largest validator opened the door for major exchanges and custodians to stake TON without increasing centralization risk.</div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/510?single\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div></div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/510\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>8.19K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>29.5K</span><span class=\"tgme_reaction\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FABA1.png')\"><b>🫡</b></i>8.53K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447458260200214425\"></tg-emoji>5.82K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447193685919811994\"></tg-emoji>3.38K</span>",
+    "text_md": "**🌍*** With 400 validators across 6 continents, TON is one of the most decentralized blockchain networks on the planet. \n\n**🧑‍💻*** Telegram becoming the largest validator opened the door for major exchanges and custodians to stake TON without increasing centralization risk.\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/510?single)\n  \n\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/510)\n  \n\n*8.19K29.5K**🫡***8.53K5.82K3.38K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/sfykT0KPgRq6-GQ0-jfpp2j6g1UY8CoOFPE1j6eB-csu7cxdKGhXs8iQsWcN-1U8grHQE5_jPgqXX4tiz2TwlP3zdiezWysVTGtZHd4uGkKeZaMCxIieQC5qbS4Rug3pqbukxNIvbcU-ZW-1cnHmDhRM3My3f8to073w75lE6EgKqxTKT2ccTZpP-ZEvYvU6bihP9XRQwYc6bYE2tIeMcSnq0tfw1sgC7UsXi7izbQbzY7-Bc2n3zxO7_NUpbHbuF1kXcmenkIZINCLIrQkNQ2I_08sDAvwlXlEgy9OhZi-Iqj7cI0eAY0zzn7ih_Xm6fxkO-KGRbrp3ue2PKbj4PA.jpg",
+      "https://cdn4.telesco.pe/file/EDAjel1zut95F-XBx3vO2On6F_EI24lkKw4a7zNcKqkK1dmPQm5pf91Vse7pz1aJ1B9qyvi7sn-TXf6Pw5bVJSrfbFp3bpvZR2zmx4Yc_OJHcU5HYDFU6M2ndvfqCVofMoOcK4FxEHZ_ahnmiyrilkyx-AROsS1obrmSzawcBT4HkMSi7vN4vzVzswpdbLDFfKqHOJHAsk-ktp5XZ00UHvVat04J9qVYSYjgKdjdzDelbuPQWXoZtdAEihCdpsAURiCUS59w2mVAX9hCbvLQqD9dh8dzVb0FkecV6W4vnVu6Qxb-v-oBcK5IBXRFpNWA3k1elp91515II65tPMUASw.jpg"
+    ],
+    "videos": [],
+    "links_preview": [],
+    "views": "2.48M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 512,
+    "datetime_iso": "2026-05-14T12:38:57+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5929303365463838232\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F95B5E2808DE29982.png')\"><b>🕵️‍♂️</b></i></tg-emoji> Now you can search 100M+ Telegram stickers and emoji by keyword — in 36 languages.<br/><br/>Telegram’s AI scans and labels millions of public stickers so you can finally find the exact suspicious frog you need. <tg-emoji emoji-id=\"5846197380373810711\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FA494.png')\"><b>🤔</b></i></tg-emoji></div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/512\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>3.9K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>46.7K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>11.9K</span><span class=\"tgme_reaction\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FABA1.png')\"><b>🫡</b></i>6.88K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447193685919811994\"></tg-emoji>4.42K</span>",
+    "text_md": "**🕵️‍♂️*** Now you can search 100M+ Telegram stickers and emoji by keyword — in 36 languages.\n\nTelegram’s AI scans and labels millions of public stickers so you can finally find the exact suspicious frog you need. **🤔***\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/512)\n  \n\n*3.9K46.7K11.9K**🫡***6.88K4.42K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/KhC439ieHUgmYAenFNEc6FReHLGwBgYUPTb4zRipIMqMwLul2OM13I2oVgy-Shng4AXJu0nzg5MVbXknldhDF7yT33mb1_vjgt6nz6dzuQv2wsk-4LrDlkZfjhL37hkNvPxPq2pxPv6M8O3zaLbWTtI7sw_tHmgnxDiKGk8Gs-pDcSJnNaxJib3XkD-z5cba8DKWDX5P3bIkjLDU9Iplh-XzACAhvRnm8JPNhCA1Kqrux20eqt2f9W8oPwtWIVvmmSDEphxCiYwTMdW3oMf4-YKys7oAmDodw1rdhn7V-8A1rsnYhnVrOeG1EyjX4RW3GeGWjbkC6VkzN6OLhbNl5A"
+    ],
+    "videos": [
+      "https://cdn4.telesco.pe/file/c7f159051d.mp4?token=npuNNYKCXbYj81Qga2XTYXfXavqkv7kBsOKixAyqhYEEYC7ElVsR0OnlRspgx4XeN5ptPZ0quZKQMiQXLLHJk_7EbCr-tJNG8du0vKx0bx2cKHH2AacKWr6Jalq67pmIAKYC5rqc5ukmqUGLaL2CXHSoc9Lfv197uo4IXBjWjrgLYoZ1wKj7aFLuY15xaK2bYtRS2hV4RnUbTY0o1TiKrhFvbFyagyXbzSK3JHbkFwpspTZNDdhMTJlVOBibjIoa1cxbV90JP4tD-PySi3LyR6ubYorYqMp47lw69ItXX9ADKCZ5nv_PES2vvHuUQr993HEJD9hGy8QXbpcyMEGSbg"
+    ],
+    "links_preview": [],
+    "views": "2.05M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 513,
+    "datetime_iso": "2026-05-15T18:14:32+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<b>&#036;100,400</b> just went to the <b>15 winners</b> of the <a href=\"https://t.me/contest/452\" target=\"_blank\" rel=\"noopener\" onclick=\"return confirm('Open this link?\\n\\n'+this.href);\">TON Consensus Challenge</a>. <br/><br/><b><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FA7A0.png')\"><b>🧠</b></i> </b>The smartest engineers on the planet — some armed with loyal AI sidekicks — helped us maximize the security of the new consensus mechanism.<br/><br/><tg-emoji emoji-id=\"5409008750893734809\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F8F86.png')\"><b>🏆</b></i></tg-emoji> <a href=\"https://t.me/contest\" target=\"_blank\" rel=\"noopener\" onclick=\"return confirm('Open this link?\\n\\n'+this.href);\">Telegram contests</a> offer generous prize money — and the only path to joining our engineering team.</div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/513\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div><a class=\"tgme_widget_message_link_preview\" href=\"https://t.me/contest/452\">\n  \n  <div class=\"link_preview_site_name accent_color\" dir=\"auto\">Telegram</div>\n  \n  <div class=\"link_preview_title\" dir=\"auto\">Telegram Contests</div>\n  <div class=\"link_preview_description\" dir=\"auto\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F928E.png')\"><b>💎</b></i> Blockchain Contest, Round 2: Results<br/><br/>We awarded &#036;100,400 to the winners of TON Consensus Challenge.<br/><br/>The core task was to find potential flaws in TON&#39;s new consensus algorithm – though participants were welcome to report any other flaws they came across.…</div>\n</a>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>1.73K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>16.4K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>6.78K</span><span class=\"tgme_reaction\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FABA1.png')\"><b>🫡</b></i>3.92K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447193685919811994\"></tg-emoji>2.09K</span>",
+    "text_md": "**$100,400** just went to the **15 winners** of the [TON Consensus Challenge](https://t.me/contest/452). \n\n****🧠*** **The smartest engineers on the planet — some armed with loyal AI sidekicks — helped us maximize the security of the new consensus mechanism.\n\n**🏆*** [Telegram contests](https://t.me/contest) offer generous prize money — and the only path to joining our engineering team.\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/513)\n  \n[\n  \n  Telegram\n  \n  Telegram Contests\n  **💎*** Blockchain Contest, Round 2: Results\n\nWe awarded $100,400 to the winners of TON Consensus Challenge.\n\nThe core task was to find potential flaws in TON's new consensus algorithm – though participants were welcome to report any other flaws they came across.…\n](https://t.me/contest/452)\n*1.73K16.4K6.78K**🫡***3.92K2.09K",
+    "photos": [],
+    "videos": [],
+    "links_preview": [
+      {
+        "url": "https://t.me/contest/452",
+        "title": "Telegram Contests",
+        "site": "Telegram",
+        "desc": "**💎*** Blockchain Contest, Round 2: Results\n\nWe awarded $100,400 to the winners of TON Consensus Challenge.\n\nThe core task was to find potential flaws in TON's new consensus algorithm – though participants were welcome to report any other flaws they came across.…"
+      }
+    ],
+    "views": "2.16M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 514,
+    "datetime_iso": "2026-05-16T13:57:49+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5449495646656537594\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F87A6F09F87AA.png')\"><b>🇦🇪</b></i></tg-emoji> Dubai is full of traffic and crowds again. Already missing the Iranian fireworks — they helped clear the city of the easily impressed.<br/><br/>The UAE’s air defenses proved excellent under fire. For 0% tax, we get better protection than Europeans paying 50%.</div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/514\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>6.26K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>47.3K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447193685919811994\"></tg-emoji>13.5K</span><span class=\"tgme_reaction\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FABA1.png')\"><b>🫡</b></i>10.4K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>6.44K</span>",
+    "text_md": "**🇦🇪*** Dubai is full of traffic and crowds again. Already missing the Iranian fireworks — they helped clear the city of the easily impressed.\n\nThe UAE’s air defenses proved excellent under fire. For 0% tax, we get better protection than Europeans paying 50%.\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/514)\n  \n\n*6.26K47.3K13.5K**🫡***10.4K6.44K",
+    "photos": [],
+    "videos": [],
+    "links_preview": [],
+    "views": "1.87M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 515,
+    "datetime_iso": "2026-05-17T14:44:56+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5409008750893734809\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F8F86.png')\"><b>🏆</b></i></tg-emoji> We just awarded <b>&#036;52,420</b> to the winners of the Telegram <a href=\"https://t.me/contest/453\" target=\"_blank\" rel=\"noopener\" onclick=\"return confirm('Open this link?\\n\\n'+this.href);\">Art Contest</a>.<br/><br/><tg-emoji emoji-id=\"5431456208487716895\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F8EA8.png')\"><b>🎨</b></i></tg-emoji> The participants did an amazing job with the MiniDurov collectibles.<br/><br/><tg-emoji emoji-id=\"5471952986970267163\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F928E.png')\"><b>💎</b></i></tg-emoji> Their skills and ideas will enrich Telegram’s TON-based NFT ecosystem.</div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/515\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>3.06K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>25.7K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>12.9K</span><span class=\"tgme_reaction\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FABA1.png')\"><b>🫡</b></i>5.91K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5447193685919811994\"></tg-emoji>2.98K</span>",
+    "text_md": "**🏆*** We just awarded **$52,420** to the winners of the Telegram [Art Contest](https://t.me/contest/453).\n\n**🎨*** The participants did an amazing job with the MiniDurov collectibles.\n\n**💎*** Their skills and ideas will enrich Telegram’s TON-based NFT ecosystem.\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/515)\n  \n\n*3.06K25.7K12.9K**🫡***5.91K2.98K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/lI-w5EIS8JpfUK9rPZMsvyLBXB8RMxSHDGUtvBmtiGGaiAwAaftxpv6UUg7X8K6Y3Er7ow9DvVd7mKfoMhbg7NijYdOiw1qLFeJ7Nt7UosXSGrYGgfOWq7ociRjMidr4LhCUICPtMGXzooTlG8pZ3MdFjlqXHKmO9M48Vn9Z5ekK52GEjaJL4Yuy8dnkH3Kl__rduSFuQCNywhlKpCZsjnARHs6V5ZWwHXQLhLgSLD6WDTuD4_xCsyuJ7Ry4RJK0h_xvhjgewsylQAygiMqqkW3ZjdvY4xlnca89AJCh4P1gS-qbLg0WGpYeHLNcWl_gRrex-oJTdiFO5mLxxtLWnA"
+    ],
+    "videos": [
+      "https://cdn4.telesco.pe/file/c4225d3b52.mp4?token=XKnMkCR0heEvmipB20m5Wq0IGDQ_hTzbKCnacBwiFv_56A0aqx6nGHMaCI3OXnPOIOSAfXxI0F_nvMYu_XJCaNCWmMSnu9naUua33y4GG-iUcScM9pAgz6P4NMQYCfMYQlGDEC_eWym0DXn5Il3e5fJUqsa5POoKc_p6fp_GYbd69CB9eyAvOAGs8gYNYNiHP1fgsYMePdHTINnAg39L_4J3KvySeDJJ839Fd6CZY5mpu0lJfdvjfQTWfIeQ5hLCFYyXPJYMGT5ESm4sYk3Icm4wexs9-BYsmwz1Jbq7fcuvxhfu6eOwCOs94Ixp7n_tMZG4Gf9XRL1wJQqYL3zhoA"
+    ],
+    "links_preview": [],
+    "views": "1.85M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 516,
+    "datetime_iso": "2026-05-17T14:55:50+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5399847211989246390\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F8E81.png')\"><b>🎁</b></i></tg-emoji></div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/516\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>6.35K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>57K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5399847211989246390\"></tg-emoji>43.5K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>14.5K</span>",
+    "text_md": "**🎁***\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/516)\n  \n\n*6.35K57K43.5K14.5K",
+    "photos": [],
+    "videos": [],
+    "links_preview": [],
+    "views": "2.17M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 517,
+    "datetime_iso": "2026-05-18T14:56:21+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5927026418616636353\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FA7A0.png')\"><b>🧠</b></i></tg-emoji> AI devs asked for this — and we delivered.<br/><br/><tg-emoji emoji-id=\"5372981976804366741\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FA496.png')\"><b>🤖</b></i></tg-emoji> Bots can now talk to other bots on Telegram.<br/><br/><tg-emoji emoji-id=\"5443038326535759644\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F92AC.png')\"><b>💬</b></i></tg-emoji> Autonomous agents now have a communication layer humans can follow.<br/><br/><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F9BA0.png')\"><b>🛠</b></i> <a href=\"https://core.telegram.org/bots/features#bot-to-bot-communication\" target=\"_blank\" rel=\"noopener\" onclick=\"return confirm('Open this link?\\n\\n'+this.href);\">Start building</a>&#33;</div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/517\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>3.43K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>19.9K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>6.48K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5399847211989246390\"></tg-emoji>5.99K</span>",
+    "text_md": "**🧠*** AI devs asked for this — and we delivered.\n\n**🤖*** Bots can now talk to other bots on Telegram.\n\n**💬*** Autonomous agents now have a communication layer humans can follow.\n\n**🛠*** [Start building](https://core.telegram.org/bots/features#bot-to-bot-communication)!\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/517)\n  \n\n*3.43K19.9K6.48K5.99K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/UBWGa9Czrc9rSoqZsKvNPWUo61cUpq2GREzAxwNjyhZP1MPb0ZfKRCCUCcbBRhG1aK6Qz-tYEUr1ncrHltsShlB0_prvRpVF15dU6feiZ6tVEr_McmAKlA0Zh5wGU-aOZx-BOTWwYNRpfTLp2bvlonMnGSppwTOsM_r8XuC2NXNEebJ_YEkclCMrZe7nqpU9Im9mSlk77Z57eH8Q3KedoqR9-2VVdPEOULm4DWX_YPtYKVPkN_-s_PWXDjgW9IAr_qYS880UPLkKsnGmGFXrdbVQrPny6YR2Kgz0DE3dPizc-bTnMM7sH7GcN3n0DczCCAHetOcp-EUCq2W09tIhoA"
+    ],
+    "videos": [
+      "https://cdn4.telesco.pe/file/7e945b36d4.mp4?token=vITL68gAQHB2uYYbhR6shJiHqjzFeRDufej9Minlv-6Wxao-5j9n-6sx2-Z3V74iJ84m6UgRMBSx1vnnhS97zG7NAV4fKpQNE8vYYWmbCCTDKL16-ltb8oTaX3fw4U4oWLtc4MvKoYWTxP-QjuijFCQR-vtTzQaqvS44P5BFeOkocoeLOptdfq3W_4r0RUsnBRUqMtz3vkx8ofYg_w0SPvHop1hd9N8bxgsblNwAkW2zOz6xTXokiY_EieVvGOCsDZKcY_9HN84hszRYkrp1FNrJBk0qXGt3xyN_eFt_D8T3d2QtfQewIivKPL_9mvIswsd_RRRyixUfgk0sASQ8Xg"
+    ],
+    "links_preview": [],
+    "views": "1.79M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 518,
+    "datetime_iso": "2026-05-19T18:02:53+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5296691786985527033\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F92AA.png')\"><b>💪</b></i></tg-emoji> Anyone can now prompt their own text transformation style — for example, <b>“Gym Bro”</b> — and turn any message into motivational protein poetry.<br/><br/><tg-emoji emoji-id=\"5283134250269287209\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F92AA.png')\"><b>💪</b></i></tg-emoji> Then share the style with friends so they can reply like gym bros too.<br/><br/><tg-emoji emoji-id=\"5190415054629002671\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FA490.png')\"><b>🤐</b></i></tg-emoji> All fully confidential. No AI-related privacy leaks.</div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/518\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>7.12K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>20.7K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5399847211989246390\"></tg-emoji>7.57K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>5.72K</span>",
+    "text_md": "**💪*** Anyone can now prompt their own text transformation style — for example, **“Gym Bro”** — and turn any message into motivational protein poetry.\n\n**💪*** Then share the style with friends so they can reply like gym bros too.\n\n**🤐*** All fully confidential. No AI-related privacy leaks.\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/518)\n  \n\n*7.12K20.7K7.57K5.72K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/dgkCOtYUodiH8-mQvgLirUuhfd1LB7G_yalt7kQxS4vZNazuoYLeAzxjuH2vq5svBZZB3nbkw5Rsr3KTzezuTI8woLiBokmBgBEOPvyfmq-z_WMSuJjBCeEpqy9ZGLB0g333Y7AM7t-4Iw9UWqD1djVZNiVKxdPYE5EryLpz-FcBoQJfP7lj-xyAMeENG0FbEEI4x5Qa2sJmaMYZtGT1HJBFvSy00uLReWDY9PNhANl2PGtNexDWwhbtk_xIxFzQOsf6MNDB3MP6z1O4Blzi5_hHQX0BiceY4pcdAWkQrPhp1ICTliMaaXz9jBCe22qunT_LmoAe6z68PNpTsoBhQQ"
+    ],
+    "videos": [
+      "https://cdn4.telesco.pe/file/105be22719.mp4?token=V0WEvawe1C50KnV3m-k5giTwBv7ALR9XODYE4bk67ooUVXiEa7huTVR0Y53Y17z0dKG5xYCfbHKIEWztMDuOPKdxVlEuk_cXe8UgGw_A001CZQNZVLwhNlAMuQKteqq24HZCTOTo4E3-Sc8iir3MqLHiKKcq0DdQPjPJ9xi42gk7k9ksEGxkZrD8oJ6icHl2-n-9ZXHdp92TMq8CU0MFHggogKp82DQ6zEIvmYp8F7brR_vc4rQjRMsLezjlknRxdIP17NXLHrJgSycb4-AS66gZM_tFEWQPe7kAh6l2v8aZc_NK2u-5xnFbL5xgu4q-7JhqIyecP4AWOetJCkaJnw"
+    ],
+    "links_preview": [],
+    "views": "1.73M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 519,
+    "datetime_iso": "2026-05-20T15:38:10+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5345799227572257356\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FA496.png')\"><b>🤖</b></i></tg-emoji> Your Telegram inbox can now run itself.<br/><br/>Assign a bot to read and reply for you — with granular control over its rights and chat access. <tg-emoji emoji-id=\"5226639745106330551\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09FA7A0.png')\"><b>🧠</b></i></tg-emoji><br/><br/><tg-emoji emoji-id=\"5341715473882955310\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/E29A99.png')\"><b>⚙️</b></i></tg-emoji> <a href=\"https://core.telegram.org/bots/features#secretary-bots\" target=\"_blank\" rel=\"noopener\" onclick=\"return confirm('Open this link?\\n\\n'+this.href);\">Start building</a>&#33;</div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/519\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>2.04K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>17.9K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>5.91K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5399847211989246390\"></tg-emoji>4.69K</span>",
+    "text_md": "**🤖*** Your Telegram inbox can now run itself.\n\nAssign a bot to read and reply for you — with granular control over its rights and chat access. **🧠***\n\n**⚙️*** [Start building](https://core.telegram.org/bots/features#secretary-bots)!\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/519)\n  \n\n*2.04K17.9K5.91K4.69K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/feauBFLq1VfasVj9pMkOK4LZmSD9NrUj34oqUkj4ctbB_7OlOPIKGnHt8edjlLKt2jY_huGCjwAj8LX878SGNdgs-2u25g6jjjPmSpawQYsNwha05ome8vOucIb1UvZi1bbbhhapXWE2Qw8SlWyNo450JXwkZfRwj6AKiqzzY5fza0pRF75h539LhD0sIclWpQ4IlyVrP4LHqOg2fO8FUxuAQT1_I8jve5ebhIJ5KLWlWtCpn78LXsvq8tfo62irJjXpVys_5GS8RNZUh1TnO4h2XYvpdDPKkkoi0XoW-mKtQ3-M5DOabv2vpb52ahh_uEFvSzBys-09k0pQgiKsLA"
+    ],
+    "videos": [
+      "https://cdn4.telesco.pe/file/e174be993b.mp4?token=RD6JZltVLHelATKpwOG3qKE-tGTye5Cf0U8A2nk5WedoLQbS3JfU0OD8Vi-zbrbGTZx-xr8MRacrMNKfiXcpx3fTq_N6OsN0Fo9xPcxFmZ3-7N0fycnRP-5IMmGxYhU7fHKeiTgFEUWI7twNy0DfquZyuU-skymkkov9T-0gnpajoHUynS4FPEez0ZnyyYdWhzPPxcl-Ob60mSBNN3n4p_seYY6CFgCNp3T3D0q5ZrANCn38Nbn2rJonGlMiGconFlpUdIdlzCS8puoT-wwCy39ImfbMl1yWNpbARLuC-l2ABX4ppLx7wqpMbEYK1hiYIdjMH9qzTW54Ze7bIANEPQ"
+    ],
+    "links_preview": [],
+    "views": "1.63M",
+    "forwarded_from": "",
+    "reply_to": ""
+  },
+  {
+    "msg_id": 520,
+    "datetime_iso": "2026-05-23T13:26:07+00:00",
+    "author": "Pavel Durov",
+    "text_html": "<tg-emoji emoji-id=\"5359441070201513074\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F8EAD.png')\"><b>🎭</b></i></tg-emoji> WhatsApp encryption is a giant fraud.<br/><br/><tg-emoji emoji-id=\"5202021044105257611\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F87BAF09F87B8.png')\"><b>🇺🇸</b></i></tg-emoji> The state of Texas <a href=\"https://www.reuters.com/legal/government/texas-sues-meta-whatsapp-over-encryption-privacy-claims-2026-05-21/\" target=\"_blank\" rel=\"noopener\" onclick=\"return confirm('Open this link?\\n\\n'+this.href);\">just sued</a> WhatsApp for lying to users about privacy — because WhatsApp employees have access to “virtually all” private messages.<br/><br/>Now we know what WhatsApp’s founder meant when he said he “sold his users’ privacy.”<br/><br/>Stay safe — stay Telegram&#33; <tg-emoji emoji-id=\"5830262682338465584\"><i class=\"emoji\" style=\"background-image:url('//telegram.org/img/emoji/40/F09F93B1.png')\"><b>📱</b></i></tg-emoji></div></div><div class=\"media_not_supported_cont\"><div class=\"message_media_not_supported_wrap\">\n  <div class=\"message_media_not_supported\">\n    <div class=\"message_media_not_supported_label\">Please open Telegram to view this post</div>\n    <a href=\"https://t.me/durov/520\" class=\"message_media_view_in_telegram\">VIEW IN TELEGRAM</a>\n  </div>\n</div></div><a class=\"tgme_widget_message_link_preview\" href=\"https://www.reuters.com/legal/government/texas-sues-meta-whatsapp-over-encryption-privacy-claims-2026-05-21/\">\n  \n  <div class=\"link_preview_site_name accent_color\" dir=\"auto\">Reuters</div>\n  <i class=\"link_preview_image\" style=\"background-image:url('https://cdn4.telesco.pe/file/nMRRI2MgvxNr_8DPw3UkeG9kRLtppowm30IyLeJ4p2hHacEgTmuwaN5PV_UMFoXUiW4O7X6GjDDxIdxtwJ63osKkiaL2WAkC4dfRjaK_UkHJ-moi5-_pBHmSD6_zQX6_K4G4M0TZEYguXmCFCkircmBl7eTGT3SpUTmWujmU8nhQQE22i-gTXVOgHlwbk2MRfWj8m6UEJfXbVydhbzOFNJLFS1CgQ8phNxJorRh8yhO9-tK8_gkhUsUTyd1kBpE1UYvuHe2H1qDF8hSe_wLnb2dKuAaqW1UebF90AmYZQHNQ2uA_NBs9xKbEy39-9nsAV-2-R1p3N7VYhz6TJg2RjA.jpg');padding-top:52.375%\"></i>\n  <div class=\"link_preview_title\" dir=\"auto\">Texas sues Meta, WhatsApp over encryption privacy claims</div>\n  <div class=\"link_preview_description\" dir=\"auto\">The Texas Attorney General’s Office on Thursday sued WhatsApp and its parent company Meta Platforms Inc alleging ​they misled consumers about the strength and scope of WhatsApp&#39;s ‌encryption measures, which a Meta spokesman denied.</div>\n</a>\n<div class=\"tgme_widget_message_reactions js-message_reactions\"><span class=\"tgme_reaction tgme_reaction_paid\"><i class=\"icon icon-telegram-stars\"></i>6.02K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5265077361648368841\"></tg-emoji>37.8K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5465587407350942612\"></tg-emoji>15K</span><span class=\"tgme_reaction\"><tg-emoji emoji-id=\"5399847211989246390\"></tg-emoji>10.7K</span>",
+    "text_md": "**🎭*** WhatsApp encryption is a giant fraud.\n\n**🇺🇸*** The state of Texas [just sued](https://www.reuters.com/legal/government/texas-sues-meta-whatsapp-over-encryption-privacy-claims-2026-05-21/) WhatsApp for lying to users about privacy — because WhatsApp employees have access to “virtually all” private messages.\n\nNow we know what WhatsApp’s founder meant when he said he “sold his users’ privacy.”\n\nStay safe — stay Telegram! **📱***\n  \n    Please open Telegram to view this post\n    [VIEW IN TELEGRAM](https://t.me/durov/520)\n  \n[\n  \n  Reuters\n  *\n  Texas sues Meta, WhatsApp over encryption privacy claims\n  The Texas Attorney General’s Office on Thursday sued WhatsApp and its parent company Meta Platforms Inc alleging ​they misled consumers about the strength and scope of WhatsApp's ‌encryption measures, which a Meta spokesman denied.\n](https://www.reuters.com/legal/government/texas-sues-meta-whatsapp-over-encryption-privacy-claims-2026-05-21/)\n*6.02K37.8K15K10.7K",
+    "photos": [
+      "https://cdn4.telesco.pe/file/nMRRI2MgvxNr_8DPw3UkeG9kRLtppowm30IyLeJ4p2hHacEgTmuwaN5PV_UMFoXUiW4O7X6GjDDxIdxtwJ63osKkiaL2WAkC4dfRjaK_UkHJ-moi5-_pBHmSD6_zQX6_K4G4M0TZEYguXmCFCkircmBl7eTGT3SpUTmWujmU8nhQQE22i-gTXVOgHlwbk2MRfWj8m6UEJfXbVydhbzOFNJLFS1CgQ8phNxJorRh8yhO9-tK8_gkhUsUTyd1kBpE1UYvuHe2H1qDF8hSe_wLnb2dKuAaqW1UebF90AmYZQHNQ2uA_NBs9xKbEy39-9nsAV-2-R1p3N7VYhz6TJg2RjA.jpg"
+    ],
+    "videos": [],
+    "links_preview": [
+      {
+        "url": "https://www.reuters.com/legal/government/texas-sues-meta-whatsapp-over-encryption-privacy-claims-2026-05-21/",
+        "title": "Texas sues Meta, WhatsApp over encryption privacy claims",
+        "site": "Reuters",
+        "desc": "The Texas Attorney General’s Office on Thursday sued WhatsApp and its parent company Meta Platforms Inc alleging ​they misled consumers about the strength and scope of WhatsApp's ‌encryption measures, which a Meta spokesman denied."
+      }
+    ],
+    "views": "1.37M",
+    "forwarded_from": "",
+    "reply_to": ""
   }
 ]

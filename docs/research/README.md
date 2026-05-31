@@ -24,8 +24,21 @@ Reference material for sovereign-deploy-kit. All archives are captured from the 
 
 ## Captured at
 
-2026-05-10. One-shot archive. Re-run `scripts/scrape-tg-channel.py <channel> <out_dir>`
-(currently in `/tmp/scrape_tg_channel.py`) to refresh.
+2026-05-10. Initial one-shot archive. To refresh, run the persisted scraper:
+
+```bash
+python3 scripts/scrape-tg-channel.py --all          # all 7 channels
+python3 scripts/scrape-tg-channel.py <channel> <out_dir>   # single channel
+```
+
+It is **append-only**: the existing `index.md` / `posts.md` / `posts.json` are never
+rewritten — only genuinely new messages are fetched and appended in the existing
+format, so a refresh produces a diff containing just the new posts. Run it any time;
+already-archived posts are skipped. A weekly **reminder** (not auto-run) is registered
+in `~/.claude/state/recurring-tasks.json` as `ton-research-refresh`.
+
+Non-English channels (`@anatolii_makosov`) keep a separate `-posts-en.md`; new posts
+there must be translated and appended by hand after a refresh.
 
 ## Limitations
 

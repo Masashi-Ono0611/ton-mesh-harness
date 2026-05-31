@@ -2,9 +2,10 @@
 
 - Source: https://t.me/anatolii_makosov
 - Captured at: 2026-05-10 15:23:10 JST
-- Total posts captured: 109
+- Refreshed at: 2026-05-31
+- Total posts captured: 114
 - Earliest: 2024-03-12T10:58:36+00:00 (msg 1)
-- Latest:   2026-05-06T16:04:59+00:00 (msg 134)
+- Latest:   2026-05-25T14:52:10+00:00 (msg 139)
 
 Public channel preview (`t.me/s/<channel>`) covers text + photo URLs + link previews. 
 Native videos / large files / comments are not available via this path.
@@ -120,3 +121,8 @@ Native videos / large files / comments are not available via this path.
 - [`132`](https://t.me/anatolii_makosov/132) · 2026-05-04T13:42:45+00:00 · **Уточнение для операторов нод TON**
 - [`133`](https://t.me/anatolii_makosov/133) · 2026-05-06T16:03:25+00:00 · **🏁*** TON leads Layer-1 blockchains in finality time. 
 - [`134`](https://t.me/anatolii_makosov/134) · 2026-05-06T16:04:59+00:00 · Хотелось бы уметь так же по-философски относиться к жизни как разработчики Cardano.
+- [`135`](https://t.me/anatolii_makosov/135) · 2026-05-11T19:56:02+00:00 · Выпустили [Tolk 1.4 ](https://t.me/toncore/108)и [Acton](https://t.me/toncore/109) — новое поколение инструментов для разработки смарт-контрактов на TON.
+- [`136`](https://t.me/anatolii_makosov/136) · 2026-05-12T13:45:13+00:00 · [https://t.me/fiscaldev/219](https://t.me/fiscaldev/219) **👨‍💻*****💎***
+- [`137`](https://t.me/anatolii_makosov/137) · 2026-05-12T17:47:51+00:00 · [https://t.me/durov/510](https://t.me/durov/510)
+- [`138`](https://t.me/anatolii_makosov/138) · 2026-05-14T09:23:13+00:00 · Acton в трендах GitHub: [https://github.com/trending](https://github.com/trending)
+- [`139`](https://t.me/anatolii_makosov/139) · 2026-05-25T14:52:10+00:00 · **Следующая техническая цель: повышение производительности шардчейна

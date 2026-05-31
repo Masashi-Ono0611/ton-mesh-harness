@@ -2,9 +2,10 @@
 
 - Source: https://t.me/toncore
 - Captured at: 2026-05-10 16:10:11 JST
-- Total posts captured: 95
+- Refreshed at: 2026-05-31
+- Total posts captured: 99
 - Earliest: 2024-11-06T09:06:41+00:00 (msg 1)
-- Latest:   2026-04-30T13:20:29+00:00 (msg 107)
+- Latest:   2026-05-25T14:52:01+00:00 (msg 111)
 
 Public channel preview (`t.me/s/<channel>`) covers text + photo URLs + link previews. 
 Native videos / large files / comments are not available via this path.
@@ -106,3 +107,7 @@ Native videos / large files / comments are not available via this path.
 - [`105`](https://t.me/toncore/105) · 2026-04-18T09:37:53+00:00 · **Scheduled Closure of the Token Bridge** **V3**
 - [`106`](https://t.me/toncore/106) · 2026-04-24T19:08:55+00:00 · **Blockchain** **Fee Reduction**
 - [`107`](https://t.me/toncore/107) · 2026-04-30T13:20:29+00:00 · **Voting by validators on reducing network fees has begun**
+- [`108`](https://t.me/toncore/108) · 2026-05-11T11:26:12+00:00 · **Tolk 1.4 Programming Language **
+- [`109`](https://t.me/toncore/109) · 2026-05-11T11:26:12+00:00 · **Introducing** **Acton — a new, modern toolchain for developing smart contracts on TON**
+- [`110`](https://t.me/toncore/110) · 2026-05-11T11:26:13+00:00 · One of [Acton](https://ton-blockchain.github.io/acton/)’s key features is its advanced support for developing TON smart contracts using AI.
+- [`111`](https://t.me/toncore/111) · 2026-05-25T14:52:01+00:00 · **Next technical objective: increasing shardchain performance

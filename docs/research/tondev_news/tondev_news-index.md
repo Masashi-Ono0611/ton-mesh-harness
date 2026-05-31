@@ -2,9 +2,10 @@
 
 - Source: https://t.me/tondev_news
 - Captured at: 2026-05-10 16:12:14 JST
-- Total posts captured: 250
+- Refreshed at: 2026-05-31
+- Total posts captured: 251
 - Earliest: 2022-12-14T13:10:00+00:00 (msg 1)
-- Latest:   2026-05-08T15:58:24+00:00 (msg 298)
+- Latest:   2026-05-18T14:57:36+00:00 (msg 300)
 
 Public channel preview (`t.me/s/<channel>`) covers text + photo URLs + link previews. 
 Native videos / large files / comments are not available via this path.
@@ -261,3 +262,4 @@ Native videos / large files / comments are not available via this path.
 - [`296`](https://t.me/tondev_news/296) · 2026-04-30T10:34:17+00:00 · We're closing GraphQL endpoint at Jun 1. 
 - [`297`](https://t.me/tondev_news/297) · 2026-05-01T09:30:44+00:00 · **How MCP enables on-chain actions for agents on TON**
 - [`298`](https://t.me/tondev_news/298) · 2026-05-08T15:58:24+00:00 · **Bot API 10.0**
+- [`300`](https://t.me/tondev_news/300) · 2026-05-18T14:57:36+00:00 · **🧠*** AI devs asked for this — and we delivered.

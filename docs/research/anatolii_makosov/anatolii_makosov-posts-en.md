@@ -2,9 +2,9 @@
 
 - Source: https://t.me/anatolii_makosov
 - Channel description: "Programmer. Co-founder of The Open Network @toncoin and TON Core @toncore. English: https://x.com/anatoly_makosov"
-- Captured: 2026-05-10
-- Total posts: 109
-- Period: 2024-03-12 → 2026-05-06
+- Captured: 2026-05-10 (refreshed 2026-05-31)
+- Total posts: 114
+- Period: 2024-03-12 → 2026-05-25
 - Original language: Russian (translated to English; original text in `anatolii_makosov-posts.md`)
 
 > **Translation notes:** Technical terms (TON, jetton, shardchain, masterchain, validator, smart-contract, Catchain, TVM, TON DNS, TON Storage, etc.) preserved as-is. Names of Telegram channels left as `@handle`. Inline links preserved. Emoji-only posts kept as emoji-only.
@@ -1903,3 +1903,71 @@ I'd like to be able to take such a philosophical attitude toward life as the Car
 "Transaction finality can be achieved in approximately one day, and cannot happen in less than a day, according to Ouroboros consensus design."
 
 ---
+## [135] 2026-05-11T19:56:02+00:00
+- Permalink: https://t.me/anatolii_makosov/135
+- Views: 4.97K
+
+We released [Tolk 1.4](https://t.me/toncore/108) and [Acton](https://t.me/toncore/109) — a new generation of tooling for developing smart contracts on TON.
+
+I [described](https://t.me/anatolii_makosov/115) the progress of this work, led by Aleksandr Kirsanov, earlier.
+
+For the general audience, the most notable news is probably the ability to create smart contracts [with the help of AI](https://t.me/toncore/110). Experienced developers, on the other hand, will more likely note the arrival of a debugger, sourcemaps, ABI, auto-generation of TypeScript wrappers, the ability to write unit tests in Tolk, and many other [innovations](https://ton-blockchain.github.io/acton/).
+
+In terms of significance for developers, the launch of Acton is comparable to the Sub-Second and Sub-Cent updates.
+
+---
+
+## [136] 2026-05-12T13:45:13+00:00
+- Permalink: https://t.me/anatolii_makosov/136
+- Views: 4.23K
+
+[https://t.me/fiscaldev/219](https://t.me/fiscaldev/219)
+
+*(Forwarded from Fiscal Dev):* Hi everyone. Recently, I think you've all seen the new tool for developing smart contracts — ACTON. Last night I got so curious about how it works that I asked Codex to spin up an empty contract and quickly sketched out some logic, more about which below…
+
+---
+
+## [137] 2026-05-12T17:47:51+00:00
+- Permalink: https://t.me/anatolii_makosov/137
+- Views: 4.26K
+
+[https://t.me/durov/510](https://t.me/durov/510)
+
+Contrary to the widespread FUD, TON validators really are well decentralized.
+
+The largest crypto exchanges and institutional companies in the world participate in validating the network. Among those who have made public announcements are [Blockchain.com](http://Blockchain.com/), [Pantera Capital](https://blockchainreporter.net/ton-and-pantera-capital-join-forces-with-exclusive-investment/), [Kiln](https://www.kiln.fi/post/kiln-x-ton-introducing-pooled-staking-with-enterprise-grade-safeguards-2), [Animoca Brands](https://www.animocabrands.com/announcement/ton-foundation-welcomes-animoca-brands-as-ton-blockchains-largest-validator), [P2P.org](https://p2p.org/economy/p2p-orgs-ton-widget-goes-live-in-ledger-institutional-grade-ton-staking-for-7-million-users-2/), [Bastion Digital](http://bastiondigital.com/), and others. Recently Telegram became the largest TON validator with a share of about 17%.
+
+Ordinary users also participate in validation through liquid staking protocols.
+
+Today there are about 400 validators in the network, and the total stake exceeds 1.15 billion TON.
+
+*(Forwarded from Pavel Durov):* 🌍 With 400 validators across 6 continents, TON is one of the most decentralized blockchain networks on the planet. 🧑‍💻 Telegram becoming the largest validator opened the door for major exchanges and custodians to stake TON without increasing centralization…
+
+---
+
+## [138] 2026-05-14T09:23:13+00:00
+- Permalink: https://t.me/anatolii_makosov/138
+- Views: 4.66K
+
+Acton is on GitHub trending: [https://github.com/trending](https://github.com/trending)
+
+---
+
+## [139] 2026-05-25T14:52:10+00:00
+- Permalink: https://t.me/anatolii_makosov/139
+- Views: 5.55K
+
+**Next technical objective: increasing shardchain performance**
+
+Under normal load, TON runs on a single shardchain. Under peak loads, dynamic sharding activates: the network splits into several shardchains, increasing throughput while keeping fees static. In this mode, operation execution time may grow by a few seconds.
+
+**TON 2026.05** is the first release in a new series of updates aimed at increasing single-shardchain performance.
+
+The goal is to activate dynamic sharding at a load level at which other blockchains can no longer operate at all.
+
+[TON 2026.05-rc »](https://github.com/ton-blockchain/ton/releases/tag/v2026.05-rc)
+
+[Update plan »](https://t.me/tonstatus/216)
+
+---
+

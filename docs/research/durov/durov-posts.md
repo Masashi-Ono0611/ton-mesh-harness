@@ -6936,3 +6936,321 @@ The French government is panicking. They know a major political shift in 2027 wi
 - https://cdn4.telesco.pe/file/MtB_a7ciVNDT3zLcEmNGyXVVTZgi3mhkH3iHpUoqjbR2mcLftYpBIhor880CrZwLw3DwtxJV1ftMBt2ZkGET6j3BbzZsydw3P2bTBzbITT3x3eV_I5TnlpOoKHs2HtTyytT5xPQNwujBtDqqRJYKJyAm3PkCR1UAh0cVHtVl8YVPloTalELg3F31OdClTaGmOlvM-DAachQvVQbRt1o_6c785sRaG7BgdMNMjvKClUFjaEggaAlHes1UpUS7knPzrXtNLeM3frHgF537eGL8iy6m1XrRCVFGEyfzlodKX0ARvF4t-64PfuI76O3m03yh-kRbK-2C6jO7OpRYfmADZA.jpg
 
 ---
+
+## [508] 2026-05-10T18:42:03+00:00
+
+- Permalink: https://t.me/durov/508
+- Author: Pavel Durov
+- Views: 2.6M
+
+**📊***** **Channel admins can now run massive polls limited to subscribers or specific countries — making fake-vote inflation much harder.
+
+Now people in places like Russia can see real results. For example, [only 5% support internet restrictions](https://t.me/cb_economics/24591) — not 52%, as old rigged polls claimed **😏***
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/508)
+  
+
+*4.97K57.1K**🫡***17.8K11.7K4.17K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/XPTN0vLPJhk1hgxAnAlVYjnJYAh11m8H5lfw7Bv62AoBCL2Js7NThyTEomS8Em4Kj-xPUmD8w7xOIu9UTZBQaexaKm5m8tqZSxBMrubUzypqjBos6v9Gs5M_J0hORI_5tXcxih5yDfG1uV_FwMglf3U-jAAEH8fQA6TEZux9fJNjfqZiULu_Pw2y0S16dVeUYvA-vmrifQkkYzXd7hR08Eb9ntLzb9smdbjVdt5kD4VQCnnZiB7aDIgDXSFg2xRRfoK5bjtkhNOKjBeC3NaMjVnrxnBosicXRQd1Zuz6ShjEwTRhElZ-2PkXxd5Ot8byUphNNv6wYFmHpFV-48CpRg.jpg
+
+---
+
+## [509] 2026-05-11T19:32:24+00:00
+
+- Permalink: https://t.me/durov/509
+- Author: Pavel Durov
+- Views: 2.24M
+
+**🛠*** Developing for TON just became **10x faster**. The [new toolchain](https://ton-blockchain.github.io/acton/) makes smart contracts easy to create, test, and deploy.
+
+Most importantly, fully AI-ready.
+
+It replaces TON’s fragmented tooling stack with one developer flow. Start building!
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/509)
+  
+[
+  
+  ton-blockchain.github.io
+  *
+  Acton — a unified toolchain for TON
+  Acton is an all-in-one CLI built around Tolk — from project creation to tests, debugging, dApp integration, deployment, and verification.
+](https://ton-blockchain.github.io/acton/)
+*5.76K17.2K**🫡***5.27K3.81K2.27K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/HQusq9qx-DmLEdo8B9_6qa5YAhxoR4z7uBCmsyfI-AdfrpbIKz2s9ALtaMLnnwkaWDMLNPnM2Bz0AifwqgeKQUUnqJDz-cKclhEvcCYVAx-IpitpSSmhzWYaw0VPHoUPCQIrjlERP1a46lum349fubFlQy_4JSCIyh9ZiRPEdBCd4QAYwLom4B12cWDxYj8hlpOstyy56xx0FZuEv8B3nPqaO9bIuojjCItpUlfKNl8XjZeMT1lifR30Vi2l83hERTtduhT38R7O4ZSRY4sy2nWhoF_Q4GrPMLnjVKgEqNvMl5PFbvPhlwCaZbx19NQhjzzbFxY8mf71jZznDPdnig.jpg
+
+**Link preview:**
+- [Acton — a unified toolchain for TON](https://ton-blockchain.github.io/acton/)
+  - Acton is an all-in-one CLI built around Tolk — from project creation to tests, debugging, dApp integration, deployment, and verification.
+
+---
+
+## [510] 2026-05-12T17:28:39+00:00
+
+- Permalink: https://t.me/durov/510
+- Author: Pavel Durov
+- Views: 2.48M
+
+**🌍*** With 400 validators across 6 continents, TON is one of the most decentralized blockchain networks on the planet. 
+
+**🧑‍💻*** Telegram becoming the largest validator opened the door for major exchanges and custodians to stake TON without increasing centralization risk.
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/510?single)
+  
+
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/510)
+  
+
+*8.19K29.5K**🫡***8.53K5.82K3.38K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/sfykT0KPgRq6-GQ0-jfpp2j6g1UY8CoOFPE1j6eB-csu7cxdKGhXs8iQsWcN-1U8grHQE5_jPgqXX4tiz2TwlP3zdiezWysVTGtZHd4uGkKeZaMCxIieQC5qbS4Rug3pqbukxNIvbcU-ZW-1cnHmDhRM3My3f8to073w75lE6EgKqxTKT2ccTZpP-ZEvYvU6bihP9XRQwYc6bYE2tIeMcSnq0tfw1sgC7UsXi7izbQbzY7-Bc2n3zxO7_NUpbHbuF1kXcmenkIZINCLIrQkNQ2I_08sDAvwlXlEgy9OhZi-Iqj7cI0eAY0zzn7ih_Xm6fxkO-KGRbrp3ue2PKbj4PA.jpg
+- https://cdn4.telesco.pe/file/EDAjel1zut95F-XBx3vO2On6F_EI24lkKw4a7zNcKqkK1dmPQm5pf91Vse7pz1aJ1B9qyvi7sn-TXf6Pw5bVJSrfbFp3bpvZR2zmx4Yc_OJHcU5HYDFU6M2ndvfqCVofMoOcK4FxEHZ_ahnmiyrilkyx-AROsS1obrmSzawcBT4HkMSi7vN4vzVzswpdbLDFfKqHOJHAsk-ktp5XZ00UHvVat04J9qVYSYjgKdjdzDelbuPQWXoZtdAEihCdpsAURiCUS59w2mVAX9hCbvLQqD9dh8dzVb0FkecV6W4vnVu6Qxb-v-oBcK5IBXRFpNWA3k1elp91515II65tPMUASw.jpg
+
+---
+
+## [512] 2026-05-14T12:38:57+00:00
+
+- Permalink: https://t.me/durov/512
+- Author: Pavel Durov
+- Views: 2.05M
+
+**🕵️‍♂️*** Now you can search 100M+ Telegram stickers and emoji by keyword — in 36 languages.
+
+Telegram’s AI scans and labels millions of public stickers so you can finally find the exact suspicious frog you need. **🤔***
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/512)
+  
+
+*3.9K46.7K11.9K**🫡***6.88K4.42K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/KhC439ieHUgmYAenFNEc6FReHLGwBgYUPTb4zRipIMqMwLul2OM13I2oVgy-Shng4AXJu0nzg5MVbXknldhDF7yT33mb1_vjgt6nz6dzuQv2wsk-4LrDlkZfjhL37hkNvPxPq2pxPv6M8O3zaLbWTtI7sw_tHmgnxDiKGk8Gs-pDcSJnNaxJib3XkD-z5cba8DKWDX5P3bIkjLDU9Iplh-XzACAhvRnm8JPNhCA1Kqrux20eqt2f9W8oPwtWIVvmmSDEphxCiYwTMdW3oMf4-YKys7oAmDodw1rdhn7V-8A1rsnYhnVrOeG1EyjX4RW3GeGWjbkC6VkzN6OLhbNl5A
+
+**Videos:**
+- https://cdn4.telesco.pe/file/c7f159051d.mp4?token=npuNNYKCXbYj81Qga2XTYXfXavqkv7kBsOKixAyqhYEEYC7ElVsR0OnlRspgx4XeN5ptPZ0quZKQMiQXLLHJk_7EbCr-tJNG8du0vKx0bx2cKHH2AacKWr6Jalq67pmIAKYC5rqc5ukmqUGLaL2CXHSoc9Lfv197uo4IXBjWjrgLYoZ1wKj7aFLuY15xaK2bYtRS2hV4RnUbTY0o1TiKrhFvbFyagyXbzSK3JHbkFwpspTZNDdhMTJlVOBibjIoa1cxbV90JP4tD-PySi3LyR6ubYorYqMp47lw69ItXX9ADKCZ5nv_PES2vvHuUQr993HEJD9hGy8QXbpcyMEGSbg
+
+---
+
+## [513] 2026-05-15T18:14:32+00:00
+
+- Permalink: https://t.me/durov/513
+- Author: Pavel Durov
+- Views: 2.16M
+
+**$100,400** just went to the **15 winners** of the [TON Consensus Challenge](https://t.me/contest/452). 
+
+****🧠*** **The smartest engineers on the planet — some armed with loyal AI sidekicks — helped us maximize the security of the new consensus mechanism.
+
+**🏆*** [Telegram contests](https://t.me/contest) offer generous prize money — and the only path to joining our engineering team.
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/513)
+  
+[
+  
+  Telegram
+  
+  Telegram Contests
+  **💎*** Blockchain Contest, Round 2: Results
+
+We awarded $100,400 to the winners of TON Consensus Challenge.
+
+The core task was to find potential flaws in TON's new consensus algorithm – though participants were welcome to report any other flaws they came across.…
+](https://t.me/contest/452)
+*1.73K16.4K6.78K**🫡***3.92K2.09K
+
+**Link preview:**
+- [Telegram Contests](https://t.me/contest/452)
+  - **💎*** Blockchain Contest, Round 2: Results
+
+We awarded $100,400 to the winners of TON Consensus Challenge.
+
+The core task was to find potential flaws in TON's new consensus algorithm – though participants were welcome to report any other flaws they came across.…
+
+---
+
+## [514] 2026-05-16T13:57:49+00:00
+
+- Permalink: https://t.me/durov/514
+- Author: Pavel Durov
+- Views: 1.87M
+
+**🇦🇪*** Dubai is full of traffic and crowds again. Already missing the Iranian fireworks — they helped clear the city of the easily impressed.
+
+The UAE’s air defenses proved excellent under fire. For 0% tax, we get better protection than Europeans paying 50%.
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/514)
+  
+
+*6.26K47.3K13.5K**🫡***10.4K6.44K
+
+---
+
+## [515] 2026-05-17T14:44:56+00:00
+
+- Permalink: https://t.me/durov/515
+- Author: Pavel Durov
+- Views: 1.85M
+
+**🏆*** We just awarded **$52,420** to the winners of the Telegram [Art Contest](https://t.me/contest/453).
+
+**🎨*** The participants did an amazing job with the MiniDurov collectibles.
+
+**💎*** Their skills and ideas will enrich Telegram’s TON-based NFT ecosystem.
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/515)
+  
+
+*3.06K25.7K12.9K**🫡***5.91K2.98K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/lI-w5EIS8JpfUK9rPZMsvyLBXB8RMxSHDGUtvBmtiGGaiAwAaftxpv6UUg7X8K6Y3Er7ow9DvVd7mKfoMhbg7NijYdOiw1qLFeJ7Nt7UosXSGrYGgfOWq7ociRjMidr4LhCUICPtMGXzooTlG8pZ3MdFjlqXHKmO9M48Vn9Z5ekK52GEjaJL4Yuy8dnkH3Kl__rduSFuQCNywhlKpCZsjnARHs6V5ZWwHXQLhLgSLD6WDTuD4_xCsyuJ7Ry4RJK0h_xvhjgewsylQAygiMqqkW3ZjdvY4xlnca89AJCh4P1gS-qbLg0WGpYeHLNcWl_gRrex-oJTdiFO5mLxxtLWnA
+
+**Videos:**
+- https://cdn4.telesco.pe/file/c4225d3b52.mp4?token=XKnMkCR0heEvmipB20m5Wq0IGDQ_hTzbKCnacBwiFv_56A0aqx6nGHMaCI3OXnPOIOSAfXxI0F_nvMYu_XJCaNCWmMSnu9naUua33y4GG-iUcScM9pAgz6P4NMQYCfMYQlGDEC_eWym0DXn5Il3e5fJUqsa5POoKc_p6fp_GYbd69CB9eyAvOAGs8gYNYNiHP1fgsYMePdHTINnAg39L_4J3KvySeDJJ839Fd6CZY5mpu0lJfdvjfQTWfIeQ5hLCFYyXPJYMGT5ESm4sYk3Icm4wexs9-BYsmwz1Jbq7fcuvxhfu6eOwCOs94Ixp7n_tMZG4Gf9XRL1wJQqYL3zhoA
+
+---
+
+## [516] 2026-05-17T14:55:50+00:00
+
+- Permalink: https://t.me/durov/516
+- Author: Pavel Durov
+- Views: 2.17M
+
+**🎁***
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/516)
+  
+
+*6.35K57K43.5K14.5K
+
+---
+
+## [517] 2026-05-18T14:56:21+00:00
+
+- Permalink: https://t.me/durov/517
+- Author: Pavel Durov
+- Views: 1.79M
+
+**🧠*** AI devs asked for this — and we delivered.
+
+**🤖*** Bots can now talk to other bots on Telegram.
+
+**💬*** Autonomous agents now have a communication layer humans can follow.
+
+**🛠*** [Start building](https://core.telegram.org/bots/features#bot-to-bot-communication)!
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/517)
+  
+
+*3.43K19.9K6.48K5.99K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/UBWGa9Czrc9rSoqZsKvNPWUo61cUpq2GREzAxwNjyhZP1MPb0ZfKRCCUCcbBRhG1aK6Qz-tYEUr1ncrHltsShlB0_prvRpVF15dU6feiZ6tVEr_McmAKlA0Zh5wGU-aOZx-BOTWwYNRpfTLp2bvlonMnGSppwTOsM_r8XuC2NXNEebJ_YEkclCMrZe7nqpU9Im9mSlk77Z57eH8Q3KedoqR9-2VVdPEOULm4DWX_YPtYKVPkN_-s_PWXDjgW9IAr_qYS880UPLkKsnGmGFXrdbVQrPny6YR2Kgz0DE3dPizc-bTnMM7sH7GcN3n0DczCCAHetOcp-EUCq2W09tIhoA
+
+**Videos:**
+- https://cdn4.telesco.pe/file/7e945b36d4.mp4?token=vITL68gAQHB2uYYbhR6shJiHqjzFeRDufej9Minlv-6Wxao-5j9n-6sx2-Z3V74iJ84m6UgRMBSx1vnnhS97zG7NAV4fKpQNE8vYYWmbCCTDKL16-ltb8oTaX3fw4U4oWLtc4MvKoYWTxP-QjuijFCQR-vtTzQaqvS44P5BFeOkocoeLOptdfq3W_4r0RUsnBRUqMtz3vkx8ofYg_w0SPvHop1hd9N8bxgsblNwAkW2zOz6xTXokiY_EieVvGOCsDZKcY_9HN84hszRYkrp1FNrJBk0qXGt3xyN_eFt_D8T3d2QtfQewIivKPL_9mvIswsd_RRRyixUfgk0sASQ8Xg
+
+---
+
+## [518] 2026-05-19T18:02:53+00:00
+
+- Permalink: https://t.me/durov/518
+- Author: Pavel Durov
+- Views: 1.73M
+
+**💪*** Anyone can now prompt their own text transformation style — for example, **“Gym Bro”** — and turn any message into motivational protein poetry.
+
+**💪*** Then share the style with friends so they can reply like gym bros too.
+
+**🤐*** All fully confidential. No AI-related privacy leaks.
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/518)
+  
+
+*7.12K20.7K7.57K5.72K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/dgkCOtYUodiH8-mQvgLirUuhfd1LB7G_yalt7kQxS4vZNazuoYLeAzxjuH2vq5svBZZB3nbkw5Rsr3KTzezuTI8woLiBokmBgBEOPvyfmq-z_WMSuJjBCeEpqy9ZGLB0g333Y7AM7t-4Iw9UWqD1djVZNiVKxdPYE5EryLpz-FcBoQJfP7lj-xyAMeENG0FbEEI4x5Qa2sJmaMYZtGT1HJBFvSy00uLReWDY9PNhANl2PGtNexDWwhbtk_xIxFzQOsf6MNDB3MP6z1O4Blzi5_hHQX0BiceY4pcdAWkQrPhp1ICTliMaaXz9jBCe22qunT_LmoAe6z68PNpTsoBhQQ
+
+**Videos:**
+- https://cdn4.telesco.pe/file/105be22719.mp4?token=V0WEvawe1C50KnV3m-k5giTwBv7ALR9XODYE4bk67ooUVXiEa7huTVR0Y53Y17z0dKG5xYCfbHKIEWztMDuOPKdxVlEuk_cXe8UgGw_A001CZQNZVLwhNlAMuQKteqq24HZCTOTo4E3-Sc8iir3MqLHiKKcq0DdQPjPJ9xi42gk7k9ksEGxkZrD8oJ6icHl2-n-9ZXHdp92TMq8CU0MFHggogKp82DQ6zEIvmYp8F7brR_vc4rQjRMsLezjlknRxdIP17NXLHrJgSycb4-AS66gZM_tFEWQPe7kAh6l2v8aZc_NK2u-5xnFbL5xgu4q-7JhqIyecP4AWOetJCkaJnw
+
+---
+
+## [519] 2026-05-20T15:38:10+00:00
+
+- Permalink: https://t.me/durov/519
+- Author: Pavel Durov
+- Views: 1.63M
+
+**🤖*** Your Telegram inbox can now run itself.
+
+Assign a bot to read and reply for you — with granular control over its rights and chat access. **🧠***
+
+**⚙️*** [Start building](https://core.telegram.org/bots/features#secretary-bots)!
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/519)
+  
+
+*2.04K17.9K5.91K4.69K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/feauBFLq1VfasVj9pMkOK4LZmSD9NrUj34oqUkj4ctbB_7OlOPIKGnHt8edjlLKt2jY_huGCjwAj8LX878SGNdgs-2u25g6jjjPmSpawQYsNwha05ome8vOucIb1UvZi1bbbhhapXWE2Qw8SlWyNo450JXwkZfRwj6AKiqzzY5fza0pRF75h539LhD0sIclWpQ4IlyVrP4LHqOg2fO8FUxuAQT1_I8jve5ebhIJ5KLWlWtCpn78LXsvq8tfo62irJjXpVys_5GS8RNZUh1TnO4h2XYvpdDPKkkoi0XoW-mKtQ3-M5DOabv2vpb52ahh_uEFvSzBys-09k0pQgiKsLA
+
+**Videos:**
+- https://cdn4.telesco.pe/file/e174be993b.mp4?token=RD6JZltVLHelATKpwOG3qKE-tGTye5Cf0U8A2nk5WedoLQbS3JfU0OD8Vi-zbrbGTZx-xr8MRacrMNKfiXcpx3fTq_N6OsN0Fo9xPcxFmZ3-7N0fycnRP-5IMmGxYhU7fHKeiTgFEUWI7twNy0DfquZyuU-skymkkov9T-0gnpajoHUynS4FPEez0ZnyyYdWhzPPxcl-Ob60mSBNN3n4p_seYY6CFgCNp3T3D0q5ZrANCn38Nbn2rJonGlMiGconFlpUdIdlzCS8puoT-wwCy39ImfbMl1yWNpbARLuC-l2ABX4ppLx7wqpMbEYK1hiYIdjMH9qzTW54Ze7bIANEPQ
+
+---
+
+## [520] 2026-05-23T13:26:07+00:00
+
+- Permalink: https://t.me/durov/520
+- Author: Pavel Durov
+- Views: 1.37M
+
+**🎭*** WhatsApp encryption is a giant fraud.
+
+**🇺🇸*** The state of Texas [just sued](https://www.reuters.com/legal/government/texas-sues-meta-whatsapp-over-encryption-privacy-claims-2026-05-21/) WhatsApp for lying to users about privacy — because WhatsApp employees have access to “virtually all” private messages.
+
+Now we know what WhatsApp’s founder meant when he said he “sold his users’ privacy.”
+
+Stay safe — stay Telegram! **📱***
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/durov/520)
+  
+[
+  
+  Reuters
+  *
+  Texas sues Meta, WhatsApp over encryption privacy claims
+  The Texas Attorney General’s Office on Thursday sued WhatsApp and its parent company Meta Platforms Inc alleging ​they misled consumers about the strength and scope of WhatsApp's ‌encryption measures, which a Meta spokesman denied.
+](https://www.reuters.com/legal/government/texas-sues-meta-whatsapp-over-encryption-privacy-claims-2026-05-21/)
+*6.02K37.8K15K10.7K
+
+**Photos:**
+- https://cdn4.telesco.pe/file/nMRRI2MgvxNr_8DPw3UkeG9kRLtppowm30IyLeJ4p2hHacEgTmuwaN5PV_UMFoXUiW4O7X6GjDDxIdxtwJ63osKkiaL2WAkC4dfRjaK_UkHJ-moi5-_pBHmSD6_zQX6_K4G4M0TZEYguXmCFCkircmBl7eTGT3SpUTmWujmU8nhQQE22i-gTXVOgHlwbk2MRfWj8m6UEJfXbVydhbzOFNJLFS1CgQ8phNxJorRh8yhO9-tK8_gkhUsUTyd1kBpE1UYvuHe2H1qDF8hSe_wLnb2dKuAaqW1UebF90AmYZQHNQ2uA_NBs9xKbEy39-9nsAV-2-R1p3N7VYhz6TJg2RjA.jpg
+
+**Link preview:**
+- [Texas sues Meta, WhatsApp over encryption privacy claims](https://www.reuters.com/legal/government/texas-sues-meta-whatsapp-over-encryption-privacy-claims-2026-05-21/)
+  - The Texas Attorney General’s Office on Thursday sued WhatsApp and its parent company Meta Platforms Inc alleging ​they misled consumers about the strength and scope of WhatsApp's ‌encryption measures, which a Meta spokesman denied.
+
+---

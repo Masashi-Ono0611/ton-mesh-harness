@@ -2361,3 +2361,124 @@ Rust-имплементация ноды TON имеет эксперимента
 "Transaction finality can be achieved in approximately one day, and cannot happen in less than a day, according to Ouroboros consensus design."
 
 ---
+
+## [135] 2026-05-11T19:56:02+00:00
+
+- Permalink: https://t.me/anatolii_makosov/135
+- Author: Анатолий Макосов
+- Views: 4.97K
+
+Выпустили [Tolk 1.4 ](https://t.me/toncore/108)и [Acton](https://t.me/toncore/109) — новое поколение инструментов для разработки смарт-контрактов на TON.
+
+О ходе этой работы под руководством Александра Кирсанова рассказывал [ранее](https://t.me/anatolii_makosov/115).
+
+Для широкой аудитории, пожалуй, самая заметная новость — возможность создавать смарт-контракты [с помощью ИИ](https://t.me/toncore/110). Опытные же разработчики скорее отметят появление дебаггера, sourcemaps, ABI, автогенерации TypeScript-обёрток, возможности писать юнит-тесты на Tolk, и множество других [новшеств](https://ton-blockchain.github.io/acton/).
+
+По значимости для разработчиков запуск Acton сопоставим с обновлениями Sub-Second и Sub-Cent.
+*59**❤***76**🔥***54**👍***44**🆒***5**🗿***3
+
+---
+
+## [136] 2026-05-12T13:45:13+00:00
+
+- Permalink: https://t.me/anatolii_makosov/136
+- Author: Анатолий Макосов
+- Views: 4.23K
+
+[https://t.me/fiscaldev/219](https://t.me/fiscaldev/219) **👨‍💻*****💎***
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/anatolii_makosov/136)
+  
+[
+  
+  Telegram
+  *
+  Fiscal Dev
+  **🤍*** Всем привет. Недавно, думаю, вы все видели новый инструмент для разработки смарт-контрактов — ACTON
+
+Вчера ночью мне стало настолько интересно, как он работает, что я попросил Codex поднять пустой контракт и быстро накидал логику, подробнее о которой ниже…
+](https://t.me/fiscaldev/219)
+*8**🔥***41**❤***21**👍***19**🤔***5**🥱***3
+
+**Photos:**
+- https://cdn4.telesco.pe/file/d2ev9QDzfOO5xMcVcot638FATFUQR0Uzc1ogokQif1UVHK2m-7yyGNIt0e50B33PXYIBZ9CYF7dfojQ5kuZRU8W4yqUTvg7wh_X4ZsP8pgKjX5cPMkJocfw2hcv2ExU0Gj16vm5a_1zqaUw3UsImacnzVc7ln4ABLpO80LofYLCnmudwNIR68SvtmGx13gj0jhMesZO_hZ0MndNSy3HrUhuLRT0aIw7qvCOA48Ds3GeXHn-4xsZK31D64BNIoSmhUI85bj95mmuhcHCbwDkp8QzPIPkfMy3GOXeNkwlLyQ1IVgL8vkNAlvq0kWCrZ_BvtQ4CuPBF46-kXcAH674U_A.jpg
+
+**Link preview:**
+- [Fiscal Dev](https://t.me/fiscaldev/219)
+  - **🤍*** Всем привет. Недавно, думаю, вы все видели новый инструмент для разработки смарт-контрактов — ACTON
+
+Вчера ночью мне стало настолько интересно, как он работает, что я попросил Codex поднять пустой контракт и быстро накидал логику, подробнее о которой ниже…
+
+---
+
+## [137] 2026-05-12T17:47:51+00:00
+
+- Permalink: https://t.me/anatolii_makosov/137
+- Author: Анатолий Макосов
+- Views: 4.26K
+
+[https://t.me/durov/510](https://t.me/durov/510)
+
+Вопреки распространенному FUD, валидаторы TON действительно хорошо децентрализованы.
+
+В валидации сети участвуют крупнейшие мировые криптобиржи и институциональные компании. Среди тех, кто делал публичные анонсы, — [Blockchain.com](http://Blockchain.com/), [Pantera Capital](https://blockchainreporter.net/ton-and-pantera-capital-join-forces-with-exclusive-investment/), [Kiln](https://www.kiln.fi/post/kiln-x-ton-introducing-pooled-staking-with-enterprise-grade-safeguards-2), [Animoca Brands](https://www.animocabrands.com/announcement/ton-foundation-welcomes-animoca-brands-as-ton-blockchains-largest-validator), [P2P.org](https://p2p.org/economy/p2p-orgs-ton-widget-goes-live-in-ledger-institutional-grade-ton-staking-for-7-million-users-2/), [Bastion Digital](http://bastiondigital.com/) и другие. Недавно Telegram стал крупнейшим валидатором TON с долей около 17%.
+
+Обычные пользователи также участвуют в валидации через протоколы ликвидного стейкинга.
+
+Сегодня в сети около 400 валидаторов, а общий стейк превышает 1.15 млрд. TON.[
+  *
+  Telegram
+  
+  Pavel Durov
+  **🌍*** With 400 validators across 6 continents, TON is one of the most decentralized blockchain networks on the planet. 
+
+**🧑‍💻*** Telegram becoming the largest validator opened the door for major exchanges and custodians to stake TON without increasing centralization…
+](https://t.me/durov/510)
+*63**👍***72**❤***32**🔥***29**😁***6**💯***2**💊***1
+
+**Photos:**
+- https://cdn4.telesco.pe/file/nyHmguAdB1RK0RZX4vnjcnUinWOUmKqPTVzcAFBlodp44aIEDCMZ2n0B8aX_wdz6kVNcHbjCTEK3p70kZP_CMrEoN7sRBWh_K2XmnfVZMyYdUMHWWF289bX9Vx-t-o5YtayBn5ADNEg_Ix-F8r6PzKx6kYW9A-mSj-y-CaYznjRXBBhzOhwtJnhEHFpCrHZpBGpynoaog-YN-yrd637qtpD7ctf1enGR4nbXO9Ik6FkW8f2eFugGfcQBgY4NOHoEiO3AsIHwvvwTqa8fFajg315D5ZoWRavhCSj2JgXDe6pQqGs5vPI4yCgXN1zDWuDPbOeIiCDP7kR4oj0uJLiWBQ.jpg
+
+**Link preview:**
+- [Pavel Durov](https://t.me/durov/510)
+  - **🌍*** With 400 validators across 6 continents, TON is one of the most decentralized blockchain networks on the planet. 
+
+**🧑‍💻*** Telegram becoming the largest validator opened the door for major exchanges and custodians to stake TON without increasing centralization…
+
+---
+
+## [138] 2026-05-14T09:23:13+00:00
+
+- Permalink: https://t.me/anatolii_makosov/138
+- Author: Анатолий Макосов
+- Views: 4.67K
+
+Acton в трендах GitHub: [https://github.com/trending](https://github.com/trending)
+*63**🔥***83**❤***33**👍***30**🥰***5**😁***5**🫡***3**🤝***2**🦄***1
+
+**Photos:**
+- https://cdn4.telesco.pe/file/EgVYxWY6IRRGeOrFNCtc3wr9RllBfpvYu8_E85LNPlQA8woFP5Zz4DOH7rzc63i6l2kMbqpeQEwXCuELEP-6E1OpELOWrruF__-vqVGR11BlAa4g25F-ZMaT9OmkGN3MHzlEZtBZodEznMcNxt8uFomTX017eMP6csYVWzhk9GobpELikiILvb7Du6Mu_8OnDp_tSCKAbIyYyjd5fEp3Kgj02WaSpJ3dYMb4rGryTlfrztAJDLY_v4IE5b3Sb61wep-MVfPa6oXPo_bHC_Xcwc4FfP3LNmblW3rCxAIvCBRZ1bSlR9SjAh0j9QZmQC3E8jFfWs64fJA2pasSadzEUw.jpg
+
+---
+
+## [139] 2026-05-25T14:52:10+00:00
+
+- Permalink: https://t.me/anatolii_makosov/139
+- Author: Анатолий Макосов
+- Views: 5.55K
+
+**Следующая техническая цель: повышение производительности шардчейна
+**
+При нормальной нагрузке TON работает на одном шардчейне. При пиковых нагрузках активируется динамический шардинг: сеть разделяется на несколько шардчейнов, увеличивая пропускную способность при сохранении статичных комиссий. В этом режиме время выполнения операций может вырасти на несколько секунд.
+
+**TON 2026.05** — первый релиз в новой серии обновлений, направленных на рост производительности одного шардчейна.
+
+Цель — активировать динамический шардинг на таком уровне нагрузки, на котором другие блокчейны в принципе уже не могут работать.
+
+[TON 2026.05-rc »](https://github.com/ton-blockchain/ton/releases/tag/v2026.05-rc)
+
+[План обновления »](https://t.me/tonstatus/216)
+*65**👍***104**❤***46**🔥***39**🥰***5**👏***3**🤝***3**🤣***1**🏆***1**💘***1**💊***1
+
+---

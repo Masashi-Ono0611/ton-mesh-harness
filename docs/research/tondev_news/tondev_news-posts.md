@@ -8132,3 +8132,32 @@ Today's update reshapes how bots communicate on Telegram – unlocking cooperati
 - https://cdn4.telesco.pe/file/a18113a32c.mp4?token=PUm62xom8fS7FSmyL_4vgjbLTzNmiP1ApYZwYC_lEvwsnmGlBUmemF79JYHcDpi7LXOQ1bu-ivMDz5pOCM_FEESYUworw94n9oTD5VYK95P3sYswsr8bYFSskdBowBOSnjsUKlyqIuMTPf588QyeOGHX0cyL5PL5vYzNDFp2v8sE3lFIlqqSVhbrulK_znWhf-2wlsj25v2ibXZ9wRseMZ6TwCdIoXkQml80O-j2OYjMjzEDEzRoD589Ipij-UeR9qWgP0-3x6BcPWZkia63Xh10n5vLcIcePYQYPajazeHeD9Q7qZjcoQcxkh4Q0HTObWSMkZuVFkQVlDcdQ-anyw
 
 ---
+
+## [300] 2026-05-18T14:57:36+00:00
+
+- Permalink: https://t.me/tondev_news/300
+- Author: TON Dev News
+- Views: 1.03K
+- Forwarded from: Pavel Durov
+
+**🧠*** AI devs asked for this — and we delivered.
+
+**🤖*** Bots can now talk to other bots on Telegram.
+
+**💬*** Autonomous agents now have a communication layer humans can follow.
+
+**🛠*** [Start building](https://core.telegram.org/bots/features#bot-to-bot-communication)!
+  
+    Please open Telegram to view this post
+    [VIEW IN TELEGRAM](https://t.me/tondev_news/300)
+  
+
+**❤***15**🔥***10**👍***4**👏***1**🤔***1
+
+**Photos:**
+- https://cdn4.telesco.pe/file/eWNfJc3TVnQQOpkpKyKItoJ-boVK4qGPA7jUgvPhLghN3a657Rnt9eV_bGHTgvWXWl1LvdbB2U8qLh4-h643ecRt4_Gk8f4za5QB6pEr1Ojp9rwIuqp21b399A8YOtO9uDNi77B020BRQWPpCg8KNFPHakILZH4hNbiGCbqmVYChUI0Z5DjaxYNH9QfvmeToATs4c8d_I_VpP7cNWCaJFgKvhac69cZ3W2p0BFqq2FwTYySecuEAKrawG2adfFDNPakJDdSUtbwcLAGnyqSPioQe2cxiKAuACD8mEJAvurq5kRIojRFH4i1MteR_dHM597PH0q-RV_5NA7puDVc0WA
+
+**Videos:**
+- https://cdn4.telesco.pe/file/7e945b36d4.mp4?token=GIwpGubqewCT0jEhU6imN4fT9hIYv0NMpfqzoo4i9oTbCUZsFc-iL-Hl5EcYCzVHfgyMgIdF3Su9y0j1vL62TiL3VXjD8eb-RYnesnaT0uMAcTkp4h3m83oRQLl0SyAJoMm2gbrZapDyWy33pZEt_IWqKaWUWxGsfGuYS7V8i8qIxnobxWu-64NmQhenEdFSliGUkQIJE-jTc_B_dm4Max4JBwbyugNvOpAjIly0kgVBgNWvLbz2nbLxo2qwHG4AFqY7Lm8erb8LkVmTGtP0yluKZBWcSnJMq1p-CI9_gqdPo3ULDbcgkEqW4BEJaHMLVxQau38tFk3EuHCuXOVXYw
+
+---
