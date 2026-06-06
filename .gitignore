@@ -17,6 +17,3 @@ examples/*/.well-known/
 # OS / editor / agent metadata — never belongs in the repo
 .DS_Store
 .claude/
-
-# Per-developer research scratch space; opt in by force-adding files
-docs/research/

@@ -49,5 +49,7 @@ list. Summary:
   dormancy), `lane-b-self-generated-boc` (the `--span` BOC design), + the
   resolved max-span upstream saga.
 
-> `docs/research/` is per-developer scratch (telegram archives, etc.) and is
-> **git-ignored** — not part of the published docs.
+> The TON ecosystem Telegram archive (formerly `docs/research/`) moved to
+> **ton-atlas** (`research/telegram-archive/`, still local-only) on 2026-06-06 —
+> all TON ecosystem research is consolidated there. The scraper moved too
+> (`ton-atlas/scripts/scrape-tg-channel.py`); refresh via the `ton-research-refresh` skill.
