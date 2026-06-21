@@ -3,6 +3,7 @@
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { spawn, type ChildProcess } from 'child_process'
+import { isIP } from 'net'
 import path from 'path'
 import os from 'os'
 import { findFreeTcpPort, findFreeUdpPort } from './ports'
@@ -57,6 +58,64 @@ export interface EnsureTonutilsConfigOptions {
   // should route through. Pre-validated by the caller (see
   // resolveTunnelConfig in cli/deploy-tonutils.ts).
   tunnelConfigPath?: string
+  // Public IP to ANNOUNCE to the DHT for a publicly-reachable cloud seeder.
+  // tonutils-storage binds to ListenAddr (0.0.0.0:port) but downloaders can
+  // only find it if it advertises a reachable external address. On a 1:1-NAT
+  // VM (GCP/AWS) the external IP is not on any local interface, so the
+  // daemon's own port-checker cannot detect it and the node silently runs
+  // download-only ("server mode: false"). Maps to config.json `ExternalIP`.
+  externalIp?: string
+  // Fixed UDP port for ListenAddr so a firewall rule can be pre-opened for a
+  // cloud seeder. Omit to keep the historic behaviour (a free port chosen at
+  // start) — fine for a local transient daemon, unusable for a server whose
+  // port must be stable and firewalled.
+  listenPort?: number
+}
+
+export interface AnnounceConfig {
+  externalIp?: string
+  listenPort?: number
+}
+
+// Cloud-seeder knobs (dogfood 2026-06-21). A kit-managed tonutils-storage
+// daemon binds 0.0.0.0:<random udp> and never sets ExternalIP, so on a public
+// VM it announces nothing a downloader can reach. These env vars let an
+// operator run the kit AS a publicly-reachable seeder:
+//   SOVEREIGN_ANNOUNCE_IP=<public ip>  -> config.json ExternalIP (DHT announce)
+//   SOVEREIGN_ANNOUNCE_PORT=<udp port> -> fixed ListenAddr port (firewall-able)
+// Both are optional and independent; a real cloud seeder sets both (a stable,
+// firewall-opened port plus the advertised IP). Invalid values fail fast
+// rather than silently producing an unreachable node.
+export function parseAnnounceEnv(env: NodeJS.ProcessEnv): AnnounceConfig {
+  const out: AnnounceConfig = {}
+
+  const ip = env.SOVEREIGN_ANNOUNCE_IP?.trim()
+  if (ip) {
+    // IPv4 only: ensureTonutilsConfig binds ListenAddr to 0.0.0.0 (IPv4),
+    // so announcing an IPv6 ExternalIP would advertise an address the node
+    // cannot actually serve. Reject it rather than ship a dead announce.
+    if (isIP(ip) !== 4) {
+      throw new Error(
+        `SOVEREIGN_ANNOUNCE_IP must be a valid IPv4 address (got "${ip}"). ` +
+        `Set it to the VM's public IPv4 — the address downloaders will reach. ` +
+        `(IPv6 is not supported yet: the daemon binds 0.0.0.0, i.e. IPv4 only.)`,
+      )
+    }
+    out.externalIp = ip
+  }
+
+  const portRaw = env.SOVEREIGN_ANNOUNCE_PORT?.trim()
+  if (portRaw) {
+    const port = Number(portRaw)
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new Error(
+        `SOVEREIGN_ANNOUNCE_PORT must be an integer in 1..65535 (got "${portRaw}").`,
+      )
+    }
+    out.listenPort = port
+  }
+
+  return out
 }
 
 // Produce a config.json with a non-default ListenAddr UDP port. The very
@@ -65,7 +124,7 @@ export interface EnsureTonutilsConfigOptions {
 // is busy (e.g. TON Browser.app's own daemon already runs there). We
 // exploit the order by letting it generate the file, killing the process,
 // rewriting ListenAddr to a free UDP port, then starting again.
-async function ensureTonutilsConfig(
+export async function ensureTonutilsConfig(
   daemonPath: string,
   dbDir: string,
   cfgOpts: EnsureTonutilsConfigOptions = {},
@@ -138,8 +197,14 @@ async function ensureTonutilsConfig(
   // any other tonutils-storage instance on the machine; if the caller
   // supplied a tunnel pool path, wire it into TunnelConfig too.
   const cfg = JSON.parse(readFileSync(configPath, 'utf-8'))
-  const port = await findFreeUdpPort()
+  const port = cfgOpts.listenPort ?? (await findFreeUdpPort())
   cfg.ListenAddr = `0.0.0.0:${port}`
+  // Cloud seeder (dogfood 2026-06-21): advertise the reachable public IP so
+  // downloaders can find this node via the DHT. Without it the daemon's
+  // port-checker cannot reach a 1:1-NAT VM and the node runs download-only.
+  if (cfgOpts.externalIp) {
+    cfg.ExternalIP = cfgOpts.externalIp
+  }
   if (cfgOpts.tunnelConfigPath) {
     cfg.TunnelConfig = cfg.TunnelConfig ?? {}
     cfg.TunnelConfig.NodesPoolConfigPath = cfgOpts.tunnelConfigPath
@@ -191,9 +256,14 @@ export async function startTonutilsDaemon(
   }
 
   // Pre-stage config with a non-conflicting UDP ListenAddr (and tunnel
-  // pool path if provided).
+  // pool path if provided). Cloud-seeder env vars (SOVEREIGN_ANNOUNCE_IP /
+  // _PORT) pin the announce IP + a firewall-able port; unset = historic
+  // behaviour (free port, no ExternalIP).
+  const announce = parseAnnounceEnv(process.env)
   await ensureTonutilsConfig(paths.daemon, dbDir, {
     tunnelConfigPath: opts.tunnelConfigPath,
+    externalIp: announce.externalIp,
+    listenPort: announce.listenPort,
   })
 
   const child = spawn(
