@@ -149,8 +149,10 @@ the **real on-chain tx hash** resolved via Toncenter v3
 hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 
 ### 3. After deploy
-- Tell the user the bag id (it's the content hash — `https://ton.run/<bag_id>`
-  is a fallback gateway URL).
+- Tell the user the bag id (it's the content hash). Do NOT hand them
+  `https://ton.run/<bag_id>` — public gateways serve `.ton` domains, not raw
+  bag ids, so that URL 404s. A browser URL only exists once a `.ton` domain
+  points at the bag and a reachable node seeds it.
 - If `dns_tx_hash` is non-null, surface a tonviewer link:
   `https://tonviewer.com/transaction/<hash without 0x>`.
 - If they passed `domain`, tell them `<domain>.ton` will resolve within

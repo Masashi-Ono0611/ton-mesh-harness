@@ -111,16 +111,17 @@ TON already has the infrastructure to fix this. Using it required specialist kno
 
 - Stores files distributed across the blockchain network.
 - Identified by content address (Bag ID) — the URL doesn't change unless the content does.
-- No servers; no deletion; permanent.
+- No central host that can delete it; the content address never changes. It stays reachable for as long as at least one reachable node seeds the bag.
 
 **Architecture:**
-- Bags are accessible via the ADNL protocol (`ton://` URLs).
+- Bags are accessible via the ADNL protocol (`ton://` URLs) — any TON Storage client can fetch a bag by its id.
 - Propagation across the network can take minutes to hours.
-- Public gateways like ton.run can only serve bags that have fully propagated.
-- Self-hosting (the default) means your bag is unreachable while your PC is offline.
+- Public HTTP gateways resolve `.ton` domains (the on-chain DNS storage record), not raw bag ids — `ton.run/<bag_id>` returns 404. To open a bag in an ordinary browser you need a `.ton` domain pointing at it.
+- Self-hosting (the default) means your bag is unreachable while your machine is offline — or while it sits behind NAT with no public IP, since downloaders can't reach it.
 
 **Realistic hosting options:**
 - **The primary option is running your own daemon continuously** (`--watch`, or `--daemon-mode service` to hand it to launchd/systemd). This is exactly how TON Foundation operates `foundation.ton`.
+- **On a cloud VM with a public IP**: run the kit *as* a publicly-reachable seeder. Set `SOVEREIGN_ANNOUNCE_IP=<vm public ip>` and `SOVEREIGN_ANNOUNCE_PORT=<udp port>` (and open that UDP port in the VM firewall), then deploy with `--daemon-mode service`. The daemon then advertises a reachable address to the DHT so anyone can download the bag — without it a 1:1-NAT VM (GCP/AWS) auto-detects no public IP and silently runs download-only. A free GCP `e2-micro` is enough.
 - **Behind NAT / no public IP**: `--tunnel-config` routes the daemon through an ADNL Tunnel pool (shipped in v0.6; bring-your-own pool — see [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md)).
 - A 24/7 escape hatch is the "storage provider contract" (`--provider`), implemented but **the mainnet provider economy is currently dormant** (Round 1–7 mainnet soak results: [`docs/archive/v0.5/round-postmortem.md`](docs/archive/v0.5/round-postmortem.md)) and gated off pending the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30)). Treat it as experimental.
 
@@ -163,7 +164,7 @@ npx ton-sovereign-deploy ./build/
 - ✅ macOS/Linux/Windows.
 
 **Current limits:**
-- ⚠️ Public gateways like ton.run may 404 until the bag has propagated.
+- ⚠️ Public HTTP gateways serve `.ton` domains, not raw bag ids — `ton.run/<bag_id>` returns 404. Browser viewing needs a `.ton` domain + a reachable seeder.
 - ⚠️ Self-hosting makes the site unreachable when your PC is offline.
 - ⚠️ 24/7 hosting requires a storage-provider contract (paid).
 
@@ -383,14 +384,13 @@ npx ton-sovereign-deploy ./build/ --watch
 # The daemon listens on its ADNL port
 ```
 
-**3. Public access after propagation**
+**3. Public access**
 
-Once the bag has spread across the network (minutes to hours), it may be reachable via:
+Any TON Storage client can fetch the bag by id once it has propagated (minutes to hours) — provided a reachable node is seeding it.
 
-- ton.run (only after the bag is recognized as "active").
-- Other TON Storage providers.
+Browser access is different: public HTTP gateways resolve `.ton` domains, not raw bag ids (`ton.run/<bag_id>` returns 404). To open it in a browser, attach a `.ton` domain (`--domain`) and keep a reachable seeder up.
 
-These are not guaranteed. For 24/7 access you need a storage-provider contract.
+For always-on hosting, run your own daemon continuously (`--daemon-mode service`) or use a storage-provider contract.
 
 ### Speeding up propagation with watch mode
 

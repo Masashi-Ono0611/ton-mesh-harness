@@ -6,6 +6,26 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Deploy output no longer advertises a dead gateway URL.** `ton.run/<bag_id>`
+  returns 404 — public HTTP gateways resolve `.ton` domains (the on-chain DNS
+  storage record), not raw bag ids. `buildUrls` no longer emits a
+  `fallbackUrl` for a bag-only deploy, and `printResult` drops the misleading
+  "Fallback URL" line and the absolute "cannot be taken down" claim in favour
+  of the honest condition: the site stays online for as long as a reachable
+  node seeds the bag. README + skill docs corrected to match.
+
+### Added
+
+- **Cloud-seeder announce knobs (`SOVEREIGN_ANNOUNCE_IP` /
+  `SOVEREIGN_ANNOUNCE_PORT`).** Run the kit *as* a publicly-reachable seeder on
+  a cloud VM: they set the tonutils-storage `config.json` `ExternalIP` (DHT
+  announce) and a fixed, firewall-able `ListenAddr` UDP port. Without them a
+  1:1-NAT VM (GCP/AWS) auto-detects no public IP and silently runs
+  download-only ("server mode: false"). Invalid values fail fast. Pair with
+  `--daemon-mode service`; a free GCP `e2-micro` suffices.
+
 ## [0.9.0] – 2026-06-21
 
 **The v0.8 agent-surface track and the v0.9 reserve, shipped together as
