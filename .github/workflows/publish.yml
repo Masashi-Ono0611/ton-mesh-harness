@@ -53,9 +53,23 @@ jobs:
       # transparency-log step intermittently 409s on an internal retry and
       # stalls the publish (seen on mira-harness). Tokenless OIDC auth is
       # unaffected.
-      - run: NPM_CONFIG_PROVENANCE=false npm publish
+      #
+      # Prerelease tags (v1.2.3-rc1) go under the `next` dist-tag so they never
+      # become `npm install`'s default; only GA tags take `latest`.
+      - name: Publish to npm
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            NPM_CONFIG_PROVENANCE=false npm publish --tag next
+          else
+            NPM_CONFIG_PROVENANCE=false npm publish
+          fi
 
       - name: Create GitHub Release
-        run: gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes --latest
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes --prerelease
+          else
+            gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes --latest
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
