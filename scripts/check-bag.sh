@@ -1,6 +1,6 @@
 #!/bin/bash
 BAG_ID="$1"
-MAX_WAIT=${2:-60}  # デフォルト60秒
+MAX_WAIT=${2:-60}  # default 60 seconds
 INTERVAL=5
 
 echo "Checking bag: $BAG_ID"

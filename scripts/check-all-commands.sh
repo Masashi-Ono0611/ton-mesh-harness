@@ -1,5 +1,5 @@
 #!/bin/bash
-# 全ての利用可能なコマンドを確認
+# Check all available commands
 
 DAEMON_BIN="$HOME/.ton-sovereign/bin/storage-daemon"
 CLI_BIN="$HOME/.ton-sovereign/bin/storage-daemon-cli"

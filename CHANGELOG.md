@@ -507,8 +507,8 @@ BLOCKER + 4 MAJORs. Final pre-GA snapshot — awaits V3 (E2E) + V4
   `signRequestValidUntilSeconds`.
 - Project docs fully translated to English (`README.md`,
   `docs/provider-contract.md`, two CHANGELOG entries, two test
-  comments). `grep -rln '[一-龯ぁ-んァ-ンー]'` across the repo
-  returns zero matches.
+  comments). `grep -rlP '[\x{3040}-\x{30FF}\x{4E00}-\x{9FFF}]'` across
+  the repo returns zero matches.
 
 ### npm
 

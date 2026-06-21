@@ -78,15 +78,15 @@ once the gates close, then execute top-to-bottom.
 
 ### Japanese TON community channels
 
-> **Sovereign Deploy Kit v0.8.0 公開しました** 🚀
-> 静的サイトを TON Storage + `.ton` DNS に**1コマンド**で公開できる
-> CLI + MCP サーバです。自分のマシンから seed する self-host 型で、
-> サーバも CDN もレジストラも不要。AI エージェント（Claude 等）から
-> MCP 経由で丸ごと駆動できます。
+> **Sovereign Deploy Kit v0.8.0 is live** 🚀
+> A CLI + MCP server that publishes a static site to TON Storage + `.ton`
+> DNS in **one command**. Self-hosted — it seeds from your own machine, so
+> no server, no CDN, no registrar. AI agents (Claude, etc.) can drive the
+> whole flow over MCP.
 >
 > `npx ton-sovereign-deploy ./build --watch`
 >
-> npm: `<NPM_URL>` ／ MIT・OSS。検閲耐性のある web を作る人向けです。
+> npm: `<NPM_URL>` — MIT, OSS. For people building a censorship-resistant web.
 
 ---
 

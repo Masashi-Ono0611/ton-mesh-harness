@@ -1,5 +1,5 @@
 #!/bin/bash
-# bag のピアを確認
+# Check the bag's peers
 
 BUILD_DIR="test/fixtures/minimal-site"
 DAEMON_BIN="$HOME/.ton-sovereign/bin/storage-daemon"
@@ -52,7 +52,7 @@ echo "=== Getting bag details ==="
 
 echo ""
 echo "=== Checking if upload is active ==="
-# upload-pause/upload-resume で確認
+# Verify with upload-pause/upload-resume
 "$CLI_BIN" -v 0 -I "127.0.0.1:5513" -k "$KEY_DIR/client" -p "$KEY_DIR/server.pub" -c "upload-resume $BAG_ID" 2>&1
 
 echo ""

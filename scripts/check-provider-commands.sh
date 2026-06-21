@@ -1,5 +1,5 @@
 #!/bin/bash
-# プロバイダー関連のコマンドを確認
+# Check provider-related commands
 
 DAEMON_BIN="$HOME/.ton-sovereign/bin/storage-daemon"
 CLI_BIN="$HOME/.ton-sovereign/bin/storage-daemon-cli"
