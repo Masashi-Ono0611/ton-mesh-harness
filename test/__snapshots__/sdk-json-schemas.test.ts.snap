@@ -147,6 +147,30 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
     "DeployOptions": {
       "additionalProperties": false,
       "properties": {
+        "announce_ip": {
+          "anyOf": [
+            {
+              "type": "string",
+            },
+            {
+              "type": "null",
+            },
+          ],
+          "default": null,
+        },
+        "announce_port": {
+          "anyOf": [
+            {
+              "maximum": 65535,
+              "minimum": 1,
+              "type": "integer",
+            },
+            {
+              "type": "null",
+            },
+          ],
+          "default": null,
+        },
         "daemon_mode": {
           "default": "embedded",
           "enum": [

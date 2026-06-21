@@ -52,6 +52,11 @@ program
   // through that pool — useful when the host is behind NAT or wants to
   // hide its IP. tonutils backend only.
   .option('--tunnel-config <path>', 'Path to nodes-pool.json for ADNL Tunnel (tonutils backend only; bring-your-own pool)')
+  // #69: cloud-seeder announce knobs. To run the kit AS a publicly-reachable
+  // seeder on a VM, advertise the public IPv4 (DHT) + pin a firewall-able UDP
+  // port. Override the SOVEREIGN_ANNOUNCE_IP / _PORT env vars. tonutils only.
+  .option('--announce-ip <ip>', 'Public IPv4 to announce to the DHT for a publicly-reachable cloud seeder (tonutils backend). Overrides $SOVEREIGN_ANNOUNCE_IP.')
+  .option('--announce-port <port>', 'Fixed UDP ListenAddr port to announce (so a firewall rule can be pre-opened). Overrides $SOVEREIGN_ANNOUNCE_PORT.', (v) => parseInt(v, 10))
   // v0.6 B5: bring-your-own rldp-http-proxy ADNL identity. When set together
   // with --domain, the CLI writes both a `storage` (bag) and a `site`
   // (dns_adnl_address) record in a single TonConnect tx, matching the
@@ -81,6 +86,16 @@ program
     if (opts.tunnelConfig && backend !== 'tonutils') {
       throw new Error(
         `--tunnel-config requires --daemon-backend=tonutils (the ton-core C++ daemon has no built-in ADNL Tunnel client).`,
+      )
+    }
+
+    // #69: --announce-ip / --announce-port only flow through the tonutils
+    // deploy path (config ExternalIP + ListenAddr). The legacy ton-core
+    // backend never consumes them, so fail fast instead of silently ignoring
+    // the requested public IP / fixed port.
+    if ((opts.announceIp || opts.announcePort != null) && backend !== 'tonutils') {
+      throw new Error(
+        `--announce-ip / --announce-port require --daemon-backend=tonutils (the ton-core C++ daemon has no announce-config path).`,
       )
     }
 

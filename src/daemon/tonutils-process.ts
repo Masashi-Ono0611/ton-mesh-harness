@@ -95,36 +95,51 @@ export interface AnnounceConfig {
 // Both are optional and independent; a real cloud seeder sets both (a stable,
 // firewall-opened port plus the advertised IP). Invalid values fail fast
 // rather than silently producing an unreachable node.
-export function parseAnnounceEnv(env: NodeJS.ProcessEnv): AnnounceConfig {
-  const out: AnnounceConfig = {}
-
+// Per-field env getters (#69): kept separate so the resolver can short-circuit
+// past a stale/malformed env var when the operator overrode that field on the
+// command line. Each validates only its own var.
+export function announceIpFromEnv(env: NodeJS.ProcessEnv): string | undefined {
   const ip = env.SOVEREIGN_ANNOUNCE_IP?.trim()
-  if (ip) {
-    // IPv4 only: ensureTonutilsConfig binds ListenAddr to 0.0.0.0 (IPv4),
-    // so announcing an IPv6 ExternalIP would advertise an address the node
-    // cannot actually serve. Reject it rather than ship a dead announce.
-    if (isIP(ip) !== 4) {
-      throw new Error(
-        `SOVEREIGN_ANNOUNCE_IP must be a valid IPv4 address (got "${ip}"). ` +
-        `Set it to the VM's public IPv4 — the address downloaders will reach. ` +
-        `(IPv6 is not supported yet: the daemon binds 0.0.0.0, i.e. IPv4 only.)`,
-      )
-    }
-    out.externalIp = ip
+  if (!ip) return undefined
+  // IPv4 only: ensureTonutilsConfig binds ListenAddr to 0.0.0.0 (IPv4), so
+  // announcing an IPv6 ExternalIP would advertise an address the node cannot
+  // actually serve. Reject it rather than ship a dead announce.
+  if (isIP(ip) !== 4) {
+    throw new Error(
+      `SOVEREIGN_ANNOUNCE_IP must be a valid IPv4 address (got "${ip}"). ` +
+      `Set it to the VM's public IPv4 — the address downloaders will reach. ` +
+      `(IPv6 is not supported yet: the daemon binds 0.0.0.0, i.e. IPv4 only.)`,
+    )
   }
+  return ip
+}
 
+export function announcePortFromEnv(env: NodeJS.ProcessEnv): number | undefined {
   const portRaw = env.SOVEREIGN_ANNOUNCE_PORT?.trim()
-  if (portRaw) {
-    const port = Number(portRaw)
-    if (!Number.isInteger(port) || port < 1 || port > 65535) {
-      throw new Error(
-        `SOVEREIGN_ANNOUNCE_PORT must be an integer in 1..65535 (got "${portRaw}").`,
-      )
-    }
-    out.listenPort = port
+  if (!portRaw) return undefined
+  const port = Number(portRaw)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(
+      `SOVEREIGN_ANNOUNCE_PORT must be an integer in 1..65535 (got "${portRaw}").`,
+    )
   }
+  return port
+}
 
-  return out
+export function parseAnnounceEnv(env: NodeJS.ProcessEnv): AnnounceConfig {
+  return { externalIp: announceIpFromEnv(env), listenPort: announcePortFromEnv(env) }
+}
+
+// Per-field precedence (#69): an explicit announce value (from
+// --announce-ip / --announce-port, validated upstream) wins; otherwise fall
+// back to the env var FOR THAT FIELD. The `??` short-circuits, so when a field
+// is overridden the corresponding env var is never read or validated — a stale
+// malformed env var can't abort a command that overrode it (Codex review).
+export function resolveAnnounce(explicit: AnnounceConfig, env: NodeJS.ProcessEnv): AnnounceConfig {
+  return {
+    externalIp: explicit.externalIp ?? announceIpFromEnv(env),
+    listenPort: explicit.listenPort ?? announcePortFromEnv(env),
+  }
 }
 
 // Produce a config.json with a non-default ListenAddr UDP port. The very
@@ -239,6 +254,13 @@ export interface StartTonutilsDaemonOptions {
   /** Path to a global network config (testnet); omit for mainnet default. */
   networkConfigPath?: string
   /**
+   * Cloud-seeder announce overrides (#69), already validated by the caller.
+   * Take precedence (per-field) over the SOVEREIGN_ANNOUNCE_IP / _PORT env
+   * vars; when both are omitted the env vars are used (the #67 behaviour).
+   */
+  externalIp?: string
+  listenPort?: number
+  /**
    * Persistent db dir (#37 service mode). When set, the daemon uses this
    * dir instead of an ephemeral mkdtemp one, and kill() does NOT delete it
    * (the OS service unit resumes seeding from here). Omit for the default
@@ -277,11 +299,11 @@ export async function startTonutilsDaemon(
     cleanupDir = sessionDir
   }
 
-  // Pre-stage config with a non-conflicting UDP ListenAddr (and tunnel
-  // pool path if provided). Cloud-seeder env vars (SOVEREIGN_ANNOUNCE_IP /
-  // _PORT) pin the announce IP + a firewall-able port; unset = historic
-  // behaviour (free port, no ExternalIP).
-  const announce = parseAnnounceEnv(process.env)
+  // Pre-stage config with a non-conflicting UDP ListenAddr (and tunnel pool
+  // path if provided). Cloud-seeder announce: explicit --announce-ip/-port
+  // (opts) win per-field; an un-overridden field falls back to the matching
+  // SOVEREIGN_ANNOUNCE_* env var (only that var is read/validated). #69.
+  const announce = resolveAnnounce({ externalIp: opts.externalIp, listenPort: opts.listenPort }, process.env)
   await ensureTonutilsConfig(paths.daemon, dbDir, {
     tunnelConfigPath: opts.tunnelConfigPath,
     externalIp: announce.externalIp,

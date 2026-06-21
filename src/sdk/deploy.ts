@@ -382,6 +382,10 @@ export async function* deploy(
         tunnelConfigPath: resolvedTunnel,
         networkConfigPath,
         dbDir: serviceDbDir,
+        // #69: explicit announce knobs (from --announce-ip/--announce-port,
+        // already validated by the schema) take precedence over the env vars.
+        externalIp: opts.announce_ip ?? undefined,
+        listenPort: opts.announce_port ?? undefined,
       })
     } catch (err) {
       throw mapDaemonStartError(err)
