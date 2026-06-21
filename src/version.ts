@@ -10,4 +10,4 @@
  *
  * NO `console.*` IN THIS FILE — lint-enforced.
  */
-export const SOVEREIGN_DEPLOY_VERSION = '0.8.0-rc11'
+export const SOVEREIGN_DEPLOY_VERSION = '0.9.0'

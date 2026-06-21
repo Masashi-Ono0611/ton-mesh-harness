@@ -91,7 +91,7 @@ if [[ "$VERSION" != *-* ]]; then
     const beginRe = /^<!-- GA-PREDRAFT-BEGIN[\\s\\S]*?\\n\\n/;
     const endRe = /\\n\\nGA-PREDRAFT-END -->\$/;
     let inner = match[0].replace(beginRe, '').replace(endRe, '');
-    inner = inner.replace(/^## \\[0\\.8\\.0\\] – TODO\$/m, '## [$VERSION] – $TODAY');
+    inner = inner.replace(/^## \\[[^\\]]*\\] – TODO\$/m, '## [$VERSION] – $TODAY');
     fs.writeFileSync(f, src.replace(re, inner));
   "
 fi
@@ -105,8 +105,8 @@ if [[ "$VERSION" != *-* ]]; then
     const f = './README.md';
     const src = fs.readFileSync(f, 'utf-8');
     const out = src
-      .replace(/v0\\.8\\.0-rc\\d+ \\(\\d{4}-\\d{2}-\\d{2}\\)/, 'v$VERSION (' + new Date().toISOString().slice(0,10) + ')')
-      .replace(/## Agent quickstart \\(v0\\.8 rc\\d+\\)/, '## Agent quickstart (v$VERSION)');
+      .replace(/v0\\.\\d+\\.\\d+(?:-[A-Za-z0-9.]+)? \\(\\d{4}-\\d{2}-\\d{2}\\)/, 'v$VERSION (' + new Date().toISOString().slice(0,10) + ')')
+      .replace(/## Agent quickstart \\([^)]*\\)/, '## Agent quickstart (v$VERSION)');
     fs.writeFileSync(f, out);
   "
 fi

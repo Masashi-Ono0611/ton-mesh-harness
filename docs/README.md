@@ -22,7 +22,7 @@ These describe how the kit works today; keep them accurate.
 | [`v0.8/agentic-cli-usage.md`](./v0.8/agentic-cli-usage.md) | `--wallet-mode agentic` prerequisites / selectors / CI |
 | [`v0.8/e2e-runbook.md`](./v0.8/e2e-runbook.md) | V3 mainnet MCP E2E reproduction + testnet rehearsal |
 | [`v0.8/mcp-core-requirements.md`](./v0.8/mcp-core-requirements.md) | the MCP server spec (F1–F5 / NF) — authoritative reference |
-| [`v0.8/release-checklist.md`](./v0.8/release-checklist.md) | the GA cut ritual (`release.sh` + npm + GitHub release) |
+| [`v0.9/release-checklist.md`](./v0.9/release-checklist.md) | the GA cut ritual (`vX.Y.Z` tag push → OIDC auto-publish) |
 | [`v0.6/byo-rldp-http-proxy.md`](./v0.6/byo-rldp-http-proxy.md) | bring-your-own rldp-http-proxy for `--site-adnl` |
 | [`provider-contract.md`](./provider-contract.md) | storage-provider contract reference (`--provider`, currently dormant) |
 

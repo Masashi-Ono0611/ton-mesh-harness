@@ -26,7 +26,7 @@ Press Ctrl+C to stop seeding.
 
 ---
 
-## Agent quickstart (v0.8 rc11)
+## Agent quickstart (v0.9.0)
 
 This kit is designed to be invoked directly by AI agents. When an agent runtime gets a prompt like "deploy a static site to .ton", we *aim* for the agent to discover this kit via npm search + README + skill registry — but that's a hypothesis, validated empirically by the [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26). If discovery misses, you can invoke explicitly:
 
@@ -221,7 +221,7 @@ Direct competitors: none.
 
 ## Development status
 
-**Status:** v0.8.0-rc11 (2026-05-12) — full v0.8 feature ship + 11 Codex multi-model review rounds + Path C polish. Across all rounds: **4 BLOCKERs + 22 MAJORs + 3 MINORs + 4 NITs + 1 LOW resolved**. Notable security-class fixes: 3 daemon-binary SHA-256 supply-chain integrity (all installers), TonConnect SDK signed-BOC debug-log leak (r7-8), wallet-key symlink redirect (r7-8), agentic config wallet-strictness (r4-5), daemon orphan-on-signal (r9-10), HTTP response body cap (r11). MCP server (3 tools: `sovereign_check_env` / `sovereign_deploy` / `sovereign_status`), SDK external entry, NFT-delegated agentic signing (optional `@ton/mcp` peer), structured stderr logging (`DEBUG=sovereign:*`), tarball-install smoke in CI. GA pending V3 (Claude Code MCP → testnet E2E) and V4 (agency-transfer red-team test).
+**Status:** v0.9.0 (2026-06-21) — first public GA: the v0.8 agent-surface track bundled with the v0.9 reserve. Across all rounds: **4 BLOCKERs + 22 MAJORs + 3 MINORs + 4 NITs + 1 LOW resolved**. Notable security-class fixes: 3 daemon-binary SHA-256 supply-chain integrity (all installers), TonConnect SDK signed-BOC debug-log leak (r7-8), wallet-key symlink redirect (r7-8), agentic config wallet-strictness (r4-5), daemon orphan-on-signal (r9-10), HTTP response body cap (r11). MCP server (3 tools: `sovereign_check_env` / `sovereign_deploy` / `sovereign_status`), SDK external entry, NFT-delegated agentic signing (optional `@ton/mcp` peer), structured stderr logging (`DEBUG=sovereign:*`), tarball-install smoke in CI. Published automatically via OIDC trusted publishing; the V4 agency-transfer red-team is deferred to v0.9.x (runs post-publish).
 
 ### Released
 - **v0.1** ✅ — TON Storage upload.
@@ -242,11 +242,12 @@ Direct competitors: none.
 - **v0.8.0-rc9** ✅ (2026-05-12) — Codex rounds 7-10: audit of v0.8 modules NOT covered by rounds 1-6 (keyring, TonConnect bridge, daemon process lifecycle, legacy DNS helpers, CLI signal handlers). Round 7 caught 1 BLOCKER (TonConnect SDK logs signed BOCs via console.debug) + 4 MAJORs + 1 MINOR. Rounds 8-10 verified each fix and caught 2 more BLOCKERs (concurrent silence race, daemon orphan-on-signal) + 3 MAJORs (Atomics.wait main-thread block, O_NOFOLLOW POSIX-only, signal-path drain miss) + 1 LOW (keyring parent-dir lstat). All resolved. Cumulative rc8→rc9: **3 BLOCKERs + 7 MAJORs + 1 MINOR + 1 LOW** across security-sensitive modules (wallet bridge + daemon process + key storage).
 - **v0.8.0-rc10** ✅ (2026-05-12) — Codex r11 self-audit (external review daily-cap blocked) of supply-chain + remaining unreviewed lifecycle code. Added SHA-256 integrity check to daemon binary downloads (10 hashes pinned for tonutils-storage v1.4.1 + rldp-http-proxy v2026.04-1 × 5 platforms each). Applied the r7-r10 daemon-lifecycle pattern (mkdtempSync + async exit-listener cleanup + SIGKILL escalation) to `rldp-http-proxy-process.ts` and legacy `daemon/process.ts`. Added symlink defence to `wallet/FSStorage.ts` (TonConnect session JSON) mirroring keyring.ts. Added 8 MiB default body cap to `utils/http.ts`. Cumulative rc9→rc10: **1 BLOCKER-class + 5 MAJORs**. Also: CHANGELOG verbose-round sections compressed; tonconnect-dispose + installer-sha256 tests deduped (-110 net lines, same coverage).
 - **v0.8.0-rc11** ✅ (2026-05-12) — Path C polish. Closed the last SHA-256 gap: legacy `--daemon-backend=ton-core` installer (`src/daemon/installer.ts`) now verifies storage-daemon + storage-daemon-cli against 10 pinned hashes for v2026.02-1. **Pre-existing MAJOR caught during pinning**: `src/daemon/platform.ts::getBinaryName` returned `storage-daemon-win-x86-64.exe` but the release ships `storage-daemon.exe` — Windows legacy ton-core installs were 100% broken via curl 404. Fixed. Also: `RLDP_HTTP_PROXY_SHA256` env-var-pin closes the version-override TOFU window; inner-generator cleanup regression test (`test/sdk-deploy-inner-cleanup.test.ts`) deep-mocks daemon+dns to exercise the Codex r3 BLOCKER fix on both abort and for-await-break paths. Cumulative rc10→rc11: 1 MAJOR + 3 polish items.
+- **v0.9.0** ✅ (2026-06-21) — first public GA. Bundles the v0.8 agent-surface track with the v0.9 reserve (HTTP transport #33, provenance #34, service-mode daemons #37, testnet-via-MCP, examples #36) and ships OIDC trusted publishing (`.github/workflows/publish.yml`).
 
-### Pending for v0.8.0 GA
-- **[V3] #18** — Claude Code MCP client → testnet deploy E2E (S2.5 landed; needs an agent + testnet TON).
-- **[V4] #26** — Agency-transfer red-team test (fresh agent session, manual).
-- **[D3] #21** — Final v0.8.0 GA tag (after V3 + V4) — `scripts/release.sh 0.8.0` one-shot ritual ready.
+### Pending (post-GA)
+- **[V4] #26** — Agency-transfer red-team test (fresh agent session, manual; runs post-publish).
+- **[#35]** — Cross-agent compatibility tests (Cursor / Codex / Continue / Aider).
+- **[C2 / C3] #29 / #30** — NAT traversal + Payment Network real-client (upstream-blocked).
 
 ### Documentation
 
@@ -255,13 +256,13 @@ Full map + Current/Reference/Historical classification: **[`docs/README.md`](doc
 - **MCP server spec**: [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) — the authoritative F1–F5/NF contract.
 - **Agentic CLI usage**: [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) — `--wallet-mode agentic` prerequisites / selectors / CI.
 - **Agent stack compose**: [`docs/v0.8/agent-stack-compose.md`](docs/v0.8/agent-stack-compose.md) — wiring `ton-sovereign-mcp` + `@ton/mcp` for full agentic flows.
-- **Release checklist**: [`docs/v0.8/release-checklist.md`](docs/v0.8/release-checklist.md) — the GA cut ritual + rollback.
+- **Release checklist**: [`docs/v0.9/release-checklist.md`](docs/v0.9/release-checklist.md) — the GA cut ritual (tag push → auto-publish) + rollback.
 - **v0.9 features**: [HTTP transport](docs/v0.9/mcp-http-transport.md) · [provenance](docs/v0.9/provenance.md) · [service-mode daemons](docs/v0.9/daemon-service-mode.md) · [cross-agent compat](docs/v0.9/agent-compat.md).
 - **Design history** (point-in-time, not current): the agent-native pivot — [`agent-native-pivot.md`](docs/archive/v0.8/agent-native-pivot.md), [`concept-update-2026-05-10.md`](docs/archive/v0.8/concept-update-2026-05-10.md), [`at-mcp-probe.md`](docs/archive/v0.8/at-mcp-probe.md).
 
 ### v0.9 reserve
-**Shipped post-rc11** (see CHANGELOG `[Unreleased]`): MCP HTTP transport (`--http`), testnet on the tonutils/MCP path, signed provenance manifest (`.well-known/ton-deploy.json`), Vite/Next examples, daemon-hash bump helper, MCP cancel-cleanup test.
-**Still reserved** — both blocked on upstream C++ binaries maturing: C2 NAT traversal (`adnl-tunnel-client`, #29) + C3 Payment Network real-client (#30). Details: [`docs/archive/v0.7/roadmap-draft.md`](docs/archive/v0.7/roadmap-draft.md) §C2 / §C3. launchd/systemd daemon ownership (#37) is a parked deploy-lifecycle feature.
+**Shipped in v0.9.0** (see CHANGELOG `[0.9.0]`): MCP HTTP transport (`--http`), testnet on the tonutils/MCP path, signed provenance manifest (`.well-known/ton-deploy.json`), Vite/Next/Astro examples, daemon-hash bump helper, MCP cancel-cleanup test, launchd/systemd service-mode daemons (#37).
+**Still reserved** — both blocked on upstream C++ binaries maturing: C2 NAT traversal (`adnl-tunnel-client`, #29) + C3 Payment Network real-client (#30). Details: [`docs/archive/v0.7/roadmap-draft.md`](docs/archive/v0.7/roadmap-draft.md) §C2 / §C3.
 
 **Release:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
 
@@ -428,13 +429,13 @@ ton-sovereign-deploy [build-dir] [options]
 | `--wallet-mode <mode>` | Signing mode: `tonconnect` (default, QR) or `agentic` (autonomous, reads `~/.config/ton/config.json`). v0.8+ |
 | `--wallet-label <label>` | Selector for agentic mode (id / name / address). Defaults to `active_wallet_id`. v0.8+ |
 | `--wallet-config <path>` | Override path for the agentic config file. v0.8+ |
-| `--no-provenance` | Skip emitting the `.well-known/ton-deploy.json` provenance manifest into the bag (post-rc11). |
+| `--no-provenance` | Skip emitting the `.well-known/ton-deploy.json` provenance manifest into the bag (v0.9). |
 | `--ci-mode` | Disable spinners for CI environments (v0.3). |
 | `--json-output` | Emit JSON (v0.3). When `--ci-mode` or `--json-output` is set, `--watch` is **automatically disabled** so the process exits after upload (prevents CI hang). |
 | `--watch` | Watch for file changes and auto-redeploy (**default in interactive runs since v0.6**). |
 | `--no-watch` | Disable watch mode; exit after upload (CI / one-shot). v0.6+ |
 | `--debounce <ms>` | Watch-mode debounce delay (default 2000 ms). |
-| `--daemon-backend <name>` | Daemon backend: `tonutils` (default, v0.6+; supports `--testnet` since post-rc11) or `ton-core` (C++ legacy; opt-in, needed only for `--provider`). |
+| `--daemon-backend <name>` | Daemon backend: `tonutils` (default, v0.6+; supports `--testnet` since v0.9) or `ton-core` (C++ legacy; opt-in, needed only for `--provider`). |
 | `--tunnel-config <path>` | Path to a `nodes-pool.json` for ADNL Tunnel (v0.6+, tonutils backend only). Used for NAT traversal. No public pools exist yet — **bring-your-own-pool** (obtain from the operator). |
 | `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `dns_adnl_address` (`site` record, magic `0xad01`) under `--domain` (v0.6+ B5). **Bring-your-own rldp-http-proxy** — pass the ADNL hash of an already-running proxy, or use `--site-auto` to auto-spawn one (shipped v0.7). With `--domain`, bundles the storage and site records into **one TonConnect signature**. Setup: [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md). |
 | `--provider [address]` | **Disabled regardless of backend** (mainnet provider economy is dormant). The v0.5 working code stays in the tree; re-enabling waits on the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30), v0.9-reserve, upstream-blocked). Details: [`docs/archive/v0.5/round-postmortem.md`](docs/archive/v0.5/round-postmortem.md). |
@@ -493,7 +494,7 @@ ton-sovereign-deploy ./build/ --daemon-backend=ton-core
 | Bag upload + seed | ✅ | ✅ |
 | `--watch` (auto-redeploy) | ✅ (v0.6 step B2.x) | ✅ |
 | `--tunnel-config` (ADNL Tunnel) | ✅ (v0.6 step B3.x) | ❌ (no tunnel client in the C++ daemon) |
-| `--testnet` | ✅ (daemon `--network-config`; post-rc11) | ✅ |
+| `--testnet` | ✅ (daemon `--network-config`; v0.9) | ✅ |
 | `--provider` | ❌ (v0.6 disables the provider path) | ⚠ experimental (mainnet provider economy is dormant) |
 
 #### ADNL Tunnel — NAT traversal
