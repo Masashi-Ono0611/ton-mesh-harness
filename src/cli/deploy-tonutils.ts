@@ -36,6 +36,11 @@ export interface TonutilsDeployReturn {
 
 export interface TonutilsDeployOptions {
   tunnelConfigPath?: string  // absolute or relative path to nodes-pool.json
+  // Whether the seeder will keep running after this deploy (watch mode or
+  // --daemon-mode service). When false (one-shot: --no-watch / --ci-mode /
+  // --daemon-mode embedded) the daemon is killed right after deploy, so the
+  // reachability advisory must NOT claim others can download from it. (#68)
+  willSeed?: boolean
 }
 
 /**
@@ -49,6 +54,33 @@ export function resolveTunnelConfig(rawPath: string): ResolvedTunnel {
   } catch (err) {
     if (err instanceof TunnelConfigError) throw new Error(err.message)
     throw err
+  }
+}
+
+/**
+ * Print the daemon's own reachability verdict (#68). This is the honest answer
+ * to "can anyone actually download this?" — public gateways and TONAPI do not
+ * index raw self-hosted bags, so they can't confirm it. `undefined`/`null`
+ * means the signal was unreadable; we stay silent rather than over-claim.
+ *
+ * `willSeed` is whether the seeder keeps running after this deploy. In one-shot
+ * modes the daemon is killed immediately, so a reachable node is NOT something
+ * others can keep downloading from — say so instead of over-claiming.
+ */
+function printReachability(reachable: boolean | null | undefined, willSeed: boolean): void {
+  if (reachable === true) {
+    if (willSeed) {
+      console.log(chalk.green('  ✓ Publicly reachable — other nodes can download this bag from you.'))
+    } else {
+      console.log(chalk.yellow('  ✓ This node is publicly reachable, but it stops when this command exits —'))
+      console.log(chalk.yellow('    your bag will NOT stay online. Keep a seeder running with --watch'))
+      console.log(chalk.dim('    or --daemon-mode service to keep it downloadable.'))
+    }
+  } else if (reachable === false) {
+    console.log(chalk.yellow('  ⚠ Download-only — this node is behind NAT / has no public IP, so'))
+    console.log(chalk.yellow('    nobody can download from it. Your site is NOT reachable yet.'))
+    console.log(chalk.dim('    Run a reachable seeder: a public VM with SOVEREIGN_ANNOUNCE_IP +'))
+    console.log(chalk.dim('    an open UDP port (a free GCP e2-micro works). See the README.'))
   }
 }
 
@@ -235,6 +267,7 @@ export async function runDeployTonutils(
       console.log(exportAsJson(result))
     } else {
       printResult(result)
+      printReachability(capturedDaemon.reachable, deployOpts.willSeed ?? false)
     }
 
     return { result, daemon: capturedDaemon, buildDir, description }

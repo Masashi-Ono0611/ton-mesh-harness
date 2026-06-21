@@ -16,6 +16,15 @@ export interface TonutilsHandle {
   dbDir: string
   process: ChildProcess
   kill: () => void
+  // Public reachability as reported by the daemon's own startup port-checker:
+  //   true  = "server mode: true"  → other nodes can download bags from here
+  //   false = behind NAT / no public IP → download-only, nobody can reach it
+  //   null  = unknown (verdict not seen / log format changed) — never treat
+  //           null as "unreachable"; it just means we couldn't read the signal.
+  // This is the only honest reachability signal available: public gateways and
+  // TONAPI do not index raw self-hosted bags, so they cannot confirm a bag is
+  // actually downloadable. Set after the API becomes ready (#68).
+  reachable?: boolean | null
 }
 
 // -----------------------------------------------------------------------
@@ -212,6 +221,19 @@ export async function ensureTonutilsConfig(
   writeFileSync(configPath, JSON.stringify(cfg, null, '\t'))
 }
 
+// Parse the tonutils-storage port-checker verdict out of its startup log.
+// The daemon prints (ANSI-coloured) one of:
+//   "Storage started, server mode: true"   → publicly reachable
+//   "Storage started, server mode: false"  → download-only (NAT / no public IP)
+// after probing itself via an external port checker. Returns null when the
+// verdict isn't present (yet) or the log wording changed — callers MUST treat
+// null as "unknown", never "unreachable". #68.
+export function parseServerMode(output: string): boolean | null {
+  const m = output.match(/server mode:\s*(true|false)/i)
+  if (!m) return null
+  return m[1].toLowerCase() === 'true'
+}
+
 export interface StartTonutilsDaemonOptions {
   tunnelConfigPath?: string
   /** Path to a global network config (testnet); omit for mainnet default. */
@@ -279,8 +301,24 @@ export async function startTonutilsDaemon(
       // testnet: hand the daemon a global config (mainnet is its default).
       ...(opts.networkConfigPath ? ['--network-config', opts.networkConfigPath] : []),
     ],
-    { stdio: 'ignore', detached: false },
+    // stdin stays ignored (the `-daemon` flag suppresses the REPL, so there's
+    // no stdin busy-loop risk); stdout/stderr are piped so we can read the
+    // daemon's own port-checker verdict ("server mode: true/false") for an
+    // honest reachability signal (#68). The pipes MUST be drained for the
+    // daemon's lifetime or a full buffer would block it.
+    { stdio: ['ignore', 'pipe', 'pipe'], detached: false },
   )
+
+  // Accumulate startup logs (capped) so we can parse the port-checker verdict
+  // once the API is ready. The handler stays attached and keeps reading past
+  // the cap so the pipe never backs up; it just stops appending.
+  let logBuf = ''
+  const LOG_CAP = 64 * 1024
+  const onLog = (chunk: Buffer): void => {
+    if (logBuf.length < LOG_CAP) logBuf += chunk.toString('utf8')
+  }
+  child.stdout?.on('data', onLog)
+  child.stderr?.on('data', onLog)
 
   // Capture the spawn error in a state we can check during waitForApi
   // instead of throwing inside the event handler (which becomes an
@@ -359,6 +397,10 @@ export async function startTonutilsDaemon(
     handle.kill()
     throw err
   }
+  // The daemon logs its port-checker verdict ("server mode: …") BEFORE it
+  // opens the HTTP API, so by the time waitForApi resolves the verdict is
+  // already in logBuf — reading it here adds no latency. null = unknown.
+  handle.reachable = parseServerMode(logBuf)
   return handle
 }
 
