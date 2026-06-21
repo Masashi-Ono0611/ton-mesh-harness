@@ -117,7 +117,13 @@ describe('verifyBagOnNetwork', () => {
   })
 
   it('should use default timeout and interval when not specified', async () => {
-    vi.mocked(httpsGet).mockResolvedValueOnce({
+    // mockResolvedValue (persistent, not ...Once): this test uses the default
+    // intervalMs (5000ms), so a single missed/extra httpsGet call would drop
+    // into a 5000ms error-backoff and race vitest's default 5000ms test
+    // timeout — which flaked on the slow node 18 / macOS CI runner. An
+    // always-active mock keeps attempt 1 succeeding regardless of runner
+    // timing; the explicit timeout below is belt-and-suspenders.
+    vi.mocked(httpsGet).mockResolvedValue({
       status: 'active',
     })
 
@@ -132,7 +138,7 @@ describe('verifyBagOnNetwork', () => {
         timeout: 10_000,
       })
     )
-  })
+  }, 15_000)
 
   it('should include latency in result when successful', async () => {
     vi.mocked(httpsGet).mockResolvedValueOnce({
