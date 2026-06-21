@@ -11,6 +11,7 @@
  * NO `console.*` ANYWHERE IN THIS FILE OR src/sdk/* — lint-enforced (planned [S4]).
  */
 
+import { isIP } from 'net'
 import { z } from 'zod'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -85,6 +86,23 @@ export const DeployOptionsSchema = z.strictObject({
   testnet: z.boolean().default(false),
   /** Path to ADNL Tunnel client config (nodes-pool.json). */
   tunnel_config: z.string().nullable().default(null),
+  /**
+   * Cloud-seeder announce knobs (#69). For running the kit AS a
+   * publicly-reachable seeder on a VM: `announce_ip` is the public IPv4 to
+   * advertise to the DHT (tonutils config `ExternalIP`); `announce_port` pins
+   * the UDP `ListenAddr` port so a firewall rule can be pre-opened. Both
+   * override the `SOVEREIGN_ANNOUNCE_IP` / `SOVEREIGN_ANNOUNCE_PORT` env vars.
+   * IPv4 only — the daemon binds 0.0.0.0 (IPv4); an IPv6 announce would
+   * advertise an address it can't serve.
+   */
+  announce_ip: z
+    .string()
+    .refine((v) => isIP(v) === 4, {
+      message: 'announce_ip must be a valid IPv4 address (the daemon binds 0.0.0.0 / IPv4 only)',
+    })
+    .nullable()
+    .default(null),
+  announce_port: z.number().int().min(1).max(65535).nullable().default(null),
   /**
    * If true, the daemon survives the call; the MCP server tracks the spawned
    * daemon and kills it on its own shutdown. If false, the daemon is killed

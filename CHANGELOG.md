@@ -18,13 +18,23 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Cloud-seeder announce knobs (`SOVEREIGN_ANNOUNCE_IP` /
-  `SOVEREIGN_ANNOUNCE_PORT`).** Run the kit *as* a publicly-reachable seeder on
-  a cloud VM: they set the tonutils-storage `config.json` `ExternalIP` (DHT
-  announce) and a fixed, firewall-able `ListenAddr` UDP port. Without them a
-  1:1-NAT VM (GCP/AWS) auto-detects no public IP and silently runs
-  download-only ("server mode: false"). Invalid values fail fast. Pair with
+- **Cloud-seeder announce controls — `--announce-ip` / `--announce-port` (and
+  the `SOVEREIGN_ANNOUNCE_IP` / `SOVEREIGN_ANNOUNCE_PORT` env vars).** Run the
+  kit *as* a publicly-reachable seeder on a cloud VM: they set the
+  tonutils-storage `config.json` `ExternalIP` (DHT announce) and a fixed,
+  firewall-able `ListenAddr` UDP port. Without them a 1:1-NAT VM (GCP/AWS)
+  auto-detects no public IP and silently runs download-only ("server mode:
+  false"). IPv4 only; invalid values fail fast; a flag overrides the matching
+  env var per-field; rejected on `--daemon-backend=ton-core`. The schema knobs
+  (`announce_ip` / `announce_port`) are exposed to MCP callers too. Pair with
   `--daemon-mode service`; a free GCP `e2-micro` suffices.
+- **Honest deploy-time reachability signal.** Public gateways and TONAPI do not
+  index raw self-hosted bags, so they can't confirm a deploy is downloadable.
+  The kit now reads the tonutils-storage daemon's own port-checker verdict and
+  reports `✓ Publicly reachable` (others can download), `✓ reachable but stops
+  when this command exits` (one-shot modes), or `⚠ Download-only` (behind NAT /
+  no public IP) — and the legacy TONAPI check no longer reads a self-hosted
+  404 as "unreachable".
 
 ## [0.9.0] – 2026-06-21
 

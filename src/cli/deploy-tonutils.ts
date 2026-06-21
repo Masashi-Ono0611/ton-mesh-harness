@@ -231,6 +231,9 @@ export async function runDeployTonutils(
       daemon_mode: opts.daemonMode ?? 'detached',
       tunnel_config: tunnel?.absPath ?? null,
       testnet: Boolean(opts.testnet),
+      // #69: cloud-seeder announce knobs (validated by DeployOptionsSchema).
+      announce_ip: opts.announceIp ?? null,
+      announce_port: opts.announcePort ?? null,
     }
 
     try {

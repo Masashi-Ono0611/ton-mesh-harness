@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs'
 import path from 'path'
 import os from 'os'
-import { parseAnnounceEnv, ensureTonutilsConfig } from '../src/daemon/tonutils-process'
+import {
+  parseAnnounceEnv,
+  ensureTonutilsConfig,
+  resolveAnnounce,
+  announceIpFromEnv,
+  announcePortFromEnv,
+} from '../src/daemon/tonutils-process'
+import { DeployOptionsSchema } from '../src/sdk/schemas'
 
 /**
  * Cloud-seeder fix (dogfood 2026-06-21). A kit-managed tonutils-storage
@@ -95,5 +102,83 @@ describe('ensureTonutilsConfig (announce overrides)', () => {
     } finally {
       cleanup()
     }
+  })
+})
+
+describe('per-field env getters (#69)', () => {
+  it('announceIpFromEnv: valid IPv4 → ip, garbage → throw, absent → undefined', () => {
+    expect(announceIpFromEnv({ SOVEREIGN_ANNOUNCE_IP: '1.2.3.4' })).toBe('1.2.3.4')
+    expect(() => announceIpFromEnv({ SOVEREIGN_ANNOUNCE_IP: 'bad' })).toThrow(/IPv4/)
+    expect(announceIpFromEnv({})).toBeUndefined()
+  })
+
+  it('announcePortFromEnv: valid → number, out-of-range → throw, absent → undefined', () => {
+    expect(announcePortFromEnv({ SOVEREIGN_ANNOUNCE_PORT: '13333' })).toBe(13333)
+    expect(() => announcePortFromEnv({ SOVEREIGN_ANNOUNCE_PORT: '70000' })).toThrow(/1\.\.65535/)
+    expect(announcePortFromEnv({})).toBeUndefined()
+  })
+})
+
+describe('resolveAnnounce (#69 CLI-flag-over-env precedence)', () => {
+  it('explicit (CLI flag) values win over env', () => {
+    expect(
+      resolveAnnounce({ externalIp: '1.2.3.4', listenPort: 1111 }, {
+        SOVEREIGN_ANNOUNCE_IP: '9.9.9.9',
+        SOVEREIGN_ANNOUNCE_PORT: '9999',
+      }),
+    ).toEqual({ externalIp: '1.2.3.4', listenPort: 1111 })
+  })
+
+  it('falls back to env per-field when an explicit field is missing', () => {
+    expect(
+      resolveAnnounce({ externalIp: '1.2.3.4' }, { SOVEREIGN_ANNOUNCE_PORT: '9999' }),
+    ).toEqual({ externalIp: '1.2.3.4', listenPort: 9999 })
+  })
+
+  it('does NOT validate the env var for an overridden field (Codex review)', () => {
+    // --announce-ip given + a STALE malformed SOVEREIGN_ANNOUNCE_IP must not
+    // abort the command: the ip env is short-circuited, only the port env reads.
+    expect(
+      resolveAnnounce({ externalIp: '1.2.3.4' }, {
+        SOVEREIGN_ANNOUNCE_IP: 'garbage',
+        SOVEREIGN_ANNOUNCE_PORT: '13333',
+      }),
+    ).toEqual({ externalIp: '1.2.3.4', listenPort: 13333 })
+  })
+
+  it('uses env entirely when no explicit values are given', () => {
+    expect(
+      resolveAnnounce({}, { SOVEREIGN_ANNOUNCE_IP: '9.9.9.9', SOVEREIGN_ANNOUNCE_PORT: '9999' }),
+    ).toEqual({ externalIp: '9.9.9.9', listenPort: 9999 })
+  })
+
+  it('yields undefined fields when neither source provides them', () => {
+    expect(resolveAnnounce({}, {})).toEqual({ externalIp: undefined, listenPort: undefined })
+  })
+})
+
+describe('DeployOptionsSchema announce fields (#69)', () => {
+  const base = { source_dir: './build' }
+
+  it('accepts a valid IPv4 announce_ip + port', () => {
+    const p = DeployOptionsSchema.parse({ ...base, announce_ip: '136.114.135.19', announce_port: 13333 })
+    expect(p.announce_ip).toBe('136.114.135.19')
+    expect(p.announce_port).toBe(13333)
+  })
+
+  it('defaults announce_ip / announce_port to null when omitted', () => {
+    const p = DeployOptionsSchema.parse(base)
+    expect(p.announce_ip).toBeNull()
+    expect(p.announce_port).toBeNull()
+  })
+
+  it('rejects a non-IPv4 announce_ip (IPv6 / garbage)', () => {
+    expect(() => DeployOptionsSchema.parse({ ...base, announce_ip: '2001:db8::1' })).toThrow()
+    expect(() => DeployOptionsSchema.parse({ ...base, announce_ip: 'not-an-ip' })).toThrow()
+  })
+
+  it('rejects an out-of-range announce_port', () => {
+    expect(() => DeployOptionsSchema.parse({ ...base, announce_port: 70000 })).toThrow()
+    expect(() => DeployOptionsSchema.parse({ ...base, announce_port: 0 })).toThrow()
   })
 })
