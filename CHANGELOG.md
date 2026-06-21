@@ -6,6 +6,8 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.10.0] – 2026-06-22
+
 ### Fixed
 
 - **Deploy output no longer advertises a dead gateway URL.** `ton.run/<bag_id>`

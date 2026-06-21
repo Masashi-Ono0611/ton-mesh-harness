@@ -42,7 +42,7 @@ TON already has the infrastructure to fix this. Using it required specialist kno
 
 ## Status
 
-**Latest: v0.9.0** — first public GA. CLI + MCP server + SDK all shipped on one deploy contract, published automatically via OIDC trusted publishing. See [CHANGELOG](CHANGELOG.md) for the full history.
+**Latest: v0.10.0** — CLI + MCP server + SDK on one deploy contract, published automatically via OIDC trusted publishing. See [CHANGELOG](CHANGELOG.md) for the full history.
 
 **Not yet shipped (upstream-blocked):** NAT traversal [#29](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/29), Payment Network real client [#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30).
 
