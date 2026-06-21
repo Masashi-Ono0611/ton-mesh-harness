@@ -1,0 +1,75 @@
+name: Publish
+
+# Push a vX.Y.Z tag -> build, gate, and publish to npm via OIDC trusted
+# publishing (no token, no manual 2FA), then create the GitHub Release. The
+# npm package must have this repo + `publish.yml` registered as a Trusted
+# Publisher on npmjs.com (one-time setup).
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # create the GitHub Release
+  id-token: write # OIDC token for npm trusted publishing
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      - run: npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5.1
+      - run: npm ci
+
+      # Guard: never publish a version the tag doesn't match.
+      - name: Verify tag matches package.json version
+        run: |
+          PKG="$(node -p "require('./package.json').version")"
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "package=$PKG tag=$TAG"
+          [ "$PKG" = "$TAG" ] || { echo "::error::tag ${GITHUB_REF_NAME} != package.json ${PKG}"; exit 1; }
+
+      # Full quality gate (lint + tsc + tests + build + cli/mcp/sdk smokes).
+      - name: Verify gate
+        run: npm run verify
+
+      # Final pre-publish gate: pack the tarball, install it, run the bins.
+      - name: Tarball install + run smoke
+        run: node scripts/tarball-smoke.cjs
+
+      # OIDC trusted publishing (no token). Provenance DISABLED: its Sigstore
+      # transparency-log step intermittently 409s on an internal retry and
+      # stalls the publish (seen on mira-harness). Tokenless OIDC auth is
+      # unaffected.
+      #
+      # Prerelease tags (v1.2.3-rc1) go under the `next` dist-tag so they never
+      # become `npm install`'s default; only GA tags take `latest`.
+      - name: Publish to npm
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            NPM_CONFIG_PROVENANCE=false npm publish --tag next
+          else
+            NPM_CONFIG_PROVENANCE=false npm publish
+          fi
+
+      - name: Create GitHub Release
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes --prerelease
+          else
+            gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes --latest
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -75,24 +75,27 @@ node -e "
 # ---------------------------------------------------------------------------
 if [[ "$VERSION" != *-* ]]; then
   TODAY="$(date -u +%Y-%m-%d)"
-  echo "→ promoting GA pre-draft → ## [$VERSION] – $TODAY"
+  echo "→ writing CHANGELOG ## [$VERSION] – $TODAY"
   node -e "
     const fs = require('fs');
     const f = './CHANGELOG.md';
     const src = fs.readFileSync(f, 'utf-8');
-    // Find the comment-bracketed pre-draft block (whole thing).
+    // Promote a GA pre-draft block if one is present; otherwise promote the
+    // ## [Unreleased] section in place (Keep a Changelog style). The latter
+    // is the normal path once a GA-PREDRAFT has already been consumed.
     const re = /<!-- GA-PREDRAFT-BEGIN[\\s\\S]*?GA-PREDRAFT-END -->/m;
     const match = src.match(re);
-    if (!match) { console.error('error: GA-PREDRAFT block not found in', f); process.exit(1); }
-    // Extract just the body between the BEGIN preamble + END marker.
-    // The BEGIN marker spans from '<!-- GA-PREDRAFT-BEGIN' through the
-    // first blank line; the END marker is 'GA-PREDRAFT-END -->' on its
-    // own line. Take everything strictly inside, then promote the heading.
-    const beginRe = /^<!-- GA-PREDRAFT-BEGIN[\\s\\S]*?\\n\\n/;
-    const endRe = /\\n\\nGA-PREDRAFT-END -->\$/;
-    let inner = match[0].replace(beginRe, '').replace(endRe, '');
-    inner = inner.replace(/^## \\[0\\.8\\.0\\] – TODO\$/m, '## [$VERSION] – $TODAY');
-    fs.writeFileSync(f, src.replace(re, inner));
+    if (match) {
+      const beginRe = /^<!-- GA-PREDRAFT-BEGIN[\\s\\S]*?\\n\\n/;
+      const endRe = /\\n\\nGA-PREDRAFT-END -->\$/;
+      let inner = match[0].replace(beginRe, '').replace(endRe, '');
+      inner = inner.replace(/^## \\[[^\\]]*\\] – TODO\$/m, '## [$VERSION] – $TODAY');
+      fs.writeFileSync(f, src.replace(re, inner));
+    } else {
+      const unrel = /^## \\[Unreleased\\]\$/m;
+      if (!unrel.test(src)) { console.error('error: no GA-PREDRAFT block and no ## [Unreleased] heading in', f); process.exit(1); }
+      fs.writeFileSync(f, src.replace(unrel, '## [Unreleased]\\n\\n## [$VERSION] – $TODAY'));
+    }
   "
 fi
 
@@ -105,8 +108,8 @@ if [[ "$VERSION" != *-* ]]; then
     const f = './README.md';
     const src = fs.readFileSync(f, 'utf-8');
     const out = src
-      .replace(/v0\\.8\\.0-rc\\d+ \\(\\d{4}-\\d{2}-\\d{2}\\)/, 'v$VERSION (' + new Date().toISOString().slice(0,10) + ')')
-      .replace(/## Agent quickstart \\(v0\\.8 rc\\d+\\)/, '## Agent quickstart (v$VERSION)');
+      .replace(/v0\\.\\d+\\.\\d+(?:-[A-Za-z0-9.]+)? \\(\\d{4}-\\d{2}-\\d{2}\\)/, 'v$VERSION (' + new Date().toISOString().slice(0,10) + ')')
+      .replace(/## Agent quickstart \\([^)]*\\)/, '## Agent quickstart (v$VERSION)');
     fs.writeFileSync(f, out);
   "
 fi

@@ -6,9 +6,38 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Post-rc11 work pulled forward from the v0.9 reserve (#28). These landed on
-`main` after the 0.8.0 GA pre-draft below; final version assignment (0.8.x
-vs 0.9.0) is the maintainer's call at release time.
+## [0.9.0] – 2026-06-21
+
+**The v0.8 agent-surface track and the v0.9 reserve, shipped together as
+one GA.** First public release with the CLI + MCP server + SDK all on the
+same deploy contract — and the first published automatically via OIDC
+trusted publishing (npm `0.6.3` was the last manual one).
+
+### Agent-surface track
+
+- **Two wallet paths, one surface.** `wallet: { kind: "tonconnect", … }`
+  for human-signed flows; `wallet: { kind: "agentic", … }` for
+  autonomous agents. Both produce the same `DeployResult` shape with a
+  real on-chain `dns_tx_hash`. Agentic supports BOTH wallet types in
+  @ton/mcp's schema: `type: "standard"` (direct mnemonic/key sign) AND
+  `type: "agentic"` (NFT-delegated operator-key signing via the agentic
+  collection contract — @ton/mcp is an optional peer dep, lazy-loaded
+  only when needed).
+- **MCP server `ton-sovereign-mcp`** with three GA tools:
+  `sovereign_check_env`, `sovereign_deploy`, `sovereign_status`.
+  Structured F5 errors, F3 phase events via `notifications/progress`.
+- **CLI `--wallet-mode agentic`** brings the autonomous path to the
+  terminal (no QR, no phone).
+- **Programmable SDK** — `import { deploy, checkEnv, status } from
+  'ton-sovereign-deploy'`. CJS + TypeScript declarations shipped.
+- **Agent discoverability** — `skills/sovereign-deploy.md` (Anthropic
+  skill format), `.well-known/mcp.json` template, expanded npm keywords.
+- **`dns_tx_hash` is honest** — real on-chain hash via Toncenter v3
+  `transactionsByMessage`, resolved in parallel with TONAPI propagation
+  poll. Zero added latency on the happy path.
+- **Observability** — `DEBUG=sovereign:*` enables structured stderr logs
+  at SDK boundaries. Always stderr-only so `--json-output` stdout / MCP
+  stdio framing stay valid.
 
 ### Added
 
@@ -52,16 +81,6 @@ vs 0.9.0) is the maintainer's call at release time.
   `docs/v0.9/agent-compat.md`: per-agent MCP discovery config + red-team
   protocol (runs are manual + publish-gated).
 
-### Security
-
-- **Post-sprint hardening of the new v0.9 attack surface.**
-  - `service` mode: validate the bag id is 64 hex chars before using it in a
-    filesystem path / unit label — guards `service stop --purge` against a
-    `path.join(SEEDS_ROOT, "../…")` traversal in `rmSync`.
-  - MCP HTTP transport: constant-time bearer-token comparison
-    (`timingSafeEqual`) + a 4 MiB request-body cap (413), so a hostile client
-    can't recover the token byte-by-byte or exhaust memory.
-
 ### Changed
 
 - **tonutils-storage daemon `v1.4.1` → `v1.5.0`** — upstream perf/reliability
@@ -82,106 +101,54 @@ vs 0.9.0) is the maintainer's call at release time.
   planning) physically separated from current docs, with all inbound links
   updated. New `docs/README.md` index (Current/Reference/Historical).
 
-<!-- GA-PREDRAFT-BEGIN
-v0.8.0 GA pre-draft. `scripts/release.sh` promotes this block to the
-released `[0.8.0]` heading at D3 once V3 (E2E) + V4 (red-team) pass.
-Aggregates rc1-rc11; do NOT duplicate per-rc details here — those stay
-in the rc subsections below.
+### Security
 
-## [0.8.0] – TODO
+v0.8 hardening (rc6–rc11): a pre-GA pipeline ran 11 Codex multi-model
+audit rounds + 1 self-audit against the SDK / MCP / wallet / daemon /
+installer modules. **Cumulative: 4 BLOCKERs + 22 MAJORs + 3 MINORs + 1
+LOW + 4 NITs resolved (34 findings).** Headline fixes:
 
-**Agent-surface track.** The kit is now an agent-first deployment
-target: a CLI + an MCP server + a programmable SDK that all share the
-same `awaiting_signature → dns_signing → dns_confirmed → verifying`
-phase contract. Either an autonomous agent (signing locally from
-`~/.config/ton/config.json`) or a human (signing via TonConnect QR)
-can drive a full deploy with one command / one tool call.
+- **Wallet-payload exfiltration closed.** `@tonconnect/sdk` v3.4.1 logged
+  the unsigned payload + signed BOC to `console.debug`; reference-counted
+  suppression around every TonConnect SDK call (escape hatch
+  `TONCONNECT_DEBUG=1`), analytics hard-disabled.
+- **Wallet-key symlink redirect closed.** `lstat`s parent dir + final
+  file, opens with `O_CREAT | O_EXCL`, `fchmod` via fd.
+- **Daemon binary supply-chain integrity.** All 3 installers verify
+  SHA-256 against pinned hashes (20 hashes × 5 platforms) before chmod.
+- **Daemon orphan-on-signal closed.** Drain pattern lets async cleanup +
+  SIGKILL escalation run before forced exit.
+- **MCP contract enforcement.** Explicit `DeployOptionsSchema.parse` at
+  the MCP boundary rejects bare-string wallets; smoke-gated.
 
-### Headline
+v0.9 surface hardening: `service` mode validates the bag id is 64 hex
+before using it in a filesystem path / unit label (guards `service stop
+--purge` against traversal); the MCP HTTP transport uses constant-time
+bearer-token comparison + a 4 MiB request-body cap.
 
-- **Two wallet paths, one surface.** `wallet: { kind: "tonconnect", … }`
-  for human-signed flows; `wallet: { kind: "agentic", … }` for
-  autonomous agents. Both produce the same `DeployResult` shape with a
-  real on-chain `dns_tx_hash`. Agentic supports BOTH wallet types in
-  @ton/mcp's schema: `type: "standard"` (direct mnemonic/key sign) AND
-  `type: "agentic"` (NFT-delegated operator-key signing via the
-  agentic collection contract — @ton/mcp is an optional peer dep,
-  lazy-loaded only when needed).
-- **MCP server `ton-sovereign-mcp`** with three GA tools:
-  `sovereign_check_env`, `sovereign_deploy`, `sovereign_status`.
-  Structured F5 errors, F3 phase events via `notifications/progress`.
-- **CLI `--wallet-mode agentic`** brings the autonomous path to the
-  terminal (no QR, no phone).
-- **Programmable SDK** — `import { deploy, checkEnv, status } from
-  'ton-sovereign-deploy'`. CJS + TypeScript declarations shipped.
-- **Agent discoverability** — `skills/sovereign-deploy.md` (Anthropic
-  skill format), `.well-known/mcp.json` template, expanded npm
-  keywords. Acceptance hypothesis tested by V4 red-team.
-- **`dns_tx_hash` is honest** — real on-chain hash via Toncenter v3
-  `transactionsByMessage`, resolved in parallel with TONAPI
-  propagation poll. Zero added latency on the happy path.
-- **Observability** — `DEBUG=sovereign:*` env var enables structured
-  stderr logs at SDK boundaries (deploy phases, signing, tx-hash
-  resolve). Always stderr-only so `--json-output` stdout / MCP stdio
-  framing stay valid.
-- **Examples** — `examples/hello-ton/` is a one-file reference site
-  with TonConnect + Agentic deploy walkthroughs.
+### Stability
 
-### Security hardening (rc6-rc11)
+- The three MCP tools and the programmable SDK are GA. Their JSON Schemas
+  are snapshot-tested; breaking changes bump the minor.
 
-A pre-GA review pipeline ran 11 Codex multi-model audit rounds + 1
-self-audit pass against the kit's SDK / MCP / wallet / daemon /
-installer modules. **Cumulative: 4 BLOCKERs + 22 MAJORs + 3 MINORs
-+ 1 LOW + 4 NITs resolved (34 findings).** Headline class fixes:
+### Release automation
 
-- **Wallet-payload exfiltration closed.** `@tonconnect/sdk` v3.4.1
-  logged the unsigned-payload + signed-BOC to `console.debug` at
-  bridge boundaries — stderr-capturing MCP clients would persist
-  signed wallet messages. Reference-counted `console.debug`
-  suppression around every TonConnect SDK call; opt-in escape hatch
-  via `TONCONNECT_DEBUG=1`. Telemetry analytics (which also emit
-  `signed_boc`) hard-disabled via `analytics: { mode: 'off' }`.
-- **Wallet-key symlink redirect closed.** `writeKeyringFile()` used
-  `writeFileSync` (follows symlinks; chmod TOCTOU). Now `lstat`s
-  parent dir + final file, opens with `O_CREAT | O_EXCL` (works on
-  POSIX + Windows), `fchmod` via fd.
-- **Daemon binary supply-chain integrity.** All 3 daemon installers
-  (`storage-daemon`, `tonutils-storage`, `rldp-http-proxy`) now
-  verify SHA-256 against pinned hashes (20 hashes across 5 platforms)
-  before chmod+x. Mismatch → delete + throw. Override path via
-  `RLDP_HTTP_PROXY_SHA256` env var pin.
-- **Daemon orphan-on-signal closed.** CLI signal handlers were
-  `process.exit()`-ing synchronously after async-cleanup `kill()` —
-  the daemon's exit listener + SIGKILL escalation never ran. Drain
-  pattern (`process.exitCode` + 2.5 s ref'd safety timer) lets the
-  event loop drain async cleanup before forced exit.
-- **MCP contract enforcement.** Explicit `DeployOptionsSchema.parse`
-  at the MCP boundary rejects bare-string wallets (which the SDK
-  lifts for CLI compat). Smoke test gates the regression.
+- **First OIDC trusted publishing.** `.github/workflows/publish.yml`
+  takes a `v*` tag push → verify gate → `npm publish` (OIDC, no token) →
+  `gh release create`, all automatic. `NPM_CONFIG_PROVENANCE=false`
+  avoids an intermittent Sigstore 409.
 
-Threat model + the SECURITY.md "What we've already done" inventory.
+### Deferred
 
-### Stability of new surfaces
-
-- The three MCP tools `sovereign_check_env`, `sovereign_deploy`, and
-  `sovereign_status` are GA. Their JSON Schemas are snapshot-tested;
-  breaking changes will bump the minor.
-- The programmable SDK (`import from 'ton-sovereign-deploy'`) is GA.
-  The exported surface is enumerated in `src/sdk.ts`; semver applies.
-
-### Deferred / Not in scope
-
-- **NFT-delegated agentic on-chain validation**: the code path is
-  unit-tested with mocked walletkit + @ton/mcp; on-chain behaviour
-  with a real collection contract awaits a testnet run with a real
-  operator key. Marked experimental in docs/v0.8/agentic-cli-usage.md
-  until validated.
-- **C2 NAT traversal** (`adnl-tunnel-client`) and **C3 Payment
-  Network real-client** moved to the v0.9 reserve when the agent-
-  surface track took the v0.8 slot on 2026-05-10. See
-  `docs/archive/v0.7/roadmap-draft.md`. Tracked via issues #29 / #30.
-
-GA-PREDRAFT-END -->
+- **V4 (#26) agency-transfer red-team** — runs post-publish (needs the
+  package on npm), targeted before v0.9.x.
+- **Cross-agent compatibility (#35)** — manual, real-device, per-agent;
+  groundwork in `docs/v0.9/agent-compat.md`.
+- **NFT-delegated agentic on-chain validation** — unit-tested with mocks;
+  on-chain behaviour with a real collection contract is still
+  experimental.
+- **C2 NAT traversal (#29) / C3 Payment Network (#30)** — upstream-blocked
+  on the C++ binaries.
 
 ## [0.8.0-rc11] – 2026-05-12
 
