@@ -201,6 +201,10 @@ program
     if (backend === 'tonutils') {
       const deployed = await runDeployTonutils(opts, buildDirArg, {
         tunnelConfigPath: opts.tunnelConfig,
+        // The seeder keeps running only in watch mode or when handed to the OS
+        // (service). One-shot modes kill it right after deploy, so the
+        // reachability advisory must not claim ongoing downloadability. (#68)
+        willSeed: watchEnabled || daemonMode === 'service',
       })
       if (!deployed) return
       const { result, daemon, buildDir } = deployed

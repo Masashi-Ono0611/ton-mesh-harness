@@ -71,9 +71,12 @@ export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise
       })
 
       if (verification.accessible) {
-        verifySpinner.succeed(`Bag accessible in ${verification.latencyMs}ms (${verification.attempts} attempts)`)
+        verifySpinner.succeed(`Bag indexed by TONAPI in ${verification.latencyMs}ms (${verification.attempts} attempts)`)
       } else {
-        verifySpinner.warn(`Bag not yet accessible after ${verification.attempts} attempts (may take a few minutes)`)
+        // TONAPI does not index raw self-hosted bags, so a miss here is normal
+        // and does NOT mean the bag is unreachable — reachability depends on a
+        // live, publicly-reachable seeder, not on the TONAPI index. (#68)
+        verifySpinner.warn('Not yet in the TONAPI index (normal for self-hosted bags — does not mean unreachable)')
       }
     }
 

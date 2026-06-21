@@ -85,7 +85,12 @@ async function checkBagStatus(bagId: string, testnet = false): Promise<CheckResu
 
   try {
     const data = await httpsGet<TonApiBagResponse>(url, { timeout: 10_000 })
-    // TONAPI returns { status: "active", ... } when bag is accessible
+    // NOTE: this only confirms TONAPI has INDEXED the bag — it does NOT prove
+    // public reachability. TONAPI does not index raw self-hosted bags, so a 404
+    // is normal for a bag-only deploy and must NOT be read as "unreachable".
+    // Real reachability comes from a live, publicly-reachable seeder; the
+    // honest deploy-time signal is the daemon's own port-checker verdict
+    // (tonutils-process.ts `parseServerMode` / TonutilsHandle.reachable). (#68)
     return { accessible: data.status === 'active', statusCode: 200 }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
