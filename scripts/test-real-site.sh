@@ -1,12 +1,12 @@
 #!/bin/bash
-# より現実的なサイズのサイトを作成してデプロイ
+# Create and deploy a more realistically-sized site
 
 BUILD_DIR="test/fixtures/real-site"
 
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-# ダミーの HTML/JS/CSS ファイルを作成（合計約 500 KB）
+# Create dummy HTML/JS/CSS files (~500 KB total)
 cat > index.html << 'HTML'
 <!DOCTYPE html>
 <html lang="en">
@@ -26,7 +26,7 @@ cat > index.html << 'HTML'
 </html>
 HTML
 
-# CSS ファイル（約 100 KB）
+# CSS file (~100 KB)
 cat > style.css << CSS
 body {
     font-family: Arial, sans-serif;
@@ -39,7 +39,7 @@ h1 { color: #0088cc; }
 $(for i in {1..1000}; do echo ".class-$i { margin: ${i}px; }"; done)
 CSS
 
-# JS ファイル（約 400 KB）
+# JS file (~400 KB)
 cat > app.js << JS
 console.log('TON Sovereign Deploy Test');
 $(for i in {1..10000}; do echo "const var$i = 'data$i';"; done)
@@ -48,7 +48,7 @@ JS
 
 cd - > /dev/null
 
-# ファイルサイズを確認
+# Check the file size
 echo "Created test site:"
 du -sh "$BUILD_DIR"
 echo ""

@@ -1,5 +1,5 @@
 #!/bin/bash
-# storage-daemon の状態を確認
+# Check the storage-daemon status
 
 DAEMON_BIN="$HOME/.ton-sovereign/bin/storage-daemon"
 CLI_BIN="$HOME/.ton-sovereign/bin/storage-daemon-cli"
@@ -25,7 +25,7 @@ ps -p $DAEMON_PID || echo "Daemon not running"
 echo ""
 
 echo "=== Listing available commands ==="
-# CLI キーを生成
+# Generate CLI keys
 KEY_DIR="/tmp/ton-test-db/cli-keys"
 mkdir -p "$KEY_DIR"
 sleep 2

@@ -1,5 +1,5 @@
 #!/bin/bash
-# storage-daemon-cli の create コマンドを詳細に出力
+# Run the storage-daemon-cli create command with verbose output
 
 BUILD_DIR="test/fixtures/minimal-site"
 DAEMON_BIN="$HOME/.ton-sovereign/bin/storage-daemon"
@@ -13,7 +13,7 @@ DAEMON_PID=$!
 echo "Daemon PID: $DAEMON_PID"
 echo "DB dir: $DB_DIR"
 
-# CLI キーが生成されるのを待つ
+# Wait for the CLI keys to be generated
 echo "Waiting for CLI keys..."
 for i in {1..30}; do
     KEY_DIR="$DB_DIR/cli-keys"
@@ -40,7 +40,7 @@ echo "=== Listing local bags (after create) ==="
 echo ""
 
 echo "=== Getting bag details ==="
-# list の出力から bag ID を抽出して詳細を取得
+# Extract the bag ID from list output and fetch its details
 BAG_ID=$("$CLI_BIN" -v 3 -I "127.0.0.1:5511" -k "$KEY_DIR/client" -p "$KEY_DIR/server.pub" -c "list" 2>&1 | grep -oE '[0-9a-f]{64}' | head -1)
 if [ -n "$BAG_ID" ]; then
     echo "Bag ID: $BAG_ID"
