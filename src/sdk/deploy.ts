@@ -50,6 +50,7 @@ import {
   stopService,
   type ServiceMeta,
 } from '../daemon/service'
+import { lingerAdvisory } from '../daemon/linger'
 import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { join as pathJoin } from 'node:path'
 
@@ -727,6 +728,11 @@ export async function* deploy(
           `Daemon handed to the OS service manager as '${meta.label}', seeding from ${meta.db_dir}. ` +
           `Manage with: \`ton-sovereign-deploy service list\` / \`service stop ${created.bag_id}\`.`,
       })
+      // On a headless Linux VM the systemd --user unit won't restart after an
+      // unattended reboot unless lingering is enabled once (#83). Advise it
+      // (the kit never runs the privileged command itself).
+      const lingerHint = lingerAdvisory()
+      if (lingerHint) nextActions.push({ description: lingerHint })
     } else if (opts.daemon_mode === 'detached') {
       // Consumer takes ownership — finally-block must NOT kill the daemon.
       daemonOwned = false
