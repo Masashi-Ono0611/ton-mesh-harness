@@ -2,7 +2,7 @@
 // static-file server → cleanup. Pairs with v0.7's `--site auto` flag.
 
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { createReadStream, existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import http, { type Server } from 'node:http'
@@ -149,6 +149,23 @@ export async function startRldpHttpProxy(
     detached: false,
   })
 
+  // Capture stdout+stderr during the startup window so a failure can surface
+  // the proxy's actual error (#75). Two birds: with no reader attached the
+  // piped fds were never drained, so a chatty proxy could block on write once
+  // the OS pipe buffer filled. We keep draining for the proxy's whole life
+  // (discarding post-startup) and only retain a capped tail for diagnostics.
+  const logPath = path.join(dbDir, 'proxy.log')
+  const OUTPUT_CAP = 16_384
+  let capturing = true
+  let capturedOutput = ''
+  const onData = (chunk: Buffer): void => {
+    if (!capturing) return // drain-and-discard after startup (avoid pipe backpressure)
+    capturedOutput += chunk.toString()
+    if (capturedOutput.length > OUTPUT_CAP) capturedOutput = capturedOutput.slice(-OUTPUT_CAP)
+  }
+  proxy.stdout?.on('data', onData)
+  proxy.stderr?.on('data', onData)
+
   // The proxy doesn't expose an obvious "ready" marker. We wait briefly
   // for it to settle then check it didn't immediately exit.
   let spawnError: Error | undefined
@@ -163,16 +180,22 @@ export async function startRldpHttpProxy(
     try { rmSync(sessionDir, { recursive: true, force: true }) } catch { /* ignore */ }
   }
   if (proxy.exitCode !== null && proxy.exitCode !== 0) {
+    // #75: assemble the diagnostic (proxy.log tail + captured stdout/stderr)
+    // BEFORE cleanupStartupFailure rmSync's the session dir — the old message
+    // pointed at a log it then deleted, turning the #74 keyring bug into a
+    // multi-hour diagnosis. Inline the cause so the error is self-diagnosing.
+    const diag = buildStartupDiagnostic(logPath, capturedOutput)
     cleanupStartupFailure()
-    throw new Error(
-      `rldp-http-proxy exited with code ${proxy.exitCode} during startup. ` +
-      `Check ${path.join(dbDir, 'proxy.log')} for details.`,
-    )
+    throw new Error(`rldp-http-proxy exited with code ${proxy.exitCode} during startup.${diag}`)
   }
   if (spawnError) {
+    const diag = buildStartupDiagnostic(logPath, capturedOutput)
     cleanupStartupFailure()
-    throw new Error(`rldp-http-proxy spawn failed: ${spawnError.message}`)
+    throw new Error(`rldp-http-proxy spawn failed: ${spawnError.message}${diag}`)
   }
+  // Startup succeeded — stop retaining output but keep draining the pipes.
+  capturing = false
+  capturedOutput = ''
 
   if (!opts.silent) {
     process.stderr.write(
@@ -313,6 +336,26 @@ async function startStaticServer(rootAbs: string, port: number): Promise<Server>
 }
 
 // ----- helpers -----
+
+/**
+ * Build a self-diagnosing tail for a startup-failure error (#75): the last
+ * few KB of `proxy.log` plus whatever the proxy wrote to stdout/stderr before
+ * exiting. Returns '' (so the caller's message stays clean) when nothing was
+ * captured — e.g. a spawn ENOENT before the log file existed.
+ */
+export function buildStartupDiagnostic(logPath: string, capturedOutput: string): string {
+  const parts: string[] = []
+  let logTail = ''
+  try {
+    const buf = readFileSync(logPath)
+    const tail = buf.length > 4_000 ? buf.subarray(buf.length - 4_000) : buf
+    logTail = tail.toString('utf8').trim()
+  } catch { /* log may not exist yet on a very early failure */ }
+  if (logTail) parts.push(`--- proxy.log (tail) ---\n${logTail}`)
+  const out = capturedOutput.trim()
+  if (out) parts.push(`--- proxy stdout/stderr ---\n${out.slice(-2_000)}`)
+  return parts.length ? `\n${parts.join('\n')}` : ' (no proxy.log or stderr captured)'
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
