@@ -58,9 +58,16 @@ export function generateAdnlIdentity(seed?: Buffer): AdnlIdentity {
 }
 
 /**
- * Write `<dbDir>/keyring/<shortIdHex>` with the 36-byte private-key file format
+ * Write `<dbDir>/keyring/<SHORTIDHEX>` with the 36-byte private-key file format
  * `[pk.ed25519 TL id LE 4B][priv 32B]`. Mode 0o600. Auto-creates the keyring/
  * subdirectory.
+ *
+ * The filename is the UPPERCASE hex of the ADNL short id: rldp-http-proxy
+ * looks keyring entries up by `td::Bits256::to_hex()`, which is uppercase.
+ * Writing the lowercase form (Node's `Buffer.toString('hex')`) only resolved
+ * on case-insensitive filesystems (macOS dev); on case-sensitive Linux the
+ * proxy aborts at startup with `key not in db`. Empirically confirmed against
+ * the installed binary on a GCP Linux host, 2026-06-22 (#70).
  *
  * Returns the absolute path of the file written.
  */
@@ -105,7 +112,12 @@ export function writeKeyringFile(dbDir: string, identity: AdnlIdentity): string 
   }
   mkdirSync(keyringDir, { recursive: true, mode: 0o700 })
 
-  const filePath = path.join(keyringDir, identity.shortIdHex)
+  // UPPERCASE: rldp-http-proxy resolves keyring files by `Bits256::to_hex()`
+  // (uppercase). `shortIdHex` is validated lowercase above; uppercasing it
+  // keeps it a safe `[0-9A-F]{64}` filename with no path components. See the
+  // function doc comment for the Linux-vs-macOS case-sensitivity rationale.
+  const keyFileName = identity.shortIdHex.toUpperCase()
+  const filePath = path.join(keyringDir, keyFileName)
   const fileContent = Buffer.concat([TL_PRIV_ED25519_ID_LE, identity.privSeed])
   if (fileContent.length !== 36) {
     throw new Error(`Internal: keyring file content must be 36 bytes, got ${fileContent.length}`)
