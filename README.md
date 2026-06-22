@@ -316,6 +316,22 @@ sudo ip addr add <public-ip>/32 dev <iface>   # find <iface> with: ip -o link
 
 `--site-auto` detects this and prints the exact command if the announced IP isn't local. It also needs the chosen UDP port open inbound (`--site-udp-port` to pin it for a firewall rule). On a plain VPS where the public IP is already on the NIC, none of this applies.
 
+**Keep the site up across reboots** with `--daemon-mode service` — the proxy + static server are handed to `launchd` (macOS) / `systemd --user` (Linux) instead of staying tied to the CLI:
+
+```bash
+ton-sovereign-deploy ./build/ --domain mysite.ton --site-auto \
+  --daemon-mode service --site-udp-port 17655 --site-public-ip <public-ip>
+```
+
+The service re-derives the same ADNL from the persisted seed on every restart, so the on-chain `site` record stays valid. Manage it with:
+
+```bash
+ton-sovereign-deploy service list                 # bag seeders + site gateways
+ton-sovereign-deploy service stop-site mysite.ton # stop (add --purge to drop metadata)
+```
+
+`ton-sovereign-deploy site-serve --build-dir ./build --domain mysite.ton` runs the same gateway in the foreground (what the service unit executes) — useful for a quick test or under your own supervisor.
+
 ### Backend choice
 
 From v0.6, the bundled daemon is `tonutils-storage` (Go, default). The legacy TON Core C++ daemon is opt-in:

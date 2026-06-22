@@ -60,7 +60,7 @@ function main() {
     }
   }
   // Spot-check that subcommands are still registered (e.g. `site-record`).
-  for (const cmd of ['site-record', 'doctor', 'verify-provenance']) {
+  for (const cmd of ['site-record', 'site-serve', 'doctor', 'verify-provenance', 'service']) {
     if (!help.stdout.includes(cmd)) {
       throw new Error(`--help missing subcommand ${cmd}`)
     }
