@@ -3,7 +3,7 @@
 #   - Lint (eslint src/sdk, no-console rule)
 #   - Type-check (tsc --noEmit with noUnusedLocals + strict)
 #   - Tests (vitest, RUN_DAEMON_TESTS skipped — those spawn real daemons)
-#   - Build (tsup — dual bin + SDK entry)
+#   - Build (bun build — dual bin + SDK entry; tsc emits the SDK .d.ts)
 #   - CLI smoke (dist/cli.js --version / --help / invalid flag)
 #   - MCP smoke (initialize + tools/list via stdio)
 #   - SDK smoke (require('dist/sdk.js') shape check)
@@ -42,26 +42,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.8"
+
+      # Node still runs the smoke scripts below — the published artifact must
+      # load on plain Node (consumers use npx / node, never Bun), so the
+      # matrix Node version drives the cli / mcp / sdk smokes.
       - name: Setup Node ${{ matrix.node }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Lint (SDK no-console gate)
-        run: npm run lint
+        run: bun run lint
 
       - name: Type-check
-        run: npx tsc --noEmit
+        run: bun run typecheck
         env:
           # Some transitive packages push tsc memory usage; bump headroom.
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Tests
-        run: npm test
+        run: bun run test
         env:
           # RUN_DAEMON_TESTS gates the live tonutils-storage spawn tests.
           # CI does NOT spawn daemons (they download a 12 MB binary on
@@ -75,7 +82,7 @@ jobs:
           RUN_MCP_INTEGRATION: ''
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
       - name: CLI smoke (--help / --version / invalid flag)
         # Added in rc5 after the rc2-rc4 walletkit dir-import bug. The
@@ -143,7 +150,7 @@ jobs:
   # macOS, aborts on case-sensitive Linux"). A single Linux runner that
   # actually downloads + spawns rldp-http-proxy and asserts it loads the
   # keyring and stays up. Separate from the matrix (heavier: binary download
-  # + FUSE) and not in the default `npm test` run (RUN_DAEMON_TESTS gated).
+  # + FUSE) and not in the default `bun run test` run (RUN_DAEMON_TESTS gated).
   rldp-integration:
     name: rldp-http-proxy live spawn (linux)
     runs-on: ubuntu-latest
@@ -151,14 +158,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.8"
+
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Install FUSE3
         # rldp-http-proxy ships as an AppImage; without `fusermount3` it
@@ -168,6 +179,6 @@ jobs:
       - name: rldp-http-proxy live spawn (RUN_DAEMON_TESTS=1)
         # Downloads the binary via ensureRldpHttpProxyBinary, mints + loads a
         # keyring, binds the proxy to loopback, asserts it stays up + serves.
-        run: npx vitest run test/daemon/rldp-http-proxy-process.integration.test.ts
+        run: bunx vitest run test/daemon/rldp-http-proxy-process.integration.test.ts
         env:
           RUN_DAEMON_TESTS: '1'

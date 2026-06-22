@@ -170,7 +170,7 @@ runProviderContract(opts)
 
 ```bash
 # 1. Build
-npm run build
+bun run build
 
 # 2. Create a test site
 mkdir -p /tmp/ton-test-site

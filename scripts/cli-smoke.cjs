@@ -8,8 +8,9 @@
  * that failed at module load on Node 22+ with ERR_UNSUPPORTED_DIR_IMPORT
  * (a @ton/walletkit packaging bug exposed by Node's stricter ESM
  * resolver). The MCP smoke didn't catch it because it only loads
- * dist/mcp.js. rc5 added noExternal: ['@ton/walletkit'] to tsup; this
- * smoke locks the fix in so a regression fails CI.
+ * dist/mcp.js. rc5 fixed it by inlining `@ton/walletkit` at bundle time
+ * (then via tsup's noExternal, now via bun build — see scripts/build.ts);
+ * this smoke locks the fix in so a regression fails CI.
  *
  * Exits 0 on success, 1 on any failure with stderr captured.
  */

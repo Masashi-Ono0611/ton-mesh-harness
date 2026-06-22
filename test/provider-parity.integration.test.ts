@@ -6,7 +6,7 @@
  * shells out to `storage-daemon-cli`. It is slow (≈10–30 s) and requires
  * the daemon binary on disk. Skipped unless `RUN_DAEMON_TESTS=1`.
  *
- * Run:  RUN_DAEMON_TESTS=1 npx vitest run test/provider-parity.integration.test.ts
+ * Run:  RUN_DAEMON_TESTS=1 bunx vitest run test/provider-parity.integration.test.ts
  *
  * If this test passes, we have a byte-for-byte proof that:
  *   1. our TS builder targets the same TL-B layout as the daemon CLI, and

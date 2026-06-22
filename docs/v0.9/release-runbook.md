@@ -57,7 +57,7 @@ a stale hash makes every install fail the integrity check.
 
    ```bash
    rm -rf ~/.ton-sovereign/bin   # force a fresh download on next run
-   npm run build && node dist/cli.js doctor
+   bun run build && node dist/cli.js doctor
    ```
 
 ## Notes

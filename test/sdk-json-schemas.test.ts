@@ -12,7 +12,7 @@ import {
 /**
  * Snapshot tests — any zod change that shifts the public MCP `tools/list`
  * shape fails here. Update intentionally with
- * `npx vitest run test/sdk-json-schemas.test.ts -u`.
+ * `bunx vitest run test/sdk-json-schemas.test.ts -u`.
  */
 describe('SDK JSON Schemas (V1 snapshot)', () => {
   it('ships exactly the GA tools with the kit minor as SCHEMA_VERSION', () => {
