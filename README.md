@@ -42,7 +42,7 @@ TON already has the infrastructure to fix this. Using it required specialist kno
 
 ## Status
 
-**Latest: v0.11.0** — host a `.ton` site end-to-end from the kit alone: a `site-record` command, a persistent `--site-auto` ADNL identity, and an OS-service site gateway that survives reboots. See [CHANGELOG](CHANGELOG.md) for the full history.
+**Latest: v0.12.0** — a site deploy now prints a browser-openable `https://<domain>.ton.run` gateway URL (after the `site` record is signed), Linux `--daemon-mode service` advises `loginctl enable-linger` for reboot survival, and dependency CVE overrides clear the HIGH/CRITICAL advisories. See [CHANGELOG](CHANGELOG.md) for the full history.
 
 **Not yet shipped (upstream-blocked):** NAT traversal [#29](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/29), Payment Network real client [#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30).
 

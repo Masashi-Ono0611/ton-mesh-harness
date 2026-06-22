@@ -6,6 +6,8 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.0] – 2026-06-22
+
 ### Added
 
 - **Browser-viewable site gateway URL (#70).** A deploy that writes a `site`
