@@ -38,8 +38,8 @@ gate:
    block to a live `## [0.8.0] – <today>` heading.
 4. `README.md` — flips the status line + Agent-quickstart heading from
    the latest rc (rc11 as of 2026-05-12) → 0.8.0.
-5. `npm run verify` — lint + tsc + tests + build + cli + mcp + sdk
-   smokes (+ tarball smoke via `npm run smoke:full`).
+5. `bun run verify` — lint + tsc + tests + build + cli + mcp + sdk
+   smokes (+ tarball smoke via `bun run smoke:full`).
 
 If any step fails the script exits non-zero and leaves the rest
 untouched. Inspect, fix, re-run.

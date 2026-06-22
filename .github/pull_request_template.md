@@ -9,10 +9,10 @@ for full architecture rules + Codex-review pattern.
 
 ## Quality bar (must be ✅ before requesting review)
 
-- [ ] `npm run lint` clean (no-console enforced on `src/sdk/`)
-- [ ] `npx tsc --noEmit` clean (strict + noUnusedLocals)
-- [ ] `npm test` green (default suite — daemon-spawn tests skipped unless `RUN_DAEMON_TESTS=1`)
-- [ ] `npm run build` clean (dual bin emits `dist/cli.js` + `dist/mcp.js`)
+- [ ] `bun run lint` clean (no-console enforced on `src/sdk/`)
+- [ ] `bun run typecheck` clean (strict + noUnusedLocals)
+- [ ] `bun run test` green (default suite — daemon-spawn tests skipped unless `RUN_DAEMON_TESTS=1`)
+- [ ] `bun run build` clean (dual bin emits `dist/cli.js` + `dist/mcp.js`)
 - [ ] MCP smoke (if touching `src/mcp.ts` or anything it imports — see CONTRIBUTING.md)
 
 ## Architecture impact

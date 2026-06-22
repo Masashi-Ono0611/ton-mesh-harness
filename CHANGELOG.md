@@ -6,6 +6,18 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Dev toolchain migrated to Bun.** Package manager, task runner, and CI now
+  run on [Bun](https://bun.sh) (pinned 1.3.8): `bun install` with a single
+  `bun.lock` (`package-lock.json` removed), and the build uses `bun build`
+  (replacing tsup) with `tsc` emitting the SDK `.d.ts`. The published artifact
+  is unchanged — the bins stay CJS targeting plain Node ≥ 18 (consumers use
+  `npx` / `node`, never Bun), `@ton/walletkit` stays inlined to avoid the Node
+  22+ directory-import crash, and tests still run under Vitest behind the SDK
+  no-console ESLint gate. npm publish (OIDC trusted publishing) and the Node
+  smoke matrix are retained.
+
 ## [0.12.0] – 2026-06-22
 
 ### Added

@@ -117,8 +117,8 @@ fi
 # ---------------------------------------------------------------------------
 # 5. Verify gate (basic) + tarball pack/install/run end-to-end.
 # ---------------------------------------------------------------------------
-echo "→ running npm run verify"
-npm run verify
+echo "→ running bun run verify"
+bun run verify
 
 echo "→ running tarball install + run smoke (final pre-publish gate)"
 node scripts/tarball-smoke.cjs

@@ -34,7 +34,7 @@ scripts/release.sh 0.9.1
 
 It bumps `package.json`, `src/version.ts`, the README status/quickstart lines,
 promotes the `GA-PREDRAFT` block to `## [0.9.1] – <date>`, and runs
-`npm run verify` + the tarball smoke. Inspect the diff, open a PR, merge.
+`bun run verify` + the tarball smoke. Inspect the diff, open a PR, merge.
 
 > v0.9.0 itself bundled v0.8 + the v0.9 reserve by hand (the GA-PREDRAFT was
 > v0.8-shaped, and 0.8.0 was skipped as a public version). From v0.9.1 on, the
@@ -52,7 +52,7 @@ git push origin vX.Y.Z
 `publish.yml` then runs on its own:
 
 1. `tag == package.json version` guard (mismatch fails the run).
-2. `npm run verify` (lint + tsc + tests + build + smokes) + `node scripts/tarball-smoke.cjs`.
+2. `bun run verify` (lint + tsc + tests + build + smokes) + `node scripts/tarball-smoke.cjs`.
 3. `NPM_CONFIG_PROVENANCE=false npm publish` — OIDC trusted publishing, no token.
 4. `gh release create … --generate-notes --latest`.
 

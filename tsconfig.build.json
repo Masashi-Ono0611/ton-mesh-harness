@@ -1,0 +1,17 @@
+{
+  // Emit ONLY the SDK type declarations (dist/sdk.d.ts) — the public entry
+  // referenced by package.json `types` / `exports`. Bun's bundler builds the
+  // .js (scripts/build.ts); tsc handles .d.ts. CLI / MCP are executables, not
+  // import targets, so they need no declarations. This matches the previous
+  // tsup `dts: { entry: { sdk: 'src/sdk.ts' } }` intent.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/sdk.ts"],
+  "exclude": ["node_modules", "dist", "test"]
+}

@@ -25,7 +25,7 @@ import { describe, expect, it } from 'vitest'
  * Gated behind RUN_MCP_INTEGRATION=1 (same opt-in pattern as
  * RUN_DAEMON_TESTS) because it spawns the real daemon — which downloads a
  * ~12 MB binary on first use and is flaky on shared CI runners. The
- * default `npm test` run skips it.
+ * default `bun run test` run skips it.
  *
  * F4 contract: per the MCP SDK, once notifications/cancelled fires the
  * tool response is suppressed (fire-and-forget). So we assert on process

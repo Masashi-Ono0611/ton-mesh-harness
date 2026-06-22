@@ -14,7 +14,7 @@ vi.mock('../src/dns', async (importOriginal) => {
 
 // siteRecord pulls dns-helpers → resolve-tx → @ton/walletkit, whose ESM
 // packaging trips Node's directory-import resolver at raw-source test time
-// (prod bundles it via tsup noExternal). siteRecord never broadcasts, so it
+// (prod inlines it via bun build). siteRecord never broadcasts, so it
 // doesn't use resolve-tx — stub it to cut the import chain, matching
 // test/sdk-dns-helpers.test.ts.
 vi.mock('../src/sdk/resolve-tx', () => ({

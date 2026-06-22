@@ -3,8 +3,9 @@
  * in its own module means modules that DON'T sign or look up txs
  * (e.g. agentic-config.ts, endpoints.ts, deploy.ts) don't pull in
  * `@ton/walletkit` — which matters because walletkit ships ESM files
- * with directory imports that Node 22+ rejects unless we go through
- * tsup's noExternal bundling.
+ * with directory imports that Node 22+ rejects unless the build inlines
+ * `@ton/walletkit` (bun build externalizes every other dep but bundles
+ * this one — see scripts/build.ts).
  *
  * Only `agentic-sign.ts` and `resolve-tx.ts` import from here.
  *

@@ -14,7 +14,7 @@ import { listServices, stopService } from '../src/daemon/service'
  *
  * Gated by RUN_MCP_INTEGRATION=1 (spawns the real daemon + installs an OS
  * service unit — macOS launchd / Linux systemd --user). The default
- * `npm test` run skips it.
+ * `bun run test` run skips it.
  */
 
 const RUN = process.env.RUN_MCP_INTEGRATION === '1'

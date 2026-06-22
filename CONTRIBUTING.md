@@ -30,25 +30,30 @@ the MCP server is an adapter. NO `console.*` in `src/sdk/` — lint-enforced.
 ```bash
 git clone https://github.com/Masashi-Ono0611/sovereign-deploy-kit.git
 cd sovereign-deploy-kit
-npm install
+bun install
 ```
 
-Node ≥ 18 (the kit declares `engines.node`). The repo currently develops
-against Node 22 / 24.
+Tooling runs on [Bun](https://bun.sh) (≥ 1.3.8) — install / build / test /
+lint all go through `bun run`. The published artifact still targets plain
+Node ≥ 18 (`engines.node`); consumers use `npx` / `node`, never Bun. The
+repo develops against Node 22 / 24.
 
 ## Quality bar (must pass before opening a PR)
 
 ```bash
-npm run lint     # eslint src/sdk — no-console rule
-npx tsc --noEmit # type-check with strict + noUnusedLocals
-npm test         # vitest, default suite — daemon-spawn tests skipped unless RUN_DAEMON_TESTS=1
-npm run build    # tsup dual-bin (cli.js + mcp.js)
+bun run lint      # eslint src/sdk — no-console rule
+bun run typecheck # tsc --noEmit (strict + noUnusedLocals)
+bun run test      # vitest, default suite — daemon-spawn tests skipped unless RUN_DAEMON_TESTS=1
+bun run build     # bun build dual-bin (cli.js + mcp.js) + tsc-emitted SDK .d.ts
 ```
+
+Or run the whole gate (lint + typecheck + tests + build + smokes) at once
+with `bun run verify`.
 
 If you touch daemon-side code, also exercise the gated integration suite:
 
 ```bash
-RUN_DAEMON_TESTS=1 npm test
+RUN_DAEMON_TESTS=1 bun run test
 ```
 
 This spawns real tonutils-storage / rldp-http-proxy binaries and downloads
@@ -57,7 +62,7 @@ takes 30–90 s.
 
 ## MCP server smoke test
 
-After `npm run build`, the MCP server can be smoked via stdio JSON-RPC:
+After `bun run build`, the MCP server can be smoked via stdio JSON-RPC:
 
 ```bash
 (
@@ -130,7 +135,7 @@ priority review.
   lifted through it before reaching the schema.
 - Don't bump deps to major versions without flagging the cross-package
   impact in the PR description.
-- Don't merge without `npm run lint && npx tsc --noEmit && npm test &&
-  npm run build` all green locally.
+- Don't merge without `bun run verify` (lint + typecheck + tests + build
+  + smokes) green locally.
 - Don't `git push --force` to `main`. Force-push is OK on feature
   branches you own, but `main` is shared.

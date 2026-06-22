@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest'
  * V3 (#18) E2E acceptance — programmatic harness around
  * scripts/e2e-mcp-deploy.cjs.
  *
- * Gated by `RUN_MCP_E2E=1` so the default `npm test` run skips it: the
- * driver spawns the built `dist/mcp.js`, which requires `npm run build`
+ * Gated by `RUN_MCP_E2E=1` so the default `bun run test` run skips it: the
+ * driver spawns the built `dist/mcp.js`, which requires `bun run build`
  * to have run first, and the armed stages touch the network / mainnet.
  *
  * Unarmed (the default even under RUN_MCP_E2E=1) this asserts the

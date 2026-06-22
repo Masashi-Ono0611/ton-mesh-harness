@@ -6,7 +6,7 @@
  * test ([V1] #11 / `test/sdk-json-schemas.test.ts`) can lock the contract
  * shape: any accidental drift in zod definitions fails the snapshot.
  *
- * Run `npx vitest run test/sdk-json-schemas.test.ts -u` to update the
+ * Run `bunx vitest run test/sdk-json-schemas.test.ts -u` to update the
  * snapshot when an intentional schema change ships.
  */
 

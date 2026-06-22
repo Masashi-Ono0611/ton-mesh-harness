@@ -56,7 +56,7 @@ still proves the upload + daemon lifecycle.
 Fresh-session protocol (mirrors the agent flow):
 
 ```bash
-npm run build                       # driver spawns dist/mcp.js
+bun run build                       # driver spawns dist/mcp.js
 
 # Stage 1 only — zero cost, always safe:
 node scripts/e2e-mcp-deploy.cjs

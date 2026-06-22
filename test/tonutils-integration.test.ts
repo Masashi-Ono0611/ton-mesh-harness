@@ -9,7 +9,7 @@
  * parity test uses.
  *
  * Run:
- *   RUN_DAEMON_TESTS=1 npx vitest run test/tonutils-integration.test.ts
+ *   RUN_DAEMON_TESTS=1 bunx vitest run test/tonutils-integration.test.ts
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
