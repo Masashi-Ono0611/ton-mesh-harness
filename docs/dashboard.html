@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0098EA">
 <meta name="color-scheme" content="light">
-<title>Sovereign Deploy Kit — Product & Roadmap</title>
+<title>Sovereign Deploy Kit — ship any static site to .ton</title>
 <meta name="description" content="One-command CLI + MCP server to ship any static site to TON Storage and a .ton domain — the npx-style tool for TON's digital-resistance stack.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,23 +65,22 @@
   .pillar .pd{font-size:14px; color:var(--muted); line-height:1.5;}
   .pillar .pd b{color:var(--ink); font-weight:600;}
 
-  /* ---------- stat grid ---------- */
-  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:36px;}
-  .stat{background:var(--bg); padding:24px 22px;}
-  .stat .v{font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:34px; font-weight:600; letter-spacing:-.03em; line-height:1; color:var(--ton);}
-  .stat .v .u{font-size:13px; color:var(--faint); font-weight:500; margin-left:4px;}
-  .stat .k{font-size:13px; color:var(--muted); margin-top:10px;}
-
-  /* ---------- roadmap table ---------- */
-  table{width:100%; border-collapse:collapse; margin:34px 0 6px; font-size:14.5px; background:var(--bg); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
-  th,td{padding:13px 18px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle;}
-  th{background:var(--surface); color:var(--ink); font-size:13px; font-weight:700;}
-  td{color:var(--muted);} td b{color:var(--ink);}
-  tr:last-child td{border-bottom:0;}
-  .tag{display:inline-block; font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:11px; font-weight:700; padding:2px 9px; border-radius:6px; letter-spacing:.03em; white-space:nowrap;}
-  .tag.good{background:var(--green-tint); color:var(--green); border:1px solid var(--green-line);}
-  .tag.accent{background:var(--ton-tint); color:var(--ton-deep); border:1px solid #B9E4F8;}
-  .tag.amber{background:var(--amber-tint); color:var(--amber); border:1px solid var(--amber-line);}
+  /* ---------- quickstart steps + command blocks ---------- */
+  .steps{display:flex; flex-direction:column; gap:20px; margin-top:36px;}
+  .step{border:1px solid var(--line); border-radius:12px; padding:22px 22px 20px; background:var(--bg);}
+  .step .st{font-size:17px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px;}
+  .step .st .k{color:var(--ton); font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:12px; font-weight:600; letter-spacing:.06em; margin-right:10px;}
+  .step .ver{font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:11px; font-weight:700; color:var(--ton-deep); background:var(--ton-tint); border:1px solid #B9E4F8; border-radius:6px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
+  .step .sd{font-size:14.5px; color:var(--muted); line-height:1.55; margin-bottom:15px;}
+  .step .sd b{color:var(--ink); font-weight:600;}
+  .cmd{background:var(--ink); border-radius:10px; padding:15px 17px; font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:12.5px; line-height:1.7; color:#E8F1F8; overflow-x:auto; white-space:pre;}
+  .cmd .c{color:#7E93A3;}                         /* comment */
+  .cmd .p{color:#0098EA; user-select:none;}       /* prompt $ */
+  .cmd .f{color:#7FD0A8;}                          /* flag / string */
+  .ship{font-size:13px; color:var(--muted); margin-top:28px; font-family:"Geist Mono",ui-monospace,Menlo,monospace; line-height:1.8;}
+  .ship b{color:var(--ton-deep);}
+  .ship a{color:var(--muted); text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:1px;}
+  .ship a:hover{color:var(--ton); border-color:var(--ton);}
 
   /* ---------- footer ---------- */
   footer{padding:46px 0 0;}
@@ -233,37 +232,45 @@
 
     <div class="pillars">
       <div class="pillar"><div class="pt"><span>CLI</span></div><div class="pd"><b>What:</b> one command in your terminal. <b>Use it</b> to ship a build to <code>.ton</code> by hand.</div></div>
-      <div class="pillar"><div class="pt"><span>MCP</span></div><div class="pd"><b>What:</b> a 3-tool server. <b>Use it</b> to let an AI agent run the whole deploy, no human in the loop.</div></div>
+      <div class="pillar"><div class="pt"><span>MCP</span></div><div class="pd"><b>What:</b> a 4-tool server. <b>Use it</b> to let an AI agent run the whole deploy, no human in the loop.</div></div>
       <div class="pillar"><div class="pt"><span>SDK</span></div><div class="pd"><b>What:</b> a TypeScript import. <b>Use it</b> to wire sovereign deploys into your own pipeline.</div></div>
     </div>
   </section>
 
-  <!-- ============ 04 STATUS ============ -->
+  <!-- ============ 04 QUICKSTART ============ -->
   <section>
-    <div class="label"><span class="n">04</span> &nbsp;Where it is now</div>
-    <h2>v0.1 → v0.9.0, shipped</h2>
-    <p class="lead">Every version through v0.9.0 is shipped. v0.9.0 bundles the <strong>agent-native pivot</strong> (MCP server + agentic signing) with the v0.9 reserve into the first public GA.</p>
+    <div class="label"><span class="n">04</span> &nbsp;Quickstart</div>
+    <h2>Three ways to ship — pick one</h2>
+    <p class="lead">No account, no infra. You need <strong>Node &ge; 18</strong> and a <code>.ton</code> domain in your wallet (≈ 1 TON to mint). The build dir is auto-detected (<code>dist/</code>, <code>build/</code>, <code>out/</code>, <code>public/</code>).</p>
 
-    <div class="stats">
-      <div class="stat"><div class="v">v0.9.0</div><div class="k">current — first public GA</div></div>
-      <div class="stat"><div class="v">344</div><div class="k">tests green · CI green</div></div>
-      <div class="stat"><div class="v">11</div><div class="k">Codex review rounds</div></div>
-      <div class="stat"><div class="v">0</div><div class="k">direct competitors</div></div>
+    <div class="steps">
+      <div class="step">
+        <div class="st"><span class="k">CLI</span>Ship a build by hand</div>
+        <div class="sd">Upload <b>./dist</b> to TON Storage and point <b>mysite.ton</b> at it in one TonConnect signature. Add <code>--watch</code> to keep seeding from your machine.</div>
+        <div class="cmd"><span class="c"># upload the bag + write .ton DNS in one run</span>
+<span class="p">$ </span>npx ton-sovereign-deploy ./dist <span class="f">--domain</span> mysite.ton</div>
+      </div>
+
+      <div class="step">
+        <div class="st"><span class="k">HOST</span>Keep a .ton site online<span class="ver">v0.11</span></div>
+        <div class="sd">Run a resident <b>rldp-http-proxy</b> so <b>mysite.ton</b> opens in <b>TON Browser</b>, handed to launchd / systemd so it survives reboot — with a stable on-chain identity.</div>
+        <div class="cmd"><span class="c"># serve the site as an OS service that auto-restarts</span>
+<span class="p">$ </span>npx ton-sovereign-deploy ./dist <span class="f">--domain</span> mysite.ton \
+    <span class="f">--site-auto --daemon-mode</span> service</div>
+      </div>
+
+      <div class="step">
+        <div class="st"><span class="k">AGENT</span>Let an AI agent deploy</div>
+        <div class="sd">Add the <b>4-tool MCP server</b> to your client (Claude, Cursor, …) and the agent runs the whole flow — check env, deploy, status, site-record. TonConnect or autonomous signing.</div>
+        <div class="cmd"><span class="c">// mcp client config — npx fetches the package on demand</span>
+<span class="f">"ton-sovereign-deploy"</span>: {
+  <span class="f">"command"</span>: <span class="f">"npx"</span>,
+  <span class="f">"args"</span>: [<span class="f">"-y"</span>, <span class="f">"--package"</span>, <span class="f">"ton-sovereign-deploy"</span>, <span class="f">"ton-sovereign-mcp"</span>]
+}</div>
+      </div>
     </div>
 
-    <table>
-      <thead><tr><th style="width:96px">Ver</th><th>Theme</th><th style="width:150px">Status</th></tr></thead>
-      <tbody>
-        <tr><td><b>v0.1–v0.3</b></td><td>Storage upload · <code>.ton</code> DNS · CI / Windows / watch</td><td><span class="tag good">Shipped</span></td></tr>
-        <tr><td><b>v0.4–v0.5</b></td><td>Storage provider contract · hardening</td><td><span class="tag good">Shipped</span></td></tr>
-        <tr><td><b>v0.6–v0.7</b></td><td>Resistance-stack alignment · self-host lifecycle</td><td><span class="tag good">Shipped</span></td></tr>
-        <tr><td><b>v0.8</b></td><td>Agent-native surface — MCP server, agentic signing</td><td><span class="tag good">Shipped</span></td></tr>
-        <tr><td><b>v0.9.0</b></td><td>v0.8 + reserve, bundled GA — HTTP transport, provenance, service-mode</td><td><span class="tag good">GA</span></td></tr>
-        <tr><td><b>v0.9.x</b></td><td>V4 red-team · cross-agent compat (#35)</td><td><span class="tag amber">Planned</span></td></tr>
-      </tbody>
-    </table>
-
-    <p class="lead" style="margin-top:24px;">Releases now publish automatically — a <code>v*</code> tag runs the verify gate and an OIDC <code>npm publish</code> (no manual token), then cuts the GitHub Release. <code>--provider</code> (24/7 hosting) is implemented but stays <strong>opt-in</strong> while the mainnet provider economy is dormant.</p>
+    <p class="ship">Latest <b>v0.11.0</b> · pin it with <code>npm i -g ton-sovereign-deploy</code><br><a href="../CHANGELOG.md">CHANGELOG</a> &nbsp;·&nbsp; <a href="./v0.10/site-hosting.md">site-hosting guide</a> &nbsp;·&nbsp; <a href="./v0.8/mcp-core-requirements.md">MCP tools</a></p>
   </section>
 
   <!-- ============ FOOTER ============ -->
@@ -276,7 +283,7 @@
       <a href="https://tonconnect.network">TON Connect</a>
     </div>
     <div class="foot-note">
-      ton-projects/sovereign-deploy-kit · v0.9.0 GA · 2026-06-21<br>
+      ton-projects/sovereign-deploy-kit · v0.11.0 · 2026-06-22<br>
       Package <code>ton-sovereign-deploy</code> · Node &ge; 18 · macOS / Linux / Windows · MIT
     </div>
   </footer>
