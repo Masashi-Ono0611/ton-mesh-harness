@@ -18,6 +18,8 @@ import {
   DeployResultSchema,
   DeployEventSchema,
   ErrorPayloadSchema,
+  SiteRecordOptionsSchema,
+  SiteRecordResultSchema,
   StatusOptionsSchema,
   StatusResultSchema,
   WalletSpecSchema,
@@ -71,10 +73,17 @@ export const SOVEREIGN_STATUS_TOOL: ToolJsonSchema = {
   output: toJson(StatusResultSchema, 'StatusResult'),
 }
 
+export const SOVEREIGN_SITE_RECORD_TOOL: ToolJsonSchema = {
+  name: 'sovereign_site_record',
+  input: toJson(SiteRecordOptionsSchema, 'SiteRecordOptions'),
+  output: toJson(SiteRecordResultSchema, 'SiteRecordResult'),
+}
+
 export const ALL_TOOLS: readonly ToolJsonSchema[] = [
   SOVEREIGN_DEPLOY_TOOL,
   SOVEREIGN_CHECK_ENV_TOOL,
   SOVEREIGN_STATUS_TOOL,
+  SOVEREIGN_SITE_RECORD_TOOL,
 ]
 
 export const SUPPLEMENTARY_SCHEMAS = {

@@ -18,7 +18,7 @@
  * Stages (gated, fail-safe — never spends TON unless explicitly armed):
  *
  *   Stage 1 — ALWAYS runs (zero cost): initialize → notifications/
- *     initialized → tools/list (assert 3 tools) → tools/call
+ *     initialized → tools/list (assert 4 tools) → tools/call
  *     sovereign_check_env (assert shape). Proves the MCP surface is live.
  *
  *   Stage 2 — DEPLOY, when armed with ONE signing path:
@@ -140,7 +140,12 @@ async function stage1ListAndCheck(srv) {
   send(srv.child, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} })
   const list = await awaitFrame(srv, (f) => f.id === 2, HANDSHAKE_TIMEOUT_MS, 'tools/list')
   const names = (list.result?.tools ?? []).map((t) => t.name).sort()
-  const expected = ['sovereign_check_env', 'sovereign_deploy', 'sovereign_status']
+  const expected = [
+    'sovereign_check_env',
+    'sovereign_deploy',
+    'sovereign_site_record',
+    'sovereign_status',
+  ]
   if (JSON.stringify(names) !== JSON.stringify(expected)) {
     throw new Error(`tools/list mismatch: expected ${expected.join(', ')} got ${names.join(', ')}`)
   }

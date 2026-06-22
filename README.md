@@ -164,8 +164,9 @@ npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton \
 | `sovereign_check_env` | Check environment: daemon binaries, wallet config, connectivity |
 | `sovereign_deploy` | Full deploy: bag upload + optional `.ton` DNS write |
 | `sovereign_status` | One-shot bag propagation snapshot (use after a `--no-watch` deploy) |
+| `sovereign_site_record` | Build a Tonkeeper sign link that sets ONLY the `site` (ADNL) record — point a domain at an rldp-http-proxy without re-deploying. Returns a `tonkeeper_deeplink`; nothing is broadcast until the human signs it. |
 
-The agent calls `sovereign_check_env` → `sovereign_deploy`. `sovereign_deploy` runs the SDK end-to-end through `awaiting_signature → dns_signing → dns_confirmed → verifying`.
+The agent calls `sovereign_check_env` → `sovereign_deploy`. `sovereign_deploy` runs the SDK end-to-end through `awaiting_signature → dns_signing → dns_confirmed → verifying`. `sovereign_site_record` is a side path: it only builds the deeplink (no daemon, no broadcast), so the agent surfaces `tonkeeper_deeplink` to whoever holds the domain.
 
 ### Wallet modes
 

@@ -46,6 +46,7 @@ export {
   type DeployControl,
 } from './sdk/deploy'
 export { status } from './sdk/status'
+export { siteRecord } from './sdk/site-record'
 
 // ─── Public types ────────────────────────────────────────────────────────────
 export {
@@ -56,6 +57,8 @@ export {
   DeployEventSchema,
   ErrorPayloadSchema,
   ErrCodeSchema,
+  SiteRecordOptionsSchema,
+  SiteRecordResultSchema,
   StatusOptionsSchema,
   StatusResultSchema,
   WalletSpecSchema,
@@ -68,6 +71,8 @@ export {
   type DeployPhase,
   type ErrCode,
   type ErrorPayload,
+  type SiteRecordOptions,
+  type SiteRecordResult,
   type StatusOptions,
   type StatusResult,
   type WalletSpec,
@@ -78,6 +83,7 @@ export {
   ALL_TOOLS,
   SOVEREIGN_CHECK_ENV_TOOL,
   SOVEREIGN_DEPLOY_TOOL,
+  SOVEREIGN_SITE_RECORD_TOOL,
   SOVEREIGN_STATUS_TOOL,
   SUPPLEMENTARY_SCHEMAS,
   SCHEMA_VERSION,

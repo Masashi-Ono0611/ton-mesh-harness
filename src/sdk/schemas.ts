@@ -274,6 +274,55 @@ export const StatusResultSchema = z.strictObject({
 export type StatusResult = z.infer<typeof StatusResultSchema>
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SiteRecord — input + output for sovereign_site_record
+//
+// Build (but don't broadcast) a `change_dns_record` that sets ONLY the `site`
+// (dns_adnl_address) record for a `.ton` domain, and return a Tonkeeper
+// transfer deeplink to sign it. No bag, no storage write, no daemon, no
+// TonConnect. Used to point a domain at a resident rldp-http-proxy ADNL
+// identity without re-deploying.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const SiteRecordOptionsSchema = z.strictObject({
+  /** `.ton` domain whose NFT will receive the site record. */
+  domain: z.string().min(1),
+  /**
+   * 64-hex ADNL identity (256-bit) of the rldp-http-proxy. Accepts an
+   * optional `0x` prefix; canonicalized to lowercase, no prefix.
+   */
+  site_adnl: z
+    .string()
+    // Case-insensitive `0x`/`0X` prefix — the transform below strips it with
+    // `/^0x/i`, so the gate must accept `0X` too (matches normalizeAdnlHex in
+    // src/dns.ts and the `--site-adnl` CLI path). Codex review P3.
+    .regex(
+      /^(0x)?[0-9a-f]{64}$/i,
+      'site_adnl must be a 64-character hex string (256-bit ADNL identity)',
+    )
+    .transform((s) => s.replace(/^0x/i, '').toLowerCase()),
+  testnet: z.boolean().default(false),
+})
+export type SiteRecordOptions = z.infer<typeof SiteRecordOptionsSchema>
+
+export const SiteRecordResultSchema = z.strictObject({
+  /** Normalized `<name>.ton`. */
+  domain: z.string(),
+  /** The domain NFT item address the transaction targets. */
+  nft_address: z.string(),
+  /** Always `site` — this tool never touches the storage record. */
+  record: z.literal('site'),
+  /** Canonical (lowercase, no prefix) ADNL hex written into the record. */
+  site_adnl: z.string(),
+  /** Gas attached to the message, in nanoTON (string — bigint isn't JSON-safe). */
+  amount_nano: z.string(),
+  /** The `change_dns_record` message body, BOC-serialized + base64url. */
+  body_boc_base64url: z.string(),
+  /** Tonkeeper transfer deeplink that signs the site record in one tap. */
+  tonkeeper_deeplink: z.string(),
+})
+export type SiteRecordResult = z.infer<typeof SiteRecordResultSchema>
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DeployEvent — typed progress events emitted from `deploy(opts)` AsyncIterable
 // ─────────────────────────────────────────────────────────────────────────────
 

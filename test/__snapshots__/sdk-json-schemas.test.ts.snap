@@ -349,6 +349,83 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
 }
 `;
 
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_site_record schemas (input + output) 1`] = `
+{
+  "$ref": "#/definitions/SiteRecordOptions",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "SiteRecordOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "minLength": 1,
+          "type": "string",
+        },
+        "site_adnl": {
+          "pattern": "^(0x)?[0-9a-f]{64}$",
+          "type": "string",
+        },
+        "testnet": {
+          "default": false,
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "domain",
+        "site_adnl",
+      ],
+      "type": "object",
+    },
+  },
+}
+`;
+
+exports[`SDK JSON Schemas (V1 snapshot) > sovereign_site_record schemas (input + output) 2`] = `
+{
+  "$ref": "#/definitions/SiteRecordResult",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "SiteRecordResult": {
+      "additionalProperties": false,
+      "properties": {
+        "amount_nano": {
+          "type": "string",
+        },
+        "body_boc_base64url": {
+          "type": "string",
+        },
+        "domain": {
+          "type": "string",
+        },
+        "nft_address": {
+          "type": "string",
+        },
+        "record": {
+          "const": "site",
+          "type": "string",
+        },
+        "site_adnl": {
+          "type": "string",
+        },
+        "tonkeeper_deeplink": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "domain",
+        "nft_address",
+        "record",
+        "site_adnl",
+        "amount_nano",
+        "body_boc_base64url",
+        "tonkeeper_deeplink",
+      ],
+      "type": "object",
+    },
+  },
+}
+`;
+
 exports[`SDK JSON Schemas (V1 snapshot) > sovereign_status schemas (input + output) 1`] = `
 {
   "$ref": "#/definitions/StatusOptions",
