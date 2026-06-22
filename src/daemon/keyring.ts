@@ -9,9 +9,11 @@ import {
   lstatSync,
   mkdirSync,
   openSync,
+  readFileSync,
   unlinkSync,
   writeSync,
 } from 'node:fs'
+import { homedir } from 'node:os'
 import path from 'node:path'
 
 // TL constructor IDs derived empirically from `generate-random-id` v2026.04-1
@@ -178,6 +180,103 @@ export function writeKeyringFile(dbDir: string, identity: AdnlIdentity): string 
     closeSync(fd)
   }
   return filePath
+}
+
+// -----------------------------------------------------------------------
+// Persistent site identity (seed) — for a stable rldp-http-proxy ADNL across
+// restarts, so a `.ton` `site` DNS record keeps pointing at a live identity.
+// Stores ONLY the 32-byte Ed25519 seed (hex); the rldp keyring file itself is
+// rebuilt from it each run via generateAdnlIdentity(seed) + writeKeyringFile.
+// -----------------------------------------------------------------------
+
+const SITE_KEYRING_DIR = path.join(homedir(), '.ton-sovereign', 'site-keyring')
+
+/**
+ * Resolve the path of the seed file backing a domain's site identity.
+ * `override` (a `--site-keyring` value) wins, resolved to absolute; otherwise
+ * the per-domain default `~/.ton-sovereign/site-keyring/<domain>.hex`. The
+ * domain is lowercased and sanitized to `[a-z0-9.-]` so it can never carry a
+ * path separator into the filename.
+ */
+export function resolveSiteKeyringPath(domain: string, override?: string): string {
+  if (override && override.trim()) {
+    return path.resolve(override)
+  }
+  const clean = domain.endsWith('.ton') ? domain : `${domain}.ton`
+  const safe = clean.toLowerCase().replace(/[^a-z0-9.-]/g, '_')
+  return path.join(SITE_KEYRING_DIR, `${safe}.hex`)
+}
+
+/**
+ * Load the persisted 32-byte seed at `keyringPath`, or mint + persist a fresh
+ * one (mode 0o600) if absent. Returns `created: false` when reused so callers
+ * can tell the user whether the site identity is stable. The seed IS the ADNL
+ * private key — callers MUST NOT log it (only the public short id).
+ *
+ * Symlinks at the path are refused (parity with writeKeyringFile's posture);
+ * a present-but-malformed file is a hard error rather than a silent re-mint.
+ */
+export function loadOrCreateSiteSeed(keyringPath: string): { seed: Buffer; created: boolean } {
+  if (!path.isAbsolute(keyringPath)) {
+    throw new Error(`loadOrCreateSiteSeed: keyringPath must be absolute (got ${keyringPath})`)
+  }
+  try {
+    const stat = lstatSync(keyringPath)
+    if (stat.isSymbolicLink()) {
+      throw new Error(
+        `loadOrCreateSiteSeed: refusing to read a symlinked seed file at ${keyringPath} — ` +
+          `delete the symlink and retry.`,
+      )
+    }
+    if (!stat.isFile()) {
+      throw new Error(
+        `loadOrCreateSiteSeed: ${keyringPath} exists but is not a regular file (mode=${stat.mode.toString(8)})`,
+      )
+    }
+    const hex = readFileSync(keyringPath, 'utf8').trim()
+    if (!/^[0-9a-fA-F]{64}$/.test(hex)) {
+      throw new Error(
+        `loadOrCreateSiteSeed: ${keyringPath} does not contain a 64-hex (32-byte) seed. ` +
+          `Delete it to mint a fresh identity (this changes the ADNL — re-sign the site record).`,
+      )
+    }
+    return { seed: Buffer.from(hex, 'hex'), created: false }
+  } catch (err) {
+    // ENOENT is the mint path; anything else (bad shape, symlink, perms) is fatal.
+    if (!(err instanceof Error) || (err as { code?: string }).code !== 'ENOENT') {
+      throw err
+    }
+  }
+
+  const seed = randomBytes(32)
+  mkdirSync(path.dirname(keyringPath), { recursive: true, mode: 0o700 })
+  // O_EXCL | O_NOFOLLOW: never write through a symlink or a file another
+  // process raced in (mirrors writeKeyringFile). On EEXIST (concurrent
+  // first-run for the same domain) re-read rather than clobber.
+  let fd: number
+  try {
+    fd = openSync(
+      keyringPath,
+      fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY | (fsConstants.O_NOFOLLOW ?? 0),
+      0o600,
+    )
+  } catch (err) {
+    if (err instanceof Error && (err as { code?: string }).code === 'EEXIST') {
+      const hex = readFileSync(keyringPath, 'utf8').trim()
+      if (!/^[0-9a-fA-F]{64}$/.test(hex)) {
+        throw new Error(`loadOrCreateSiteSeed: ${keyringPath} raced and is malformed`)
+      }
+      return { seed: Buffer.from(hex, 'hex'), created: false }
+    }
+    throw err
+  }
+  try {
+    fchmodSync(fd, 0o600)
+    writeSync(fd, seed.toString('hex') + '\n')
+  } finally {
+    closeSync(fd)
+  }
+  return { seed, created: true }
 }
 
 // ----- helpers -----

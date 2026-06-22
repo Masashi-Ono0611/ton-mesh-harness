@@ -273,6 +273,7 @@ ton-sovereign-deploy [build-dir] [options]
 | `--daemon-backend <name>` | `tonutils` (default) or `ton-core` (C++ legacy; needed only for `--provider`). |
 | `--tunnel-config <path>` | Path to `nodes-pool.json` for ADNL Tunnel NAT traversal (bring-your-own pool). |
 | `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `site` record under `--domain`. |
+| `--site-keyring <path>` | Persist the `--site-auto` proxy identity so its ADNL is stable across restarts (default: `~/.ton-sovereign/site-keyring/<domain>.hex`). |
 | `--provider [address]` | Storage-provider contract — **disabled** (mainnet provider economy is dormant; [#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30)). |
 | `--no-provenance` | Skip emitting `.well-known/ton-deploy.json` into the bag. |
 | `--ci-mode` | Disable spinners for CI environments. |
@@ -296,6 +297,24 @@ ton-sovereign-deploy site-record mysite.ton <64-hex-adnl>
 ```
 
 It prints a Tonkeeper transfer deeplink. Open it on the phone holding the domain and approve once — that single transaction sets the record. Add `--json-output` to get the deeplink (and the raw message BOC) as a JSON object for agents / CI.
+
+### Hosting a site (`--site-auto`)
+
+`--site-auto` spawns a bundled `rldp-http-proxy` that serves the build directory over RLDP and writes the `site` record automatically:
+
+```bash
+ton-sovereign-deploy ./build/ --domain mysite.ton --site-auto
+```
+
+The proxy identity (a 32-byte seed) is **persisted and reused across restarts** (default `~/.ton-sovereign/site-keyring/<domain>.hex`, `--site-keyring <path>` to relocate). This matters because the on-chain `site` record points at this ADNL — a fresh identity every run would take the site down on restart. Re-running the same command keeps the same identity, so the record stays valid.
+
+**On a cloud VM with 1:1 NAT (GCP / AWS):** the public IP isn't assigned to a local interface, so the proxy can't bind its outbound socket to it and can't sync the network. Bind it first:
+
+```bash
+sudo ip addr add <public-ip>/32 dev <iface>   # find <iface> with: ip -o link
+```
+
+`--site-auto` detects this and prints the exact command if the announced IP isn't local. It also needs the chosen UDP port open inbound (`--site-udp-port` to pin it for a firewall rule). On a plain VPS where the public IP is already on the NIC, none of this applies.
 
 ### Backend choice
 

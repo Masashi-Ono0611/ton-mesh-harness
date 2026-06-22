@@ -20,6 +20,7 @@ export interface CliOptions {
   siteAuto?: boolean                       // v0.7 C1: auto-spawn rldp-http-proxy + mint identity
   sitePublicIp?: string                    // v0.7 C1: override the IP published in DHT entry
   siteUdpPort?: number                     // v0.7 C1: override server UDP port
+  siteKeyring?: string                     // persisted seed path for a stable site ADNL across restarts
   // v0.8 S2.8: agentic signing — autonomous DNS write
   walletMode?: 'tonconnect' | 'agentic'    // signing mode (default: tonconnect)
   walletLabel?: string                     // wallet selector for agentic mode (id/name/address)
