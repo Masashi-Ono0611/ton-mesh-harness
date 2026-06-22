@@ -25,7 +25,7 @@ npm run build      # next build → out/  (with output: 'export')
 ### TonConnect (mainnet, human signature)
 
 ```bash
-npx -y ton-sovereign-deploy ./out \
+npx -y ton-mesh-harness ./out \
   --domain <yours>.ton \
   --no-watch
 ```
@@ -38,7 +38,7 @@ Scan the QR with Tonkeeper / MyTonWallet, approve the
 ```bash
 # Prerequisite: a wallet in ~/.config/ton/config.json
 # (set up via `npx -y @ton/mcp@alpha agentic_import_wallet`).
-npx -y ton-sovereign-deploy ./out \
+npx -y ton-mesh-harness ./out \
   --domain <yours>.ton \
   --wallet-mode agentic \
   --no-watch \
@@ -53,11 +53,11 @@ npx -y ton-sovereign-deploy ./out \
 npm run build
 
 # Terminal B — re-deploy whenever out/ changes, keep the daemon seeding:
-npx -y ton-sovereign-deploy ./out --domain <yours>.ton
+npx -y ton-mesh-harness ./out --domain <yours>.ton
 ```
 
 To keep seeding after you close the terminal, hand the daemon to the OS:
-`npx -y ton-sovereign-deploy ./out --domain <yours>.ton --daemon-mode service --no-watch`.
+`npx -y ton-mesh-harness ./out --domain <yours>.ton --daemon-mode service --no-watch`.
 
 ## Next-specific routing caveats
 

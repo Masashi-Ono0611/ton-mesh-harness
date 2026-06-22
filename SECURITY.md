@@ -1,6 +1,6 @@
 # Security Policy
 
-`ton-sovereign-deploy` ships a CLI + MCP server + SDK that can sign on-chain
+`ton-mesh-harness` ships a CLI + MCP server + SDK that can sign on-chain
 transactions on the user's behalf. Treat security findings here with the
 same seriousness as wallet software.
 
@@ -20,7 +20,7 @@ Email **masashi.ono@upbond.io** with:
 1. A description of the issue + impact.
 2. Reproduction steps (or a PoC). For wallet-signing paths, prefer a
    testnet config; never include mainnet operator keys or mnemonics.
-3. The affected version (`ton-sovereign-deploy --version`).
+3. The affected version (`ton-mesh-harness --version`).
 4. Your suggested fix, if any.
 
 Initial acknowledgement: within 3 business days. A coordinated-disclosure
@@ -29,8 +29,8 @@ unless the issue is being actively exploited.
 
 ## Threat model — what to look for
 
-The kit's GA tools (`sovereign_check_env`, `sovereign_deploy`,
-`sovereign_status`) interact with three trust boundaries:
+The kit's GA tools (`mesh_check_env`, `mesh_deploy`,
+`mesh_status`) interact with three trust boundaries:
 
 1. **Wallet signing key access.** The agentic path
    (`wallet.kind: "agentic"`) reads `~/.config/ton/config.json` (the
@@ -68,7 +68,7 @@ The kit's GA tools (`sovereign_check_env`, `sovereign_deploy`,
   rule — the agentic-signing and tx-hash paths can never accidentally
   print key material via `console.log`. Enforced by `eslint src/sdk`.
 - `--json-output` writes structured JSON to stdout exclusively;
-  signing logs land on stderr via `DEBUG=sovereign:*` (off by
+  signing logs land on stderr via `DEBUG=mesh:*` (off by
   default, opt-in only).
 - The MCP server uses stdio framing; no network listener.
 - `dist/` is tarball-install smoke-tested in CI
@@ -104,7 +104,7 @@ The kit's GA tools (`sovereign_check_env`, `sovereign_deploy`,
   `fchmod` to `0o600`. `lstatSync` rejects pre-existing symlinks
   (POSIX) and junctions/reparse points (Windows) on both the
   keyring directory and the final file path. Protects against an
-  attacker who can place a symlink in the user's `~/.ton-sovereign`
+  attacker who can place a symlink in the user's `~/.ton-mesh`
   tree.
 
 ## Related docs
@@ -112,5 +112,5 @@ The kit's GA tools (`sovereign_check_env`, `sovereign_deploy`,
 - [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) —
   agentic signing prerequisites + config file format.
 - [`docs/v0.8/agent-stack-compose.md`](docs/v0.8/agent-stack-compose.md) —
-  wiring `ton-sovereign-mcp` + `@ton/mcp` together, including the
+  wiring `ton-mesh-harness-mcp` + `@ton/mcp` together, including the
   F5 error-response cookbook.

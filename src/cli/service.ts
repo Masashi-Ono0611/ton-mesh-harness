@@ -3,7 +3,7 @@ import { listServices, stopService, ServiceError } from '../daemon/service'
 import { listSiteServices, stopSiteService, SiteServiceError } from '../daemon/site-service'
 
 /**
- * `ton-sovereign-deploy service list | stop <bag_id> | stop-site <domain>`
+ * `ton-mesh-harness service list | stop <bag_id> | stop-site <domain>`
  * — manage the launchd / systemd daemons installed by `--daemon-mode service`:
  * bag seeders (#37) and `--site-auto` site gateways (②-C).
  */

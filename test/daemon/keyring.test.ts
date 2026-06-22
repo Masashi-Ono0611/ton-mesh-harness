@@ -163,20 +163,20 @@ describe('writeKeyringFile', () => {
 })
 
 describe('resolveSiteKeyringPath', () => {
-  it('uses the per-domain default under ~/.ton-sovereign/site-keyring/', () => {
+  it('uses the per-domain default under ~/.ton-mesh/site-keyring/', () => {
     const p = resolveSiteKeyringPath('mydapp.ton')
-    expect(p).toBe(path.join(homedir(), '.ton-sovereign', 'site-keyring', 'mydapp.ton.hex'))
+    expect(p).toBe(path.join(homedir(), '.ton-mesh', 'site-keyring', 'mydapp.ton.hex'))
   })
 
   it('appends .ton when the domain lacks the suffix', () => {
     expect(resolveSiteKeyringPath('mydapp')).toBe(
-      path.join(homedir(), '.ton-sovereign', 'site-keyring', 'mydapp.ton.hex'),
+      path.join(homedir(), '.ton-mesh', 'site-keyring', 'mydapp.ton.hex'),
     )
   })
 
   it('sanitizes unexpected separators out of the filename', () => {
     const p = resolveSiteKeyringPath('a/b.ton')
-    expect(path.dirname(p)).toBe(path.join(homedir(), '.ton-sovereign', 'site-keyring'))
+    expect(path.dirname(p)).toBe(path.join(homedir(), '.ton-mesh', 'site-keyring'))
     expect(path.basename(p)).toBe('a_b.ton.hex')
   })
 

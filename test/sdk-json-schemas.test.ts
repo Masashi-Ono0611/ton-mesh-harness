@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   ALL_TOOLS,
-  SOVEREIGN_CHECK_ENV_TOOL,
-  SOVEREIGN_DEPLOY_TOOL,
-  SOVEREIGN_SITE_RECORD_TOOL,
-  SOVEREIGN_STATUS_TOOL,
+  MESH_CHECK_ENV_TOOL,
+  MESH_DEPLOY_TOOL,
+  MESH_SITE_RECORD_TOOL,
+  MESH_STATUS_TOOL,
   SUPPLEMENTARY_SCHEMAS,
   SCHEMA_VERSION,
 } from '../src/sdk/json-schemas'
@@ -16,33 +16,33 @@ import {
  */
 describe('SDK JSON Schemas (V1 snapshot)', () => {
   it('ships exactly the GA tools with the kit minor as SCHEMA_VERSION', () => {
-    expect(SCHEMA_VERSION).toBe('0.8.0')
+    expect(SCHEMA_VERSION).toBe('0.13.0')
     expect(ALL_TOOLS.map((t) => t.name).sort()).toEqual([
-      'sovereign_check_env',
-      'sovereign_deploy',
-      'sovereign_site_record',
-      'sovereign_status',
+      'mesh_check_env',
+      'mesh_deploy',
+      'mesh_site_record',
+      'mesh_status',
     ])
   })
 
-  it('sovereign_deploy schemas (input + output)', () => {
-    expect(SOVEREIGN_DEPLOY_TOOL.input).toMatchSnapshot()
-    expect(SOVEREIGN_DEPLOY_TOOL.output).toMatchSnapshot()
+  it('mesh_deploy schemas (input + output)', () => {
+    expect(MESH_DEPLOY_TOOL.input).toMatchSnapshot()
+    expect(MESH_DEPLOY_TOOL.output).toMatchSnapshot()
   })
 
-  it('sovereign_check_env schemas (input + output)', () => {
-    expect(SOVEREIGN_CHECK_ENV_TOOL.input).toMatchSnapshot()
-    expect(SOVEREIGN_CHECK_ENV_TOOL.output).toMatchSnapshot()
+  it('mesh_check_env schemas (input + output)', () => {
+    expect(MESH_CHECK_ENV_TOOL.input).toMatchSnapshot()
+    expect(MESH_CHECK_ENV_TOOL.output).toMatchSnapshot()
   })
 
-  it('sovereign_status schemas (input + output)', () => {
-    expect(SOVEREIGN_STATUS_TOOL.input).toMatchSnapshot()
-    expect(SOVEREIGN_STATUS_TOOL.output).toMatchSnapshot()
+  it('mesh_status schemas (input + output)', () => {
+    expect(MESH_STATUS_TOOL.input).toMatchSnapshot()
+    expect(MESH_STATUS_TOOL.output).toMatchSnapshot()
   })
 
-  it('sovereign_site_record schemas (input + output)', () => {
-    expect(SOVEREIGN_SITE_RECORD_TOOL.input).toMatchSnapshot()
-    expect(SOVEREIGN_SITE_RECORD_TOOL.output).toMatchSnapshot()
+  it('mesh_site_record schemas (input + output)', () => {
+    expect(MESH_SITE_RECORD_TOOL.input).toMatchSnapshot()
+    expect(MESH_SITE_RECORD_TOOL.output).toMatchSnapshot()
   })
 
   it('supplementary schemas (WalletSpec, DeployEvent, ErrorPayload)', () => {

@@ -100,7 +100,7 @@ const expectedFiles = [
   'dist/mcp.js',
   'dist/sdk.js',
   'dist/sdk.d.ts',
-  'skills/sovereign-deploy.md',
+  'skills/mesh-deploy.md',
   'templates/github-workflow.yml',
   'templates/github-workflow-agentic.yml',
   'templates/.well-known/mcp.json',
@@ -113,7 +113,7 @@ log(`${expectedFiles.length} expected files present`)
 
 // ─── 4. Run the CLI binary ───────────────────────────────────────────────
 log('running installed CLI bin (--version + --help)…')
-const cliBin = path.join(sandbox, 'node_modules', '.bin', 'ton-sovereign-deploy')
+const cliBin = path.join(sandbox, 'node_modules', '.bin', 'ton-mesh-harness')
 if (!fs.existsSync(cliBin)) fail(`bin not at ${cliBin}`)
 const ver = spawnSync(process.execPath, [cliBin, '--version'], { encoding: 'utf8' })
 if (ver.status !== 0) {
@@ -140,8 +140,8 @@ const sdkProbe = spawnSync(
       if (typeof sdk.deploy !== 'function') { console.error('deploy missing'); process.exit(1); }
       if (typeof sdk.checkEnv !== 'function') { console.error('checkEnv missing'); process.exit(1); }
       if (typeof sdk.status !== 'function') { console.error('status missing'); process.exit(1); }
-      if (sdk.SOVEREIGN_DEPLOY_VERSION !== '${PKG.version}') {
-        console.error('version drift: ' + sdk.SOVEREIGN_DEPLOY_VERSION);
+      if (sdk.MESH_HARNESS_VERSION !== '${PKG.version}') {
+        console.error('version drift: ' + sdk.MESH_HARNESS_VERSION);
         process.exit(1);
       }
       process.stdout.write(keys + '\\n');
@@ -159,7 +159,7 @@ log(`SDK exposes ${keyCount} symbols via require('${PKG.name}')`)
 //        (We don't run the full MCP server here — that lives in
 //        mcp-smoke.cjs. We just confirm the bin is launchable.)
 log('checking MCP bin is launchable…')
-const mcpBin = path.join(sandbox, 'node_modules', '.bin', 'ton-sovereign-mcp')
+const mcpBin = path.join(sandbox, 'node_modules', '.bin', 'ton-mesh-harness-mcp')
 if (!fs.existsSync(mcpBin)) fail(`mcp bin not at ${mcpBin}`)
 // Spawn + kill quickly; success = no immediate crash on require chain.
 const mcp = spawnSync(process.execPath, [mcpBin], {

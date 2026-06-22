@@ -1,5 +1,5 @@
 /**
- * `sovereign_site_record` SDK — build a Tonkeeper sign link that sets ONLY
+ * `mesh_site_record` SDK — build a Tonkeeper sign link that sets ONLY
  * the `site` (dns_adnl_address) record for a `.ton` domain.
  *
  * Unlike `deploy()` with a site ADNL (which bundles a `storage` write and
@@ -39,7 +39,7 @@ export async function siteRecord(rawInput: unknown): Promise<SiteRecordResult> {
     opts = SiteRecordOptionsSchema.parse(rawInput)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    throw new SdkError('ERR_INVALID_INPUT', `Invalid sovereign_site_record input: ${msg}`, {
+    throw new SdkError('ERR_INVALID_INPUT', `Invalid mesh_site_record input: ${msg}`, {
       severity: 'fatal',
     })
   }

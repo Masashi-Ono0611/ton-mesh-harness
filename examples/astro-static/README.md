@@ -16,7 +16,7 @@ npm run build      # astro build → dist/
 ### TonConnect (mainnet, human signature)
 
 ```bash
-npx -y ton-sovereign-deploy ./dist \
+npx -y ton-mesh-harness ./dist \
   --domain <yours>.ton \
   --no-watch
 ```
@@ -29,7 +29,7 @@ transaction, wait ~1 minute for propagation.
 ```bash
 # Prerequisite: a wallet in ~/.config/ton/config.json
 # (set up via `npx -y @ton/mcp@alpha agentic_import_wallet`).
-npx -y ton-sovereign-deploy ./dist \
+npx -y ton-mesh-harness ./dist \
   --domain <yours>.ton \
   --wallet-mode agentic \
   --no-watch \
@@ -39,7 +39,7 @@ npx -y ton-sovereign-deploy ./dist \
 ### Keep it seeding after you close the terminal
 
 ```bash
-npx -y ton-sovereign-deploy ./dist --domain <yours>.ton \
+npx -y ton-mesh-harness ./dist --domain <yours>.ton \
   --daemon-mode service --no-watch   # hands the daemon to launchd/systemd
 ```
 
@@ -50,7 +50,7 @@ npx -y ton-sovereign-deploy ./dist --domain <yours>.ton \
 npm run build
 
 # Terminal B — re-deploy whenever dist/ changes, keep the daemon seeding:
-npx -y ton-sovereign-deploy ./dist --domain <yours>.ton
+npx -y ton-mesh-harness ./dist --domain <yours>.ton
 ```
 
 ## Astro-specific caveats

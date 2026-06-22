@@ -1,4 +1,4 @@
-// `ton-sovereign-deploy doctor` — pre-flight environment check.
+// `ton-mesh-harness doctor` — pre-flight environment check.
 // Thin CLI renderer over the SDK's `checkEnv()` ([S1] / [F2] schemas).
 // All probe logic lives in src/sdk/check.ts; this file only formats output.
 //
@@ -97,7 +97,7 @@ function tonconnectSessionLine(): CheckLine {
 }
 
 function siteAdnlLine(): CheckLine | null {
-  const siteAdnlPath = path.join(os.homedir(), '.ton-sovereign', 'site-adnl.txt')
+  const siteAdnlPath = path.join(os.homedir(), '.ton-mesh', 'site-adnl.txt')
   if (!existsSync(siteAdnlPath)) return null
   let hex: string | undefined
   try {
@@ -115,7 +115,7 @@ function siteAdnlLine(): CheckLine | null {
 
 export async function runDoctor(): Promise<void> {
   console.log()
-  console.log(chalk.bold('🩺 Sovereign Deploy Kit — environment check'))
+  console.log(chalk.bold('🩺 TON Mesh Harness — environment check'))
   console.log()
 
   const result = await checkEnv()
@@ -208,12 +208,12 @@ export async function runDoctor(): Promise<void> {
     detail: result.udp_port_17555_free ? 'free' : 'in use (likely TON Browser.app or another tonutils-storage)',
   })
 
-  // 8. ~/.ton-sovereign session dir
-  const homeOk = existsSync(path.join(os.homedir(), '.ton-sovereign'))
+  // 8. ~/.ton-mesh session dir
+  const homeOk = existsSync(path.join(os.homedir(), '.ton-mesh'))
   lines.push({
     status: homeOk ? 'pass' : 'warn',
-    label: '~/.ton-sovereign session dir',
-    detail: homeOk ? path.join(os.homedir(), '.ton-sovereign') : 'will be created on first deploy',
+    label: '~/.ton-mesh session dir',
+    detail: homeOk ? path.join(os.homedir(), '.ton-mesh') : 'will be created on first deploy',
   })
 
   // 9. Disk free — always rendered. 0 means probe failed (e.g. fs.statfs not

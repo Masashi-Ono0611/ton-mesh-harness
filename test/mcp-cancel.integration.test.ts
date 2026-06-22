@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
  * a REAL tonutils-storage daemon, targeting the rc10 BLOCKER class:
  * a daemon orphaned when the deploy is cancelled mid-flight.
  *
- * It drives a real `tools/call sovereign_deploy` with `domain: null`
+ * It drives a real `tools/call mesh_deploy` with `domain: null`
  * (storage-only — no DNS / no wallet / no signing), waits for the
  * `bag_creating` progress event (which proves the daemon process is up
  * and responding), then sends `notifications/cancelled` and asserts the
@@ -107,7 +107,7 @@ describe.skipIf(!RUN)('MCP notifications/cancelled cleanup (RUN_MCP_INTEGRATION=
           id: DEPLOY_ID,
           method: 'tools/call',
           params: {
-            name: 'sovereign_deploy',
+            name: 'mesh_deploy',
             arguments: {
               source_dir: FIXTURE_DIR,
               domain: null,

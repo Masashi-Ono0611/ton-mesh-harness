@@ -6,7 +6,7 @@ domain was deployed by this wallet, with this kit, on this date."**
 
 ## What ships
 
-On `sovereign_deploy` (and the CLI) with a `--domain`, the kit writes the
+On `mesh_deploy` (and the CLI) with a `--domain`, the kit writes the
 manifest into `<source_dir>/.well-known/ton-deploy.json` **before** bag
 creation, so the bag — and therefore the served site — includes it.
 Best-effort: any failure is logged and skipped, never fatal. Opt out with
@@ -15,7 +15,7 @@ Best-effort: any failure is logged and skipped, never fatal. Opt out with
 ```json
 {
   "manifest_version": 1,
-  "kit": "ton-sovereign-deploy",
+  "kit": "ton-mesh-harness",
   "kit_version": "0.8.0",
   "domain": "yourname.ton",
   "deployer_address": "0:…",
@@ -58,8 +58,8 @@ bag). The manifest adds the orthogonal fact "who deployed it, and when."
 
 ```bash
 # a local file, or fetch it straight from the deployed site:
-ton-sovereign-deploy verify-provenance ./path/to/ton-deploy.json
-ton-sovereign-deploy verify-provenance https://yourname.ton/.well-known/ton-deploy.json
+ton-mesh-harness verify-provenance ./path/to/ton-deploy.json
+ton-mesh-harness verify-provenance https://yourname.ton/.well-known/ton-deploy.json
 ```
 
 Exit `0` = signed and valid; `1` = unsigned, tampered, or unreadable.

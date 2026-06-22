@@ -56,7 +56,7 @@ a stale hash makes every install fail the integrity check.
 5. **Verify** the new binary actually installs:
 
    ```bash
-   rm -rf ~/.ton-sovereign/bin   # force a fresh download on next run
+   rm -rf ~/.ton-mesh/bin   # force a fresh download on next run
    bun run build && node dist/cli.js doctor
    ```
 

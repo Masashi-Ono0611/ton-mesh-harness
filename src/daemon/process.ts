@@ -51,7 +51,7 @@ export async function startDaemon(
 
   // Self-audit (Codex r11 class): use mkdtempSync so two starts in
   // the same Node process never collide, mirroring tonutils-process.
-  const sessionDir = mkdtempSync(path.join(os.tmpdir(), `ton-sovereign-${process.pid}-`))
+  const sessionDir = mkdtempSync(path.join(os.tmpdir(), `ton-mesh-${process.pid}-`))
   const dbDir = path.join(sessionDir, 'db')
   mkdirSync(dbDir, { recursive: true })
 

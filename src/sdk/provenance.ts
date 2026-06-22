@@ -21,10 +21,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { keyPairFromSeed, sign, signVerify } from '@ton/crypto'
 import { loadAgenticConfig } from './agentic-config'
-import { SOVEREIGN_DEPLOY_VERSION } from '../version'
+import { MESH_HARNESS_VERSION } from '../version'
 
 export const PROVENANCE_MANIFEST_VERSION = 1
-export const PROVENANCE_KIT_NAME = 'ton-sovereign-deploy'
+export const PROVENANCE_KIT_NAME = 'ton-mesh-harness'
 export const PROVENANCE_RELPATH = '.well-known/ton-deploy.json'
 
 /** The signed part of the manifest — the immutable, pre-bag-creation claim. */
@@ -179,7 +179,7 @@ export function emitProvenanceManifest(params: EmitProvenanceParams): EmitProven
       {
         manifest_version: PROVENANCE_MANIFEST_VERSION,
         kit: PROVENANCE_KIT_NAME,
-        kit_version: SOVEREIGN_DEPLOY_VERSION,
+        kit_version: MESH_HARNESS_VERSION,
         domain: params.domain,
         deployer_address: deployerAddress,
         deployed_at: new Date().toISOString(),

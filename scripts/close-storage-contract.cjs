@@ -1,6 +1,6 @@
 // One-off script: send op::close_contract (0x79f937ea) to a storage contract
 // to recover the funds locked when the provider failed to accept_storage_contract.
-// Uses the existing TonConnect session at ~/.ton-sovereign/tonconnect.json so
+// Uses the existing TonConnect session at ~/.ton-mesh/tonconnect.json so
 // no new wallet pairing is needed. Run with: node scripts/close-storage-contract.cjs <storageContractAddress>
 
 const path = require('path')
@@ -10,8 +10,8 @@ const https = require('https')
 const { Address, beginCell, toNano } = require('@ton/core')
 const { default: TonConnect, CHAIN } = require('@tonconnect/sdk')
 
-const STORAGE_PATH = path.join(os.homedir(), '.ton-sovereign', 'tonconnect.json')
-const MANIFEST_URL = 'https://raw.githubusercontent.com/Masashi-Ono0611/sovereign-deploy-kit/main/tonconnect/manifest.json'
+const STORAGE_PATH = path.join(os.homedir(), '.ton-mesh', 'tonconnect.json')
+const MANIFEST_URL = 'https://raw.githubusercontent.com/Masashi-Ono0611/ton-mesh-harness/main/tonconnect/manifest.json'
 const OP_CLOSE_CONTRACT = 0x79f937ea
 
 class FSStorage {

@@ -1,7 +1,7 @@
 # V3 E2E acceptance runbook (#18 / #40)
 
 The reproducible recipe for the single GA acceptance gate: an MCP client
-drives `ton-sovereign-mcp` through a real on-chain deploy.
+drives `ton-mesh-harness-mcp` through a real on-chain deploy.
 
 ## ⚠️ Network scope
 
@@ -9,7 +9,7 @@ The V3 GA gate is run on **mainnet** (§1) — it's the acceptance proof for
 the real agent-native deploy.
 
 > **Note (v0.9):** testnet is now also supported on the MCP/tonutils path —
-> `sovereign_deploy` with `testnet:true` starts the daemon with the testnet
+> `mesh_deploy` with `testnet:true` starts the daemon with the testnet
 > `--network-config` and writes DNS via testnet endpoints. It needs testnet
 > TON + a testnet `.ton` domain, and bag propagation depends on testnet
 > ADNL liveness (self-host via your own daemon). The earlier "mainnet-only"
@@ -74,9 +74,9 @@ The MCP client config a real agent would use (per
 ```json
 {
   "mcpServers": {
-    "ton-sovereign-deploy": {
+    "ton-mesh-harness": {
       "command": "npx",
-      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+      "args": ["-y", "--package", "ton-mesh-harness", "ton-mesh-harness-mcp"]
     },
     "ton": { "command": "npx", "args": ["-y", "@ton/mcp@alpha"] }
   }
@@ -85,9 +85,9 @@ The MCP client config a real agent would use (per
 
 ### 1.4 Pass criteria
 
-- `sovereign_check_env` returns a well-formed result (`ready` boolean,
+- `mesh_check_env` returns a well-formed result (`ready` boolean,
   `wallet_signers_available` includes `agentic`).
-- `sovereign_deploy` reaches a `done` payload with a non-empty `bag_id`.
+- `mesh_deploy` reaches a `done` payload with a non-empty `bag_id`.
 - With a domain set: `dns_tx_hash` is non-null and resolves on
   https://tonviewer.com.
 - All five MCP primitives exercised: `initialize`, `tools/list`,
@@ -98,7 +98,7 @@ The MCP client config a real agent would use (per
 
 - **DNS tx confirmation**: ~30 s–2 min. The driver's deploy timeout is
   5 min.
-- **Bag propagation** (visible via TONAPI / `sovereign_status`): ~30 s–5 min
+- **Bag propagation** (visible via TONAPI / `mesh_status`): ~30 s–5 min
   after the daemon starts seeding.
 - **Toncenter rate-limits**: the `dns_tx_hash` resolution uses Toncenter v3
   `transactionsByMessage`; under load it may need a retry. Set a
@@ -125,10 +125,10 @@ ps -A -o pid,command | grep -E 'tonutils-storage|storage-daemon' | grep -v grep
 
 - **Leaked daemon temp dirs** (only if a run crashed before cleanup):
   ```bash
-  rm -rf "${TMPDIR:-/tmp}"/ton-sovereign-*-*  # session + proxy + tonutils dirs
+  rm -rf "${TMPDIR:-/tmp}"/ton-mesh-*-*  # session + proxy + tonutils dirs
   ```
 - **TonConnect session** (only relevant for the human-signed Path 1, not
-  the agentic E2E): `rm -rf ~/.config/ton-sovereign-deploy/`.
+  the agentic E2E): `rm -rf ~/.config/ton-mesh-harness/`.
 - **Domain re-use**: a `.ton` domain's storage record is simply
   overwritten by the next deploy — no release step needed. Re-running
   against the same domain just points it at the new bag.
@@ -147,7 +147,7 @@ but it lets you rehearse upload + DNS mechanics for free.
    one you already own on testnet.
 3. **Run** (QR-signed via Tonkeeper testnet mode):
    ```bash
-   ton-sovereign-deploy ./dist \
+   ton-mesh-harness ./dist \
      --domain yourname.ton \
      --daemon-backend=ton-core \
      --testnet

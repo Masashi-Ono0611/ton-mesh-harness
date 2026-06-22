@@ -14,7 +14,7 @@ import path from 'node:path'
 import os from 'node:os'
 
 /** All daemon binaries live here. Created on demand by callers. */
-export const BIN_DIR = path.join(os.homedir(), '.ton-sovereign', 'bin')
+export const BIN_DIR = path.join(os.homedir(), '.ton-mesh', 'bin')
 
 /**
  * Atomically download `url` to `dest`. Uses `curl -fsSL` (HTTPS, follow
@@ -219,7 +219,7 @@ export function verifyFileSha256(args: {
         `  got SHA-256:      ${actual}\n` +
         `The downloaded file has been deleted. If you believe the pinned hash is stale ` +
         `(upstream re-published the asset), open an issue at ` +
-        `https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues — DO NOT ` +
+        `https://github.com/Masashi-Ono0611/ton-mesh-harness/issues — DO NOT ` +
         `unpin the hash to bypass the check.`,
     )
   }

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// ton-sovereign-mcp — MCP server for AI agents.
+// ton-mesh-harness-mcp — MCP server for AI agents.
 //
 // Spec: docs/v0.8/mcp-core-requirements.md §F1 (server binary), §F2 (tools),
 // §F3 (progress notifications), §F4 (cancellation), §F5 (error contract).
 //
 // Wires the kit's SDK to the Model Context Protocol so an agent can call:
-//   sovereign_check_env  — pre-flight readiness probe
-//   sovereign_deploy     — bag creation core (rc2 scope; DNS deferred to S2.5)
+//   mesh_check_env  — pre-flight readiness probe
+//   mesh_deploy     — bag creation core (rc2 scope; DNS deferred to S2.5)
 //
 // Transport: stdio only (per §NF4). Stdout is MCP JSON-RPC framing; all
 // human / debug output goes to stderr.
@@ -31,16 +31,16 @@ import { status } from './sdk/status'
 import { siteRecord } from './sdk/site-record'
 import {
   ALL_TOOLS,
-  SOVEREIGN_CHECK_ENV_TOOL,
-  SOVEREIGN_DEPLOY_TOOL,
-  SOVEREIGN_SITE_RECORD_TOOL,
-  SOVEREIGN_STATUS_TOOL,
+  MESH_CHECK_ENV_TOOL,
+  MESH_DEPLOY_TOOL,
+  MESH_SITE_RECORD_TOOL,
+  MESH_STATUS_TOOL,
 } from './sdk/json-schemas'
 import { DeployOptionsSchema } from './sdk/schemas'
 
-import { SOVEREIGN_DEPLOY_VERSION as SERVER_VERSION } from './version'
+import { MESH_HARNESS_VERSION as SERVER_VERSION } from './version'
 
-const SERVER_NAME = 'ton-sovereign-mcp'
+const SERVER_NAME = 'ton-mesh-harness-mcp'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Result helpers (F5 structured error contract)
@@ -88,13 +88,13 @@ function structuredErr(err: unknown): CallToolResult {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CHECK_ENV_DESCRIPTION =
-  'Pre-flight readiness probe for ton-sovereign-deploy. Call BEFORE sovereign_deploy to surface fixable problems early. Reports: daemon binary install state, network reachability (TONAPI / TonConnect manifest), UDP port 17555 availability, wallet signers available (tonconnect / agentic via @ton/mcp shared config), disk free, source_dir validity, and any blocking issues with fix hints.'
+  'Pre-flight readiness probe for ton-mesh-harness. Call BEFORE mesh_deploy to surface fixable problems early. Reports: daemon binary install state, network reachability (TONAPI / TonConnect manifest), UDP port 17555 availability, wallet signers available (tonconnect / agentic via @ton/mcp shared config), disk free, source_dir validity, and any blocking issues with fix hints.'
 
 const DEPLOY_DESCRIPTION =
   'Deploy a static site to .ton by uploading a build directory to TON Storage AND writing the .ton DNS records (storage + optional site/ADNL). Censorship-resistant — no server, no CDN, no domain registrar. Supports two signing modes: human-signed (TonConnect — agent surfaces a wallet URL via awaiting_signature.data.signing_url) and agentic (autonomous signing via a key in ~/.config/ton/config.json, shared with @ton/mcp). End-to-end since v0.8.0-rc3; real on-chain dns_tx_hash since rc4 (resolved via Toncenter v3 transactionsByMessage). Returns bag_id, dns_tx_hash, daemon_api_url, daemon_pid (when keep_alive=true), seed_status, and next_actions.'
 
 const STATUS_DESCRIPTION =
-  'One-shot snapshot of a bag\'s network state. Given a bag_id (and optionally a .ton domain), queries TONAPI to report whether the bag is propagated, its current size + file count, and — when a domain is passed — whether the on-chain DNS storage record points at this bag. Use AFTER a sovereign_deploy with keep_alive=false to check propagation status without keeping a daemon alive. Network failures absorb into bag_accessible=false rather than throwing, so the answer is always a clean snapshot, never a partial-state error.'
+  'One-shot snapshot of a bag\'s network state. Given a bag_id (and optionally a .ton domain), queries TONAPI to report whether the bag is propagated, its current size + file count, and — when a domain is passed — whether the on-chain DNS storage record points at this bag. Use AFTER a mesh_deploy with keep_alive=false to check propagation status without keeping a daemon alive. Network failures absorb into bag_accessible=false rather than throwing, so the answer is always a clean snapshot, never a partial-state error.'
 
 const SITE_RECORD_DESCRIPTION =
   'Build a Tonkeeper sign link that sets ONLY the `site` (dns_adnl_address) DNS record for a .ton domain you own — no bag upload, no storage record write, no daemon, no TonConnect. Use this to point a domain at a resident rldp-http-proxy ADNL identity (so `<domain>.ton` opens in TON Browser) WITHOUT re-deploying or overwriting the storage/bag record. Given { domain, site_adnl (64-hex ADNL), testnet? }, resolves the domain NFT via TONAPI and returns the change_dns_record body (BOC, base64url) plus a tonkeeper_deeplink (https://app.tonkeeper.com/transfer/...). Nothing is broadcast — the deeplink writes the record once a wallet signs it, so the agent should surface tonkeeper_deeplink to the human holding the domain.'
@@ -114,24 +114,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: SOVEREIGN_CHECK_ENV_TOOL.name,
+        name: MESH_CHECK_ENV_TOOL.name,
         description: CHECK_ENV_DESCRIPTION,
-        inputSchema: SOVEREIGN_CHECK_ENV_TOOL.input,
+        inputSchema: MESH_CHECK_ENV_TOOL.input,
       },
       {
-        name: SOVEREIGN_DEPLOY_TOOL.name,
+        name: MESH_DEPLOY_TOOL.name,
         description: DEPLOY_DESCRIPTION,
-        inputSchema: SOVEREIGN_DEPLOY_TOOL.input,
+        inputSchema: MESH_DEPLOY_TOOL.input,
       },
       {
-        name: SOVEREIGN_STATUS_TOOL.name,
+        name: MESH_STATUS_TOOL.name,
         description: STATUS_DESCRIPTION,
-        inputSchema: SOVEREIGN_STATUS_TOOL.input,
+        inputSchema: MESH_STATUS_TOOL.input,
       },
       {
-        name: SOVEREIGN_SITE_RECORD_TOOL.name,
+        name: MESH_SITE_RECORD_TOOL.name,
         description: SITE_RECORD_DESCRIPTION,
-        inputSchema: SOVEREIGN_SITE_RECORD_TOOL.input,
+        inputSchema: MESH_SITE_RECORD_TOOL.input,
       },
     ],
   }
@@ -147,13 +147,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any, extra: any)
   const args: unknown = request.params.arguments ?? {}
 
   switch (name) {
-    case 'sovereign_check_env':
+    case 'mesh_check_env':
       return handleCheckEnv(args)
-    case 'sovereign_deploy':
+    case 'mesh_deploy':
       return handleDeploy(args, extra)
-    case 'sovereign_status':
+    case 'mesh_status':
       return handleStatus(args)
-    case 'sovereign_site_record':
+    case 'mesh_site_record':
       return handleSiteRecord(args)
     default:
       return structuredErr(
@@ -171,7 +171,7 @@ async function handleStatus(args: unknown): Promise<CallToolResult> {
   }
 }
 
-// ─── sovereign_site_record ────────────────────────────────────────────────────
+// ─── mesh_site_record ────────────────────────────────────────────────────
 //
 // siteRecord() owns input validation (zod → SdkError(ERR_INVALID_INPUT)) and
 // NFT resolution (→ SdkError(ERR_NO_DOMAIN)). It builds a deeplink but never
@@ -186,7 +186,7 @@ async function handleSiteRecord(args: unknown): Promise<CallToolResult> {
   }
 }
 
-// ─── sovereign_check_env ────────────────────────────────────────────────────
+// ─── mesh_check_env ────────────────────────────────────────────────────
 
 async function handleCheckEnv(args: unknown): Promise<CallToolResult> {
   // checkEnv() owns input validation and wraps ZodError → SdkError(ERR_INVALID_INPUT)
@@ -200,7 +200,7 @@ async function handleCheckEnv(args: unknown): Promise<CallToolResult> {
   }
 }
 
-// ─── sovereign_deploy ───────────────────────────────────────────────────────
+// ─── mesh_deploy ───────────────────────────────────────────────────────
 //
 // Drive the SDK deploy() generator. Forward each event as a
 // notifications/progress message and return the terminal DeployResult.
@@ -212,7 +212,7 @@ async function handleCheckEnv(args: unknown): Promise<CallToolResult> {
 // `may_have_published` etc is built but the client never sees it. F4's
 // honest semantics in MCP context: cancellation is fire-and-forget; if
 // the client cares about post-cancel state, it should re-call
-// sovereign_check_env after to see if the daemon is still running.
+// mesh_check_env after to see if the daemon is still running.
 
 async function handleDeploy(
   args: unknown,
@@ -243,7 +243,7 @@ async function handleDeploy(
       if (err && typeof err === 'object' && (err as { name?: string }).name === 'ZodError') {
         throw new SdkError(
           'ERR_INVALID_INPUT',
-          `Invalid sovereign_deploy input: ${(err as Error).message}`,
+          `Invalid mesh_deploy input: ${(err as Error).message}`,
           {
             severity: 'fatal',
             data: { zod_issues: (err as { issues?: unknown }).issues },
@@ -325,7 +325,7 @@ async function handleDeploy(
 // if a new tool is added to the SDK without wiring here, fail loud.
 if (ALL_TOOLS.length !== 4) {
   process.stderr.write(
-    `ton-sovereign-mcp: ALL_TOOLS has ${ALL_TOOLS.length} entries; expected 4 (sovereign_check_env + sovereign_deploy + sovereign_status + sovereign_site_record). ` +
+    `ton-mesh-harness-mcp: ALL_TOOLS has ${ALL_TOOLS.length} entries; expected 4 (mesh_check_env + mesh_deploy + mesh_status + mesh_site_record). ` +
       `Wire any new tools in src/mcp.ts before shipping.\n`,
   )
   process.exit(1)
@@ -350,7 +350,7 @@ async function main(): Promise<void> {
 
 main().catch((err) => {
   process.stderr.write(
-    `ton-sovereign-mcp: fatal startup error: ${err instanceof Error ? err.message : String(err)}\n`,
+    `ton-mesh-harness-mcp: fatal startup error: ${err instanceof Error ? err.message : String(err)}\n`,
   )
   process.exit(1)
 })

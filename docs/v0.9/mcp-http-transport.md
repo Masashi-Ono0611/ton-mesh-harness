@@ -1,6 +1,6 @@
 # MCP HTTP transport (#33)
 
-`ton-sovereign-mcp` speaks **stdio by default** — the right transport for
+`ton-mesh-harness-mcp` speaks **stdio by default** — the right transport for
 local-host MCP clients (Claude Code desktop, Cursor, etc.): single
 process, no network listener, no auth surface.
 
@@ -21,15 +21,15 @@ reverse-proxied agent runtimes. stdio and HTTP are mutually exclusive
 
 ```bash
 # Loopback, no auth — safe local default:
-npx ton-sovereign-mcp --http :8765
+npx ton-mesh-harness-mcp --http :8765
 #   → http://127.0.0.1:8765/mcp
 
 # Explicit host:
-npx ton-sovereign-mcp --http 127.0.0.1:8765
+npx ton-mesh-harness-mcp --http 127.0.0.1:8765
 
 # Exposed bind — REQUIRES a bearer token (refuses to start otherwise):
 MCP_HTTP_TOKEN=$(openssl rand -hex 32) \
-  npx ton-sovereign-mcp --http 0.0.0.0:8765
+  npx ton-mesh-harness-mcp --http 0.0.0.0:8765
 ```
 
 The endpoint is `POST/GET/DELETE /mcp`. Responses are plain JSON
@@ -52,7 +52,7 @@ to enable it for browser clients:
 
 ```bash
 MCP_HTTP_CORS_ORIGINS="https://my-agent.example,https://localhost:3000" \
-  MCP_HTTP_TOKEN=… npx ton-sovereign-mcp --http 0.0.0.0:8765
+  MCP_HTTP_TOKEN=… npx ton-mesh-harness-mcp --http 0.0.0.0:8765
 ```
 
 Only listed origins get `Access-Control-Allow-Origin`; preflight
@@ -68,7 +68,7 @@ Only listed origins get `Access-Control-Allow-Origin`; preflight
   browser.
 - **Single client / single instance** per the MCP spec; the kit's
   process-level `ERR_BUSY` gate already serializes concurrent
-  `sovereign_deploy` calls, which applies equally over HTTP.
+  `mesh_deploy` calls, which applies equally over HTTP.
 - The bearer token is the only authn — treat it like a password (rotate
   it, keep it out of shell history / logs, prefer an env file).
 

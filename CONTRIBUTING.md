@@ -1,4 +1,4 @@
-# Contributing to Sovereign Deploy Kit
+# Contributing to TON Mesh Harness
 
 Thanks for thinking about contributing. The kit is in an active v0.8.x
 cycle (agent-surface track) — read this whole file before opening a PR so
@@ -28,8 +28,8 @@ the MCP server is an adapter. NO `console.*` in `src/sdk/` — lint-enforced.
 ## Setup
 
 ```bash
-git clone https://github.com/Masashi-Ono0611/sovereign-deploy-kit.git
-cd sovereign-deploy-kit
+git clone https://github.com/Masashi-Ono0611/ton-mesh-harness.git
+cd ton-mesh-harness
 bun install
 ```
 
@@ -57,7 +57,7 @@ RUN_DAEMON_TESTS=1 bun run test
 ```
 
 This spawns real tonutils-storage / rldp-http-proxy binaries and downloads
-them on first run (~12–20 MB each, cached at `~/.ton-sovereign/bin/`). It
+them on first run (~12–20 MB each, cached at `~/.ton-mesh/bin/`). It
 takes 30–90 s.
 
 ## MCP server smoke test
@@ -75,8 +75,8 @@ After `bun run build`, the MCP server can be smoked via stdio JSON-RPC:
 ) | node dist/mcp.js
 ```
 
-You should see `tools/list` return `sovereign_check_env` and
-`sovereign_deploy`.
+You should see `tools/list` return `mesh_check_env` and
+`mesh_deploy`.
 
 ## Architecture rules (load-bearing)
 

@@ -1,7 +1,7 @@
 /**
  * Programmatic deploy SDK — the seam that powers both the CLI's
  * `runDeployTonutils` adapter and (future) the MCP server's
- * `sovereign_deploy` tool.
+ * `mesh_deploy` tool.
  *
  * Spec: docs/v0.8/mcp-core-requirements.md §F2 / §F3 / §F4 / §F5.
  *
@@ -54,7 +54,7 @@ import { lingerAdvisory } from '../daemon/linger'
 import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { join as pathJoin } from 'node:path'
 
-const log = createSdkLogger('sovereign:deploy')
+const log = createSdkLogger('mesh:deploy')
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public input shape — accepts the full DeployOptions schema, plus a legacy
@@ -125,7 +125,7 @@ export class SdkError extends Error {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Process-local lock — F5 ERR_BUSY: v0.8.0 serialises sovereign_deploy
+// Process-local lock — F5 ERR_BUSY: v0.8.0 serialises mesh_deploy
 // invocations within a single SDK process. Concurrent calls fail-fast with
 // ERR_BUSY rather than colliding on the UDP port / shared db dir.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ function mapDaemonStartError(err: unknown): SdkError {
   if (/spawn .* ENOENT|exited with code|crashed at start|config-gen/i.test(msg)) {
     return new SdkError('ERR_DAEMON_SPAWN', `tonutils-storage failed to spawn: ${msg}`, {
       severity: 'fatal',
-      fixHint: 'Run `npx ton-sovereign-deploy doctor` to verify the binary is installed and executable.',
+      fixHint: 'Run `npx ton-mesh-harness doctor` to verify the binary is installed and executable.',
     })
   }
   return new SdkError('ERR_DAEMON_API_TIMEOUT', `tonutils-storage HTTP API did not come up: ${msg}`, {
@@ -295,7 +295,7 @@ export async function* deploy(
   if (deployInFlight) {
     throw new SdkError(
       'ERR_BUSY',
-      'Another sovereign_deploy call is already in flight in this process; v0.8.0 serialises invocations.',
+      'Another mesh_deploy call is already in flight in this process; v0.8.0 serialises invocations.',
       {
         severity: 'recoverable',
         fixHint: 'Wait for the in-flight deploy to complete (or be cancelled), then retry.',
@@ -345,7 +345,7 @@ export async function* deploy(
       const msg = err instanceof Error ? err.message : String(err)
       throw new SdkError('ERR_DAEMON_SPAWN', `Could not prepare tonutils-storage binary: ${msg}`, {
         severity: 'fatal',
-        fixHint: 'Run `npx ton-sovereign-deploy doctor` to inspect installer state.',
+        fixHint: 'Run `npx ton-mesh-harness doctor` to inspect installer state.',
       })
     }
 
@@ -726,7 +726,7 @@ export async function* deploy(
       nextActions.push({
         description:
           `Daemon handed to the OS service manager as '${meta.label}', seeding from ${meta.db_dir}. ` +
-          `Manage with: \`ton-sovereign-deploy service list\` / \`service stop ${created.bag_id}\`.`,
+          `Manage with: \`ton-mesh-harness service list\` / \`service stop ${created.bag_id}\`.`,
       })
       // On a headless Linux VM the systemd --user unit won't restart after an
       // unattended reboot unless lingering is enabled once (#83). Advise it

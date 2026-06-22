@@ -7,10 +7,10 @@ once the gates close, then execute top-to-bottom.
 
 | Token | Source |
 |---|---|
-| `<NPM_URL>` | https://www.npmjs.com/package/ton-sovereign-deploy |
+| `<NPM_URL>` | https://www.npmjs.com/package/ton-mesh-harness |
 | `<RELEASE_URL>` | the GitHub release page for `v0.8.0` |
 | `<V3_TRANSCRIPT>` | #18 comment link (mainnet E2E transcript) |
-| `<V4_RESULT>` | #26 result — did the agent reach `sovereign_deploy` within 3 commands? |
+| `<V4_RESULT>` | #26 result — did the agent reach `mesh_deploy` within 3 commands? |
 | `<DEMO_GIF>` | asciinema / gif of an agent driving the deploy |
 
 > Cross-check: do NOT announce before #18 (V3) + #26 (V4) have passed and
@@ -37,9 +37,9 @@ once the gates close, then execute top-to-bottom.
 
 > **3/** Self-host first. One command:
 > ```
-> npx ton-sovereign-deploy ./build --watch
+> npx ton-mesh-harness ./build --watch
 > ```
-> Or wire it as an MCP server (`ton-sovereign-mcp`) and let your agent
+> Or wire it as an MCP server (`ton-mesh-harness-mcp`) and let your agent
 > call it. MIT, open source: <RELEASE_URL>
 
 > **4/** The "whoa" test we gated GA on (#26): a fresh agent session, zero
@@ -57,12 +57,12 @@ once the gates close, then execute top-to-bottom.
 
 ### `@tondev_eng` (TON developers chat)
 
-> **Sovereign Deploy Kit v0.8.0 is live** 🚀
+> **TON Mesh Harness v0.8.0 is live** 🚀
 > One-command CLI + MCP server to publish a static site to TON Storage +
 > `.ton` DNS, self-hosted from your own machine. Agent-callable — Claude
 > (or any MCP client) can drive the whole deploy.
 >
-> `npx ton-sovereign-deploy ./build --watch`
+> `npx ton-mesh-harness ./build --watch`
 >
 > npm: `<NPM_URL>`
 > Designed for the digital-resistance stack — a web that can't be taken
@@ -70,7 +70,7 @@ once the gates close, then execute top-to-bottom.
 
 ### `@TONStorageDev` / `@tonstorage` (if active)
 
-> New tool for TON Storage builders: **Sovereign Deploy Kit** wraps
+> New tool for TON Storage builders: **TON Mesh Harness** wraps
 > bag creation + `.ton` DNS storage-record write into one command, seeds
 > from your own tonutils-storage daemon (`--watch` keeps it alive). Also
 > exposes an MCP server so AI agents can create + publish bags. v0.8.0:
@@ -78,13 +78,13 @@ once the gates close, then execute top-to-bottom.
 
 ### Japanese TON community channels
 
-> **Sovereign Deploy Kit v0.8.0 is live** 🚀
+> **TON Mesh Harness v0.8.0 is live** 🚀
 > A CLI + MCP server that publishes a static site to TON Storage + `.ton`
 > DNS in **one command**. Self-hosted — it seeds from your own machine, so
 > no server, no CDN, no registrar. AI agents (Claude, etc.) can drive the
 > whole flow over MCP.
 >
-> `npx ton-sovereign-deploy ./build --watch`
+> `npx ton-mesh-harness ./build --watch`
 >
 > npm: `<NPM_URL>` — MIT, OSS. For people building a censorship-resistant web.
 
@@ -92,25 +92,25 @@ once the gates close, then execute top-to-bottom.
 
 ## 3. dev.ton.org forum (new thread under "Tooling")
 
-**Title**: Sovereign Deploy Kit v0.8.0 — agent-native `.ton` static-site deploy (CLI + MCP)
+**Title**: TON Mesh Harness v0.8.0 — agent-native `.ton` static-site deploy (CLI + MCP)
 
 **Body**:
 
-> Released v0.8.0 of Sovereign Deploy Kit — a one-command CLI + MCP server
+> Released v0.8.0 of TON Mesh Harness — a one-command CLI + MCP server
 > that publishes a static site to TON Storage and points a `.ton` domain
 > at it via TON DNS, seeded from your own daemon (self-host first).
 >
 > What's new in the v0.8 agent-surface track:
-> - MCP server (`ton-sovereign-mcp`) with 3 tools: `sovereign_check_env`,
->   `sovereign_deploy`, `sovereign_status`
+> - MCP server (`ton-mesh-harness-mcp`) with 3 tools: `mesh_check_env`,
+>   `mesh_deploy`, `mesh_status`
 > - Agentic signing (autonomous, via a key shared with `@ton/mcp`) +
 >   TonConnect (human-approved) paths
 > - Real on-chain `dns_tx_hash`
 >
-> Install: `npx ton-sovereign-deploy ./build --watch`
+> Install: `npx ton-mesh-harness ./build --watch`
 > npm: `<NPM_URL>`
 > Release + full README: `<RELEASE_URL>`
-> Roadmap: https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/4
+> Roadmap: https://github.com/Masashi-Ono0611/ton-mesh-harness/issues/4
 > Mainnet E2E transcript (V3): `<V3_TRANSCRIPT>`
 >
 > Aligned with the TON digital-resistance stack (TON Proxy + ADNL Tunnel
@@ -121,14 +121,14 @@ once the gates close, then execute top-to-bottom.
 ## 4. Registries
 
 - **Anthropic skill registry** — if a submission process exists by GA day,
-  submit `skills/sovereign-deploy.md`. (Check the current registry intake
+  submit `skills/mesh-deploy.md`. (Check the current registry intake
   before GA; the format may have moved.)
 - **ton-org/skills PR** — merge / re-open per `docs/v0.8/ton-org-skills-pr-draft.md`;
   re-point it at the `v0.8.0` GA tag.
 
 ## 5. Hacker News (optional)
 
-- Show HN: "Sovereign Deploy Kit — AI agents deploy your site to a
+- Show HN: "TON Mesh Harness — AI agents deploy your site to a
   censorship-resistant `.ton` domain" → `<RELEASE_URL>`
 - Timing: Tue–Wed, ~8–10am US Eastern is the conventional sweet spot.
   Weigh against bandwidth to respond to comments same-day.

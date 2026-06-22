@@ -5,11 +5,11 @@
  *
  * Grammar (matches `debug` semantics):
  *   DEBUG="*"                       — all namespaces enabled
- *   DEBUG="sovereign:*"              — every sovereign:<sub> namespace
- *   DEBUG="sovereign:deploy,sovereign:dns"
+ *   DEBUG="mesh:*"              — every mesh:<sub> namespace
+ *   DEBUG="mesh:deploy,mesh:dns"
  *                                   — specific namespaces only
  *   DEBUG=""  | unset                — fully disabled
- *   DEBUG="*,-sovereign:resolve-tx"  — wildcard with exclusion
+ *   DEBUG="*,-mesh:resolve-tx"  — wildcard with exclusion
  *
  * Output always goes to STDERR. Never stdout — the CLI's `--json-output`
  * mode requires stdout to remain valid JSON, and the MCP server's stdio
@@ -46,7 +46,7 @@ function parseDebugPattern(raw: string): {
     if (!body) continue // skip a bare '-' segment
     // Escape ALL regex metas except `*` (we convert that to `.*` next).
     // The class explicitly lists `?` — without it, `DEBUG='?'` crashes
-    // `require('ton-sovereign-deploy')` with SyntaxError: Nothing to
+    // `require('ton-mesh-harness')` with SyntaxError: Nothing to
     // repeat. Caught by Codex review on 2026-05-12.
     const pattern = body
       .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
@@ -87,7 +87,7 @@ function format(level: string, namespace: string, message: string, data: unknown
  * returned logger is cheap when disabled — each method short-circuits
  * without formatting the message.
  *
- * Convention: namespaces follow `sovereign:<area>` where area mirrors
+ * Convention: namespaces follow `mesh:<area>` where area mirrors
  * the SDK module name (`deploy`, `dns`, `agentic-sign`, `resolve-tx`).
  */
 export function createSdkLogger(namespace: string): SdkLogger {

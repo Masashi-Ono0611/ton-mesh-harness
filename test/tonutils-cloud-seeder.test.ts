@@ -15,7 +15,7 @@ import { DeployOptionsSchema } from '../src/sdk/schemas'
  * Cloud-seeder fix (dogfood 2026-06-21). A kit-managed tonutils-storage
  * daemon binds 0.0.0.0:<random udp> and never set ExternalIP, so on a public
  * VM behind 1:1 NAT it announced nothing reachable ("server mode: false").
- * SOVEREIGN_ANNOUNCE_IP / _PORT let an operator run the kit as a reachable
+ * MESH_ANNOUNCE_IP / _PORT let an operator run the kit as a reachable
  * seeder by writing config.json ExternalIP + a fixed ListenAddr port.
  */
 describe('parseAnnounceEnv (cloud-seeder env knobs)', () => {
@@ -24,7 +24,7 @@ describe('parseAnnounceEnv (cloud-seeder env knobs)', () => {
   })
 
   it('parses a valid IPv4 announce IP', () => {
-    expect(parseAnnounceEnv({ SOVEREIGN_ANNOUNCE_IP: '136.114.135.19' })).toEqual({
+    expect(parseAnnounceEnv({ MESH_ANNOUNCE_IP: '136.114.135.19' })).toEqual({
       externalIp: '136.114.135.19',
     })
   })
@@ -32,33 +32,33 @@ describe('parseAnnounceEnv (cloud-seeder env knobs)', () => {
   it('rejects an IPv6 announce IP (the daemon binds IPv4 0.0.0.0 only)', () => {
     // Accepting IPv6 here while ListenAddr stays 0.0.0.0 would advertise an
     // address the node cannot serve. Fail fast instead.
-    expect(() => parseAnnounceEnv({ SOVEREIGN_ANNOUNCE_IP: '2001:db8::1' })).toThrow(/IPv4/)
+    expect(() => parseAnnounceEnv({ MESH_ANNOUNCE_IP: '2001:db8::1' })).toThrow(/IPv4/)
   })
 
   it('throws fast on a malformed announce IP (no silent unreachable node)', () => {
-    expect(() => parseAnnounceEnv({ SOVEREIGN_ANNOUNCE_IP: 'not-an-ip' })).toThrow(/IPv4/)
+    expect(() => parseAnnounceEnv({ MESH_ANNOUNCE_IP: 'not-an-ip' })).toThrow(/IPv4/)
   })
 
   it('parses a valid announce port', () => {
-    expect(parseAnnounceEnv({ SOVEREIGN_ANNOUNCE_PORT: '13333' })).toEqual({ listenPort: 13333 })
+    expect(parseAnnounceEnv({ MESH_ANNOUNCE_PORT: '13333' })).toEqual({ listenPort: 13333 })
   })
 
   it('throws on an out-of-range port', () => {
-    expect(() => parseAnnounceEnv({ SOVEREIGN_ANNOUNCE_PORT: '70000' })).toThrow(/1\.\.65535/)
+    expect(() => parseAnnounceEnv({ MESH_ANNOUNCE_PORT: '70000' })).toThrow(/1\.\.65535/)
   })
 
   it('throws on a non-integer port', () => {
-    expect(() => parseAnnounceEnv({ SOVEREIGN_ANNOUNCE_PORT: 'abc' })).toThrow(/1\.\.65535/)
+    expect(() => parseAnnounceEnv({ MESH_ANNOUNCE_PORT: 'abc' })).toThrow(/1\.\.65535/)
   })
 
   it('combines IP + port for a real cloud seeder', () => {
     expect(
-      parseAnnounceEnv({ SOVEREIGN_ANNOUNCE_IP: '1.2.3.4', SOVEREIGN_ANNOUNCE_PORT: '5555' }),
+      parseAnnounceEnv({ MESH_ANNOUNCE_IP: '1.2.3.4', MESH_ANNOUNCE_PORT: '5555' }),
     ).toEqual({ externalIp: '1.2.3.4', listenPort: 5555 })
   })
 
   it('ignores blank env values', () => {
-    expect(parseAnnounceEnv({ SOVEREIGN_ANNOUNCE_IP: '  ', SOVEREIGN_ANNOUNCE_PORT: '' })).toEqual({})
+    expect(parseAnnounceEnv({ MESH_ANNOUNCE_IP: '  ', MESH_ANNOUNCE_PORT: '' })).toEqual({})
   })
 })
 
@@ -107,14 +107,14 @@ describe('ensureTonutilsConfig (announce overrides)', () => {
 
 describe('per-field env getters (#69)', () => {
   it('announceIpFromEnv: valid IPv4 → ip, garbage → throw, absent → undefined', () => {
-    expect(announceIpFromEnv({ SOVEREIGN_ANNOUNCE_IP: '1.2.3.4' })).toBe('1.2.3.4')
-    expect(() => announceIpFromEnv({ SOVEREIGN_ANNOUNCE_IP: 'bad' })).toThrow(/IPv4/)
+    expect(announceIpFromEnv({ MESH_ANNOUNCE_IP: '1.2.3.4' })).toBe('1.2.3.4')
+    expect(() => announceIpFromEnv({ MESH_ANNOUNCE_IP: 'bad' })).toThrow(/IPv4/)
     expect(announceIpFromEnv({})).toBeUndefined()
   })
 
   it('announcePortFromEnv: valid → number, out-of-range → throw, absent → undefined', () => {
-    expect(announcePortFromEnv({ SOVEREIGN_ANNOUNCE_PORT: '13333' })).toBe(13333)
-    expect(() => announcePortFromEnv({ SOVEREIGN_ANNOUNCE_PORT: '70000' })).toThrow(/1\.\.65535/)
+    expect(announcePortFromEnv({ MESH_ANNOUNCE_PORT: '13333' })).toBe(13333)
+    expect(() => announcePortFromEnv({ MESH_ANNOUNCE_PORT: '70000' })).toThrow(/1\.\.65535/)
     expect(announcePortFromEnv({})).toBeUndefined()
   })
 })
@@ -123,32 +123,32 @@ describe('resolveAnnounce (#69 CLI-flag-over-env precedence)', () => {
   it('explicit (CLI flag) values win over env', () => {
     expect(
       resolveAnnounce({ externalIp: '1.2.3.4', listenPort: 1111 }, {
-        SOVEREIGN_ANNOUNCE_IP: '9.9.9.9',
-        SOVEREIGN_ANNOUNCE_PORT: '9999',
+        MESH_ANNOUNCE_IP: '9.9.9.9',
+        MESH_ANNOUNCE_PORT: '9999',
       }),
     ).toEqual({ externalIp: '1.2.3.4', listenPort: 1111 })
   })
 
   it('falls back to env per-field when an explicit field is missing', () => {
     expect(
-      resolveAnnounce({ externalIp: '1.2.3.4' }, { SOVEREIGN_ANNOUNCE_PORT: '9999' }),
+      resolveAnnounce({ externalIp: '1.2.3.4' }, { MESH_ANNOUNCE_PORT: '9999' }),
     ).toEqual({ externalIp: '1.2.3.4', listenPort: 9999 })
   })
 
   it('does NOT validate the env var for an overridden field (Codex review)', () => {
-    // --announce-ip given + a STALE malformed SOVEREIGN_ANNOUNCE_IP must not
+    // --announce-ip given + a STALE malformed MESH_ANNOUNCE_IP must not
     // abort the command: the ip env is short-circuited, only the port env reads.
     expect(
       resolveAnnounce({ externalIp: '1.2.3.4' }, {
-        SOVEREIGN_ANNOUNCE_IP: 'garbage',
-        SOVEREIGN_ANNOUNCE_PORT: '13333',
+        MESH_ANNOUNCE_IP: 'garbage',
+        MESH_ANNOUNCE_PORT: '13333',
       }),
     ).toEqual({ externalIp: '1.2.3.4', listenPort: 13333 })
   })
 
   it('uses env entirely when no explicit values are given', () => {
     expect(
-      resolveAnnounce({}, { SOVEREIGN_ANNOUNCE_IP: '9.9.9.9', SOVEREIGN_ANNOUNCE_PORT: '9999' }),
+      resolveAnnounce({}, { MESH_ANNOUNCE_IP: '9.9.9.9', MESH_ANNOUNCE_PORT: '9999' }),
     ).toEqual({ externalIp: '9.9.9.9', listenPort: 9999 })
   })
 

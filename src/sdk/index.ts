@@ -5,7 +5,7 @@
  * + `dist/mcp.js` (when GA lands) as bin endpoints. The SDK is consumed
  * INTERNALLY by both binaries (CLI renders, MCP server forwards to MCP
  * progress notifications). External SDK consumption (`import { deploy }
- * from 'ton-sovereign-deploy/sdk'`) is a v0.8.x consideration once the
+ * from 'ton-mesh-harness/sdk'`) is a v0.8.x consideration once the
  * contract has stabilised.
  *
  * Module roles (post v0.8 refactoring):

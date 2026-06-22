@@ -90,7 +90,7 @@ async function main() {
   // tools/list
   send(child, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} })
 
-  // tools/call sovereign_check_env — exercises the actual dispatch path,
+  // tools/call mesh_check_env — exercises the actual dispatch path,
   // not just the metadata surface. source_dir:null skips the build-dir
   // probe so we don't need a fixture directory. The result is the
   // structured CheckEnvResult; we'll inspect `ready` etc.
@@ -99,12 +99,12 @@ async function main() {
     id: 3,
     method: 'tools/call',
     params: {
-      name: 'sovereign_check_env',
+      name: 'mesh_check_env',
       arguments: { source_dir: null },
     },
   })
 
-  // tools/call sovereign_deploy with a bare-string wallet — regression
+  // tools/call mesh_deploy with a bare-string wallet — regression
   // gate for the MCP-contract strict gate restored in commit 24056e3
   // (Codex pre-GA review round 4 NEW MAJOR). The SDK lifts strings for
   // CLI compat, but MCP must reject them with ERR_INVALID_INPUT and
@@ -117,7 +117,7 @@ async function main() {
     id: 4,
     method: 'tools/call',
     params: {
-      name: 'sovereign_deploy',
+      name: 'mesh_deploy',
       arguments: { source_dir: './dist', wallet: 'Tonkeeper', testnet: true },
     },
   })
@@ -155,34 +155,34 @@ async function main() {
 
   // Assertions.
   if (!init) throw new Error(`no initialize response within ${TIMEOUT_MS}ms; stdout=${stdoutBuf.slice(0, 500)} stderr=${stderrBuf.slice(0, 500)}`)
-  if (init.result?.serverInfo?.name !== 'ton-sovereign-mcp') {
+  if (init.result?.serverInfo?.name !== 'ton-mesh-harness-mcp') {
     throw new Error(`initialize.serverInfo.name unexpected: ${JSON.stringify(init.result?.serverInfo)}`)
   }
   if (!list) throw new Error(`no tools/list response within ${TIMEOUT_MS}ms`)
   const names = (list.result?.tools ?? []).map((t) => t.name).sort()
   const expected = [
-    'sovereign_check_env',
-    'sovereign_deploy',
-    'sovereign_site_record',
-    'sovereign_status',
+    'mesh_check_env',
+    'mesh_deploy',
+    'mesh_site_record',
+    'mesh_status',
   ]
   if (JSON.stringify(names) !== JSON.stringify(expected)) {
     throw new Error(`tools/list mismatch: expected ${expected.join(', ')} got ${names.join(', ')}`)
   }
   if (!callRes) throw new Error(`no tools/call response within ${TIMEOUT_MS}ms`)
   // The server returns a structured payload via `structuredContent` (per
-  // our F5 contract). For sovereign_check_env, expect a CheckEnvResult
+  // our F5 contract). For mesh_check_env, expect a CheckEnvResult
   // with `ready: boolean`. Any TONAPI / disk / port probe failure makes
   // `ready` false, but the shape MUST be present.
   const sc = callRes.result?.structuredContent
   if (!sc || typeof sc.ready !== 'boolean') {
-    throw new Error(`sovereign_check_env structuredContent missing or shape unexpected: ${JSON.stringify(callRes.result).slice(0, 300)}`)
+    throw new Error(`mesh_check_env structuredContent missing or shape unexpected: ${JSON.stringify(callRes.result).slice(0, 300)}`)
   }
   if (!Array.isArray(sc.blocking) || !Array.isArray(sc.warnings)) {
-    throw new Error(`sovereign_check_env blocking/warnings arrays missing`)
+    throw new Error(`mesh_check_env blocking/warnings arrays missing`)
   }
   if (sc.ready !== (sc.blocking.length === 0)) {
-    throw new Error(`sovereign_check_env ready ⇔ blocking.length === 0 invariant broken`)
+    throw new Error(`mesh_check_env ready ⇔ blocking.length === 0 invariant broken`)
   }
 
   // wallet-strictness regression gate (Codex r4 / r5).

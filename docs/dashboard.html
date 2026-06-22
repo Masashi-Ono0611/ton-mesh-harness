@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0098EA">
 <meta name="color-scheme" content="light">
-<title>Sovereign Deploy Kit — ship any static site to .ton</title>
+<title>TON Mesh Harness — ship any static site to .ton</title>
 <meta name="description" content="One-command CLI + MCP server to ship any static site to TON Storage and a .ton domain — the npx-style tool for TON's digital-resistance stack.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -101,8 +101,8 @@
 
   <!-- ============ HERO ============ -->
   <header>
-    <div class="kicker">ton-projects/sovereign-deploy-kit · CLI + MCP server</div>
-    <h1>Sovereign <span class="accent">Deploy Kit</span></h1>
+    <div class="kicker">ton-projects/ton-mesh-harness · CLI + MCP server</div>
+    <h1>TON Mesh <span class="accent">Harness</span></h1>
     <p class="tagline">The frontend can&rsquo;t be taken down<br><strong>if there&rsquo;s no server to take down.</strong></p>
     <p class="sub">One command ships any static build to TON Storage and a <code>.ton</code> domain — zero infra setup. The <code>npx</code>-style CLI for TON&rsquo;s digital-resistance stack, built for engineers.</p>
   </header>
@@ -125,7 +125,7 @@
         <text x="78" y="134" text-anchor="middle" class="svg-s">build output</text>
 
         <rect x="190" y="46" width="184" height="58" rx="10" fill="#E6F6FE" stroke="#0098EA" stroke-width="1.6"/>
-        <text x="282" y="72" text-anchor="middle" class="svg-t" style="fill:#0077C0">ton-sovereign-deploy</text>
+        <text x="282" y="72" text-anchor="middle" class="svg-t" style="fill:#0077C0">ton-mesh-harness</text>
         <text x="282" y="90" text-anchor="middle" class="svg-s">CLI · MCP · SDK</text>
 
         <rect x="190" y="136" width="184" height="58" rx="10" fill="#fff" stroke="#E4EAEF"/>
@@ -165,7 +165,7 @@
     <p class="lead">The contract lives on; the website dies — because it sits on <strong>ordinary servers and ordinary DNS</strong>, two seizable layers in front of an unstoppable contract. Tornado Cash, Uniswap, 1inch, Balancer all lost the frontend, never the chain.</p>
 
     <div class="fig">
-      <svg viewBox="0 0 760 210" role="img" aria-label="Centralized stack can be taken down, sovereign stack cannot">
+      <svg viewBox="0 0 760 210" role="img" aria-label="Centralized stack can be taken down, mesh stack cannot">
         <line x1="380" y1="16" x2="380" y2="194" stroke="#E4EAEF" stroke-width="1" stroke-dasharray="3 4"/>
 
         <!-- LEFT: centralized (fails) -->
@@ -181,8 +181,8 @@
         <text x="30" y="160" class="svg-r">✗ DNS registrar seizure</text>
         <text x="30" y="182" class="svg-r">✗ OFAC frontend ban</text>
 
-        <!-- RIGHT: sovereign (works) -->
-        <text x="412" y="30" class="svg-a">SOVEREIGN STACK</text>
+        <!-- RIGHT: mesh (works) -->
+        <text x="412" y="30" class="svg-a">MESH STACK</text>
         <rect x="412" y="54" width="146" height="50" rx="9" fill="#E6F6FE" stroke="#0098EA" stroke-width="1.5"/>
         <text x="485" y="76" text-anchor="middle" class="svg-t" style="fill:#0077C0">TON Storage</text>
         <text x="485" y="93" text-anchor="middle" class="svg-s">content-addressed</text>
@@ -199,7 +199,7 @@
           <marker id="p-ok" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M1 1 L6 4 L1 7" fill="none" stroke="#1A7F4B" stroke-width="1.4"/></marker>
         </defs>
       </svg>
-      <div class="fig-cap">Same site, two delivery stacks — only the sovereign one survives a takedown order.</div>
+      <div class="fig-cap">Same site, two delivery stacks — only the mesh one survives a takedown order.</div>
     </div>
   </section>
 
@@ -233,7 +233,7 @@
     <div class="pillars">
       <div class="pillar"><div class="pt"><span>CLI</span></div><div class="pd"><b>What:</b> one command in your terminal. <b>Use it</b> to ship a build to <code>.ton</code> by hand.</div></div>
       <div class="pillar"><div class="pt"><span>MCP</span></div><div class="pd"><b>What:</b> a 4-tool server. <b>Use it</b> to let an AI agent run the whole deploy, no human in the loop.</div></div>
-      <div class="pillar"><div class="pt"><span>SDK</span></div><div class="pd"><b>What:</b> a TypeScript import. <b>Use it</b> to wire sovereign deploys into your own pipeline.</div></div>
+      <div class="pillar"><div class="pt"><span>SDK</span></div><div class="pd"><b>What:</b> a TypeScript import. <b>Use it</b> to wire mesh deploys into your own pipeline.</div></div>
     </div>
   </section>
 
@@ -248,14 +248,14 @@
         <div class="st"><span class="k">CLI</span>Ship a build by hand</div>
         <div class="sd">Upload <b>./dist</b> to TON Storage and point <b>mysite.ton</b> at it in one TonConnect signature. Add <code>--watch</code> to keep seeding from your machine.</div>
         <div class="cmd"><span class="c"># upload the bag + write .ton DNS in one run</span>
-<span class="p">$ </span>npx ton-sovereign-deploy ./dist <span class="f">--domain</span> mysite.ton</div>
+<span class="p">$ </span>npx ton-mesh-harness ./dist <span class="f">--domain</span> mysite.ton</div>
       </div>
 
       <div class="step">
-        <div class="st"><span class="k">HOST</span>Keep a .ton site online<span class="ver">v0.11</span></div>
+        <div class="st"><span class="k">HOST</span>Keep a .ton site online<span class="ver">v0.13</span></div>
         <div class="sd">Run a resident <b>rldp-http-proxy</b> so <b>mysite.ton</b> opens in <b>TON Browser</b>, handed to launchd / systemd so it survives reboot — with a stable on-chain identity.</div>
         <div class="cmd"><span class="c"># serve the site as an OS service that auto-restarts</span>
-<span class="p">$ </span>npx ton-sovereign-deploy ./dist <span class="f">--domain</span> mysite.ton \
+<span class="p">$ </span>npx ton-mesh-harness ./dist <span class="f">--domain</span> mysite.ton \
     <span class="f">--site-auto --daemon-mode</span> service</div>
       </div>
 
@@ -263,14 +263,14 @@
         <div class="st"><span class="k">AGENT</span>Let an AI agent deploy</div>
         <div class="sd">Add the <b>4-tool MCP server</b> to your client (Claude, Cursor, …) and the agent runs the whole flow — check env, deploy, status, site-record. TonConnect or autonomous signing.</div>
         <div class="cmd"><span class="c">// mcp client config — npx fetches the package on demand</span>
-<span class="f">"ton-sovereign-deploy"</span>: {
+<span class="f">"ton-mesh-harness"</span>: {
   <span class="f">"command"</span>: <span class="f">"npx"</span>,
-  <span class="f">"args"</span>: [<span class="f">"-y"</span>, <span class="f">"--package"</span>, <span class="f">"ton-sovereign-deploy"</span>, <span class="f">"ton-sovereign-mcp"</span>]
+  <span class="f">"args"</span>: [<span class="f">"-y"</span>, <span class="f">"--package"</span>, <span class="f">"ton-mesh-harness"</span>, <span class="f">"ton-mesh-harness-mcp"</span>]
 }</div>
       </div>
     </div>
 
-    <p class="ship">Latest <b>v0.11.0</b> · pin it with <code>npm i -g ton-sovereign-deploy</code><br><a href="../CHANGELOG.md">CHANGELOG</a> &nbsp;·&nbsp; <a href="./v0.10/site-hosting.md">site-hosting guide</a> &nbsp;·&nbsp; <a href="./v0.8/mcp-core-requirements.md">MCP tools</a></p>
+    <p class="ship">Latest <b>v0.13.0</b> · pin it with <code>npm i -g ton-mesh-harness</code><br><a href="../CHANGELOG.md">CHANGELOG</a> &nbsp;·&nbsp; <a href="./v0.10/site-hosting.md">site-hosting guide</a> &nbsp;·&nbsp; <a href="./v0.8/mcp-core-requirements.md">MCP tools</a></p>
   </section>
 
   <!-- ============ FOOTER ============ -->
@@ -278,13 +278,13 @@
     <div class="foot-links">
       <a href="../README.md">README</a>
       <a href="./README.md">docs index</a>
-      <a href="https://github.com/Masashi-Ono0611/sovereign-deploy-kit">GitHub</a>
+      <a href="https://github.com/Masashi-Ono0611/ton-mesh-harness">GitHub</a>
       <a href="https://ton.org/docs/develop/dns">TON DNS</a>
       <a href="https://tonconnect.network">TON Connect</a>
     </div>
     <div class="foot-note">
-      ton-projects/sovereign-deploy-kit · v0.11.0 · 2026-06-22<br>
-      Package <code>ton-sovereign-deploy</code> · Node &ge; 18 · macOS / Linux / Windows · MIT
+      ton-projects/ton-mesh-harness · v0.13.0 · 2026-06-23<br>
+      Package <code>ton-mesh-harness</code> · Node &ge; 18 · macOS / Linux / Windows · MIT
     </div>
   </footer>
 

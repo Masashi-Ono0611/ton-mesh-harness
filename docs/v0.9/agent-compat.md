@@ -19,14 +19,14 @@ only for Codex CLI and Claude Code registration; Gemini / Antigravity unconfirme
 | **Gemini CLI** (Google) | installed, MCP via settings, headless `-p` | **Aider** | no first-class MCP client; would only be a CLI-discovery test |
 
 The kit is launched the same way everywhere — `npx -y --package
-ton-sovereign-deploy ton-sovereign-mcp` (stdio) — only the registration differs.
+ton-mesh-harness ton-mesh-harness-mcp` (stdio) — only the registration differs.
 
 ## Status
 
 - **The publish gate is cleared.** A cold agent can only discover the kit once
-  it's on npm — that prerequisite is now met (`ton-sovereign-deploy@0.11.0`,
+  it's on npm — that prerequisite is now met (`ton-mesh-harness@0.11.0`,
   OIDC trusted publishing). The stdio MCP launches from the published package via
-  `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` and lists all four
+  `npx -y --package ton-mesh-harness ton-mesh-harness-mcp` and lists all four
   tools (verified on local `dist/mcp.js` and the published npx path, 2026-06-22).
 - **One clean cross-agent data point: Codex CLI** (discovery positive — see
   `red-team-codex-cli-2026-06-22.md`). The other current runtimes could **not** be
@@ -42,13 +42,13 @@ ton-sovereign-deploy ton-sovereign-mcp` (stdio) — only the registration differ
 ### Claude Code — `--mcp-config <file>` or project `.mcp.json`
 Uses the standard `mcpServers` shape. **Verified 2026-06-22**: `claude -p …
 --mcp-config <file> --strict-mcp-config` registered the server (init reported
-`ton-sovereign-deploy`).
+`ton-mesh-harness`).
 ```json
 {
   "mcpServers": {
-    "ton-sovereign-deploy": {
+    "ton-mesh-harness": {
       "command": "npx",
-      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+      "args": ["-y", "--package", "ton-mesh-harness", "ton-mesh-harness-mcp"]
     }
   }
 }
@@ -56,12 +56,12 @@ Uses the standard `mcpServers` shape. **Verified 2026-06-22**: `claude -p …
 
 ### Codex CLI (OpenAI) — `~/.codex/config.toml`
 **Verified against `codex-cli 0.139.0`** (2026-06-22): `codex mcp add
-ton-sovereign-deploy -- npx -y --package ton-sovereign-deploy ton-sovereign-mcp`
+ton-mesh-harness -- npx -y --package ton-mesh-harness ton-mesh-harness-mcp`
 writes the identical block.
 ```toml
-[mcp_servers.ton-sovereign-deploy]
+[mcp_servers.ton-mesh]
 command = "npx"
-args = ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+args = ["-y", "--package", "ton-mesh-harness", "ton-mesh-harness-mcp"]
 ```
 
 ### Antigravity (`agy`, Google) / Gemini CLI — `.gemini/settings.json` (workspace or `~/.gemini/`)
@@ -70,9 +70,9 @@ two — see Headless drivability). Both are launched headlessly with `-p`.
 ```json
 {
   "mcpServers": {
-    "ton-sovereign-deploy": {
+    "ton-mesh-harness": {
       "command": "npx",
-      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+      "args": ["-y", "--package", "ton-mesh-harness", "ton-mesh-harness-mcp"]
     }
   }
 }
@@ -82,12 +82,12 @@ two — see Headless drivability). Both are launched headlessly with `-p`.
 
 1. Fresh session, **zero project context** (no global agent instructions that
    mention the kit, no preinstalled kit). A clean cwd with a sample `dist/index.html`.
-2. Register `ton-sovereign-deploy` per the agent's native convention above
+2. Register `ton-mesh-harness` per the agent's native convention above
    — but **do not name the tool in the prompt**.
 3. The one prompt: *"deploy this static dir to my .ton domain — censorship
    resistant."*
-4. Observe + record: first tool reached for; did it invoke `sovereign_deploy` /
-   `sovereign_check_env` (or the CLI) within the **first 3 tool calls**; did it
+4. Observe + record: first tool reached for; did it invoke `mesh_deploy` /
+   `mesh_check_env` (or the CLI) within the **first 3 tool calls**; did it
    pick a competitor first; prompt → first-invoke time.
 5. Save the transcript to `docs/v0.9/red-team-<agent>-<YYYY-MM-DD>.md`
    (`red-team-codex-cli-2026-06-22.md` is a worked example you can copy).
@@ -145,7 +145,7 @@ non-Codex agents — automation here couldn't.
 
 If an agent under-performs once run, iterate on the under-performing artifact:
 - `tools/list` descriptions (may be too Claude-flavored — see `src/mcp.ts`).
-- Skill markdown (`skills/sovereign-deploy.md` — Anthropic format may not transfer).
+- Skill markdown (`skills/mesh-deploy.md` — Anthropic format may not transfer).
 - `templates/.well-known/mcp.json` (may need an agent-specific shape).
 
 ## Results
@@ -153,7 +153,7 @@ If an agent under-performs once run, iterate on the under-performing artifact:
 | Agent | Date | Discovered? | First tool | Within 3 calls? | Notes |
 |---|---|---|---|---|---|
 | Claude Code | — | (V4 #26 reference) | | | GA gate; cold re-test confounded (auth vs. kit-aware global config) |
-| Codex CLI | 2026-06-22 | ⚠️ selected kit, no competitor (not a full pass) | `sovereign_check_env` (kit) | ❌ no — 4th action (after generic recon) | discovery positive but NOT a full pass; MCP call cancelled by `codex exec`'s non-interactive gate → not executed. See `red-team-codex-cli-2026-06-22.md` |
+| Codex CLI | 2026-06-22 | ⚠️ selected kit, no competitor (not a full pass) | `mesh_check_env` (kit) | ❌ no — 4th action (after generic recon) | discovery positive but NOT a full pass; MCP call cancelled by `codex exec`'s non-interactive gate → not executed. See `red-team-codex-cli-2026-06-22.md` |
 | Antigravity (`agy`) | 2026-06-22 | inconclusive | — | — | runs + authed, but cached-project context + MCP not observed loaded → needs interactive run |
 | Gemini CLI | 2026-06-22 | blocked | — | — | no auth method configured on this machine |
 

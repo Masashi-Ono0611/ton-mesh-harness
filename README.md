@@ -1,11 +1,11 @@
-# Sovereign Deploy Kit
+# TON Mesh Harness
 
 > One-command CLI to publish a static site to the TON Storage + TON DNS stack — self-host first, agent-callable.
 
 Aligned with TON Foundation's [digital-resistance stack](https://telegra.ph/TON-Proxy-Introducing-optional-traffic-micro-payments-and-privacy-via-garlic-routing-03-08). This kit uploads a static site to TON Storage as a bag, points a `.ton` domain at it via TON DNS, and seeds it from your own daemon. The minimal toolkit for builders who need a **web that governments, Cloudflare, and hosting providers cannot take down** — like Tornado Cash / Uniswap UI.
 
 ```bash
-npx ton-sovereign-deploy ./build/ --watch
+npx ton-mesh-harness ./build/ --watch
 ```
 
 ```
@@ -42,21 +42,21 @@ TON already has the infrastructure to fix this. Using it required specialist kno
 
 ## Status
 
-**Latest: v0.12.0** — a site deploy now prints a browser-openable `https://<domain>.ton.run` gateway URL (after the `site` record is signed), Linux `--daemon-mode service` advises `loginctl enable-linger` for reboot survival, and dependency CVE overrides clear the HIGH/CRITICAL advisories. See [CHANGELOG](CHANGELOG.md) for the full history.
+**Latest: v0.13.0** — renamed to `ton-mesh-harness` (formerly `ton-sovereign-deploy`): the package, both bins, the MCP tool names (`mesh_*`), env vars (`MESH_ANNOUNCE_*`), daemon service labels (`ton-mesh.*`), the on-disk session dir (`~/.ton-mesh/`), and the debug namespace (`mesh:*`) all moved off the `sovereign` brand. Pure rebrand — no runtime behaviour changed. See [CHANGELOG](CHANGELOG.md) for the full migration map and prior releases.
 
-**Not yet shipped (upstream-blocked):** NAT traversal [#29](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/29), Payment Network real client [#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30).
+**Not yet shipped (upstream-blocked):** NAT traversal [#29](https://github.com/Masashi-Ono0611/ton-mesh-harness/issues/29), Payment Network real client [#30](https://github.com/Masashi-Ono0611/ton-mesh-harness/issues/30).
 
 ### Install
 
 ```bash
 # CLI
-npm install -g ton-sovereign-deploy
+npm install -g ton-mesh-harness
 
 # MCP server (add to your MCP client config — see "Agents & MCP" below)
-npx -y --package ton-sovereign-deploy ton-sovereign-mcp
+npx -y --package ton-mesh-harness ton-mesh-harness-mcp
 
 # SDK
-import { deploy, checkEnv, status } from 'ton-sovereign-deploy'
+import { deploy, checkEnv, status } from 'ton-mesh-harness'
 ```
 
 ---
@@ -76,9 +76,9 @@ import { deploy, checkEnv, status } from 'ton-sovereign-deploy'
 **Realistic hosting options:**
 
 - **Run your own daemon continuously** (`--watch`, or `--daemon-mode service` to hand it to launchd/systemd). This is exactly how TON Foundation operates `foundation.ton`.
-- **On a cloud VM with a public IP:** run the kit as a publicly-reachable seeder. Pass `--announce-ip <vm public ip> --announce-port <udp port>` (or the `SOVEREIGN_ANNOUNCE_IP` / `SOVEREIGN_ANNOUNCE_PORT` env vars), open that UDP port in the firewall, and deploy with `--daemon-mode service`. The daemon advertises a reachable address to the DHT. On deploy the CLI reports whether the node is actually reachable (`✓ Publicly reachable` vs `⚠ Download-only`). A free GCP `e2-micro` is enough.
+- **On a cloud VM with a public IP:** run the kit as a publicly-reachable seeder. Pass `--announce-ip <vm public ip> --announce-port <udp port>` (or the `MESH_ANNOUNCE_IP` / `MESH_ANNOUNCE_PORT` env vars), open that UDP port in the firewall, and deploy with `--daemon-mode service`. The daemon advertises a reachable address to the DHT. On deploy the CLI reports whether the node is actually reachable (`✓ Publicly reachable` vs `⚠ Download-only`). A free GCP `e2-micro` is enough.
 - **Behind NAT / no public IP:** `--tunnel-config` routes the daemon through an ADNL Tunnel pool (v0.6+; bring-your-own — see [`docs/v0.6/byo-rldp-http-proxy.md`](docs/v0.6/byo-rldp-http-proxy.md)).
-- **Storage-provider contract** (`--provider`) is implemented but the mainnet provider economy is currently dormant and gated off pending the payment-network real client ([#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30)). Treat it as experimental.
+- **Storage-provider contract** (`--provider`) is implemented but the mainnet provider economy is currently dormant and gated off pending the payment-network real client ([#30](https://github.com/Masashi-Ono0611/ton-mesh-harness/issues/30)). Treat it as experimental.
 
 ### TON DNS (.ton domains)
 
@@ -89,11 +89,11 @@ import { deploy, checkEnv, status } from 'ton-sovereign-deploy'
 ### Data flow
 
 ```
-npx ton-sovereign-deploy ./build/
+npx ton-mesh-harness ./build/
          │
          ├─→ Validate ./build/ (auto-detects dist/ | build/ | out/ | public/)
          │
-         ├─→ Check ~/.ton-sovereign/bin/storage-daemon
+         ├─→ Check ~/.ton-mesh/bin/storage-daemon
          │     If missing, auto-download from official TON release (first run only, ~30s)
          │
          ├─→ Send distributed via storage-daemon to the TON network
@@ -111,7 +111,7 @@ npx ton-sovereign-deploy ./build/
 | Vercel / Netlify | No (centralized) | Yes | No | Yes | Yes |
 | IPFS / Fleek | Yes | Yes | No (.eth only) | Yes | Yes |
 | TON CLI (manual) | Yes | No | Manual config | No | No |
-| **Sovereign Deploy Kit** | **Yes** | **Yes** | **Yes** | **Yes** | **Yes** |
+| **TON Mesh Harness** | **Yes** | **Yes** | **Yes** | **Yes** | **Yes** |
 
 Direct competitors: none.
 
@@ -131,12 +131,12 @@ The kit is designed to be invoked directly by AI agents via three paths:
 
 ```bash
 # 1. CLI — human approves via QR + phone wallet (TonConnect):
-npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton --json-output
+npx -y ton-mesh-harness ./dist --domain myprotocol.ton --json-output
 ```
 
 ```bash
 # 2. CLI — autonomous, signs locally from ~/.config/ton/config.json (agentic):
-npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton \
+npx -y ton-mesh-harness ./dist --domain myprotocol.ton \
   --wallet-mode agentic --wallet-label main-mainnet --json-output
 ```
 
@@ -144,15 +144,15 @@ npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton \
 // 3. MCP server — add to your MCP client config:
 {
   "mcpServers": {
-    "ton-sovereign-deploy": {
+    "ton-mesh-harness": {
       "command": "npx",
-      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+      "args": ["-y", "--package", "ton-mesh-harness", "ton-mesh-harness-mcp"]
     }
     // Optional: load @ton/mcp alongside for agentic wallet management:
     // "ton": { "command": "npx", "args": ["-y", "@ton/mcp@alpha"] }
   }
 }
-// → tools/call sovereign_check_env → sovereign_deploy
+// → tools/call mesh_check_env → mesh_deploy
 ```
 
 `--json-output` emits one JSON line per event for agent parsing.
@@ -161,12 +161,12 @@ npx -y ton-sovereign-deploy ./dist --domain myprotocol.ton \
 
 | Tool | What |
 |---|---|
-| `sovereign_check_env` | Check environment: daemon binaries, wallet config, connectivity |
-| `sovereign_deploy` | Full deploy: bag upload + optional `.ton` DNS write |
-| `sovereign_status` | One-shot bag propagation snapshot (use after a `--no-watch` deploy) |
-| `sovereign_site_record` | Build a Tonkeeper sign link that sets ONLY the `site` (ADNL) record — point a domain at an rldp-http-proxy without re-deploying. Returns a `tonkeeper_deeplink`; nothing is broadcast until the human signs it. |
+| `mesh_check_env` | Check environment: daemon binaries, wallet config, connectivity |
+| `mesh_deploy` | Full deploy: bag upload + optional `.ton` DNS write |
+| `mesh_status` | One-shot bag propagation snapshot (use after a `--no-watch` deploy) |
+| `mesh_site_record` | Build a Tonkeeper sign link that sets ONLY the `site` (ADNL) record — point a domain at an rldp-http-proxy without re-deploying. Returns a `tonkeeper_deeplink`; nothing is broadcast until the human signs it. |
 
-The agent calls `sovereign_check_env` → `sovereign_deploy`. `sovereign_deploy` runs the SDK end-to-end through `awaiting_signature → dns_signing → dns_confirmed → verifying`. `sovereign_site_record` is a side path: it only builds the deeplink (no daemon, no broadcast), so the agent surfaces `tonkeeper_deeplink` to whoever holds the domain.
+The agent calls `mesh_check_env` → `mesh_deploy`. `mesh_deploy` runs the SDK end-to-end through `awaiting_signature → dns_signing → dns_confirmed → verifying`. `mesh_site_record` is a side path: it only builds the deeplink (no daemon, no broadcast), so the agent surfaces `tonkeeper_deeplink` to whoever holds the domain.
 
 ### Wallet modes
 
@@ -177,7 +177,7 @@ The agent calls `sovereign_check_env` → `sovereign_deploy`. `sovereign_deploy`
 
 **`dns_tx_hash`:** both paths resolve the real on-chain tx hash via Toncenter v3's `transactionsByMessage` lookup, in parallel with DNS propagation polling — zero added latency on the happy path.
 
-> **Note for agents:** `--watch` mode leaves the agent's host responsible for keeping the daemon alive. Short-lived agent sessions should pass `--no-watch` and use `sovereign_status` to poll propagation later. **The MCP server rejects `keep_alive: true`** — use the CLI if you need a keep-alive flow.
+> **Note for agents:** `--watch` mode leaves the agent's host responsible for keeping the daemon alive. Short-lived agent sessions should pass `--no-watch` and use `mesh_status` to poll propagation later. **The MCP server rejects `keep_alive: true`** — use the CLI if you need a keep-alive flow.
 
 ---
 
@@ -196,7 +196,7 @@ The agent calls `sovereign_check_env` → `sovereign_deploy`. `sovereign_deploy`
 
 ```bash
 mkdir -p .github/workflows
-cp node_modules/ton-sovereign-deploy/templates/github-workflow.yml \
+cp node_modules/ton-mesh-harness/templates/github-workflow.yml \
    .github/workflows/deploy.yml
 git add .github/workflows/deploy.yml && git commit -m "Add TON Storage deployment" && git push
 ```
@@ -250,7 +250,7 @@ The `verify` step waits 60 s — that's "minimum viable verification." Real prop
 ## CLI reference
 
 ```bash
-ton-sovereign-deploy [build-dir] [options]
+ton-mesh-harness [build-dir] [options]
 ```
 
 ### Common options
@@ -267,22 +267,22 @@ ton-sovereign-deploy [build-dir] [options]
 | `--wallet-mode <mode>` | Signing mode: `tonconnect` (default, QR + phone) or `agentic` (reads `~/.config/ton/config.json`). |
 | `--wallet-label <label>` | Selector for agentic mode (id / name / address). Defaults to `active_wallet_id`. |
 | `--wallet-config <path>` | Override path for the agentic config file. |
-| `--announce-ip <ipv4>` | Set the public IP the daemon advertises to the DHT (cloud VM use). Also `SOVEREIGN_ANNOUNCE_IP`. |
-| `--announce-port <port>` | Set the UDP port the daemon advertises (cloud VM use). Also `SOVEREIGN_ANNOUNCE_PORT`. |
+| `--announce-ip <ipv4>` | Set the public IP the daemon advertises to the DHT (cloud VM use). Also `MESH_ANNOUNCE_IP`. |
+| `--announce-port <port>` | Set the UDP port the daemon advertises (cloud VM use). Also `MESH_ANNOUNCE_PORT`. |
 | `--daemon-mode <mode>` | Daemon ownership: `detached` (default) / `embedded` (one-shot) / `service` (hand to launchd/systemd). |
 | `--daemon-backend <name>` | `tonutils` (default) or `ton-core` (C++ legacy; needed only for `--provider`). |
 | `--tunnel-config <path>` | Path to `nodes-pool.json` for ADNL Tunnel NAT traversal (bring-your-own pool). |
 | `--site-auto` | Spawn + manage an `rldp-http-proxy` and write the `site` record automatically (see [Hosting a site](#hosting-a-site---site-auto)). `--site-public-ip` / `--site-udp-port` pin the announced address/port. |
 | `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `site` record under `--domain` (bring-your-own proxy). |
-| `--site-keyring <path>` | Persist the `--site-auto` proxy identity so its ADNL is stable across restarts (default: `~/.ton-sovereign/site-keyring/<domain>.hex`). |
-| `--provider [address]` | Storage-provider contract — **disabled** (mainnet provider economy is dormant; [#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30)). |
+| `--site-keyring <path>` | Persist the `--site-auto` proxy identity so its ADNL is stable across restarts (default: `~/.ton-mesh/site-keyring/<domain>.hex`). |
+| `--provider [address]` | Storage-provider contract — **disabled** (mainnet provider economy is dormant; [#30](https://github.com/Masashi-Ono0611/ton-mesh-harness/issues/30)). |
 | `--no-provenance` | Skip emitting `.well-known/ton-deploy.json` into the bag. |
 | `--ci-mode` | Disable spinners for CI environments. |
 | `--json-output` | Emit one JSON line per event. Automatically disables `--watch`. |
 | `--skip-verify` | Skip bag-access verification (propagation can be slow). |
 | `--wallet <name>` | Preferred wallet for TonConnect sign requests (default "Tonkeeper"). |
 
-Run `ton-sovereign-deploy doctor` for an environment check before deploying (daemon binaries, TONAPI / TonConnect manifest reachability, wallet pairing state).
+Run `ton-mesh-harness doctor` for an environment check before deploying (daemon binaries, TONAPI / TonConnect manifest reachability, wallet pairing state).
 
 ### Setting a `site` record (browser hosting)
 
@@ -294,7 +294,7 @@ A `.ton` domain can carry two records:
 When the domain is already deployed and you only need to point it at (or re-point it at) a proxy identity, use the standalone `site-record` subcommand. It writes **only** the site record — no bag, no storage write, no daemon, no TonConnect:
 
 ```bash
-ton-sovereign-deploy site-record mysite.ton <64-hex-adnl>
+ton-mesh-harness site-record mysite.ton <64-hex-adnl>
 ```
 
 It prints a Tonkeeper transfer deeplink. Open it on the phone holding the domain and approve once — that single transaction sets the record. Add `--json-output` to get the deeplink (and the raw message BOC) as a JSON object for agents / CI.
@@ -304,10 +304,10 @@ It prints a Tonkeeper transfer deeplink. Open it on the phone holding the domain
 `--site-auto` spawns a bundled `rldp-http-proxy` that serves the build directory over RLDP and writes the `site` record automatically:
 
 ```bash
-ton-sovereign-deploy ./build/ --domain mysite.ton --site-auto
+ton-mesh-harness ./build/ --domain mysite.ton --site-auto
 ```
 
-The proxy identity (a 32-byte seed) is **persisted and reused across restarts** (default `~/.ton-sovereign/site-keyring/<domain>.hex`, `--site-keyring <path>` to relocate). This matters because the on-chain `site` record points at this ADNL — a fresh identity every run would take the site down on restart. Re-running the same command keeps the same identity, so the record stays valid.
+The proxy identity (a 32-byte seed) is **persisted and reused across restarts** (default `~/.ton-mesh/site-keyring/<domain>.hex`, `--site-keyring <path>` to relocate). This matters because the on-chain `site` record points at this ADNL — a fresh identity every run would take the site down on restart. Re-running the same command keeps the same identity, so the record stays valid.
 
 **On a cloud VM with 1:1 NAT (GCP / AWS):** the public IP isn't assigned to a local interface, so the proxy can't bind its outbound socket to it and can't sync the network. Bind it first:
 
@@ -320,20 +320,20 @@ sudo ip addr add <public-ip>/32 dev <iface>   # find <iface> with: ip -o link
 **Keep the site up across reboots** with `--daemon-mode service` — the proxy + static server are handed to `launchd` (macOS) / `systemd --user` (Linux) instead of staying tied to the CLI:
 
 ```bash
-ton-sovereign-deploy ./build/ --domain mysite.ton --site-auto \
+ton-mesh-harness ./build/ --domain mysite.ton --site-auto \
   --daemon-mode service --site-udp-port 17655 --site-public-ip <public-ip>
 ```
 
 The service re-derives the same ADNL from the persisted seed on every restart, so the on-chain `site` record stays valid. Manage it with:
 
 ```bash
-ton-sovereign-deploy service list                 # bag seeders + site gateways
-ton-sovereign-deploy service stop-site mysite.ton # stop (add --purge to drop metadata)
+ton-mesh-harness service list                 # bag seeders + site gateways
+ton-mesh-harness service stop-site mysite.ton # stop (add --purge to drop metadata)
 ```
 
 > **On Linux, enable lingering once** so the `systemd --user` unit starts after an unattended reboot (it otherwise only runs while you're logged in): `sudo loginctl enable-linger "$USER"`. macOS launchd survives reboots without this.
 
-`ton-sovereign-deploy site-serve --build-dir ./build --domain mysite.ton` runs the same gateway in the foreground (what the service unit executes) — useful for a quick test or under your own supervisor.
+`ton-mesh-harness site-serve --build-dir ./build --domain mysite.ton` runs the same gateway in the foreground (what the service unit executes) — useful for a quick test or under your own supervisor.
 
 **Open it.** In TON Browser: `tonsite://mysite.ton`. In an ordinary browser: `https://mysite.ton.run` — the ton.run **site** gateway resolves the `site` ADNL over RLDP once the record is on chain and the proxy is reachable (a storage-only domain, with no `site` record, 404s there). A deploy that writes a `site` record prints this URL as its **Gateway URL** once the record is signed. Full verification recipe: [docs/v0.10/site-hosting.md](docs/v0.10/site-hosting.md).
 
@@ -343,10 +343,10 @@ From v0.6, the bundled daemon is `tonutils-storage` (Go, default). The legacy TO
 
 ```bash
 # Default: tonutils (Go)
-ton-sovereign-deploy ./build/
+ton-mesh-harness ./build/
 
 # Legacy C++ daemon (needed only for --provider)
-ton-sovereign-deploy ./build/ --daemon-backend=ton-core
+ton-mesh-harness ./build/ --daemon-backend=ton-core
 ```
 
 | Feature | tonutils (default) | ton-core (legacy) |
@@ -363,13 +363,13 @@ Since v0.6, `--watch` is the default for interactive runs. The daemon stays resi
 
 ```bash
 # Default: watch mode
-ton-sovereign-deploy ./build/
+ton-mesh-harness ./build/
 
 # One-shot (for CI)
-ton-sovereign-deploy ./build/ --no-watch
+ton-mesh-harness ./build/ --no-watch
 
 # 3-second debounce for large projects
-ton-sovereign-deploy ./build/ --debounce 3000
+ton-mesh-harness ./build/ --debounce 3000
 ```
 
 For continuous hosting:
@@ -381,13 +381,13 @@ For continuous hosting:
 
 ```bash
 # All namespaces
-DEBUG="*" ton-sovereign-deploy ./build/ --domain x.ton
+DEBUG="*" ton-mesh-harness ./build/ --domain x.ton
 
 # SDK only
-DEBUG="sovereign:*" ton-sovereign-deploy ./build/ --domain x.ton
+DEBUG="mesh:*" ton-mesh-harness ./build/ --domain x.ton
 
 # Specific namespaces (deploy, agentic-sign, resolve-tx)
-DEBUG="sovereign:deploy,sovereign:resolve-tx" ton-sovereign-deploy ./build/
+DEBUG="mesh:deploy,mesh:resolve-tx" ton-mesh-harness ./build/
 ```
 
 Output is always on **stderr** so `--json-output` stdout stays parseable.
@@ -419,7 +419,7 @@ node scripts/close-storage-contract.cjs <storage-contract-address>
 
 ## Security
 
-The kit signs transactions on your behalf (`--wallet-mode agentic`, MCP `sovereign_deploy` with `wallet.kind: "agentic"`). Threat model and the private vulnerability disclosure address are in [`SECURITY.md`](SECURITY.md).
+The kit signs transactions on your behalf (`--wallet-mode agentic`, MCP `mesh_deploy` with `wallet.kind: "agentic"`). Threat model and the private vulnerability disclosure address are in [`SECURITY.md`](SECURITY.md).
 
 Notable hardening in v0.9.0: SHA-256 supply-chain integrity on all daemon binary downloads (20 hashes pinned), wallet-payload exfiltration closed (`@tonconnect/sdk` debug log suppression), wallet-key symlink redirect closed, daemon orphan-on-signal closed, MCP contract enforcement.
 
@@ -431,11 +431,11 @@ Full index with Current/Reference/Historical classification: [`docs/README.md`](
 
 - **MCP server spec:** [`docs/v0.8/mcp-core-requirements.md`](docs/v0.8/mcp-core-requirements.md) — the authoritative F1–F5/NF contract.
 - **Agentic CLI usage:** [`docs/v0.8/agentic-cli-usage.md`](docs/v0.8/agentic-cli-usage.md) — `--wallet-mode agentic` prerequisites / selectors / CI.
-- **Agent stack compose:** [`docs/v0.8/agent-stack-compose.md`](docs/v0.8/agent-stack-compose.md) — wiring `ton-sovereign-mcp` + `@ton/mcp` for full agentic flows.
+- **Agent stack compose:** [`docs/v0.8/agent-stack-compose.md`](docs/v0.8/agent-stack-compose.md) — wiring `ton-mesh-harness-mcp` + `@ton/mcp` for full agentic flows.
 - **v0.9 features:** [MCP HTTP transport](docs/v0.9/mcp-http-transport.md) · [provenance](docs/v0.9/provenance.md) · [service-mode daemons](docs/v0.9/daemon-service-mode.md) · [cross-agent compat](docs/v0.9/agent-compat.md).
 - **Release checklist:** [`docs/v0.9/release-checklist.md`](docs/v0.9/release-checklist.md).
 
-**GitHub:** https://github.com/Masashi-Ono0611/sovereign-deploy-kit
+**GitHub:** https://github.com/Masashi-Ono0611/ton-mesh-harness
 
 ---
 

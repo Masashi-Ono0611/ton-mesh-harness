@@ -84,7 +84,7 @@ TON-capable client.)
 Back on your laptop:
 
 ```bash
-ton-sovereign-deploy ./build/ \
+ton-mesh-harness ./build/ \
   --domain yourdomain.ton \
   --site-adnl "$SITE_ADNL"
 ```

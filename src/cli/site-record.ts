@@ -11,7 +11,7 @@ export interface SiteRecordOptions {
  * ONLY the `site` (dns_adnl_address) record for a `.ton` domain.
  *
  * Thin renderer over the SDK's `siteRecord()` (the shared implementation the
- * MCP `sovereign_site_record` tool also uses). Unlike `--site-adnl` on the
+ * MCP `mesh_site_record` tool also uses). Unlike `--site-adnl` on the
  * deploy path (which bundles a `storage` write and re-uploads a bag), this
  * touches nothing but the site record: no bag, no daemon, no TonConnect. The
  * user opens the printed deeplink in Tonkeeper and approves once.

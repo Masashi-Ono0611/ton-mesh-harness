@@ -41,7 +41,7 @@ jobs:
         run: |
           # Bag-only deploy (no DNS write). To also write the .ton DNS
           # record, switch to the agentic template (sibling file).
-          RESULT=$(npx -y ton-sovereign-deploy ./dist --no-watch --json-output --ci-mode)
+          RESULT=$(npx -y ton-mesh-harness ./dist --no-watch --json-output --ci-mode)
 
           # Parse bag_id from JSON
           BAG_ID=$(echo "$RESULT" | jq -r '.bag_id')

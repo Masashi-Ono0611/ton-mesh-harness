@@ -1,7 +1,7 @@
 /**
  * Programmatic environment check — the "did the user's machine actually
  * have everything we need" probe that powers both the CLI's `doctor`
- * subcommand and the MCP server's `sovereign_check_env` tool.
+ * subcommand and the MCP server's `mesh_check_env` tool.
  *
  * Spec: docs/v0.8/mcp-core-requirements.md §F2 / §F3.
  *
@@ -153,7 +153,7 @@ function detectAgenticConfig(overridePath?: string): AgenticProbeOutcome {
  * F2 zod schema — no IO side effects beyond the network probes the function
  * documents (TONAPI, TonConnect manifest, dns lookups).
  *
- * The CLI's `doctor` subcommand and the MCP `sovereign_check_env` tool both
+ * The CLI's `doctor` subcommand and the MCP `mesh_check_env` tool both
  * route through here.
  */
 export async function checkEnv(opts: CheckEnvOptions = { source_dir: null }): Promise<CheckEnvResult> {
@@ -169,7 +169,7 @@ export async function checkEnv(opts: CheckEnvOptions = { source_dir: null }): Pr
       err && typeof err === 'object' && (err as { name?: string }).name === 'ZodError'
         ? (err as { issues?: unknown }).issues
         : undefined
-    throw new SdkError('ERR_INVALID_INPUT', `Invalid sovereign_check_env input: ${msg}`, {
+    throw new SdkError('ERR_INVALID_INPUT', `Invalid mesh_check_env input: ${msg}`, {
       severity: 'fatal',
       ...(zodIssues !== undefined ? { data: { zod_issues: zodIssues } } : {}),
     })

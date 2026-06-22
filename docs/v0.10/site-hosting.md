@@ -28,19 +28,19 @@ that opens in TON Browser needs a **live proxy** holding the `site` ADNL.
   storage write, no daemon, no TonConnect). Prints a Tonkeeper transfer deeplink:
 
   ```bash
-  ton-sovereign-deploy site-record mysite.ton <64-hex-adnl>
+  ton-mesh-harness site-record mysite.ton <64-hex-adnl>
   ```
 
   The deeplink is `https://app.tonkeeper.com/transfer/<nft>?amount=<nano>&bin=<base64url(body)>`
   where `body` is a `change_dns_record` op. The holder of the domain opens it in
   Tonkeeper and approves once. `--json-output` returns `{ nft_address,
   body_boc_base64url, tonkeeper_deeplink, … }` for agents / CI. Programmatic
-  equivalents: SDK `siteRecord()` and MCP `sovereign_site_record`.
+  equivalents: SDK `siteRecord()` and MCP `mesh_site_record`.
 
 ## Persistent identity (`--site-keyring`)
 
 `--site-auto` persists its ADNL **seed** (32 bytes, hex, mode `0600`) and reuses
-it across runs — default `~/.ton-sovereign/site-keyring/<domain>.hex`,
+it across runs — default `~/.ton-mesh/site-keyring/<domain>.hex`,
 relocatable with `--site-keyring <path>`. This matters because the on-chain
 `site` record points at the ADNL: a fresh identity each run would take the site
 down on restart until you re-signed. Re-running the same command keeps the same
@@ -69,7 +69,7 @@ the NIC, none of this applies — it is the simpler host.
 (macOS) / systemd `--user` (Linux), so the site survives CLI exit and reboots:
 
 ```bash
-ton-sovereign-deploy ./build --domain mysite.ton --site-auto \
+ton-mesh-harness ./build --domain mysite.ton --site-auto \
   --daemon-mode service --site-public-ip <public-ip> --site-udp-port 17655
 ```
 
@@ -77,11 +77,11 @@ How it works:
 
 1. The kit derives the ADNL from the persisted seed (no CLI-owned proxy) and
    writes the `site` record with it.
-2. It installs a unit that runs `ton-sovereign-deploy site-serve --build-dir …
+2. It installs a unit that runs `ton-mesh-harness site-serve --build-dir …
    --domain … --site-keyring … [--site-public-ip …] [--site-udp-port …]`:
-   - **macOS**: `~/Library/LaunchAgents/ton-sovereign-site.<domain>.plist`,
+   - **macOS**: `~/Library/LaunchAgents/ton-mesh-site.<domain>.plist`,
      `KeepAlive` only on unsuccessful exit.
-   - **Linux**: `~/.config/systemd/user/ton-sovereign-site-<domain>.service`,
+   - **Linux**: `~/.config/systemd/user/ton-mesh-site-<domain>.service`,
      `Restart=on-failure` (a reinstall `systemctl restart`s to pick up changes).
 3. On every (re)start `site-serve` re-derives the **same** ADNL from the same
    seed — the `site` record stays valid.
@@ -106,9 +106,9 @@ supervisor or for a quick test.
 ### Managing
 
 ```bash
-ton-sovereign-deploy service list                  # bag seeders + site gateways + state
-ton-sovereign-deploy service stop-site mysite.ton  # stop (the identity seed is kept)
-ton-sovereign-deploy service stop-site mysite.ton --purge  # also drop the metadata dir
+ton-mesh-harness service list                  # bag seeders + site gateways + state
+ton-mesh-harness service stop-site mysite.ton  # stop (the identity seed is kept)
+ton-mesh-harness service stop-site mysite.ton --purge  # also drop the metadata dir
 ```
 
 ## Verifying — the browser-viewable paths
@@ -151,4 +151,4 @@ Don't infer "it works" — observe it. A `.ton` site is reachable through the
 - [`v0.6/byo-rldp-http-proxy.md`](../v0.6/byo-rldp-http-proxy.md) — the original
   bring-your-own `--site-adnl` flow.
 - [`v0.8/mcp-core-requirements.md`](../v0.8/mcp-core-requirements.md) — the MCP
-  tool surface (incl. `sovereign_site_record`).
+  tool surface (incl. `mesh_site_record`).

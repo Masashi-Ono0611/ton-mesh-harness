@@ -79,7 +79,7 @@ function printReachability(reachable: boolean | null | undefined, willSeed: bool
   } else if (reachable === false) {
     console.log(chalk.yellow('  ⚠ Download-only — this node is behind NAT / has no public IP, so'))
     console.log(chalk.yellow('    nobody can download from it. Your site is NOT reachable yet.'))
-    console.log(chalk.dim('    Run a reachable seeder: a public VM with SOVEREIGN_ANNOUNCE_IP +'))
+    console.log(chalk.dim('    Run a reachable seeder: a public VM with MESH_ANNOUNCE_IP +'))
     console.log(chalk.dim('    an open UDP port (a free GCP e2-micro works). See the README.'))
   }
 }
@@ -185,7 +185,7 @@ export async function runDeployTonutils(
 
     if (!opts.jsonOutput) {
       console.log()
-      console.log(chalk.bold('🚀 TON Sovereign Deploy'))
+      console.log(chalk.bold('🚀 TON Mesh Deploy'))
       console.log(chalk.dim('  Backend:   tonutils-storage (xssnick / Go) — v0.6 default'))
       if (tunnel) {
         console.log(chalk.dim(`  Tunnel:    ${tunnel.absPath}`))

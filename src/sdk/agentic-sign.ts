@@ -36,7 +36,7 @@ import { createSdkLogger } from './log'
 import { buildToncenterClient, getWalletkitNetwork } from './walletkit-network'
 import { signRequestValidUntilSeconds } from '../wallet/constants'
 
-const log = createSdkLogger('sovereign:agentic-sign')
+const log = createSdkLogger('mesh:agentic-sign')
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private-key normalization

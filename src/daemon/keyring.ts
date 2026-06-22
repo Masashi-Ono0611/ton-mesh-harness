@@ -189,12 +189,12 @@ export function writeKeyringFile(dbDir: string, identity: AdnlIdentity): string 
 // rebuilt from it each run via generateAdnlIdentity(seed) + writeKeyringFile.
 // -----------------------------------------------------------------------
 
-const SITE_KEYRING_DIR = path.join(homedir(), '.ton-sovereign', 'site-keyring')
+const SITE_KEYRING_DIR = path.join(homedir(), '.ton-mesh', 'site-keyring')
 
 /**
  * Resolve the path of the seed file backing a domain's site identity.
  * `override` (a `--site-keyring` value) wins, resolved to absolute; otherwise
- * the per-domain default `~/.ton-sovereign/site-keyring/<domain>.hex`. The
+ * the per-domain default `~/.ton-mesh/site-keyring/<domain>.hex`. The
  * domain is lowercased and sanitized to `[a-z0-9.-]` so it can never carry a
  * path separator into the filename.
  */

@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env schemas (input + output) 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > mesh_check_env schemas (input + output) 1`] = `
 {
   "$ref": "#/definitions/CheckEnvOptions",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -22,7 +22,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env schemas (input + o
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env schemas (input + output) 2`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > mesh_check_env schemas (input + output) 2`] = `
 {
   "$ref": "#/definitions/CheckEnvResult",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -139,7 +139,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_check_env schemas (input + o
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + output) 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > mesh_deploy schemas (input + output) 1`] = `
 {
   "$ref": "#/definitions/DeployOptions",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -270,7 +270,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + output) 2`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > mesh_deploy schemas (input + output) 2`] = `
 {
   "$ref": "#/definitions/DeployResult",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -349,7 +349,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_deploy schemas (input + outp
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_site_record schemas (input + output) 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > mesh_site_record schemas (input + output) 1`] = `
 {
   "$ref": "#/definitions/SiteRecordOptions",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -380,7 +380,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_site_record schemas (input +
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_site_record schemas (input + output) 2`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > mesh_site_record schemas (input + output) 2`] = `
 {
   "$ref": "#/definitions/SiteRecordResult",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -426,7 +426,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_site_record schemas (input +
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_status schemas (input + output) 1`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > mesh_status schemas (input + output) 1`] = `
 {
   "$ref": "#/definitions/StatusOptions",
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -459,7 +459,7 @@ exports[`SDK JSON Schemas (V1 snapshot) > sovereign_status schemas (input + outp
 }
 `;
 
-exports[`SDK JSON Schemas (V1 snapshot) > sovereign_status schemas (input + output) 2`] = `
+exports[`SDK JSON Schemas (V1 snapshot) > mesh_status schemas (input + output) 2`] = `
 {
   "$ref": "#/definitions/StatusResult",
   "$schema": "http://json-schema.org/draft-07/schema#",

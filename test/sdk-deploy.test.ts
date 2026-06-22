@@ -87,7 +87,7 @@ describe('SDK deploy() — input validation + error contract', () => {
   it('SdkError carries the F5 error contract surface', () => {
     const err = new SdkError('ERR_DAEMON_SPAWN', 'binary missing', {
       severity: 'fatal',
-      fixHint: 'Run `npx ton-sovereign-deploy doctor` to diagnose.',
+      fixHint: 'Run `npx ton-mesh-harness doctor` to diagnose.',
     })
     expect(err).toBeInstanceOf(Error)
     expect(err.code).toBe('ERR_DAEMON_SPAWN')

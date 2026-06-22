@@ -97,7 +97,7 @@ async function main() {
       throw new Error(`initialize HTTP ${initRes.status}; body=${initRes.text.slice(0, 200)}; stderr=${stderr.slice(0, 200)}`)
     }
     const init = parseBody(initRes.text)
-    if (init.result?.serverInfo?.name !== 'ton-sovereign-mcp') {
+    if (init.result?.serverInfo?.name !== 'ton-mesh-harness-mcp') {
       throw new Error(`initialize.serverInfo.name unexpected: ${JSON.stringify(init.result?.serverInfo)}`)
     }
     const sessionId = initRes.sessionId
@@ -109,10 +109,10 @@ async function main() {
     const list = parseBody(listRes.text)
     const names = (list.result?.tools ?? []).map((t) => t.name).sort()
     const expected = [
-      'sovereign_check_env',
-      'sovereign_deploy',
-      'sovereign_site_record',
-      'sovereign_status',
+      'mesh_check_env',
+      'mesh_deploy',
+      'mesh_site_record',
+      'mesh_status',
     ]
     if (JSON.stringify(names) !== JSON.stringify(expected)) {
       throw new Error(`tools/list mismatch: expected ${expected.join(', ')} got ${names.join(', ')}`)

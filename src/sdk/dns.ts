@@ -1,7 +1,7 @@
 /**
  * SDK DNS-write integration. Pulls the substance of `cli/dns.ts` into the
  * SDK so `deploy()` can emit `awaiting_signature → dns_signing →
- * dns_confirmed → verifying` and the MCP server's `sovereign_deploy`
+ * dns_confirmed → verifying` and the MCP server's `mesh_deploy`
  * tool can complete a `domain`-bearing deploy without the CLI.
  *
  * Spec: docs/v0.8/mcp-core-requirements.md §F3 (event ordering),
@@ -137,7 +137,7 @@ export async function* writeDnsRecord(
     opts.domain,
     !!opts.testnet,
     'Verify the domain is owned by the signing wallet and that TONAPI is reachable. ' +
-      'Doctor: `npx ton-sovereign-deploy doctor`.',
+      'Doctor: `npx ton-mesh-harness doctor`.',
   )
 
   checkAborted()

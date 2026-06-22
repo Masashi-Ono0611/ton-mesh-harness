@@ -27,7 +27,7 @@ npx -y @ton/mcp@alpha agentic_import_wallet
 Verify the kit can see it:
 
 ```bash
-npx -y ton-sovereign-deploy doctor
+npx -y ton-mesh-harness doctor
 # Look for `agentic` in the `wallet_signers_available` line.
 ```
 
@@ -52,7 +52,7 @@ npx -y ton-sovereign-deploy doctor
 ## Single deploy
 
 ```bash
-npx -y ton-sovereign-deploy ./dist \
+npx -y ton-mesh-harness ./dist \
   --domain myprotocol.ton \
   --wallet-mode agentic \
   --no-watch
@@ -74,15 +74,15 @@ No QR. No phone. The whole flow is non-interactive.
 
 ```bash
 # By exact name
-ton-sovereign-deploy ./dist --domain myprotocol.ton \
+ton-mesh-harness ./dist --domain myprotocol.ton \
   --wallet-mode agentic --wallet-label "main-mainnet"
 
 # By id (the UUID @ton/mcp generates)
-ton-sovereign-deploy ./dist --domain myprotocol.ton \
+ton-mesh-harness ./dist --domain myprotocol.ton \
   --wallet-mode agentic --wallet-label "w_a1b2c3d4..."
 
 # By address
-ton-sovereign-deploy ./dist --domain myprotocol.ton \
+ton-mesh-harness ./dist --domain myprotocol.ton \
   --wallet-mode agentic --wallet-label "UQAa...xyz"
 ```
 
@@ -94,7 +94,7 @@ wallet you last `set_active_wallet`'d via `@ton/mcp`).
 ## Override the config path (CI / containers)
 
 ```bash
-ton-sovereign-deploy ./dist --domain myprotocol.ton \
+ton-mesh-harness ./dist --domain myprotocol.ton \
   --wallet-mode agentic \
   --wallet-config /var/secrets/ton-config.json
 ```
@@ -103,7 +103,7 @@ Or via environment:
 
 ```bash
 TON_CONFIG_PATH=/var/secrets/ton-config.json \
-  ton-sovereign-deploy ./dist --domain myprotocol.ton --wallet-mode agentic
+  ton-mesh-harness ./dist --domain myprotocol.ton --wallet-mode agentic
 ```
 
 Useful when the config sits at a non-standard location (e.g. mounted
@@ -146,7 +146,7 @@ jobs:
 
       - name: Deploy to .ton
         run: |
-          npx -y ton-sovereign-deploy ./dist \
+          npx -y ton-mesh-harness ./dist \
             --domain "${{ vars.TON_DOMAIN }}" \
             --wallet-mode agentic \
             --no-watch \

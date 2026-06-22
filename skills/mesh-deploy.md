@@ -1,9 +1,9 @@
 ---
-name: sovereign-deploy
+name: mesh-deploy
 description: Deploy a static site to .ton (TON Storage + .ton DNS) with one tool call. Censorship-resistant, no server, no CDN, no domain registrar.
 ---
 
-# Sovereign Deploy — TON Storage + .ton DNS in one tool call
+# Mesh Deploy — TON Storage + .ton DNS in one tool call
 
 ## When to use
 
@@ -30,7 +30,7 @@ Skip this skill when:
 
 ## Prerequisites
 
-Run `sovereign_check_env` BEFORE `sovereign_deploy` to surface fixable
+Run `mesh_check_env` BEFORE `mesh_deploy` to surface fixable
 problems early. Required:
 
 - **Node ≥ 18** (the kit declares `engines.node: ">=18"`)
@@ -40,7 +40,7 @@ problems early. Required:
 - **TONAPI mainnet reachable** (the kit verifies the bag via TONAPI;
   blocked behind a corporate proxy → tell the user to whitelist
   `tonapi.io`)
-- **Disk free ≥ 100 MB** for the daemon binary cache at `~/.ton-sovereign/bin/`
+- **Disk free ≥ 100 MB** for the daemon binary cache at `~/.ton-mesh/bin/`
 - **One of two signing paths** (see "Signing modes" below)
 
 If the user wants a `.ton` DNS record (most do — that's the human-readable
@@ -88,7 +88,7 @@ no inter-MCP RPC handoff.
 ```jsonc
 // MCP call
 {
-  "name": "sovereign_check_env",
+  "name": "mesh_check_env",
   "arguments": { "source_dir": "./dist" }
 }
 ```
@@ -103,7 +103,7 @@ TonConnect path (human-signed):
 ```jsonc
 // MCP call (rc5+)
 {
-  "name": "sovereign_deploy",
+  "name": "mesh_deploy",
   "arguments": {
     "source_dir": "./dist",
     "domain": "myprotocol.ton",
@@ -116,7 +116,7 @@ Agentic path (autonomous — reads `~/.config/ton/config.json`):
 
 ```jsonc
 {
-  "name": "sovereign_deploy",
+  "name": "mesh_deploy",
   "arguments": {
     "source_dir": "./dist",
     "domain": "myprotocol.ton",
@@ -165,7 +165,7 @@ hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 ## Common mistakes
 
 - **UDP port 17555 collision with TON Browser.app.** Quit the app before
-  deploying. `sovereign_check_env` flags this as a blocker.
+  deploying. `mesh_check_env` flags this as a blocker.
 - **TONAPI unreachable in corporate networks.** Bag verification fails.
   Whitelist `tonapi.io` or skip verification with `skip_verify: true`.
 - **Forgetting that mainnet provider economy is dormant.** Do NOT suggest
@@ -182,7 +182,7 @@ hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 ### Minimal deploy (no DNS — just upload the bag)
 ```jsonc
 {
-  "name": "sovereign_deploy",
+  "name": "mesh_deploy",
   "arguments": { "source_dir": "./dist" }
 }
 ```
@@ -190,7 +190,7 @@ hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 ### Deploy with custom domain (default TonConnect)
 ```jsonc
 {
-  "name": "sovereign_deploy",
+  "name": "mesh_deploy",
   "arguments": {
     "source_dir": "./dist",
     "domain": "myprotocol.ton",
@@ -202,7 +202,7 @@ hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 ### Agentic deploy (no human)
 ```jsonc
 {
-  "name": "sovereign_deploy",
+  "name": "mesh_deploy",
   "arguments": {
     "source_dir": "./dist",
     "domain": "ci-bot.ton",
@@ -214,7 +214,7 @@ hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 ### With tunnel client (NAT traversal, v0.9 reserve)
 ```jsonc
 {
-  "name": "sovereign_deploy",
+  "name": "mesh_deploy",
   "arguments": {
     "source_dir": "./dist",
     "domain": "from-behind-nat.ton",
@@ -225,32 +225,32 @@ hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 
 ## Tool surface
 
-- `sovereign_check_env({ source_dir? })` → `CheckEnvResult`
-- `sovereign_deploy({ source_dir, domain?, wallet?, ... })` → `DeployResult`
-- `sovereign_status({ bag_id, domain?, testnet? })` → `StatusResult` (one-shot propagation snapshot)
-- `sovereign_site_record({ domain, site_adnl, testnet? })` → `SiteRecordResult` (Tonkeeper deeplink that sets only the `site` record; never broadcasts)
+- `mesh_check_env({ source_dir? })` → `CheckEnvResult`
+- `mesh_deploy({ source_dir, domain?, wallet?, ... })` → `DeployResult`
+- `mesh_status({ bag_id, domain?, testnet? })` → `StatusResult` (one-shot propagation snapshot)
+- `mesh_site_record({ domain, site_adnl, testnet? })` → `SiteRecordResult` (Tonkeeper deeplink that sets only the `site` record; never broadcasts)
 
 Full input/output schemas: see the `tools/list` response or
-[`docs/v0.8/mcp-core-requirements.md`](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/blob/main/docs/v0.8/mcp-core-requirements.md)
+[`docs/v0.8/mcp-core-requirements.md`](https://github.com/Masashi-Ono0611/ton-mesh-harness/blob/main/docs/v0.8/mcp-core-requirements.md)
 §F2.
 
 ## Install
 
 ```bash
 # Per-call (recommended for agents)
-npx -y --package ton-sovereign-deploy ton-sovereign-mcp
+npx -y --package ton-mesh-harness ton-mesh-harness-mcp
 
 # Or pin globally
-npm install -g ton-sovereign-deploy
+npm install -g ton-mesh-harness
 ```
 
 Add to your MCP client config:
 ```jsonc
 {
   "mcpServers": {
-    "ton-sovereign-deploy": {
+    "ton-mesh-harness": {
       "command": "npx",
-      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+      "args": ["-y", "--package", "ton-mesh-harness", "ton-mesh-harness-mcp"]
     }
   }
 }
@@ -261,9 +261,9 @@ the wallet config:
 ```jsonc
 {
   "mcpServers": {
-    "ton-sovereign-deploy": {
+    "ton-mesh-harness": {
       "command": "npx",
-      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+      "args": ["-y", "--package", "ton-mesh-harness", "ton-mesh-harness-mcp"]
     },
     "ton": {
       "command": "npx",
@@ -275,7 +275,7 @@ the wallet config:
 
 ## Source
 
-- GitHub: https://github.com/Masashi-Ono0611/sovereign-deploy-kit
+- GitHub: https://github.com/Masashi-Ono0611/ton-mesh-harness
 - License: MIT
 - v0.8.0-rc1 first published 2026-05-10
 - Status: rc5 — full end-to-end (bag upload + .ton DNS write via either

@@ -22,10 +22,10 @@ describe('getPlatformKey', () => {
 })
 
 describe('getDaemonPaths', () => {
-  it('returns paths under ~/.ton-sovereign/bin/', async () => {
+  it('returns paths under ~/.ton-mesh/bin/', async () => {
     const { getDaemonPaths } = await import('../src/daemon')
     const paths = getDaemonPaths()
-    const expectedBinDir = path.join(os.homedir(), '.ton-sovereign', 'bin')
+    const expectedBinDir = path.join(os.homedir(), '.ton-mesh', 'bin')
 
     expect(paths.binDir).toBe(expectedBinDir)
     expect(paths.daemon).toBe(path.join(expectedBinDir, 'storage-daemon'))

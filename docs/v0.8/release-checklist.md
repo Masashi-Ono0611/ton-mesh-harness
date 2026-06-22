@@ -33,7 +33,7 @@ That single command performs five mechanical edits + the full verify
 gate:
 
 1. `package.json::version` → `0.8.0`
-2. `src/version.ts::SOVEREIGN_DEPLOY_VERSION` → `'0.8.0'`
+2. `src/version.ts::MESH_HARNESS_VERSION` → `'0.8.0'`
 3. `CHANGELOG.md` — promotes the `<!-- GA-PREDRAFT-BEGIN ... END -->`
    block to a live `## [0.8.0] – <today>` heading.
 4. `README.md` — flips the status line + Agent-quickstart heading from
@@ -133,10 +133,10 @@ In a clean sandbox:
 ```bash
 mkdir -p /tmp/smoke && cd /tmp/smoke
 npm init -y > /dev/null
-npm install ton-sovereign-deploy
-./node_modules/.bin/ton-sovereign-deploy --version  # 0.8.0
-./node_modules/.bin/ton-sovereign-deploy --help | grep wallet-mode
-node -e "console.log(Object.keys(require('ton-sovereign-deploy')).sort())"
+npm install ton-mesh-harness
+./node_modules/.bin/ton-mesh-harness --version  # 0.8.0
+./node_modules/.bin/ton-mesh-harness --help | grep wallet-mode
+node -e "console.log(Object.keys(require('ton-mesh-harness')).sort())"
 ```
 
 The bin should report `0.8.0`. The SDK default-import should expose
@@ -157,7 +157,7 @@ If a critical bug surfaces post-publish:
 
 ```bash
 # 1. deprecate the bad version
-npm deprecate ton-sovereign-deploy@0.8.0 "Critical bug X — use 0.8.1"
+npm deprecate ton-mesh-harness@0.8.0 "Critical bug X — use 0.8.1"
 
 # 2. fix on a branch + release 0.8.1
 git checkout -b hotfix/0.8.1

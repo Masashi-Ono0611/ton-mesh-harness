@@ -1,6 +1,6 @@
-# Composing the agent stack: ton-sovereign-mcp + @ton/mcp
+# Composing the agent stack: ton-mesh-harness-mcp + @ton/mcp
 
-This kit's MCP server (`ton-sovereign-mcp`) handles **deploy** —
+This kit's MCP server (`ton-mesh-harness-mcp`) handles **deploy** —
 uploading a static site to TON Storage and writing the .ton DNS
 records. It does NOT handle wallet management (key creation, key
 rotation, balance checks). For the latter, an agent runs `@ton/mcp`
@@ -18,9 +18,9 @@ This doc shows the wiring for the most common agent flows.
 ```jsonc
 {
   "mcpServers": {
-    "ton-sovereign-deploy": {
+    "ton-mesh-harness": {
       "command": "npx",
-      "args": ["-y", "--package", "ton-sovereign-deploy", "ton-sovereign-mcp"]
+      "args": ["-y", "--package", "ton-mesh-harness", "ton-mesh-harness-mcp"]
     },
     "ton": {
       "command": "npx",
@@ -38,9 +38,9 @@ orchestrates by calling tools from each.
 
 | Server | Tool | Purpose |
 |---|---|---|
-| `ton-sovereign-deploy` | `sovereign_check_env` | Pre-flight: daemon binaries, network, wallet signers, disk |
-| `ton-sovereign-deploy` | `sovereign_deploy` | Upload bag + write .ton DNS (TonConnect or agentic) |
-| `ton-sovereign-deploy` | `sovereign_status` | Snapshot a bag's propagation state + DNS pointer |
+| `ton-mesh-harness` | `mesh_check_env` | Pre-flight: daemon binaries, network, wallet signers, disk |
+| `ton-mesh-harness` | `mesh_deploy` | Upload bag + write .ton DNS (TonConnect or agentic) |
+| `ton-mesh-harness` | `mesh_status` | Snapshot a bag's propagation state + DNS pointer |
 | `ton` (`@ton/mcp`) | `agentic_start_root_wallet_setup` | Create a new agentic wallet (writes to config) |
 | `ton` (`@ton/mcp`) | `agentic_import_wallet` | Import an existing wallet (mnemonic/private key) |
 | `ton` (`@ton/mcp`) | `list_wallets` | Show current wallets in the config |
@@ -62,11 +62,11 @@ The agent's tool-call sequence:
    2. Surface the deposit address + amount to the user. Wait for
       confirmation that the wallet is funded.
    3. `ton.get_balance` — verify funding.
-3. `ton-sovereign-deploy.sovereign_check_env { source_dir: "./dist" }`
+3. `ton-mesh-harness.mesh_check_env { source_dir: "./dist" }`
    — make sure the daemon binary is installed, TONAPI is reachable,
    etc. If `ready: false`, surface each `blocking[].fix_hint` to the
    user and stop.
-4. `ton-sovereign-deploy.sovereign_deploy`:
+4. `ton-mesh-harness.mesh_deploy`:
    ```jsonc
    {
      "source_dir": "./dist",
@@ -105,7 +105,7 @@ User prompt: *"Did my deploy from earlier propagate yet?"*
 
 ```jsonc
 {
-  "name": "sovereign_status",
+  "name": "mesh_status",
   "arguments": {
     "bag_id": "<from prior deploy>",
     "domain": "myprotocol.ton"
@@ -138,8 +138,8 @@ means the bag is up but the DNS record points elsewhere (e.g. a stale
 
 User prompt: *"I changed the homepage. Re-deploy."*
 
-1. `sovereign_check_env` — still ready.
-2. `sovereign_deploy` with the same domain. The bag_id will change
+1. `mesh_check_env` — still ready.
+2. `mesh_deploy` with the same domain. The bag_id will change
    (content hash differs); the DNS record gets updated to point at
    the new bag. The old bag isn't garbage-collected — content
    addressing means a third party who knows the old hash can still
@@ -147,12 +147,12 @@ User prompt: *"I changed the homepage. Re-deploy."*
 
 ## Boundaries and contracts
 
-- **`ton-sovereign-deploy` only READS** `~/.config/ton/config.json`. It
+- **`ton-mesh-harness` only READS** `~/.config/ton/config.json`. It
   does not create, modify, or delete entries. Wallet management is
   always via `@ton/mcp`.
 - **No MCP-to-MCP calls.** Each server is a standalone process the
   agent talks to.
-- **`@ton/mcp` is an OPTIONAL peer dep of `ton-sovereign-deploy`.**
+- **`@ton/mcp` is an OPTIONAL peer dep of `ton-mesh-harness`.**
   When it isn't loaded:
   - `wallet.kind: "agentic"` with a `type: "standard"` config entry
     (mnemonic / direct private key) **still works** — the SDK reads
@@ -163,7 +163,7 @@ User prompt: *"I changed the homepage. Re-deploy."*
     dynamically imports `AgenticWalletAdapter` from `@ton/mcp` and
     can't proceed without it. Agents should install `@ton/mcp` (or
     fall back to a non-delegated wallet) on that error code.
-  - Wallet creation always requires `@ton/mcp` — `ton-sovereign-deploy`
+  - Wallet creation always requires `@ton/mcp` — `ton-mesh-harness`
     never writes to `~/.config/ton/config.json`.
 - **F5 errors are stable.** Codes like `ERR_NO_WALLET`,
   `ERR_NO_DOMAIN`, `ERR_DNS_TX_TIMEOUT` are part of the public
@@ -177,18 +177,18 @@ User prompt: *"I changed the homepage. Re-deploy."*
 | `ERR_NO_WALLET` with "config not found" | No wallet yet | Call `ton.agentic_start_root_wallet_setup` |
 | `ERR_NO_WALLET` with "@ton/mcp not installed" | Optional peer missing for NFT-delegated agentic | Tell user: `npm install @ton/mcp@alpha`, or pick a `type: standard` wallet |
 | `ERR_NO_DOMAIN` | Domain not owned by signer | Verify ownership via TONAPI or buy/transfer the domain |
-| `ERR_DNS_TX_TIMEOUT` | Broadcast succeeded; TONAPI lagging | Call `sovereign_status` in 30 s — likely already on-chain |
-| `ERR_BUSY` | Another sovereign_deploy already running | Wait, then retry — server serialises deploys |
+| `ERR_DNS_TX_TIMEOUT` | Broadcast succeeded; TONAPI lagging | Call `mesh_status` in 30 s — likely already on-chain |
+| `ERR_BUSY` | Another mesh_deploy already running | Wait, then retry — server serialises deploys |
 
 ## When NOT to compose
 
 If the user explicitly wants a TonConnect-only flow (phone wallet,
 human-in-the-loop), loading `@ton/mcp` is unnecessary. The kit's
-`sovereign_deploy` with `wallet.kind: "tonconnect"` is fully
+`mesh_deploy` with `wallet.kind: "tonconnect"` is fully
 self-contained.
 
 If the user only needs to check bag status (no fresh deploy),
-`sovereign_status` is the only tool call — no wallet involved.
+`mesh_status` is the only tool call — no wallet involved.
 
 ## Reference: agentic config schema
 

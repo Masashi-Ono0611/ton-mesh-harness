@@ -1,11 +1,11 @@
 /**
- * `sovereign_status` SDK — one-shot snapshot of a bag's network state.
+ * `mesh_status` SDK — one-shot snapshot of a bag's network state.
  *
  * Where `verifyBagOnNetwork` polls until accessible-or-timeout, `status()`
  * is a single TONAPI query plus an optional DNS-record read. Designed for
  * the post-deploy "is my bag propagated?" question agents ask.
  *
- * Spec: docs/v0.8/mcp-core-requirements.md §F2 (deferred sovereign_status,
+ * Spec: docs/v0.8/mcp-core-requirements.md §F2 (deferred mesh_status,
  * landed in rc6).
  *
  * NO `console.*` IN THIS FILE — lint-enforced.
@@ -154,7 +154,7 @@ export async function status(rawInput: unknown): Promise<StatusResult> {
     opts = StatusOptionsSchema.parse(rawInput)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    throw new SdkError('ERR_INVALID_INPUT', `Invalid sovereign_status input: ${msg}`, {
+    throw new SdkError('ERR_INVALID_INPUT', `Invalid mesh_status input: ${msg}`, {
       severity: 'fatal',
     })
   }

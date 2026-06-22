@@ -13,13 +13,13 @@ import {
 function meta(over: Partial<SiteServiceMeta> = {}): SiteServiceMeta {
   return {
     domain: 'mysite.ton',
-    label: 'ton-sovereign-site.mysite.ton',
+    label: 'ton-mesh-site.mysite.ton',
     build_dir: '/home/u/site/out',
-    site_keyring: '/home/u/.ton-sovereign/site-keyring/mysite.ton.hex',
+    site_keyring: '/home/u/.ton-mesh/site-keyring/mysite.ton.hex',
     public_ip: null,
     udp_port: null,
     node_path: '/usr/bin/node',
-    cli_entry: '/home/u/.ton-sovereign/node_modules/.bin/ton-sovereign-deploy',
+    cli_entry: '/home/u/.ton-mesh/node_modules/.bin/ton-mesh-harness',
     adnl_short_id: 'a1b2c3d4e5f60718293a4b5c6d7e8f9001020304050607080910111213141516',
     created_at: '2026-06-22T00:00:00.000Z',
     ...over,
@@ -28,8 +28,8 @@ function meta(over: Partial<SiteServiceMeta> = {}): SiteServiceMeta {
 
 describe('site service labels + paths', () => {
   it('labels per domain', () => {
-    expect(siteServiceLabel('mysite.ton')).toBe('ton-sovereign-site.mysite.ton')
-    expect(siteDir('mysite.ton')).toMatch(/\.ton-sovereign[/\\]sites[/\\]mysite\.ton$/)
+    expect(siteServiceLabel('mysite.ton')).toBe('ton-mesh-site.mysite.ton')
+    expect(siteDir('mysite.ton')).toMatch(/\.ton-mesh[/\\]sites[/\\]mysite\.ton$/)
   })
 })
 
@@ -42,7 +42,7 @@ describe('siteServeArgs', () => {
     expect(args).toContain('--domain')
     expect(args).toContain('mysite.ton')
     expect(args).toContain('--site-keyring')
-    expect(args).toContain('/home/u/.ton-sovereign/site-keyring/mysite.ton.hex')
+    expect(args).toContain('/home/u/.ton-mesh/site-keyring/mysite.ton.hex')
     // optional flags omitted when null
     expect(args).not.toContain('--site-public-ip')
     expect(args).not.toContain('--site-udp-port')
@@ -60,7 +60,7 @@ describe('siteServeArgs', () => {
 describe('buildSiteLaunchdPlist', () => {
   it('runs site-serve and restarts ONLY on unsuccessful exit (no #37 resurrection)', () => {
     const p = buildSiteLaunchdPlist(meta())
-    expect(p).toContain('<string>ton-sovereign-site.mysite.ton</string>')
+    expect(p).toContain('<string>ton-mesh-site.mysite.ton</string>')
     expect(p).toContain('<string>site-serve</string>')
     expect(p).toContain('<string>--domain</string>')
     expect(p).toContain('<string>mysite.ton</string>')
