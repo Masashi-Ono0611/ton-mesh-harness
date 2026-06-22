@@ -18,6 +18,7 @@ export interface RunSiteHostOptions {
   domain: string               // e.g. "mydapp.ton"
   publicIp?: string            // override; auto-detected if absent
   udpPort?: number             // override; findFreeUdpPort if absent
+  siteKeyring?: string         // --site-keyring override (persisted seed path)
   silent?: boolean             // suppress banner output (--json-output)
 }
 
@@ -52,6 +53,7 @@ export async function runSiteHost(opts: RunSiteHostOptions): Promise<SiteHostRes
     domain: opts.domain,
     publicIp: opts.publicIp,
     udpPort: opts.udpPort,
+    siteKeyring: opts.siteKeyring,
     silent: !!opts.silent,
   })
 
@@ -66,6 +68,11 @@ export async function runSiteHost(opts: RunSiteHostOptions): Promise<SiteHostRes
 
   if (!opts.silent) {
     console.log(chalk.green(`  ✔ Site ADNL: ${handle.identity.shortIdHex}`))
+    console.log(chalk.dim(
+      handle.identityReused
+        ? `    identity:   reused (stable across restarts) ← ${handle.siteKeyringPath}`
+        : `    identity:   minted + persisted → ${handle.siteKeyringPath}`,
+    ))
     console.log(chalk.dim(`    encoded:    ${handle.identity.shortIdEncoded}`))
     console.log(chalk.dim(`    public:     ${handle.publicIp}:${handle.udpPort} (UDP)`))
     console.log(chalk.dim(`    local http: 127.0.0.1:${handle.localHttpPort} → ${opts.buildDir}`))

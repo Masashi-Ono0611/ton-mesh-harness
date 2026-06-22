@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { mkdtempSync, readFileSync, statSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 import {
   TL_PRIV_ED25519_ID_LE,
   TL_PUB_ED25519_ID_LE,
   generateAdnlIdentity,
   computeAdnlShortId,
+  loadOrCreateSiteSeed,
+  resolveSiteKeyringPath,
   writeKeyringFile,
   adnlIdEncode,
   adnlIdDecode,
@@ -157,5 +159,68 @@ describe('writeKeyringFile', () => {
   it('rejects relative dbDir', () => {
     const id = generateAdnlIdentity()
     expect(() => writeKeyringFile('relative/path', id)).toThrow(/absolute/)
+  })
+})
+
+describe('resolveSiteKeyringPath', () => {
+  it('uses the per-domain default under ~/.ton-sovereign/site-keyring/', () => {
+    const p = resolveSiteKeyringPath('mydapp.ton')
+    expect(p).toBe(path.join(homedir(), '.ton-sovereign', 'site-keyring', 'mydapp.ton.hex'))
+  })
+
+  it('appends .ton when the domain lacks the suffix', () => {
+    expect(resolveSiteKeyringPath('mydapp')).toBe(
+      path.join(homedir(), '.ton-sovereign', 'site-keyring', 'mydapp.ton.hex'),
+    )
+  })
+
+  it('sanitizes unexpected separators out of the filename', () => {
+    const p = resolveSiteKeyringPath('a/b.ton')
+    expect(path.dirname(p)).toBe(path.join(homedir(), '.ton-sovereign', 'site-keyring'))
+    expect(path.basename(p)).toBe('a_b.ton.hex')
+  })
+
+  it('honors an explicit override, resolved to absolute', () => {
+    // Use path.resolve for the expectation too — on Windows the override
+    // resolves to a drive-qualified path (C:\tmp\…), not the POSIX literal.
+    const override = path.join(tmpdir(), 'custom-seed.hex')
+    expect(resolveSiteKeyringPath('mydapp.ton', override)).toBe(path.resolve(override))
+  })
+})
+
+describe('loadOrCreateSiteSeed', () => {
+  it('mints + persists a fresh 32-byte seed (0o600) when absent, created=true', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'tsdk-siteseed-'))
+    const seedPath = path.join(dir, 'sub', 'site.hex') // nested dir auto-created
+    const { seed, created } = loadOrCreateSiteSeed(seedPath)
+    expect(created).toBe(true)
+    expect(seed.length).toBe(32)
+    expect(statSync(seedPath).mode & 0o777).toBe(0o600)
+    // File holds the hex of the returned seed.
+    expect(readFileSync(seedPath, 'utf8').trim()).toBe(seed.toString('hex'))
+  })
+
+  it('reuses the persisted seed on a second call (created=false, same identity)', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'tsdk-siteseed-'))
+    const seedPath = path.join(dir, 'site.hex')
+    const first = loadOrCreateSiteSeed(seedPath)
+    const second = loadOrCreateSiteSeed(seedPath)
+    expect(second.created).toBe(false)
+    expect(second.seed.equals(first.seed)).toBe(true)
+    // The whole point: same seed ⇒ same ADNL short id across restarts.
+    expect(generateAdnlIdentity(second.seed).shortIdHex).toBe(
+      generateAdnlIdentity(first.seed).shortIdHex,
+    )
+  })
+
+  it('rejects a relative path', () => {
+    expect(() => loadOrCreateSiteSeed('relative/site.hex')).toThrow(/absolute/)
+  })
+
+  it('rejects a present-but-malformed seed file instead of silently re-minting', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'tsdk-siteseed-'))
+    const seedPath = path.join(dir, 'site.hex')
+    writeFileSync(seedPath, 'not-a-valid-seed\n')
+    expect(() => loadOrCreateSiteSeed(seedPath)).toThrow(/64-hex|32-byte/)
   })
 })

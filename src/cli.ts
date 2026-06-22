@@ -73,6 +73,11 @@ program
   .option('--site-auto', 'Auto-spawn rldp-http-proxy with a freshly minted ADNL identity (v0.7+, tonutils backend, public IP needed)')
   .option('--site-public-ip <ip>', 'Override public IPv4 published in the ADNL DHT entry (v0.7+). Default: api.ipify.org probe.')
   .option('--site-udp-port <port>', 'Override UDP port for rldp-http-proxy (v0.7+). Default: free port in 17600-17699.', (v) => parseInt(v, 10))
+  // Persist the rldp-http-proxy ADNL identity (its 32-byte seed) so it's stable
+  // across restarts — required for a long-lived site, since the on-chain `site`
+  // record points at this ADNL. Default location: a per-domain file under
+  // ~/.ton-sovereign/site-keyring/. Pass a path to override (backup / portability).
+  .option('--site-keyring <path>', 'Path to the persisted site-identity seed file (stable ADNL across restarts). Default: ~/.ton-sovereign/site-keyring/<domain>.hex')
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
     // Validate backend choice early.
     if (opts.daemonBackend && opts.daemonBackend !== 'tonutils' && opts.daemonBackend !== 'ton-core') {
@@ -134,6 +139,9 @@ program
     }
     if (opts.siteUdpPort != null && !opts.siteAuto) {
       throw new Error(`--site-udp-port requires --site-auto.`)
+    }
+    if (opts.siteKeyring && !opts.siteAuto) {
+      throw new Error(`--site-keyring requires --site-auto.`)
     }
 
     // v0.8 S2.8: --wallet-mode validation
@@ -235,6 +243,7 @@ program
           domain: opts.domain,
           publicIp: opts.sitePublicIp,
           udpPort: opts.siteUdpPort,
+          siteKeyring: opts.siteKeyring,
           silent: !!opts.jsonOutput,
         })
       }

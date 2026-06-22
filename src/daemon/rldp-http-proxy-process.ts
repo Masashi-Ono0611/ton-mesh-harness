@@ -6,7 +6,14 @@ import { createReadStream, existsSync, mkdirSync, mkdtempSync, renameSync, rmSyn
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import http, { type Server } from 'node:http'
-import { generateAdnlIdentity, writeKeyringFile, type AdnlIdentity } from './keyring'
+import {
+  generateAdnlIdentity,
+  loadOrCreateSiteSeed,
+  resolveSiteKeyringPath,
+  writeKeyringFile,
+  type AdnlIdentity,
+} from './keyring'
+import { guessPrimaryIface, isPublicIpLocallyBound } from './net'
 import { findFreeTcpPort, findFreeUdpPort } from './ports'
 import { getRldpHttpProxyPaths } from './rldp-http-proxy-installer'
 
@@ -19,6 +26,10 @@ export interface RldpHttpProxyHandle {
   udpPort: number             // server UDP port (inbound from TON network; reused for outbound)
   localHttpPort: number       // Node static-server TCP port (loopback only)
   dbDir: string
+  /** Absolute path of the persisted seed backing `identity`. */
+  siteKeyringPath: string
+  /** False when the identity was freshly minted this run, true when reused. */
+  identityReused: boolean
   proxy: ChildProcess
   staticServer: Server
   kill: () => void
@@ -29,6 +40,13 @@ export interface StartRldpHttpProxyOptions {
   domain: string              // e.g. "mydapp.ton"
   publicIp?: string           // override; auto-detected via api.ipify.org if absent
   udpPort?: number            // override; findFreeUdpPort if absent
+  /**
+   * `--site-keyring` override: path to the persisted 32-byte seed file backing
+   * the ADNL identity. When absent, a per-domain default under
+   * `~/.ton-sovereign/site-keyring/` is used. Either way the identity is
+   * reused across runs so the on-chain `site` record stays valid.
+   */
+  siteKeyring?: string
   /**
    * Suppresses the human-readable startup banner (the "Listening on
    * udp …" / "Mapping mydapp.ton → 127.0.0.1:…" lines). The
@@ -73,8 +91,13 @@ export async function startRldpHttpProxy(
   const globalCfgPath = path.join(dbDir, 'ton-global.config.json')
   await downloadFileTo(TON_GLOBAL_CONFIG_URL, globalCfgPath)
 
-  // Mint the ADNL identity + write its keyring file.
-  const identity = generateAdnlIdentity()
+  // Load (or mint + persist) the ADNL identity from a stable seed so the
+  // on-chain `site` record keeps pointing at a live identity across restarts.
+  // The rldp keyring file itself is rebuilt from the seed each run.
+  const siteKeyringPath = resolveSiteKeyringPath(opts.domain, opts.siteKeyring)
+  const { seed, created } = loadOrCreateSiteSeed(siteKeyringPath)
+  const identity = generateAdnlIdentity(seed)
+  const identityReused = !created
   writeKeyringFile(dbDir, identity)
 
   // Resolve transport endpoints.
@@ -85,6 +108,22 @@ export async function startRldpHttpProxy(
       `(or run on a host with internet egress so api.ipify.org responds).`,
     )
   }
+
+  // Cloud-NAT preflight advisory: rldp binds its client socket to `-a publicIp`.
+  // On a 1:1 NAT VM the public IP isn't on any NIC, so the bind fails and the
+  // proxy can't sync the liteserver. Surface the exact fix and continue (the
+  // kit never runs the privileged command; a non-NAT VPS won't trip this).
+  if (!opts.silent && !isPublicIpLocallyBound(publicIp)) {
+    const iface = guessPrimaryIface() ?? '<iface>'
+    process.stderr.write(
+      `  ⚠ ${publicIp} is announced to the DHT but is not assigned to any local interface.\n` +
+      `    On a 1:1 NAT cloud VM (GCP/AWS), bind it so rldp can sync the liteserver:\n` +
+      `      sudo ip addr add ${publicIp}/32 dev ${iface}\n` +
+      (iface === '<iface>' ? `    (find your interface with: ip -o link)\n` : '') +
+      `    Without this the proxy starts but can't reach the network and the site won't serve.\n`,
+    )
+  }
+
   const udpPort = opts.udpPort ?? (await findFreeUdpPort(17600, 17699))
   const localHttpPort = await findFreeTcpPort(18080, 18099)
 
@@ -186,6 +225,8 @@ export async function startRldpHttpProxy(
     udpPort,
     localHttpPort,
     dbDir,
+    siteKeyringPath,
+    identityReused,
     proxy,
     staticServer,
     kill,
