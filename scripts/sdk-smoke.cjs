@@ -37,7 +37,7 @@ function assert(cond, msg) {
 const sdk = require(SDK_PATH)
 
 // 1. Function entry points
-for (const name of ['checkEnv', 'deploy', 'status']) {
+for (const name of ['checkEnv', 'deploy', 'status', 'siteRecord']) {
   assert(typeof sdk[name] === 'function', `expected sdk.${name} to be a function`)
 }
 
@@ -61,6 +61,8 @@ const schemaNames = [
   'ErrCodeSchema',
   'StatusOptionsSchema',
   'StatusResultSchema',
+  'SiteRecordOptionsSchema',
+  'SiteRecordResultSchema',
   'WalletSpecSchema',
 ]
 for (const name of schemaNames) {
@@ -81,9 +83,14 @@ assert(parsed.testnet === false, 'testnet default should be false')
 
 // 5. Tool descriptors
 assert(Array.isArray(sdk.ALL_TOOLS), 'ALL_TOOLS must be an array')
-assert(sdk.ALL_TOOLS.length === 3, `ALL_TOOLS length expected 3, got ${sdk.ALL_TOOLS.length}`)
+assert(sdk.ALL_TOOLS.length === 4, `ALL_TOOLS length expected 4, got ${sdk.ALL_TOOLS.length}`)
 const toolNames = sdk.ALL_TOOLS.map((t) => t.name).sort()
-const expected = ['sovereign_check_env', 'sovereign_deploy', 'sovereign_status']
+const expected = [
+  'sovereign_check_env',
+  'sovereign_deploy',
+  'sovereign_site_record',
+  'sovereign_status',
+]
 assert(
   JSON.stringify(toolNames) === JSON.stringify(expected),
   `tool names mismatch: ${toolNames.join(',')}`,

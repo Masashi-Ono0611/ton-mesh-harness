@@ -28,10 +28,12 @@ import {
 import { checkEnv } from './sdk/check'
 import { deploy, SdkError } from './sdk/deploy'
 import { status } from './sdk/status'
+import { siteRecord } from './sdk/site-record'
 import {
   ALL_TOOLS,
   SOVEREIGN_CHECK_ENV_TOOL,
   SOVEREIGN_DEPLOY_TOOL,
+  SOVEREIGN_SITE_RECORD_TOOL,
   SOVEREIGN_STATUS_TOOL,
 } from './sdk/json-schemas'
 import { DeployOptionsSchema } from './sdk/schemas'
@@ -94,6 +96,9 @@ const DEPLOY_DESCRIPTION =
 const STATUS_DESCRIPTION =
   'One-shot snapshot of a bag\'s network state. Given a bag_id (and optionally a .ton domain), queries TONAPI to report whether the bag is propagated, its current size + file count, and — when a domain is passed — whether the on-chain DNS storage record points at this bag. Use AFTER a sovereign_deploy with keep_alive=false to check propagation status without keeping a daemon alive. Network failures absorb into bag_accessible=false rather than throwing, so the answer is always a clean snapshot, never a partial-state error.'
 
+const SITE_RECORD_DESCRIPTION =
+  'Build a Tonkeeper sign link that sets ONLY the `site` (dns_adnl_address) DNS record for a .ton domain you own — no bag upload, no storage record write, no daemon, no TonConnect. Use this to point a domain at a resident rldp-http-proxy ADNL identity (so `<domain>.ton` opens in TON Browser) WITHOUT re-deploying or overwriting the storage/bag record. Given { domain, site_adnl (64-hex ADNL), testnet? }, resolves the domain NFT via TONAPI and returns the change_dns_record body (BOC, base64url) plus a tonkeeper_deeplink (https://app.tonkeeper.com/transfer/...). Nothing is broadcast — the deeplink writes the record once a wallet signs it, so the agent should surface tonkeeper_deeplink to the human holding the domain.'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Server bootstrap (low-level handlers)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -123,6 +128,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         description: STATUS_DESCRIPTION,
         inputSchema: SOVEREIGN_STATUS_TOOL.input,
       },
+      {
+        name: SOVEREIGN_SITE_RECORD_TOOL.name,
+        description: SITE_RECORD_DESCRIPTION,
+        inputSchema: SOVEREIGN_SITE_RECORD_TOOL.input,
+      },
     ],
   }
 })
@@ -143,6 +153,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any, extra: any)
       return handleDeploy(args, extra)
     case 'sovereign_status':
       return handleStatus(args)
+    case 'sovereign_site_record':
+      return handleSiteRecord(args)
     default:
       return structuredErr(
         new SdkError('ERR_INVALID_INPUT', `Unknown tool: ${name}`, { severity: 'fatal' }),
@@ -153,6 +165,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any, extra: any)
 async function handleStatus(args: unknown): Promise<CallToolResult> {
   try {
     const result = await status(args)
+    return structuredOk(result)
+  } catch (err) {
+    return structuredErr(err)
+  }
+}
+
+// ─── sovereign_site_record ────────────────────────────────────────────────────
+//
+// siteRecord() owns input validation (zod → SdkError(ERR_INVALID_INPUT)) and
+// NFT resolution (→ SdkError(ERR_NO_DOMAIN)). It builds a deeplink but never
+// broadcasts, so there is no daemon lifecycle to manage and no signing handoff
+// — a plain one-shot like status().
+async function handleSiteRecord(args: unknown): Promise<CallToolResult> {
+  try {
+    const result = await siteRecord(args)
     return structuredOk(result)
   } catch (err) {
     return structuredErr(err)
@@ -294,12 +321,11 @@ async function handleDeploy(
   }
 }
 
-// Assert at startup that ALL_TOOLS still has exactly the two GA tools we
-// wire above; if [D5] adds a new tool to the SDK without wiring here,
-// the smoke test should fail loud.
-if (ALL_TOOLS.length !== 3) {
+// Assert at startup that ALL_TOOLS still has exactly the tools we wire above;
+// if a new tool is added to the SDK without wiring here, fail loud.
+if (ALL_TOOLS.length !== 4) {
   process.stderr.write(
-    `ton-sovereign-mcp: ALL_TOOLS has ${ALL_TOOLS.length} entries; expected 3 (sovereign_check_env + sovereign_deploy + sovereign_status). ` +
+    `ton-sovereign-mcp: ALL_TOOLS has ${ALL_TOOLS.length} entries; expected 4 (sovereign_check_env + sovereign_deploy + sovereign_status + sovereign_site_record). ` +
       `Wire any new tools in src/mcp.ts before shipping.\n`,
   )
   process.exit(1)
