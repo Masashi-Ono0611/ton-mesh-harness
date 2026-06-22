@@ -138,3 +138,36 @@ jobs:
         # operator-run step (see docs/v0.8/e2e-runbook.md) — there is
         # deliberately no mainnet seed in CI secrets.
         run: node scripts/e2e-mcp-deploy.cjs
+
+  # #76 — the structural catch for the #74 keyring case bug ("passes on
+  # macOS, aborts on case-sensitive Linux"). A single Linux runner that
+  # actually downloads + spawns rldp-http-proxy and asserts it loads the
+  # keyring and stays up. Separate from the matrix (heavier: binary download
+  # + FUSE) and not in the default `npm test` run (RUN_DAEMON_TESTS gated).
+  rldp-integration:
+    name: rldp-http-proxy live spawn (linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install FUSE3
+        # rldp-http-proxy ships as an AppImage; without `fusermount3` it
+        # exits 127. ubuntu-latest runners have /dev/fuse + can apt-install it.
+        run: sudo apt-get update && sudo apt-get install -y fuse3
+
+      - name: rldp-http-proxy live spawn (RUN_DAEMON_TESTS=1)
+        # Downloads the binary via ensureRldpHttpProxyBinary, mints + loads a
+        # keyring, binds the proxy to loopback, asserts it stays up + serves.
+        run: npx vitest run test/daemon/rldp-http-proxy-process.integration.test.ts
+        env:
+          RUN_DAEMON_TESTS: '1'

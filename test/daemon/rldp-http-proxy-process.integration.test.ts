@@ -16,6 +16,15 @@ describe.skipIf(!RUN)('rldp-http-proxy live spawn (RUN_DAEMON_TESTS=1)', () => {
     const handle = await startRldpHttpProxy({
       buildDir,
       domain: 'smoke.ton',
+      // Bind to loopback so the test is host-agnostic: on a CI runner (and any
+      // 1:1 NAT VM) the ipify-detected public IP isn't on a local NIC, so the
+      // proxy couldn't bind `-a <publicIp>`. Loopback is always bindable. We're
+      // proving the keyring loads + the proxy stays up (the #74 class), not real
+      // RLDP connectivity. Override via RLDP_TEST_PUBLIC_IP if needed.
+      publicIp: process.env.RLDP_TEST_PUBLIC_IP ?? '127.0.0.1',
+      // Persist the seed inside the throwaway build dir so the test leaves no
+      // file under ~/.ton-sovereign/site-keyring/.
+      siteKeyring: path.join(buildDir, 'site-seed.hex'),
       silent: true,
     })
 
@@ -26,7 +35,10 @@ describe.skipIf(!RUN)('rldp-http-proxy live spawn (RUN_DAEMON_TESTS=1)', () => {
       console.log('  localHttpPort:', handle.localHttpPort)
       console.log('  proxy pid:', handle.proxy.pid, 'exitCode:', handle.proxy.exitCode)
 
-      // 1. Proxy still alive after spawn
+      // 1. Proxy still alive after spawn — i.e. it loaded the keyring by the
+      //    UPPERCASE filename rldp-http-proxy expects. On case-sensitive Linux
+      //    the pre-#74 lowercase name aborted here with `key not in db`; this
+      //    is the structural catch for that class (#76).
       expect(handle.proxy.exitCode).toBeNull()
 
       // 2. Static server responds at the local URL
