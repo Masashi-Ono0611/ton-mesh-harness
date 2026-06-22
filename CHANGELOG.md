@@ -6,6 +6,8 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.0] – 2026-06-22
+
 ### Added
 
 - **Browser-viewable site gateway URL (#70).** A deploy that writes a `site`
@@ -27,6 +29,13 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
   `--site-auto` ip-alias hint; the kit never runs the privileged op itself).
   Surfaced both as a bag-seeder `nextAction` and in the site-gateway install
   banner. macOS launchd is unaffected.
+
+### Security
+
+- **Dependency CVE overrides (#88).** Pin transitive deps via `overrides` to
+  patched ranges — `axios>=1.16.0`, `form-data>=4.0.6`, `hono>=4.12.25`,
+  `ws>=8.21.0` — clearing the HIGH/CRITICAL advisories flagged against the
+  shipped dependency tree.
 
 ## [0.11.0] – 2026-06-22
 
