@@ -272,7 +272,8 @@ ton-sovereign-deploy [build-dir] [options]
 | `--daemon-mode <mode>` | Daemon ownership: `detached` (default) / `embedded` (one-shot) / `service` (hand to launchd/systemd). |
 | `--daemon-backend <name>` | `tonutils` (default) or `ton-core` (C++ legacy; needed only for `--provider`). |
 | `--tunnel-config <path>` | Path to `nodes-pool.json` for ADNL Tunnel NAT traversal (bring-your-own pool). |
-| `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `site` record under `--domain`. |
+| `--site-auto` | Spawn + manage an `rldp-http-proxy` and write the `site` record automatically (see [Hosting a site](#hosting-a-site---site-auto)). `--site-public-ip` / `--site-udp-port` pin the announced address/port. |
+| `--site-adnl <hex>` | 64-hex ADNL identity to publish as the `site` record under `--domain` (bring-your-own proxy). |
 | `--site-keyring <path>` | Persist the `--site-auto` proxy identity so its ADNL is stable across restarts (default: `~/.ton-sovereign/site-keyring/<domain>.hex`). |
 | `--provider [address]` | Storage-provider contract — **disabled** (mainnet provider economy is dormant; [#30](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/30)). |
 | `--no-provenance` | Skip emitting `.well-known/ton-deploy.json` into the bag. |
@@ -329,6 +330,8 @@ The service re-derives the same ADNL from the persisted seed on every restart, s
 ton-sovereign-deploy service list                 # bag seeders + site gateways
 ton-sovereign-deploy service stop-site mysite.ton # stop (add --purge to drop metadata)
 ```
+
+> **On Linux, enable lingering once** so the `systemd --user` unit starts after an unattended reboot (it otherwise only runs while you're logged in): `sudo loginctl enable-linger "$USER"`. macOS launchd survives reboots without this.
 
 `ton-sovereign-deploy site-serve --build-dir ./build --domain mysite.ton` runs the same gateway in the foreground (what the service unit executes) — useful for a quick test or under your own supervisor.
 

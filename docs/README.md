@@ -13,7 +13,8 @@ These describe how the kit works today; keep them accurate.
 
 | Doc | What |
 |---|---|
-| [`v0.9/daemon-service-mode.md`](./v0.9/daemon-service-mode.md) | `--daemon-mode` (embedded/detached/service) + launchd/systemd ownership (#37) |
+| [`v0.10/site-hosting.md`](./v0.10/site-hosting.md) | hosting a `.ton` site end-to-end — `site-record` / `--site-auto` / `--site-keyring` / cloud reachability / `--daemon-mode service` (#77–#81) |
+| [`v0.9/daemon-service-mode.md`](./v0.9/daemon-service-mode.md) | `--daemon-mode` (embedded/detached/service) + launchd/systemd ownership for bag seeders **and** site gateways (#37) |
 | [`v0.9/mcp-http-transport.md`](./v0.9/mcp-http-transport.md) | `ton-sovereign-mcp --http` transport, auth, CORS, threat model (#33) |
 | [`v0.9/provenance.md`](./v0.9/provenance.md) | signed `.well-known/ton-deploy.json` manifest + `verify-provenance` (#34) |
 | [`v0.9/release-runbook.md`](./v0.9/release-runbook.md) | daemon version bump + SHA-256 refresh workflow (#32) |
@@ -23,7 +24,7 @@ These describe how the kit works today; keep them accurate.
 | [`v0.8/e2e-runbook.md`](./v0.8/e2e-runbook.md) | V3 mainnet MCP E2E reproduction + testnet rehearsal |
 | [`v0.8/mcp-core-requirements.md`](./v0.8/mcp-core-requirements.md) | the MCP server spec (F1–F5 / NF) — authoritative reference |
 | [`v0.9/release-checklist.md`](./v0.9/release-checklist.md) | the GA cut ritual (`vX.Y.Z` tag push → OIDC auto-publish) |
-| [`v0.6/byo-rldp-http-proxy.md`](./v0.6/byo-rldp-http-proxy.md) | bring-your-own rldp-http-proxy for `--site-adnl` |
+| [`v0.6/byo-rldp-http-proxy.md`](./v0.6/byo-rldp-http-proxy.md) | bring-your-own rldp-http-proxy for `--site-adnl` (see `v0.10/site-hosting.md` for the auto / persistent / service flow) |
 | [`provider-contract.md`](./provider-contract.md) | storage-provider contract reference (`--provider`, currently dormant) |
 
 ## Reference — pending / external-facing artifacts
