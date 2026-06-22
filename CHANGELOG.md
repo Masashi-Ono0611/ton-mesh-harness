@@ -6,6 +6,56 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Site hosting is now reproducible end-to-end from the kit alone — a `.ton` site
+can be deployed, persistently identified, and kept online by an OS service
+without a hand-written unit. See [`docs/v0.10/site-hosting.md`](./docs/v0.10/site-hosting.md).
+
+### Added
+
+- **`site-record <domain> <adnl-hex>` subcommand (#77).** Sets ONLY the `site`
+  (`dns_adnl_address`) record for a domain and prints a Tonkeeper transfer
+  deeplink to sign it — no bag, no storage write, no daemon, no TonConnect.
+  Point a domain at a resident `rldp-http-proxy` without re-deploying or
+  overwriting the storage record. `--json-output` emits the deeplink + raw
+  message BOC for agents / CI.
+- **SDK `siteRecord()` + MCP `sovereign_site_record` (#78).** The site-record
+  builder is exposed programmatically and as a 4th MCP tool (one-shot; builds
+  the deeplink, never broadcasts). The CLI subcommand is now a thin renderer
+  over the shared SDK function.
+- **`--site-keyring <path>` — persistent `--site-auto` identity (#79).** The
+  proxy's ADNL seed is persisted (default `~/.ton-sovereign/site-keyring/<domain>.hex`,
+  mode `0600`) and reused across restarts, so the on-chain `site` record stays
+  valid. Previously every run minted a fresh ADNL, silently breaking the site
+  on restart.
+- **Cloud-NAT reachability advisory (#79).** Before spawning, `--site-auto`
+  checks whether the announced public IP is assigned to a local interface; on a
+  1:1-NAT VM it prints the exact `sudo ip addr add <ip>/32 dev <iface>` fix.
+  Advisory only — the kit never runs the privileged command.
+- **Persistent site hosting — `--site-auto --daemon-mode service` (#81).** Hands
+  the proxy + static server to launchd / systemd via a new foreground
+  `site-serve` command, so a `.ton` site survives CLI exit and reboots. The
+  service re-derives the same ADNL from the persisted seed on every restart.
+  `service list` now shows bag seeders **and** site gateways; `service
+  stop-site <domain>` manages the latter. Restart-on-failure only (a clean stop
+  stays stopped). Previously `--daemon-mode service` was rejected with
+  `--site-auto`.
+- **rldp-http-proxy live-spawn integration test in Linux CI (#76).** A new
+  `rldp-integration` job (ubuntu-latest, FUSE3, `RUN_DAEMON_TESTS=1`) spawns the
+  real binary and asserts it loads the keyring and stays up — the structural
+  catch for the "passes on macOS, aborts on case-sensitive Linux" class.
+
+### Fixed
+
+- **`--site-auto` aborted on every case-sensitive Linux host (#74).** The
+  rldp-http-proxy keyring file was written with a lowercase hex name, but the
+  proxy looks it up by `td::Bits256::to_hex()` (uppercase) — so it resolved only
+  on case-insensitive macOS and aborted with `key not in db` everywhere else.
+  Written uppercase now.
+- **Self-diagnosing rldp startup errors (#75).** A failed proxy start now
+  inlines the `proxy.log` tail + captured stdout/stderr into the thrown error
+  *before* the session dir is cleaned up (the old message pointed at a log it
+  then deleted). Draining the proxy's piped stdio also removes latent backpressure.
+
 ## [0.10.0] – 2026-06-22
 
 ### Fixed

@@ -227,6 +227,8 @@ hint if Toncenter's index hadn't caught up by the 3s grace deadline.
 
 - `sovereign_check_env({ source_dir? })` → `CheckEnvResult`
 - `sovereign_deploy({ source_dir, domain?, wallet?, ... })` → `DeployResult`
+- `sovereign_status({ bag_id, domain?, testnet? })` → `StatusResult` (one-shot propagation snapshot)
+- `sovereign_site_record({ domain, site_adnl, testnet? })` → `SiteRecordResult` (Tonkeeper deeplink that sets only the `site` record; never broadcasts)
 
 Full input/output schemas: see the `tools/list` response or
 [`docs/v0.8/mcp-core-requirements.md`](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/blob/main/docs/v0.8/mcp-core-requirements.md)

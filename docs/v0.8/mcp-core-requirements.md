@@ -22,11 +22,11 @@ artifacts that let an agent find the kit without being told its name.**
 4. Programmatic SDK extraction (no console output, no spinners, no
    `process.exit`).
 5. MCP server binary (`ton-sovereign-mcp`) using stdio transport.
-6. Three tools: `sovereign_deploy`, `sovereign_check_env`, and
-   `sovereign_status`. (Scope expanded from 2 → 3 in rc6 — see
+6. Tools: `sovereign_deploy`, `sovereign_check_env`, `sovereign_status`, and
+   `sovereign_site_record`. (2 → 3 in rc6; 3 → 4 in v0.10 — see
    "Tool count history" below.)
 7. Progress notifications and cancellation per MCP spec.
-8. Stable error code contract for the three tools.
+8. Stable error code contract for the tools.
 9. **`@ton/walletkit` filesystem-level compose** — read the agentic wallet
    config at `~/.config/ton/config.json` directly via the same loader
    `@ton/mcp` uses. See [P-1 probe memo](../archive/v0.8/at-mcp-probe.md) for the verified
@@ -56,7 +56,9 @@ Updated per concept-update 2026-05-10:
   three-tool contract is validated by V3/V4. `sovereign_status`
   graduated into 0.8.0 GA scope at rc6 (was originally listed
   here as deferred — the one-shot bag-propagation snapshot turned
-  out to be small enough to ship in v0.8.0).
+  out to be small enough to ship in v0.8.0). `sovereign_site_record`
+  later shipped in v0.10 (a one-shot deeplink builder; see below and
+  [`v0.10/site-hosting.md`](../v0.10/site-hosting.md)).
 - `.well-known/ton-deploy.json` provenance manifest (Codex C axis from
   concept-update Phase 3.5) — noted as candidate, no commitment.
 - Repo split / monorepo.
@@ -209,6 +211,30 @@ at `src/sdk/status.ts`; the snapshot semantic differs from
   agent can see `bag_accessible: true` paired with `domain.matches:
   false` (the bag is live, but the .ton record points elsewhere).
 
+#### `sovereign_site_record` *(added v0.10)*
+
+Build (but do **not** broadcast) a Tonkeeper sign link that sets ONLY the
+`site` (`dns_adnl_address`) record for a domain — no bag, no storage write, no
+daemon. A one-shot like `sovereign_status`. The SDK boundary is
+`src/sdk/site-record.ts`; the agent surfaces `tonkeeper_deeplink` to the human
+holding the domain, who signs once. Full flow: [`v0.10/site-hosting.md`](../v0.10/site-hosting.md).
+
+**Input**:
+
+| field | type | required | default |
+|---|---|---|---|
+| `domain` | string (`.ton`) | ✅ | — |
+| `site_adnl` | string (64 hex, optional `0x`/`0X` prefix) | ✅ | — |
+| `testnet` | boolean | — | false |
+
+**Output**: `{ domain, nft_address, record: "site", site_adnl, amount_nano,
+body_boc_base64url, tonkeeper_deeplink }`.
+
+**Behavior**: validates input (`SdkError(ERR_INVALID_INPUT)` on a bad domain /
+non-hex ADNL), resolves the domain NFT via TONAPI (`ERR_NO_DOMAIN` on failure),
+and returns the deeplink. Nothing is sent on-chain — the deeplink writes the
+record once a wallet signs it.
+
 ### F3. Progress notifications
 - Sent during `sovereign_deploy` calls.
 - Schema per event: `{ phase: string, message: string, percent?: number, data?: object }`.
@@ -337,7 +363,7 @@ the calling agent via `may_have_published: true`.
 
 ### GA (week 6)
 5. `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` (dual-bin invocation) boots and responds to MCP `initialize`.
-6. `tools/list` returns exactly three tools — `sovereign_check_env`, `sovereign_deploy`, `sovereign_status` — all with valid JSON Schemas matching the tables above. Tool descriptions include "deploy a static site to .ton" (or close paraphrase) for [V4] discoverability. (rc6 expansion: `sovereign_status` was originally deferred; promoted into GA scope when the one-shot bag-propagation snapshot turned out to be small.)
+6. `tools/list` returns the GA tools — `sovereign_check_env`, `sovereign_deploy`, `sovereign_status` (and, from v0.10, `sovereign_site_record`) — all with valid JSON Schemas matching the tables above. Tool descriptions include "deploy a static site to .ton" (or close paraphrase) for [V4] discoverability. (rc6 expansion: `sovereign_status` was originally deferred; promoted into GA scope when the one-shot bag-propagation snapshot turned out to be small. v0.10 added `sovereign_site_record`.)
 7. From a Claude Code session connected to the server:
    a. `sovereign_check_env` returns a structured result.
    b. `sovereign_deploy` against a sample `dist/` on testnet (Path 1 *and* Path 2) completes end-to-end, receiving `bag_id`, `daemon_api_url`, and a non-error result.
