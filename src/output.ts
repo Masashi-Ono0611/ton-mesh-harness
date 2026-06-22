@@ -22,6 +22,23 @@ export function buildUrls(bagId: string): Pick<DeployResult, 'tonUrl'> {
   }
 }
 
+/**
+ * The ton.run SITE gateway URL for a `.ton` domain. The gateway resolves the
+ * domain's `site` record (an ADNL identity) over RLDP, so this opens in an
+ * ordinary browser once that record is on chain AND a reachable rldp-http-proxy
+ * backs the ADNL (verified 2026-06-22: foundation.ton.run → 200). Only
+ * meaningful for a deploy that writes a `site` record — a storage-only domain
+ * has no ADNL to resolve and 404s — so callers must emit it ONLY after a site
+ * record is signed, never for a storage-only deploy. (#70)
+ */
+export function siteGatewayUrl(domain: string): string {
+  // Normalize a shorthand domain the same way the DNS path does (`mysite` →
+  // `mysite.ton`; see src/dns.ts), so the gateway URL matches the record that
+  // was actually written. Then append `.run`: `<label>.ton` → `<label>.ton.run`.
+  const cleanDomain = domain.endsWith('.ton') ? domain : `${domain}.ton`
+  return `https://${cleanDomain}.run`
+}
+
 export function printResult(result: DeployResult): void {
   console.log()
   console.log(chalk.green('✅ TON Storage:  ') + chalk.bold(result.tonUrl))

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildUrls, exportAsJson, type DeployResult } from '../src/output'
+import { buildUrls, siteGatewayUrl, exportAsJson, type DeployResult } from '../src/output'
 
 describe('output', () => {
   describe('buildUrls', () => {
@@ -17,6 +17,24 @@ describe('output', () => {
       const result = buildUrls('abc123') as { tonUrl: string; fallbackUrl?: string }
       expect(result.fallbackUrl).toBeUndefined()
       expect(JSON.stringify(result)).not.toContain('ton.run')
+    })
+  })
+
+  describe('siteGatewayUrl', () => {
+    it('maps a .ton domain to its ton.run SITE gateway URL', () => {
+      // The ton.run site gateway resolves dns_adnl_address over RLDP, so a
+      // site-record deploy is browser-openable at <domain>.ton.run. (#70)
+      expect(siteGatewayUrl('mysite.ton')).toBe('https://mysite.ton.run')
+    })
+
+    it('handles a subdomain', () => {
+      expect(siteGatewayUrl('app.mysite.ton')).toBe('https://app.mysite.ton.run')
+    })
+
+    it('normalizes a shorthand domain (no .ton suffix) like the DNS path', () => {
+      // The DNS path resolves `mysite` as `mysite.ton`, so the gateway URL must
+      // match the written record — not `mysite.run`. (#70 Codex review)
+      expect(siteGatewayUrl('mysite')).toBe('https://mysite.ton.run')
     })
   })
 

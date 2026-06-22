@@ -235,7 +235,7 @@ open http://localhost:8080/ton://bag-a3f9c82e1b4d...
 
 **2. Any TON Storage client**
 
-Any TON Storage client can fetch the bag by id once it has propagated (minutes to hours) — provided a reachable node is seeding it. Browser access requires a `.ton` domain: public HTTP gateways resolve `.ton` domains, not raw bag ids (`ton.run/<bag_id>` returns 404). To open the site in a browser, attach a `.ton` domain (`--domain`) and keep a reachable seeder up.
+Any TON Storage client can fetch the bag by id once it has propagated (minutes to hours) — provided a reachable node is seeding it. **Opening it in an ordinary browser is a separate path:** public HTTP gateways resolve a `.ton` domain's **`site` record** (an ADNL identity), not raw bag ids (`ton.run/<bag_id>` 404s) and not the storage record on its own. So browser access needs a `site` record (`--site-auto` / `--site-adnl`) backed by a reachable `rldp-http-proxy` — see [Hosting a site](#hosting-a-site---site-auto).
 
 ### Propagation expectations
 
@@ -334,6 +334,8 @@ ton-sovereign-deploy service stop-site mysite.ton # stop (add --purge to drop me
 > **On Linux, enable lingering once** so the `systemd --user` unit starts after an unattended reboot (it otherwise only runs while you're logged in): `sudo loginctl enable-linger "$USER"`. macOS launchd survives reboots without this.
 
 `ton-sovereign-deploy site-serve --build-dir ./build --domain mysite.ton` runs the same gateway in the foreground (what the service unit executes) — useful for a quick test or under your own supervisor.
+
+**Open it.** In TON Browser: `tonsite://mysite.ton`. In an ordinary browser: `https://mysite.ton.run` — the ton.run **site** gateway resolves the `site` ADNL over RLDP once the record is on chain and the proxy is reachable (a storage-only domain, with no `site` record, 404s there). A deploy that writes a `site` record prints this URL as its **Gateway URL** once the record is signed. Full verification recipe: [docs/v0.10/site-hosting.md](docs/v0.10/site-hosting.md).
 
 ### Backend choice
 

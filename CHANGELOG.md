@@ -6,6 +6,28 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Browser-viewable site gateway URL (#70).** A deploy that writes a `site`
+  record (`--site-auto` / `--site-adnl`, either backend, TonConnect or agentic)
+  now prints `https://<domain>.ton.run` as its **Gateway URL** — but only after
+  the site record is signed, so a rejected/failed sign never advertises a dead
+  link. The ton.run site gateway resolves the `site` ADNL over RLDP, so the page
+  opens in an ordinary browser once the record is on chain and the proxy is
+  reachable (verified: `foundation.ton.run` → 200; mainnet only — ton.run has no
+  testnet selector, so a `--testnet` deploy prints the generic TON-DNS line
+  instead). A storage-only deploy prints no gateway URL — it has no ADNL for the
+  gateway to resolve (`<domain>.ton.run` 404s). README +
+  `docs/v0.10/site-hosting.md` document both browser paths (`tonsite://` and
+  `<domain>.ton.run`).
+- **systemd lingering advisory (#83).** On Linux, `--daemon-mode service`
+  installs a `systemd --user` unit that won't restart after an unattended
+  reboot unless lingering is enabled once. The kit now detects this and prints
+  the exact `loginctl enable-linger` command (advisory-only — parity with the
+  `--site-auto` ip-alias hint; the kit never runs the privileged op itself).
+  Surfaced both as a bag-seeder `nextAction` and in the site-gateway install
+  banner. macOS launchd is unaffected.
+
 ## [0.11.0] – 2026-06-22
 
 Site hosting is now reproducible end-to-end from the kit alone — a `.ton` site

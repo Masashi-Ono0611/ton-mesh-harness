@@ -15,6 +15,7 @@ import {
 import { normalizedExternalInHashHex } from '../sdk/resolve-tx'
 import { networkFromTestnetFlag, tonviewerTxUrl } from '../sdk/endpoints'
 import { safeAbort } from '../sdk/abort'
+import { siteGatewayUrl } from '../output'
 
 interface DnsRegistrationOptions {
   testnet?: boolean
@@ -151,7 +152,19 @@ export async function runDnsRegistration(
 
     log()
     log(chalk.green(`  ✅ ${domain} now points to your site!`))
-    log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
+    if (opts.siteAdnl && !testnet) {
+      // A site record (dns_adnl_address) was just signed: the ton.run SITE
+      // gateway resolves that ADNL over RLDP, so the site is browser-openable
+      // at <domain>.ton.run once it propagates and the proxy is reachable.
+      // Emitted ONLY here (after a successful site-record sign) and ONLY on
+      // mainnet — ton.run is a mainnet gateway with no testnet selector, so a
+      // testnet record falls through to the generic line below. Never for a
+      // storage-only deploy, so we never advertise a dead link. (#70)
+      log(chalk.cyan(`  🔗 Gateway URL:  ${siteGatewayUrl(domain)}`))
+      log(chalk.dim('     opens once the site record propagates and your rldp-http-proxy is reachable'))
+    } else {
+      log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
+    }
     if (txHash) {
       log(chalk.dim(`     Tx:  ${txHash}`))
       log(chalk.dim(`     View: ${tonviewerTxUrl(txHash, testnet)}`))

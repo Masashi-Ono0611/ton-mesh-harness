@@ -111,14 +111,27 @@ ton-sovereign-deploy service stop-site mysite.ton  # stop (the identity seed is 
 ton-sovereign-deploy service stop-site mysite.ton --purge  # also drop the metadata dir
 ```
 
-## Verifying
+## Verifying — the browser-viewable paths
 
-Don't infer "it works" — observe it:
+Don't infer "it works" — observe it. A `.ton` site is reachable through the
+**`site` record** (`dns_adnl_address`), which a gateway resolves to your
+`rldp-http-proxy` over RLDP. Two front doors:
 
 1. `service list` shows the gateway `running`.
-2. Open `<domain>.ton` in **TON Browser** (`tonsite://`) or `<domain>.ton.run` —
-   expect your content.
-3. (storage health, optional) an independent node downloads the bag by id alone
+2. **TON Browser** — open `tonsite://<domain>`. Validated end-to-end on a free
+   GCP host (`masashi-ono0611.ton`).
+3. **Ordinary browser** — open `https://<domain>.ton.run`. The ton.run **site**
+   gateway resolves the `site` ADNL over RLDP and serves your content once the
+   record is on chain **and** your proxy is reachable (verified: a live
+   `site`-record domain such as `foundation.ton.run` → `200`). Until the record
+   propagates / the proxy syncs it returns `404`/`502`. A deploy that writes a
+   `site` record (`--site-auto` / `--site-adnl`) prints this URL as its
+   **Gateway URL** once the record is signed (never before — a rejected/failed
+   sign writes no record, so it never advertises a dead link).
+   - A **storage-only** deploy has no ADNL for the gateway to resolve, so
+     `<domain>.ton.run` and `ton.run/<bag>` both `404` — the kit deliberately
+     prints **no** gateway URL there rather than a dead link.
+4. (storage health, optional) an independent node downloads the bag by id alone
    (TONAPI's 200 is **not** a reachability oracle for a raw self-hosted bag).
 
 ## Operational notes

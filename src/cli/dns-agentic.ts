@@ -17,6 +17,7 @@ import { resolveCliOutputMode } from './output-mode'
 import { writeDnsRecordAgentic } from '../sdk/dns'
 import { SdkError } from '../sdk/deploy'
 import { tonviewerTxUrl } from '../sdk/endpoints'
+import { siteGatewayUrl } from '../output'
 
 export interface DnsRegistrationAgenticOptions {
   testnet?: boolean
@@ -127,6 +128,15 @@ export async function runDnsRegistrationAgentic(
 
   log()
   log(chalk.green(`  ✅ ${domain} now points to your site!`))
-  log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
+  if (opts.siteAdnl && !testnet) {
+    // Site record just signed → browser-openable via the ton.run SITE gateway
+    // once it propagates and the proxy is reachable. Mainnet only (ton.run has
+    // no testnet selector); a testnet record falls through to the generic line.
+    // Only emitted after a successful site-record sign, never storage-only. (#70)
+    log(chalk.cyan(`  🔗 Gateway URL:  ${siteGatewayUrl(domain)}`))
+    log(chalk.dim('     opens once the site record propagates and your rldp-http-proxy is reachable'))
+  } else {
+    log(chalk.dim(`     https://${domain} (via TON DNS resolvers / TON Browser)`))
+  }
   log()
 }
