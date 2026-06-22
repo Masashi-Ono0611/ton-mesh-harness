@@ -120,13 +120,29 @@ describe('writeKeyringFile', () => {
     const id = generateAdnlIdentity(FIXTURE_SEED)
     const written = writeKeyringFile(dbDir, id)
 
-    // Path matches the convention rldp-http-proxy reads from
-    expect(written).toBe(path.join(dbDir, 'keyring', FIXTURE_SHORT_ID))
+    // Path matches the convention rldp-http-proxy reads from: UPPERCASE hex
+    // short id (td::Bits256::to_hex). See the uppercase regression test below.
+    expect(written).toBe(path.join(dbDir, 'keyring', FIXTURE_SHORT_ID.toUpperCase()))
 
     // File content is byte-for-byte identical to the fixture priv file
     const buf = readFileSync(written)
     expect(buf.length).toBe(36)
     expect(buf.toString('hex')).toBe(FIXTURE_PRIV_FILE_HEX)
+  })
+
+  it('names the keyring file with UPPERCASE hex (rldp-http-proxy lookup convention)', () => {
+    // Regression for #70: rldp-http-proxy looks keys up by td::Bits256::to_hex()
+    // (uppercase). The kit previously wrote Node's lowercase Buffer.toString('hex'),
+    // which only resolved on case-insensitive filesystems (macOS dev); on
+    // case-sensitive Linux the proxy aborted at startup with `key not in db`.
+    // Confirmed empirically against the installed binary on a GCP Linux host
+    // 2026-06-22.
+    const dbDir = mkdtempSync(path.join(tmpdir(), 'tsdk-keyring-'))
+    const id = generateAdnlIdentity(FIXTURE_SEED)
+    const base = path.basename(writeKeyringFile(dbDir, id))
+    expect(base).toBe(base.toUpperCase())          // contains no lowercase hex digits
+    expect(base).toBe(FIXTURE_SHORT_ID.toUpperCase())
+    expect(base).toMatch(/^[0-9A-F]{64}$/)
   })
 
   it('writes file with mode 0o600 (owner-only readable)', () => {
