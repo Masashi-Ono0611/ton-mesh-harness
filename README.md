@@ -281,6 +281,21 @@ ton-sovereign-deploy [build-dir] [options]
 
 Run `ton-sovereign-deploy doctor` for an environment check before deploying (daemon binaries, TONAPI / TonConnect manifest reachability, wallet pairing state).
 
+### Setting a `site` record (browser hosting)
+
+A `.ton` domain can carry two records:
+
+- **`storage`** → a TON Storage bag id. Written by every deploy with `--domain`. Serves files through storage gateways.
+- **`site`** → an ADNL identity (your rldp-http-proxy). Required for `<domain>.ton` to open in TON Browser. `--site-adnl <hex>` adds it during a deploy.
+
+When the domain is already deployed and you only need to point it at (or re-point it at) a proxy identity, use the standalone `site-record` subcommand. It writes **only** the site record — no bag, no storage write, no daemon, no TonConnect:
+
+```bash
+ton-sovereign-deploy site-record mysite.ton <64-hex-adnl>
+```
+
+It prints a Tonkeeper transfer deeplink. Open it on the phone holding the domain and approve once — that single transaction sets the record. Add `--json-output` to get the deeplink (and the raw message BOC) as a JSON object for agents / CI.
+
 ### Backend choice
 
 From v0.6, the bundled daemon is `tonutils-storage` (Go, default). The legacy TON Core C++ daemon is opt-in:
