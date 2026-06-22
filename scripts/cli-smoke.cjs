@@ -59,6 +59,12 @@ function main() {
       throw new Error(`--help missing ${flag}`)
     }
   }
+  // Spot-check that subcommands are still registered (e.g. `site-record`).
+  for (const cmd of ['site-record', 'doctor', 'verify-provenance']) {
+    if (!help.stdout.includes(cmd)) {
+      throw new Error(`--help missing subcommand ${cmd}`)
+    }
+  }
 
   // Invalid flag → expect non-zero exit (Commander emits an error and
   // exits with code 1). We don't pin the exact exit code since

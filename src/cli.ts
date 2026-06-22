@@ -9,6 +9,7 @@ import { runDoctor } from './cli/doctor'
 import { runVerifyProvenance } from './cli/verify-provenance'
 import { runServiceList, runServiceStop } from './cli/service'
 import { runSiteHost } from './cli/site-host'
+import { runSiteRecord } from './cli/site-record'
 import { runWatchMode } from './cli/watch'
 
 import { SOVEREIGN_DEPLOY_VERSION as VERSION } from './version'
@@ -327,6 +328,22 @@ serviceCmd
   .argument('<bag_id>', 'Bag id of the seed service to stop')
   .option('--purge', 'Also remove the seed db (default: keep it for re-deploy)')
   .action(async (bagId: string, o: { purge?: boolean }) => { await runServiceStop(bagId, o) })
+
+program
+  .command('site-record')
+  .description('Print a Tonkeeper sign link that sets ONLY the `site` (dns_adnl_address) record for a .ton domain — no storage write, no bag, no daemon, no TonConnect')
+  .argument('<domain>', '.ton domain you own (e.g. mysite.ton)')
+  .argument('<adnl-hex>', '64-hex ADNL identity of the rldp-http-proxy that serves the site')
+  .option('--testnet', 'Resolve the domain NFT on TON testnet')
+  .option('--json-output', 'Emit the result as a single JSON object (for agents / CI)')
+  // `--testnet` / `--json-output` are also declared on the root program, so
+  // commander treats them as global and they land in optsWithGlobals(), not
+  // this command's local opts(). Read the merged view so both `… --testnet`
+  // and `--testnet … site-record` work.
+  .action(async (domain: string, adnlHex: string, _o: unknown, cmd: Command) => {
+    const o = cmd.optsWithGlobals() as { testnet?: boolean; jsonOutput?: boolean }
+    await runSiteRecord(domain, adnlHex, o)
+  })
 
 program
   .command('verify-provenance')
