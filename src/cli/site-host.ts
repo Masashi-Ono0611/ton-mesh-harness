@@ -14,6 +14,7 @@ import { generateAdnlIdentity, loadOrCreateSiteSeed, resolveSiteKeyringPath } fr
 import { ensureRldpHttpProxyBinary } from '../daemon/rldp-http-proxy-installer'
 import { startRldpHttpProxy, type RldpHttpProxyHandle } from '../daemon/rldp-http-proxy-process'
 import { installSiteService, siteServiceLabel, type SiteServiceMeta } from '../daemon/site-service'
+import { lingerAdvisory } from '../daemon/linger'
 
 export interface RunSiteHostOptions {
   buildDir: string             // absolute
@@ -143,6 +144,10 @@ export function installSiteServiceForDomain(opts: InstallSiteServiceOptions): In
     console.log(chalk.dim(`  Site ADNL: ${identity.shortIdHex} (${created ? 'minted' : 'reused'})`))
     console.log(chalk.dim(`  identity: ${siteKeyringPath}`))
     console.log(chalk.dim(`  Manage:   ton-sovereign-deploy service list | service stop-site ${opts.domain}`))
+    // On a headless Linux VM the systemd --user unit won't restart after an
+    // unattended reboot unless lingering is enabled once (#83).
+    const lingerHint = lingerAdvisory()
+    if (lingerHint) console.log(chalk.yellow(`  ⚠ ${lingerHint}`))
     console.log()
   }
 
