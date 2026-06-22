@@ -7,9 +7,10 @@ import { runDnsRegistration } from './cli/dns'
 import { runDnsRegistrationAgentic } from './cli/dns-agentic'
 import { runDoctor } from './cli/doctor'
 import { runVerifyProvenance } from './cli/verify-provenance'
-import { runServiceList, runServiceStop } from './cli/service'
-import { runSiteHost } from './cli/site-host'
+import { runServiceList, runServiceStop, runSiteServiceStop } from './cli/service'
+import { installSiteServiceForDomain, runSiteHost } from './cli/site-host'
 import { runSiteRecord } from './cli/site-record'
+import { runSiteServe } from './cli/site-serve'
 import { runWatchMode } from './cli/watch'
 
 import { SOVEREIGN_DEPLOY_VERSION as VERSION } from './version'
@@ -213,9 +214,9 @@ program
       if (watchExplicitlyOn) {
         throw new Error(`--watch requires --daemon-mode detached (got ${daemonMode}). The watch loop needs a CLI-owned daemon.`)
       }
-      if (daemonMode === 'service' && opts.siteAuto) {
-        throw new Error('--daemon-mode service is not compatible with --site-auto (the rldp-http-proxy stays CLI-owned and would die on exit). Run them separately for now.')
-      }
+      // `--daemon-mode service` + `--site-auto` is now supported: the proxy +
+      // static server are handed to launchd / systemd via `site-serve` instead
+      // of staying CLI-owned. Handled in the tonutils dispatch below.
       watchEnabled = false
     }
 
@@ -235,17 +236,32 @@ program
 
       // v0.7 C1: spin up rldp-http-proxy + static server BEFORE the DNS
       // sign so the site record points at a live identity from the
-      // moment it lands on chain.
+      // moment it lands on chain. ②-C: with --daemon-mode service the proxy is
+      // handed to launchd/systemd (`site-serve`) instead of staying CLI-owned;
+      // the ADNL is derived from the persisted seed for the DNS write either way.
       let siteHost: Awaited<ReturnType<typeof runSiteHost>> | undefined
+      let siteAdnlHex: string | undefined
       if (opts.siteAuto && opts.domain) {
-        siteHost = await runSiteHost({
-          buildDir,
-          domain: opts.domain,
-          publicIp: opts.sitePublicIp,
-          udpPort: opts.siteUdpPort,
-          siteKeyring: opts.siteKeyring,
-          silent: !!opts.jsonOutput,
-        })
+        if (daemonMode === 'service') {
+          siteAdnlHex = installSiteServiceForDomain({
+            buildDir,
+            domain: opts.domain,
+            siteKeyring: opts.siteKeyring,
+            publicIp: opts.sitePublicIp,
+            udpPort: opts.siteUdpPort,
+            silent: !!opts.jsonOutput,
+          }).siteAdnlHex
+        } else {
+          siteHost = await runSiteHost({
+            buildDir,
+            domain: opts.domain,
+            publicIp: opts.sitePublicIp,
+            udpPort: opts.siteUdpPort,
+            siteKeyring: opts.siteKeyring,
+            silent: !!opts.jsonOutput,
+          })
+          siteAdnlHex = siteHost.siteAdnlHex
+        }
       }
 
       // DNS registration is daemon-agnostic (cell builder is shared).
@@ -253,7 +269,7 @@ program
       // through the original runDnsRegistration; agentic uses the SDK's
       // writeDnsRecordAgentic via runDnsRegistrationAgentic.
       if (opts.domain) {
-        const effectiveSiteAdnl = siteHost?.siteAdnlHex ?? opts.siteAdnl
+        const effectiveSiteAdnl = siteAdnlHex ?? opts.siteAdnl
         if (walletMode === 'agentic') {
           await runDnsRegistrationAgentic(opts.domain, result.bagId, opts.testnet, {
             jsonOutput: opts.jsonOutput,
@@ -327,16 +343,48 @@ program
 
 const serviceCmd = program
   .command('service')
-  .description('Manage --daemon-mode service seed daemons (launchd / systemd). #37')
+  .description('Manage --daemon-mode service daemons: bag seeders (#37) + site gateways (--site-auto)')
 serviceCmd
   .command('list')
-  .description('List installed service-mode seed daemons + their running state')
+  .description('List installed service-mode bag seeders + site gateways and their running state')
   .action(async () => { await runServiceList() })
 serviceCmd
   .command('stop')
   .argument('<bag_id>', 'Bag id of the seed service to stop')
   .option('--purge', 'Also remove the seed db (default: keep it for re-deploy)')
   .action(async (bagId: string, o: { purge?: boolean }) => { await runServiceStop(bagId, o) })
+serviceCmd
+  .command('stop-site')
+  .argument('<domain>', '.ton domain of the site gateway service to stop')
+  .option('--purge', 'Also remove the service metadata dir (the identity seed is always kept)')
+  .action(async (domain: string, o: { purge?: boolean }) => { await runSiteServiceStop(domain, o) })
+
+program
+  .command('site-serve')
+  .description('Foreground: serve a build dir for a .ton domain over rldp-http-proxy (what `--site-auto --daemon-mode service` runs under launchd/systemd). Blocks until stopped.')
+  .option('--build-dir <dir>', 'Directory of static files to serve')
+  // --domain / --site-keyring / --site-public-ip / --site-udp-port are also
+  // declared on the root program, so commander treats them as global; their
+  // values land in optsWithGlobals(), not this command's local opts(). Reading
+  // the merged view is why we validate the two required ones by hand here.
+  .action(async (_o: unknown, cmd: Command) => {
+    const o = cmd.optsWithGlobals() as {
+      buildDir?: string
+      domain?: string
+      siteKeyring?: string
+      sitePublicIp?: string
+      siteUdpPort?: number
+    }
+    if (!o.buildDir) throw new Error('site-serve requires --build-dir <dir>.')
+    if (!o.domain) throw new Error('site-serve requires --domain <domain>.')
+    await runSiteServe({
+      buildDir: o.buildDir,
+      domain: o.domain,
+      siteKeyring: o.siteKeyring,
+      publicIp: o.sitePublicIp,
+      udpPort: o.siteUdpPort,
+    })
+  })
 
 program
   .command('site-record')
