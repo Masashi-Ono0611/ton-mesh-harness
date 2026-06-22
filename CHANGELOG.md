@@ -6,6 +6,8 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.11.0] – 2026-06-22
+
 Site hosting is now reproducible end-to-end from the kit alone — a `.ton` site
 can be deployed, persistently identified, and kept online by an OS service
 without a hand-written unit. See [`docs/v0.10/site-hosting.md`](./docs/v0.10/site-hosting.md).
