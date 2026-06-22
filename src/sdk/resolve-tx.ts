@@ -24,7 +24,7 @@ import type { AgenticNetwork } from './agentic-config'
 import { createSdkLogger } from './log'
 import { buildToncenterClient } from './walletkit-network'
 
-const log = createSdkLogger('sovereign:resolve-tx')
+const log = createSdkLogger('mesh:resolve-tx')
 
 /**
  * Compute the normalized external-in message hash per TEP-467 — the

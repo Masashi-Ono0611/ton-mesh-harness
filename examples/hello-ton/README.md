@@ -8,7 +8,7 @@ deploy when learning the kit.
 ## TonConnect deploy (mainnet, human signature via QR)
 
 ```bash
-npx -y ton-sovereign-deploy ./examples/hello-ton \
+npx -y ton-mesh-harness ./examples/hello-ton \
   --domain <yours>.ton \
   --no-watch
 ```
@@ -19,7 +19,7 @@ Scan the QR with Tonkeeper / MyTonWallet on your phone, approve the
 ## TonConnect deploy (testnet)
 
 ```bash
-npx -y ton-sovereign-deploy ./examples/hello-ton \
+npx -y ton-mesh-harness ./examples/hello-ton \
   --testnet \
   --domain <yours>.ton \
   --no-watch
@@ -35,7 +35,7 @@ testnet TON DNS.
 ```bash
 # Prerequisite: a wallet in ~/.config/ton/config.json (set up via
 # `npx -y @ton/mcp@alpha agentic_import_wallet`).
-npx -y ton-sovereign-deploy ./examples/hello-ton \
+npx -y ton-mesh-harness ./examples/hello-ton \
   --domain <yours>.ton \
   --wallet-mode agentic \
   --no-watch \

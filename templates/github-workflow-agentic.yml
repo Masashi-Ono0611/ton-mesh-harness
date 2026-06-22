@@ -64,7 +64,7 @@ jobs:
           # --no-watch: exit after the deploy completes (no daemon
           #             tail; the bag still lives on TON Storage).
           # --json-output: stdout is JSON so we can jq the result.
-          RESULT=$(npx -y ton-sovereign-deploy ./dist \
+          RESULT=$(npx -y ton-mesh-harness ./dist \
             --domain "${{ vars.TON_DOMAIN }}" \
             --wallet-mode agentic \
             --no-watch \

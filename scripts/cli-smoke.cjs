@@ -50,7 +50,7 @@ function main() {
 
   // --help: full subcommand parser path. Exercises commander's whole tree.
   const help = run(['--help'])
-  if (!help.stdout.includes('ton-sovereign-deploy')) {
+  if (!help.stdout.includes('ton-mesh-harness')) {
     throw new Error(`--help missing program name`)
   }
   // Spot-check new v0.8 flags surface so a regression that drops them

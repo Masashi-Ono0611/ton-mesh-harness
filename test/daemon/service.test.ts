@@ -12,11 +12,11 @@ import {
 function meta(over: Partial<ServiceMeta> = {}): ServiceMeta {
   return {
     bag_id: 'abc123',
-    label: 'ton-sovereign.abc123',
-    db_dir: '/home/u/.ton-sovereign/seeds/abc123/db',
+    label: 'ton-mesh.abc123',
+    db_dir: '/home/u/.ton-mesh/seeds/abc123/db',
     api_port: 7123,
     network_config_path: null,
-    daemon_path: '/home/u/.ton-sovereign/bin/tonutils-storage',
+    daemon_path: '/home/u/.ton-mesh/bin/tonutils-storage',
     created_at: '2026-05-23T00:00:00.000Z',
     ...over,
   }
@@ -24,8 +24,8 @@ function meta(over: Partial<ServiceMeta> = {}): ServiceMeta {
 
 describe('service labels + paths', () => {
   it('labels per bag', () => {
-    expect(serviceLabel('abc123')).toBe('ton-sovereign.abc123')
-    expect(seedDir('abc123')).toMatch(/\.ton-sovereign[/\\]seeds[/\\]abc123$/)
+    expect(serviceLabel('abc123')).toBe('ton-mesh.abc123')
+    expect(seedDir('abc123')).toMatch(/\.ton-mesh[/\\]seeds[/\\]abc123$/)
   })
 })
 
@@ -33,12 +33,12 @@ describe('buildLaunchdPlist', () => {
   it('emits the daemon ProgramArguments + KeepAlive', () => {
     const p = buildLaunchdPlist(meta())
     expect(p).toContain('<key>Label</key>')
-    expect(p).toContain('<string>ton-sovereign.abc123</string>')
+    expect(p).toContain('<string>ton-mesh.abc123</string>')
     // `-daemon` (non-interactive) is mandatory: without it the REPL busy-loops
     // at ~100% CPU under launchd and floods the log. Regression guard.
     expect(p).toContain('<string>-daemon</string>')
     expect(p).toContain('<string>--db</string>')
-    expect(p).toContain('<string>/home/u/.ton-sovereign/seeds/abc123/db</string>')
+    expect(p).toContain('<string>/home/u/.ton-mesh/seeds/abc123/db</string>')
     expect(p).toContain('<string>--api</string>')
     expect(p).toContain('<string>127.0.0.1:7123</string>')
     expect(p).toContain('<key>KeepAlive</key>')
@@ -66,7 +66,7 @@ describe('bag-id validation (path-traversal guard)', () => {
 describe('buildSystemdUnit', () => {
   it('emits ExecStart with the daemon args + restart policy', () => {
     const u = buildSystemdUnit(meta())
-    expect(u).toContain('ExecStart=/home/u/.ton-sovereign/bin/tonutils-storage -daemon --api 127.0.0.1:7123 --db /home/u/.ton-sovereign/seeds/abc123/db')
+    expect(u).toContain('ExecStart=/home/u/.ton-mesh/bin/tonutils-storage -daemon --api 127.0.0.1:7123 --db /home/u/.ton-mesh/seeds/abc123/db')
     expect(u).toContain('Restart=on-failure')
     expect(u).toContain('WantedBy=default.target')
     expect(u).not.toContain('--network-config')

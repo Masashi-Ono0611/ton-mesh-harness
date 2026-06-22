@@ -1,5 +1,5 @@
 /**
- * Public SDK entry — what `import { ... } from 'ton-sovereign-deploy/sdk'`
+ * Public SDK entry — what `import { ... } from 'ton-mesh-harness/sdk'`
  * exposes to npm consumers.
  *
  * Stability contract:
@@ -20,7 +20,7 @@
  *      deploy,
  *      status,
  *      type DeployOptions,
- *    } from 'ton-sovereign-deploy/sdk'
+ *    } from 'ton-mesh-harness/sdk'
  *
  *    const result = await checkEnv()
  *    if (!result.ready) {
@@ -81,10 +81,10 @@ export {
 // ─── Tool descriptors for MCP / discovery ────────────────────────────────────
 export {
   ALL_TOOLS,
-  SOVEREIGN_CHECK_ENV_TOOL,
-  SOVEREIGN_DEPLOY_TOOL,
-  SOVEREIGN_SITE_RECORD_TOOL,
-  SOVEREIGN_STATUS_TOOL,
+  MESH_CHECK_ENV_TOOL,
+  MESH_DEPLOY_TOOL,
+  MESH_SITE_RECORD_TOOL,
+  MESH_STATUS_TOOL,
   SUPPLEMENTARY_SCHEMAS,
   SCHEMA_VERSION,
   type ToolJsonSchema,
@@ -95,4 +95,4 @@ export {
 export { createSdkLogger, type SdkLogger } from './sdk/log'
 
 // ─── Version ─────────────────────────────────────────────────────────────────
-export { SOVEREIGN_DEPLOY_VERSION } from './version'
+export { MESH_HARNESS_VERSION } from './version'

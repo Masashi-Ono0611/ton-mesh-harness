@@ -3,7 +3,7 @@
 // static server (re-deriving the SAME ADNL from the persisted seed) and stays
 // in the foreground until SIGTERM/SIGINT, so the OS manager owns its lifecycle.
 //
-// Run directly too: `ton-sovereign-deploy site-serve --build-dir ./out
+// Run directly too: `ton-mesh-harness site-serve --build-dir ./out
 // --domain mysite.ton` keeps a site up in your terminal.
 
 import path from 'node:path'

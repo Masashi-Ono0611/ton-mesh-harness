@@ -4,10 +4,34 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.13.0] – 2026-06-23
 
 ### Changed
 
+- **BREAKING — renamed to `ton-mesh-harness`.** The package, both bins, the MCP
+  tool names, env vars, the daemon service labels, the on-disk session directory,
+  and the debug namespace all moved off the `sovereign` brand. No runtime
+  behaviour changed — this is a pure rebrand; the published artifact, the
+  CJS / Node ≥ 18 target, and the inlined `@ton/walletkit` are all unchanged.
+  - npm package `ton-sovereign-deploy` → **`ton-mesh-harness`** (install the new
+    name; the old package is no longer the canonical one).
+  - bins `ton-sovereign-deploy` / `ton-sovereign-mcp` → **`ton-mesh-harness`** /
+    **`ton-mesh-harness-mcp`**.
+  - MCP tools `sovereign_deploy` / `sovereign_check_env` / `sovereign_status` /
+    `sovereign_site_record` → **`mesh_deploy`** / **`mesh_check_env`** /
+    **`mesh_status`** / **`mesh_site_record`** — update any MCP client config.
+  - env vars `SOVEREIGN_ANNOUNCE_IP` / `SOVEREIGN_ANNOUNCE_PORT` →
+    **`MESH_ANNOUNCE_IP`** / **`MESH_ANNOUNCE_PORT`**.
+  - daemon service labels `ton-sovereign.<bag>` / `ton-sovereign-site.<domain>` →
+    **`ton-mesh.<bag>`** / **`ton-mesh-site.<domain>`** — stop and reinstall any
+    service installed by an older version, which still carries the old label.
+  - session dir `~/.ton-sovereign/` → **`~/.ton-mesh/`** — the binary cache,
+    seeds, site keyring, and TonConnect session re-create on first run; the old
+    directory can be removed.
+  - debug namespace `DEBUG=sovereign:*` → **`DEBUG=mesh:*`**.
+  - public SDK constants `SOVEREIGN_DEPLOY_VERSION` → **`MESH_HARNESS_VERSION`**
+    and the JSON-schema exports `SOVEREIGN_*_TOOL` → **`MESH_*_TOOL`** — update any
+    SDK import that referenced them by name.
 - **Dev toolchain migrated to Bun.** Package manager, task runner, and CI now
   run on [Bun](https://bun.sh) (pinned 1.3.8): `bun install` with a single
   `bun.lock` (`package-lock.json` removed), and the build uses `bun build`
@@ -63,12 +87,12 @@ without a hand-written unit. See [`docs/v0.10/site-hosting.md`](./docs/v0.10/sit
   Point a domain at a resident `rldp-http-proxy` without re-deploying or
   overwriting the storage record. `--json-output` emits the deeplink + raw
   message BOC for agents / CI.
-- **SDK `siteRecord()` + MCP `sovereign_site_record` (#78).** The site-record
+- **SDK `siteRecord()` + MCP `mesh_site_record` (#78).** The site-record
   builder is exposed programmatically and as a 4th MCP tool (one-shot; builds
   the deeplink, never broadcasts). The CLI subcommand is now a thin renderer
   over the shared SDK function.
 - **`--site-keyring <path>` — persistent `--site-auto` identity (#79).** The
-  proxy's ADNL seed is persisted (default `~/.ton-sovereign/site-keyring/<domain>.hex`,
+  proxy's ADNL seed is persisted (default `~/.ton-mesh/site-keyring/<domain>.hex`,
   mode `0600`) and reused across restarts, so the on-chain `site` record stays
   valid. Previously every run minted a fresh ADNL, silently breaking the site
   on restart.
@@ -116,7 +140,7 @@ without a hand-written unit. See [`docs/v0.10/site-hosting.md`](./docs/v0.10/sit
 ### Added
 
 - **Cloud-seeder announce controls — `--announce-ip` / `--announce-port` (and
-  the `SOVEREIGN_ANNOUNCE_IP` / `SOVEREIGN_ANNOUNCE_PORT` env vars).** Run the
+  the `MESH_ANNOUNCE_IP` / `MESH_ANNOUNCE_PORT` env vars).** Run the
   kit *as* a publicly-reachable seeder on a cloud VM: they set the
   tonutils-storage `config.json` `ExternalIP` (DHT announce) and a fixed,
   firewall-able `ListenAddr` UDP port. Without them a 1:1-NAT VM (GCP/AWS)
@@ -150,19 +174,19 @@ trusted publishing (npm `0.6.3` was the last manual one).
   `type: "agentic"` (NFT-delegated operator-key signing via the agentic
   collection contract — @ton/mcp is an optional peer dep, lazy-loaded
   only when needed).
-- **MCP server `ton-sovereign-mcp`** with three GA tools:
-  `sovereign_check_env`, `sovereign_deploy`, `sovereign_status`.
+- **MCP server `ton-mesh-harness-mcp`** with three GA tools:
+  `mesh_check_env`, `mesh_deploy`, `mesh_status`.
   Structured F5 errors, F3 phase events via `notifications/progress`.
 - **CLI `--wallet-mode agentic`** brings the autonomous path to the
   terminal (no QR, no phone).
 - **Programmable SDK** — `import { deploy, checkEnv, status } from
-  'ton-sovereign-deploy'`. CJS + TypeScript declarations shipped.
-- **Agent discoverability** — `skills/sovereign-deploy.md` (Anthropic
+  'ton-mesh-harness'`. CJS + TypeScript declarations shipped.
+- **Agent discoverability** — `skills/mesh-deploy.md` (Anthropic
   skill format), `.well-known/mcp.json` template, expanded npm keywords.
 - **`dns_tx_hash` is honest** — real on-chain hash via Toncenter v3
   `transactionsByMessage`, resolved in parallel with TONAPI propagation
   poll. Zero added latency on the happy path.
-- **Observability** — `DEBUG=sovereign:*` enables structured stderr logs
+- **Observability** — `DEBUG=mesh:*` enables structured stderr logs
   at SDK boundaries. Always stderr-only so `--json-output` stdout / MCP
   stdio framing stay valid.
 
@@ -171,18 +195,18 @@ trusted publishing (npm `0.6.3` was the last manual one).
 - **OS-managed daemon ownership (#37)** — `--daemon-mode <embedded|detached|service>`
   (SDK/MCP `daemon_mode`). `service` hands the seeding daemon to launchd
   (macOS) / systemd `--user` (Linux) with a persistent db under
-  `~/.ton-sovereign/seeds/<bag_id>/`, so it keeps seeding after the CLI
+  `~/.ton-mesh/seeds/<bag_id>/`, so it keeps seeding after the CLI
   exits / across reboots. New `service list` / `service stop [--purge]`
   subcommands. The **MCP server now accepts `daemon_mode: "service"`** (the
   OS owns the lifecycle) while still rejecting `detached` / `keep_alive`.
   Windows: TODO. Docs: `docs/v0.9/daemon-service-mode.md`.
-- **HTTP transport for `ton-sovereign-mcp` (#33)** — opt-in `--http <addr>`
+- **HTTP transport for `ton-mesh-harness-mcp` (#33)** — opt-in `--http <addr>`
   binds a Streamable-HTTP MCP endpoint at `/mcp` (stdio stays the default;
   mutually exclusive). Binds `127.0.0.1` by default; a non-loopback bind
   requires `MCP_HTTP_TOKEN` (bearer auth) or refuses to start. CORS off
   unless `MCP_HTTP_CORS_ORIGINS` lists origins. DNS-rebinding protection on.
   Docs: `docs/v0.9/mcp-http-transport.md`.
-- **testnet deploys on the tonutils/MCP path** — `sovereign_deploy`
+- **testnet deploys on the tonutils/MCP path** — `mesh_deploy`
   (and the CLI tonutils backend) now accept `testnet: true`: the daemon is
   started with the testnet `--network-config` and DNS writes use testnet
   endpoints. Removes the prior "mainnet-only / use ton-core" guard.
@@ -450,7 +474,7 @@ rounds: **1 BLOCKER + 8 MAJORs + 1 MINOR + 4 NITs resolved**.
 
 ### Added
 
-- `scripts/mcp-smoke.cjs` adds an `id=4 tools/call sovereign_deploy`
+- `scripts/mcp-smoke.cjs` adds an `id=4 tools/call mesh_deploy`
   step with `{wallet: "Tonkeeper", testnet: true}` and asserts that
   the MCP gate rejects it BEFORE the testnet guard fires. The
   `testnet: true` element is critical: if the strict gate were
@@ -531,7 +555,7 @@ public-surface level. Final rc before V3/V4 acceptance gates.
 
 ## [0.8.0-rc6] – 2026-05-12
 
-[S2.9] Full v0.8 feature ship: NFT-delegated agentic, `sovereign_status`
+[S2.9] Full v0.8 feature ship: NFT-delegated agentic, `mesh_status`
 MCP tool, SDK external entry, observability logger, GA release script,
 4 smoke harnesses. Two Codex multi-model review rounds resolved 1
 BLOCKER + 4 MAJORs. Final pre-GA snapshot — awaits V3 (E2E) + V4
@@ -570,24 +594,24 @@ BLOCKER + 4 MAJORs. Final pre-GA snapshot — awaits V3 (E2E) + V4
 ### Added
 
 - **Programmatic SDK entry** — `import { deploy, checkEnv, status,
-  type DeployOptions } from 'ton-sovereign-deploy'`. tsup now builds
+  type DeployOptions } from 'ton-mesh-harness'`. tsup now builds
   `dist/sdk.js` + `dist/sdk.d.ts` (37 KB types) alongside the two
   binaries. `package.json` `main` flips from `dist/cli.js` (was
   wrong; main should not be a binary) to `dist/sdk.js`, with
   `exports` field providing both `'.'` and `'./sdk'` subpaths.
-  Bin entries unchanged. Smoke: `require('ton-sovereign-deploy')` /
-  `require('ton-sovereign-deploy/sdk')` both work; TS consumers get
+  Bin entries unchanged. Smoke: `require('ton-mesh-harness')` /
+  `require('ton-mesh-harness/sdk')` both work; TS consumers get
   full types via `dist/sdk.d.ts`.
-- **Observability log layer** — `DEBUG=sovereign:*` style env var
+- **Observability log layer** — `DEBUG=mesh:*` style env var
   enables structured stderr logs at SDK boundaries. Namespaces
-  available: `sovereign:deploy` (phase transitions),
-  `sovereign:agentic-sign` (adapter build + broadcast),
-  `sovereign:resolve-tx` (Toncenter poll attempts + hits/misses).
+  available: `mesh:deploy` (phase transitions),
+  `mesh:agentic-sign` (adapter build + broadcast),
+  `mesh:resolve-tx` (Toncenter poll attempts + hits/misses).
   Grammar matches `debug.js`: `*` wildcard, comma- or space-separated
   lists, `-prefix` exclusion. Hand-rolled — no `debug` runtime dep.
   Output ALWAYS on stderr so `--json-output` stdout / MCP stdio
   framing stay valid. 19 new unit tests in `test/sdk-log.test.ts`.
-- **`sovereign_status` MCP tool** — third GA tool. One-shot snapshot
+- **`mesh_status` MCP tool** — third GA tool. One-shot snapshot
   of a bag's network state: input `{bag_id, domain?, testnet?}`,
   output `{bag_id, bag_accessible, bag_size_bytes, bag_file_count,
   domain?: {name, nft_address, resolved_bag_id, matches}}`. Designed
@@ -859,14 +883,14 @@ all addressed below.
 ## [0.8.0-rc2] – 2026-05-11
 
 MCP server ships. v0.8.0-rc2 is the agent-surface track's first
-release where `ton-sovereign-mcp` is a real binary, not a fail-fast
+release where `ton-mesh-harness-mcp` is a real binary, not a fail-fast
 stub. The .ton DNS write is NOT yet integrated into the SDK / MCP path
 — that lands at [S2.5] before v0.8.0 GA. The CLI continues to chain
 DNS today.
 
 ### Added
 
-- **`ton-sovereign-mcp` MCP server** (`src/mcp.ts`) — implemented via
+- **`ton-mesh-harness-mcp` MCP server** (`src/mcp.ts`) — implemented via
   the low-level `Server.setRequestHandler` API (not the high-level
   `McpServer.registerTool`) so we own validation and emit F5
   structured error payloads. Implements `initialize`, `tools/list`,
@@ -878,7 +902,7 @@ DNS today.
   `ERR_BUSY` serialisation gate per F5. Daemon ownership flips before
   the `done` yield so consumers can break early without leaking.
 - **`src/sdk/check.ts`** — `checkEnv()` programmatic environment
-  probe. Powers `runDoctor` AND the MCP `sovereign_check_env` tool.
+  probe. Powers `runDoctor` AND the MCP `mesh_check_env` tool.
   Detects agentic-wallet config with a strict-shape probe (file
   exists + at least one entry that looks like a wallet) — surfaces
   `AGENTIC_CONFIG_SCHEMA_UNKNOWN` warning if the file shape is
@@ -892,7 +916,7 @@ DNS today.
   loud.
 - **ESLint v9 flat config** (`eslint.config.mjs`) enforcing
   `no-console` on `src/sdk/**`.
-- **`skills/sovereign-deploy.md`** — Anthropic skill format,
+- **`skills/mesh-deploy.md`** — Anthropic skill format,
   documenting both signing paths + V4 heuristic trigger phrases.
 - **`templates/.well-known/mcp.json`** — opt-in MCP server
   self-description users can copy into their deployed site's
@@ -931,7 +955,7 @@ DNS today.
 
 - **[S2.5] SDK DNS write** (`awaiting_signature` → `dns_signing` →
   `dns_confirmed` → `verifying` phases). CLI continues to chain
-  `runDnsRegistration()` outside the SDK at rc2. MCP `sovereign_deploy`
+  `runDnsRegistration()` outside the SDK at rc2. MCP `mesh_deploy`
   returns `dns_tx_hash: null` plus a `next_actions` hint pointing at
   the CLI.
 - **[V3] #18** Claude Code MCP client → testnet deploy E2E. Blocked
@@ -959,21 +983,21 @@ Notable architectural pivots from review:
 ## [0.8.0-rc1] – 2026-05-10
 
 First-useful flag-plant for the **agent-surface track**. v0.8.0-rc1 ships
-no MCP server yet — the GA tag (week 6) introduces `ton-sovereign-mcp`.
+no MCP server yet — the GA tag (week 6) introduces `ton-mesh-harness-mcp`.
 This rc tag plants discoverability artifacts and the rescoped design docs
 that encode the [P-1 probe](docs/archive/v0.8/at-mcp-probe.md) verdict, so an agent
 that later searches for `"deploy a static site to .ton"` can already find
 the kit (via the existing CLI). The acceptance hypothesis behind that
-discovery claim is verified by the [V4 red-team test](https://github.com/Masashi-Ono0611/sovereign-deploy-kit/issues/26)
+discovery claim is verified by the [V4 red-team test](https://github.com/Masashi-Ono0611/ton-mesh-harness/issues/26)
 (rc1 run = CLI path).
 
 ### Added
 
 - **README "Agent quickstart"** section pointing at the existing
-  `npx -y ton-sovereign-deploy` CLI flow, with explicit guidance for
+  `npx -y ton-mesh-harness` CLI flow, with explicit guidance for
   agent runtimes (Claude Code / Cursor / etc.) and a discoverability
   caveat. The GA section sketches the future MCP server config using the
-  correct dual-bin invocation: `npx -y --package ton-sovereign-deploy ton-sovereign-mcp`.
+  correct dual-bin invocation: `npx -y --package ton-mesh-harness ton-mesh-harness-mcp`.
 - **npm keywords** (`mcp`, `mcp-server`, `agent-skill`, `claude-skill`,
   `ton-storage`, `ton-dns`, `dot-ton`, `adnl`, `static-site`, `website`,
   `decentralized-web`, `tonconnect`, `agentic-wallet`) added to
@@ -991,9 +1015,9 @@ discovery claim is verified by the [V4 red-team test](https://github.com/Masashi
   nuance). The original `@ton/mcp::wallet_connect` handoff doesn't exist
   — `@ton/mcp` is agentic-wallet-first (keys at `~/.config/ton/config.json`,
   no TonConnect tool). The workable composition is **filesystem-level**:
-  `ton-sovereign-mcp` will read the same config file via `@ton/walletkit`,
+  `ton-mesh-harness-mcp` will read the same config file via `@ton/walletkit`,
   the lib `@ton/mcp` itself uses. `@ton/mcp` is NOT a runtime dep — it's
-  a peer MCP server an agent may load alongside `ton-sovereign-mcp`.
+  a peer MCP server an agent may load alongside `ton-mesh-harness-mcp`.
 
 ### Changed
 
@@ -1026,7 +1050,7 @@ discovery claim is verified by the [V4 red-team test](https://github.com/Masashi
 
 - The MCP server itself (`src/mcp.ts`, dual `bin` entry).
 - SDK extraction (`src/sdk/`).
-- In-repo skill markdown at `skills/sovereign-deploy.md`.
+- In-repo skill markdown at `skills/mesh-deploy.md`.
 - `templates/.well-known/mcp.json` template.
 - PR to `ton-org/skills`.
 - The MCP-path run of the [V4] red-team test.
@@ -1034,7 +1058,7 @@ discovery claim is verified by the [V4 red-team test](https://github.com/Masashi
 ### Out of scope (deferred to v0.8.x or later)
 
 - `mcp.ton.org` registry submission — no submission flow exists today.
-- `sovereign_status`, `sovereign_redeploy`, `sovereign_stop` MCP tools —
+- `mesh_status`, `mesh_redeploy`, `mesh_stop` MCP tools —
   validate the two-tool contract first.
 - Daemon detached / launchd / systemd / remote — orthogonal to the
   agent-surface track.
@@ -1081,7 +1105,7 @@ your build directory end-to-end without manual VPS setup.
   cheapest, zero `accept_storage_contract` ops in 30d). `--provider`
   stays disabled. Snapshot: `docs/archive/v0.7/provider-probe-2026-05-10.md`.
 - **doctor extension** (C5.1): surfaces the rldp-http-proxy binary
-  + the persisted site ADNL hex from `~/.ton-sovereign/site-adnl.txt`.
+  + the persisted site ADNL hex from `~/.ton-mesh/site-adnl.txt`.
 
 ### Internal
 
@@ -1150,7 +1174,7 @@ Tier-3.1 mainnet soak on `masashi-ono0611.ton` produced two findings.
 ## [0.6.1] – 2026-05-10
 
 ### Fixed
-- npm `bin` map: dropped the leading `./` from `bin[ton-sovereign-deploy]`
+- npm `bin` map: dropped the leading `./` from `bin[ton-mesh-harness]`
   so npm doesn't strip the entry on publish (auto-correction noticed
   during a v0.6.0 publish dry-run). v0.6.0 was tagged on git only and
   never published to npm; v0.6.1 is the first npm release.
@@ -1166,7 +1190,7 @@ TON-Torrent ships. ADNL Tunnel and Payment Network groundwork is in
 place for v0.7.
 
 ### Changed (potentially breaking)
-- **Default backend swap**: the daemon `ton-sovereign-deploy` installs
+- **Default backend swap**: the daemon `ton-mesh-harness` installs
   is now `tonutils-storage` v1.4.1 (xssnick / Go). The legacy TON Core
   C++ daemon stays available via `--daemon-backend=ton-core`. Both
   produce identical bag IDs for identical content (verified
@@ -1247,7 +1271,7 @@ place for v0.7.
   atomic rename writes also trigger redeploy (previously only
   `change` was watched).
 - TonConnect signing is on the official `@tonconnect/sdk` (v3.4.x)
-  with persistent session at `~/.ton-sovereign/tonconnect.json`
+  with persistent session at `~/.ton-mesh/tonconnect.json`
   (`mode 0o600`); `validUntil` is now correctly Unix epoch seconds
   and `network: CHAIN.MAINNET` is set explicitly.
 - Provider auto-select rejects scam-rate entries
@@ -1292,7 +1316,7 @@ on mainnet before the v0.6 ecosystem realignment.
 - **`--wallet <name>`** preferred wallet selection (Tonkeeper by
   default).
 - **`@tonconnect/sdk@^3.4.1`** dependency. Persistent TonConnect
-  session at `~/.ton-sovereign/tonconnect.json` with `0o600`
+  session at `~/.ton-mesh/tonconnect.json` with `0o600`
   permissions.
 - **TonConnect manifest** at `tonconnect/manifest.json` (served via
   GitHub raw).

@@ -23,7 +23,7 @@ describe.skipIf(!RUN)('rldp-http-proxy live spawn (RUN_DAEMON_TESTS=1)', () => {
       // RLDP connectivity. Override via RLDP_TEST_PUBLIC_IP if needed.
       publicIp: process.env.RLDP_TEST_PUBLIC_IP ?? '127.0.0.1',
       // Persist the seed inside the throwaway build dir so the test leaves no
-      // file under ~/.ton-sovereign/site-keyring/.
+      // file under ~/.ton-mesh/site-keyring/.
       siteKeyring: path.join(buildDir, 'site-seed.hex'),
       silent: true,
     })

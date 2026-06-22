@@ -8,8 +8,8 @@ Release. So the manual surface is small: **bump → merge → tag push**.
 ## One-time setup (done for 0.9.0)
 
 - `.github/workflows/publish.yml` is on `main`.
-- npmjs.com → `ton-sovereign-deploy` → Trusted Publishers → add GitHub Actions:
-  owner `Masashi-Ono0611`, repo `sovereign-deploy-kit`, workflow `publish.yml`,
+- npmjs.com → `ton-mesh-harness` → Trusted Publishers → add GitHub Actions:
+  owner `Masashi-Ono0611`, repo `ton-mesh-harness`, workflow `publish.yml`,
   Environment empty. (It adds an auth path; existing owner rights stay, so the
   manually-published `0.6.3` lineage is unaffected.)
 
@@ -63,10 +63,10 @@ version` step should print `package=X.Y.Z tag=X.Y.Z`.
 
 ```bash
 mkdir -p /tmp/smoke && cd /tmp/smoke && npm init -y > /dev/null
-npm install ton-sovereign-deploy@X.Y.Z
-./node_modules/.bin/ton-sovereign-deploy --version   # X.Y.Z
-./node_modules/.bin/ton-sovereign-deploy --help | grep -E "daemon-mode|http"
-node -e "console.log(Object.keys(require('ton-sovereign-deploy')).sort())"
+npm install ton-mesh-harness@X.Y.Z
+./node_modules/.bin/ton-mesh-harness --version   # X.Y.Z
+./node_modules/.bin/ton-mesh-harness --help | grep -E "daemon-mode|http"
+node -e "console.log(Object.keys(require('ton-mesh-harness')).sort())"
 ```
 
 The bin reports `X.Y.Z`; the SDK default-import exposes `deploy`, `checkEnv`,
@@ -86,6 +86,6 @@ The bin reports `X.Y.Z`; the SDK default-import exposes `deploy`, `checkEnv`,
 instead:
 
 ```bash
-npm deprecate ton-sovereign-deploy@X.Y.Z "Critical bug — use X.Y.(Z+1)"
+npm deprecate ton-mesh-harness@X.Y.Z "Critical bug — use X.Y.(Z+1)"
 # fix on a branch, bump to X.Y.(Z+1), tag → auto-publish.
 ```

@@ -4,7 +4,7 @@ export default function Home() {
       <h1>💎 Next.js (static export) on .ton</h1>
       <p>
         Built with <code>output: &apos;export&apos;</code> → <code>out/</code> →{' '}
-        <code>npx ton-sovereign-deploy ./out</code>.
+        <code>npx ton-mesh-harness ./out</code>.
       </p>
       <p>
         Fully static — no server-side rendering, no API routes, immutable and

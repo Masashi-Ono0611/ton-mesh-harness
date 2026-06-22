@@ -1,5 +1,5 @@
 /**
- * Single zod source of truth for ton-sovereign-mcp inputs / outputs / events.
+ * Single zod source of truth for ton-mesh-harness-mcp inputs / outputs / events.
  *
  * Generated JSON Schemas drive both:
  *   - the MCP server tools/list response (`@modelcontextprotocol/sdk`)
@@ -60,7 +60,7 @@ export function parseWalletInput(input: string | WalletSpec | undefined): Wallet
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DeployOptions — input to sovereign_deploy / runDeploy()
+// DeployOptions — input to mesh_deploy / runDeploy()
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const DeployOptionsSchema = z.strictObject({
@@ -91,7 +91,7 @@ export const DeployOptionsSchema = z.strictObject({
    * publicly-reachable seeder on a VM: `announce_ip` is the public IPv4 to
    * advertise to the DHT (tonutils config `ExternalIP`); `announce_port` pins
    * the UDP `ListenAddr` port so a firewall rule can be pre-opened. Both
-   * override the `SOVEREIGN_ANNOUNCE_IP` / `SOVEREIGN_ANNOUNCE_PORT` env vars.
+   * override the `MESH_ANNOUNCE_IP` / `MESH_ANNOUNCE_PORT` env vars.
    * IPv4 only — the daemon binds 0.0.0.0 (IPv4); an IPv6 announce would
    * advertise an address it can't serve.
    */
@@ -118,8 +118,8 @@ export const DeployOptionsSchema = z.strictObject({
    *     the MCP server (it can't own a long-lived daemon).
    *   - `service`: hand the daemon to the OS service manager (launchd /
    *     systemd --user) seeding a persistent db under
-   *     ~/.ton-sovereign/seeds/<bag_id>/. The CLI/MCP return cleanly; manage
-   *     via `ton-sovereign-deploy service list|stop`. Not on Windows yet.
+   *     ~/.ton-mesh/seeds/<bag_id>/. The CLI/MCP return cleanly; manage
+   *     via `ton-mesh-harness service list|stop`. Not on Windows yet.
    */
   daemon_mode: z.enum(['embedded', 'detached', 'service']).default('embedded'),
   /**
@@ -136,7 +136,7 @@ export const DeployOptionsSchema = z.strictObject({
 export type DeployOptions = z.infer<typeof DeployOptionsSchema>
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DeployResult — output of sovereign_deploy
+// DeployResult — output of mesh_deploy
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const NextActionSchema = z.strictObject({
@@ -161,8 +161,8 @@ export const DeployResultSchema = z.strictObject({
   seed_status: z.enum(['seeding', 'stopped']),
   /**
    * OS service label when `daemon_mode: "service"` handed the daemon to
-   * launchd / systemd (e.g. `ton-sovereign.<bag_id>`); null otherwise.
-   * Manage via `ton-sovereign-deploy service list | stop`.
+   * launchd / systemd (e.g. `ton-mesh.<bag_id>`); null otherwise.
+   * Manage via `ton-mesh-harness service list | stop`.
    */
   daemon_service: z.string().nullable().default(null),
   next_actions: z.array(NextActionSchema).default([]),
@@ -171,7 +171,7 @@ export const DeployResultSchema = z.strictObject({
 export type DeployResult = z.infer<typeof DeployResultSchema>
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CheckEnv — input + output for sovereign_check_env
+// CheckEnv — input + output for mesh_check_env
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const CheckEnvOptionsSchema = z.strictObject({
@@ -228,7 +228,7 @@ export const CheckEnvResultSchema = z
 export type CheckEnvResult = z.infer<typeof CheckEnvResultSchema>
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Status — input + output for sovereign_status
+// Status — input + output for mesh_status
 //
 // One-shot snapshot of a bag's network state via TONAPI, and (optionally) the
 // .ton DNS record currently pointing at it. Used by agents that ran a
@@ -274,7 +274,7 @@ export const StatusResultSchema = z.strictObject({
 export type StatusResult = z.infer<typeof StatusResultSchema>
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SiteRecord — input + output for sovereign_site_record
+// SiteRecord — input + output for mesh_site_record
 //
 // Build (but don't broadcast) a `change_dns_record` that sets ONLY the `site`
 // (dns_adnl_address) record for a `.ton` domain, and return a Tonkeeper
@@ -427,7 +427,7 @@ export const ERR_CODES = [
   'ERR_VERIFY_FAILED',
   /** Check `data.may_have_published` for honest semantics; see F4. */
   'ERR_CANCELLED',
-  /** Concurrent tool call rejected; v0.8.0 serialises sovereign_deploy. */
+  /** Concurrent tool call rejected; v0.8.0 serialises mesh_deploy. */
   'ERR_BUSY',
   'ERR_INTERNAL',
 ] as const

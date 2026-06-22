@@ -7,7 +7,7 @@ import { listServices, stopService } from '../src/daemon/service'
  * #37 — MCP-path `daemon_mode: "service"` end-to-end.
  *
  * The CLI launchd lifecycle is validated by hand; this exercises the MCP
- * glue: an MCP client calls `sovereign_deploy` with `daemon_mode: "service"`
+ * glue: an MCP client calls `mesh_deploy` with `daemon_mode: "service"`
  * (storage-only, `domain: null` — no signing/TON), and we assert the result
  * carries a `daemon_service` label and an OS unit really got installed +
  * seeding, then tear it down.
@@ -72,7 +72,7 @@ describe.skipIf(!RUN)('MCP daemon_mode:service (RUN_MCP_INTEGRATION=1)', () => {
           id: 10,
           method: 'tools/call',
           params: {
-            name: 'sovereign_deploy',
+            name: 'mesh_deploy',
             arguments: { source_dir: FIXTURE_DIR, domain: null, daemon_mode: 'service', wallet: { kind: 'tonconnect' } },
             _meta: { progressToken: 'svc-1' },
           },
@@ -91,7 +91,7 @@ describe.skipIf(!RUN)('MCP daemon_mode:service (RUN_MCP_INTEGRATION=1)', () => {
         bagId = sc?.bag_id
         daemonService = sc?.daemon_service
         expect(bagId, 'no bag_id').toBeTruthy()
-        expect(daemonService, 'daemon_service should be set in service mode').toBe(`ton-sovereign.${bagId}`)
+        expect(daemonService, 'daemon_service should be set in service mode').toBe(`ton-mesh.${bagId}`)
 
         // The OS unit really exists + is tracked.
         const listed = listServices().find((s) => s.bag_id === bagId)

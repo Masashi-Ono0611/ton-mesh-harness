@@ -34,7 +34,7 @@ export async function runDeploy(opts: CliOptions, buildDirArg?: string): Promise
 
     if (!opts.jsonOutput) {
       console.log()
-      console.log(chalk.bold('🚀 TON Sovereign Deploy'))
+      console.log(chalk.bold('🚀 TON Mesh Deploy'))
       if (opts.testnet) {
         console.log(chalk.yellow('  (testnet mode)'))
       }

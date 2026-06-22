@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * E2E acceptance driver for the V3 gate (#18) — Claude-Code-style MCP
- * client → real on-chain deploy via `ton-sovereign-mcp`.
+ * client → real on-chain deploy via `ton-mesh-harness-mcp`.
  *
  * Scope decision (2026-05-23): the V3 issue and release-checklist
  * originally specified a *testnet* deploy, but the v0.8 SDK rejects
@@ -19,7 +19,7 @@
  *
  *   Stage 1 — ALWAYS runs (zero cost): initialize → notifications/
  *     initialized → tools/list (assert 4 tools) → tools/call
- *     sovereign_check_env (assert shape). Proves the MCP surface is live.
+ *     mesh_check_env (assert shape). Proves the MCP surface is live.
  *
  *   Stage 2 — DEPLOY, when armed with ONE signing path:
  *       • `E2E_TONCONNECT=1` — human-approved: surfaces the
@@ -29,7 +29,7 @@
  *         configured via @ton/mcp (detected by check_env reporting
  *         `agentic` in wallet_signers_available — we never read a raw seed
  *         from env).
- *     Calls sovereign_deploy on test/fixtures/minimal-site against
+ *     Calls mesh_deploy on test/fixtures/minimal-site against
  *     E2E_MAINNET_DOMAIN (optional). Asserts the deploy reaches a `done`
  *     payload with a bag_id; if a domain was given, asserts a non-null
  *     dns_tx_hash.
@@ -128,7 +128,7 @@ async function handshake(srv) {
     },
   })
   const init = await awaitFrame(srv, (f) => f.id === 1, HANDSHAKE_TIMEOUT_MS, 'initialize')
-  if (init.result?.serverInfo?.name !== 'ton-sovereign-mcp') {
+  if (init.result?.serverInfo?.name !== 'ton-mesh-harness-mcp') {
     throw new Error(`initialize.serverInfo.name unexpected: ${JSON.stringify(init.result?.serverInfo)}`)
   }
   send(srv.child, { jsonrpc: '2.0', method: 'notifications/initialized' })
@@ -141,10 +141,10 @@ async function stage1ListAndCheck(srv) {
   const list = await awaitFrame(srv, (f) => f.id === 2, HANDSHAKE_TIMEOUT_MS, 'tools/list')
   const names = (list.result?.tools ?? []).map((t) => t.name).sort()
   const expected = [
-    'sovereign_check_env',
-    'sovereign_deploy',
-    'sovereign_site_record',
-    'sovereign_status',
+    'mesh_check_env',
+    'mesh_deploy',
+    'mesh_site_record',
+    'mesh_status',
   ]
   if (JSON.stringify(names) !== JSON.stringify(expected)) {
     throw new Error(`tools/list mismatch: expected ${expected.join(', ')} got ${names.join(', ')}`)
@@ -154,7 +154,7 @@ async function stage1ListAndCheck(srv) {
     jsonrpc: '2.0',
     id: 3,
     method: 'tools/call',
-    params: { name: 'sovereign_check_env', arguments: { source_dir: FIXTURE_DIR } },
+    params: { name: 'mesh_check_env', arguments: { source_dir: FIXTURE_DIR } },
   })
   const res = await awaitFrame(srv, (f) => f.id === 3, HANDSHAKE_TIMEOUT_MS, 'check_env')
   const sc = res.result?.structuredContent
@@ -214,7 +214,7 @@ async function stage2Deploy(srv, checkEnv) {
     id: 10,
     method: 'tools/call',
     params: {
-      name: 'sovereign_deploy',
+      name: 'mesh_deploy',
       arguments: {
         source_dir: FIXTURE_DIR,
         domain: DOMAIN,
@@ -245,7 +245,7 @@ async function stage2Deploy(srv, checkEnv) {
 
   let res
   try {
-    res = await awaitFrame(srv, (f) => f.id === 10, DEPLOY_TIMEOUT_MS, 'sovereign_deploy result')
+    res = await awaitFrame(srv, (f) => f.id === 10, DEPLOY_TIMEOUT_MS, 'mesh_deploy result')
   } finally {
     clearInterval(pump)
   }
@@ -275,7 +275,7 @@ async function stage3Cancel() {
     id: requestId,
     method: 'tools/call',
     params: {
-      name: 'sovereign_deploy',
+      name: 'mesh_deploy',
       arguments: {
         source_dir: FIXTURE_DIR,
         domain: null,

@@ -111,7 +111,7 @@ jobs:
 
       - name: SDK smoke (programmatic require shape)
         # The SDK external entry (dist/sdk.js) is the surface npm
-        # consumers see via `require('ton-sovereign-deploy')`. This
+        # consumers see via `require('ton-mesh-harness')`. This
         # smoke require()s the bundle directly, asserts every function
         # entry point + zod schema + tool descriptor + VERSION-vs-
         # package.json pin. Catches accidental drops from src/sdk.ts
@@ -139,7 +139,7 @@ jobs:
       - name: E2E MCP stage 1 (V3 #18 — handshake + tools/list + check_env)
         # The V3 acceptance driver (scripts/e2e-mcp-deploy.cjs). Unarmed
         # in CI: with no E2E_AUTO_SIGN it exercises the zero-cost MCP
-        # surface (initialize → tools/list → sovereign_check_env) and
+        # surface (initialize → tools/list → mesh_check_env) and
         # gracefully skips the deploy stage, exiting 0. The armed
         # mainnet deploy stage spends real TON and stays a manual,
         # operator-run step (see docs/v0.8/e2e-runbook.md) — there is

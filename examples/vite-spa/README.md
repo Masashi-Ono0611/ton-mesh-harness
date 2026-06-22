@@ -23,7 +23,7 @@ npm run build      # → dist/  (index.html + ./assets/*)
 ### TonConnect (mainnet, human signature)
 
 ```bash
-npx -y ton-sovereign-deploy ./dist \
+npx -y ton-mesh-harness ./dist \
   --domain <yours>.ton \
   --no-watch
 ```
@@ -36,7 +36,7 @@ Scan the QR with Tonkeeper / MyTonWallet, approve the
 ```bash
 # Prerequisite: a wallet in ~/.config/ton/config.json
 # (set up via `npx -y @ton/mcp@alpha agentic_import_wallet`).
-npx -y ton-sovereign-deploy ./dist \
+npx -y ton-mesh-harness ./dist \
   --domain <yours>.ton \
   --wallet-mode agentic \
   --no-watch \
@@ -53,7 +53,7 @@ One line of JSON with `bag_id`, the real on-chain `dns_tx_hash`,
 npm run build -- --watch
 
 # Terminal B — re-deploy whenever dist/ changes, keep the daemon seeding:
-npx -y ton-sovereign-deploy ./dist --domain <yours>.ton
+npx -y ton-mesh-harness ./dist --domain <yours>.ton
 ```
 
 `--watch` is the default for interactive runs: the daemon stays alive
@@ -61,7 +61,7 @@ to seed your bag, and a fresh `bag_id` is published whenever the build
 output changes (the Bag ID is a content hash).
 
 To keep seeding after you close the terminal, hand the daemon to the OS:
-`npx -y ton-sovereign-deploy ./dist --domain <yours>.ton --daemon-mode service --no-watch`.
+`npx -y ton-mesh-harness ./dist --domain <yours>.ton --daemon-mode service --no-watch`.
 
 ## Caveats
 

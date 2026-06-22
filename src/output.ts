@@ -53,7 +53,7 @@ export function printResult(result: DeployResult): void {
   // Honest availability statement. The bag stays reachable only while at
   // least one PUBLICLY-REACHABLE node seeds it. A daemon behind NAT is
   // unreachable from the outside, so no one can download from it — run a
-  // reachable seeder (public IP + open UDP port; see SOVEREIGN_ANNOUNCE_IP)
+  // reachable seeder (public IP + open UDP port; see MESH_ANNOUNCE_IP)
   // to actually keep the site online.
   console.log(chalk.bold('No server, no CDN, no registrar — your site stays online for as long as a reachable node seeds this bag.'))
   if (!result.dns) {

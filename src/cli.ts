@@ -13,12 +13,12 @@ import { runSiteRecord } from './cli/site-record'
 import { runSiteServe } from './cli/site-serve'
 import { runWatchMode } from './cli/watch'
 
-import { SOVEREIGN_DEPLOY_VERSION as VERSION } from './version'
+import { MESH_HARNESS_VERSION as VERSION } from './version'
 
 const program = new Command()
 
 program
-  .name('ton-sovereign-deploy')
+  .name('ton-mesh-harness')
   .description('Deploy static sites to TON Storage — censorship-resistant in one command')
   .version(VERSION)
   .argument('[build-dir]', 'Path to build directory (auto-detected if omitted)')
@@ -56,9 +56,9 @@ program
   .option('--tunnel-config <path>', 'Path to nodes-pool.json for ADNL Tunnel (tonutils backend only; bring-your-own pool)')
   // #69: cloud-seeder announce knobs. To run the kit AS a publicly-reachable
   // seeder on a VM, advertise the public IPv4 (DHT) + pin a firewall-able UDP
-  // port. Override the SOVEREIGN_ANNOUNCE_IP / _PORT env vars. tonutils only.
-  .option('--announce-ip <ip>', 'Public IPv4 to announce to the DHT for a publicly-reachable cloud seeder (tonutils backend). Overrides $SOVEREIGN_ANNOUNCE_IP.')
-  .option('--announce-port <port>', 'Fixed UDP ListenAddr port to announce (so a firewall rule can be pre-opened). Overrides $SOVEREIGN_ANNOUNCE_PORT.', (v) => parseInt(v, 10))
+  // port. Override the MESH_ANNOUNCE_IP / _PORT env vars. tonutils only.
+  .option('--announce-ip <ip>', 'Public IPv4 to announce to the DHT for a publicly-reachable cloud seeder (tonutils backend). Overrides $MESH_ANNOUNCE_IP.')
+  .option('--announce-port <port>', 'Fixed UDP ListenAddr port to announce (so a firewall rule can be pre-opened). Overrides $MESH_ANNOUNCE_PORT.', (v) => parseInt(v, 10))
   // v0.6 B5: bring-your-own rldp-http-proxy ADNL identity. When set together
   // with --domain, the CLI writes both a `storage` (bag) and a `site`
   // (dns_adnl_address) record in a single TonConnect tx, matching the
@@ -77,8 +77,8 @@ program
   // Persist the rldp-http-proxy ADNL identity (its 32-byte seed) so it's stable
   // across restarts — required for a long-lived site, since the on-chain `site`
   // record points at this ADNL. Default location: a per-domain file under
-  // ~/.ton-sovereign/site-keyring/. Pass a path to override (backup / portability).
-  .option('--site-keyring <path>', 'Path to the persisted site-identity seed file (stable ADNL across restarts). Default: ~/.ton-sovereign/site-keyring/<domain>.hex')
+  // ~/.ton-mesh/site-keyring/. Pass a path to override (backup / portability).
+  .option('--site-keyring <path>', 'Path to the persisted site-identity seed file (stable ADNL across restarts). Default: ~/.ton-mesh/site-keyring/<domain>.hex')
   .action(async (buildDirArg: string | undefined, opts: CliOptions) => {
     // Validate backend choice early.
     if (opts.daemonBackend && opts.daemonBackend !== 'tonutils' && opts.daemonBackend !== 'ton-core') {

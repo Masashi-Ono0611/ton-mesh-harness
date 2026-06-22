@@ -3,44 +3,44 @@ import { createSdkLogger, isNamespaceEnabledForTesting } from '../src/sdk/log'
 
 describe('isNamespaceEnabledForTesting (DEBUG-grammar parser)', () => {
   it('disabled when DEBUG is undefined', () => {
-    expect(isNamespaceEnabledForTesting('sovereign:deploy', undefined)).toBe(false)
+    expect(isNamespaceEnabledForTesting('mesh:deploy', undefined)).toBe(false)
   })
 
   it('disabled when DEBUG is empty string', () => {
-    expect(isNamespaceEnabledForTesting('sovereign:deploy', '')).toBe(false)
+    expect(isNamespaceEnabledForTesting('mesh:deploy', '')).toBe(false)
   })
 
   it('wildcard "*" matches anything', () => {
-    expect(isNamespaceEnabledForTesting('sovereign:deploy', '*')).toBe(true)
+    expect(isNamespaceEnabledForTesting('mesh:deploy', '*')).toBe(true)
     expect(isNamespaceEnabledForTesting('random:thing', '*')).toBe(true)
   })
 
-  it('"sovereign:*" matches every sovereign namespace', () => {
-    expect(isNamespaceEnabledForTesting('sovereign:deploy', 'sovereign:*')).toBe(true)
-    expect(isNamespaceEnabledForTesting('sovereign:dns', 'sovereign:*')).toBe(true)
-    expect(isNamespaceEnabledForTesting('other:thing', 'sovereign:*')).toBe(false)
+  it('"mesh:*" matches every mesh namespace', () => {
+    expect(isNamespaceEnabledForTesting('mesh:deploy', 'mesh:*')).toBe(true)
+    expect(isNamespaceEnabledForTesting('mesh:dns', 'mesh:*')).toBe(true)
+    expect(isNamespaceEnabledForTesting('other:thing', 'mesh:*')).toBe(false)
   })
 
   it('exact namespace match', () => {
-    expect(isNamespaceEnabledForTesting('sovereign:deploy', 'sovereign:deploy')).toBe(true)
-    expect(isNamespaceEnabledForTesting('sovereign:dns', 'sovereign:deploy')).toBe(false)
+    expect(isNamespaceEnabledForTesting('mesh:deploy', 'mesh:deploy')).toBe(true)
+    expect(isNamespaceEnabledForTesting('mesh:dns', 'mesh:deploy')).toBe(false)
   })
 
   it('comma-separated list', () => {
-    const pattern = 'sovereign:deploy,sovereign:dns'
-    expect(isNamespaceEnabledForTesting('sovereign:deploy', pattern)).toBe(true)
-    expect(isNamespaceEnabledForTesting('sovereign:dns', pattern)).toBe(true)
-    expect(isNamespaceEnabledForTesting('sovereign:resolve-tx', pattern)).toBe(false)
+    const pattern = 'mesh:deploy,mesh:dns'
+    expect(isNamespaceEnabledForTesting('mesh:deploy', pattern)).toBe(true)
+    expect(isNamespaceEnabledForTesting('mesh:dns', pattern)).toBe(true)
+    expect(isNamespaceEnabledForTesting('mesh:resolve-tx', pattern)).toBe(false)
   })
 
   it('whitespace-separated list (debug.js compat)', () => {
-    expect(isNamespaceEnabledForTesting('sovereign:dns', 'sovereign:deploy sovereign:dns')).toBe(true)
+    expect(isNamespaceEnabledForTesting('mesh:dns', 'mesh:deploy mesh:dns')).toBe(true)
   })
 
   it('"-prefix" exclusion overrides wildcard', () => {
-    const pattern = '*,-sovereign:resolve-tx'
-    expect(isNamespaceEnabledForTesting('sovereign:deploy', pattern)).toBe(true)
-    expect(isNamespaceEnabledForTesting('sovereign:resolve-tx', pattern)).toBe(false)
+    const pattern = '*,-mesh:resolve-tx'
+    expect(isNamespaceEnabledForTesting('mesh:deploy', pattern)).toBe(true)
+    expect(isNamespaceEnabledForTesting('mesh:resolve-tx', pattern)).toBe(false)
   })
 
   it('escapes regex metacharacters in literal namespace parts', () => {
@@ -49,7 +49,7 @@ describe('isNamespaceEnabledForTesting (DEBUG-grammar parser)', () => {
   })
 
   it('handles only an exclusion (no match without explicit include)', () => {
-    expect(isNamespaceEnabledForTesting('sovereign:deploy', '-sovereign:deploy')).toBe(false)
+    expect(isNamespaceEnabledForTesting('mesh:deploy', '-mesh:deploy')).toBe(false)
   })
 
   // Codex review 2026-05-12 found that DEBUG='?' crashed `require()` of
@@ -57,20 +57,20 @@ describe('isNamespaceEnabledForTesting (DEBUG-grammar parser)', () => {
   // added `?` to the regex-meta escape list AND wrapped the
   // RegExp constructor in try/catch. These regressions guard both.
   it('does NOT throw on DEBUG="?" (regex quantifier in pattern)', () => {
-    expect(() => isNamespaceEnabledForTesting('sovereign:test', '?')).not.toThrow()
+    expect(() => isNamespaceEnabledForTesting('mesh:test', '?')).not.toThrow()
     // `?` as a literal segment doesn't match a normal namespace.
-    expect(isNamespaceEnabledForTesting('sovereign:test', '?')).toBe(false)
+    expect(isNamespaceEnabledForTesting('mesh:test', '?')).toBe(false)
   })
 
   it('does NOT throw on DEBUG with other regex metas', () => {
     for (const meta of ['+', '(', ')', '{', '}', '[', ']', '$', '^', '|', '\\']) {
-      expect(() => isNamespaceEnabledForTesting('sovereign:test', meta)).not.toThrow()
+      expect(() => isNamespaceEnabledForTesting('mesh:test', meta)).not.toThrow()
     }
   })
 
   it('skips bare "-" segments cleanly', () => {
-    expect(() => isNamespaceEnabledForTesting('sovereign:test', '-')).not.toThrow()
-    expect(isNamespaceEnabledForTesting('sovereign:test', '-')).toBe(false)
+    expect(() => isNamespaceEnabledForTesting('mesh:test', '-')).not.toThrow()
+    expect(isNamespaceEnabledForTesting('mesh:test', '-')).toBe(false)
   })
 
   it('importing the SDK with DEBUG="?" does not crash module load', async () => {
@@ -80,7 +80,7 @@ describe('isNamespaceEnabledForTesting (DEBUG-grammar parser)', () => {
       // Force a fresh logger construction via dynamic require of the
       // module path. If parseDebugPattern throws, this throws.
       const { createSdkLogger } = await import('../src/sdk/log')
-      expect(() => createSdkLogger('sovereign:smoke')).not.toThrow()
+      expect(() => createSdkLogger('mesh:smoke')).not.toThrow()
     } finally {
       if (savedDebug === undefined) delete process.env.DEBUG
       else process.env.DEBUG = savedDebug
@@ -104,7 +104,7 @@ describe('createSdkLogger', () => {
   })
 
   it('disabled logger no-ops debug/info/warn (no stderr writes)', () => {
-    const logger = createSdkLogger('sovereign:test')
+    const logger = createSdkLogger('mesh:test')
     logger.debug('a')
     logger.info('b')
     logger.warn('c')
@@ -113,19 +113,19 @@ describe('createSdkLogger', () => {
 
   it('enabled logger writes to stderr (DEBUG=*)', () => {
     process.env.DEBUG = '*'
-    const logger = createSdkLogger('sovereign:test')
+    const logger = createSdkLogger('mesh:test')
     logger.info('hello')
     expect(stderrSpy).toHaveBeenCalledTimes(1)
     const line = stderrSpy.mock.calls[0][0] as string
     expect(line).toContain('INFO')
-    expect(line).toContain('sovereign:test')
+    expect(line).toContain('mesh:test')
     expect(line).toContain('hello')
   })
 
   it('output goes to STDERR, never stdout', () => {
     const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     process.env.DEBUG = '*'
-    const logger = createSdkLogger('sovereign:test')
+    const logger = createSdkLogger('mesh:test')
     logger.info('hello')
     expect(stdoutSpy).not.toHaveBeenCalled()
     expect(stderrSpy).toHaveBeenCalled()
@@ -134,7 +134,7 @@ describe('createSdkLogger', () => {
 
   it('attaches a JSON data payload when provided', () => {
     process.env.DEBUG = '*'
-    const logger = createSdkLogger('sovereign:test')
+    const logger = createSdkLogger('mesh:test')
     logger.info('with-data', { bag_id: 'abc', size: 1024 })
     const line = stderrSpy.mock.calls[0][0] as string
     expect(line).toContain('"bag_id":"abc"')
@@ -143,7 +143,7 @@ describe('createSdkLogger', () => {
 
   it('appends a string data argument as-is (no double JSON)', () => {
     process.env.DEBUG = '*'
-    const logger = createSdkLogger('sovereign:test')
+    const logger = createSdkLogger('mesh:test')
     logger.warn('msg', 'extra-detail')
     const line = stderrSpy.mock.calls[0][0] as string
     expect(line).toContain('msg extra-detail')
@@ -151,15 +151,15 @@ describe('createSdkLogger', () => {
 
   it('includes ISO timestamp', () => {
     process.env.DEBUG = '*'
-    const logger = createSdkLogger('sovereign:test')
+    const logger = createSdkLogger('mesh:test')
     logger.info('x')
     const line = stderrSpy.mock.calls[0][0] as string
     expect(line).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z /)
   })
 
   it('all three levels are emitted at the same enabled-ness', () => {
-    process.env.DEBUG = 'sovereign:test'
-    const logger = createSdkLogger('sovereign:test')
+    process.env.DEBUG = 'mesh:test'
+    const logger = createSdkLogger('mesh:test')
     logger.debug('d')
     logger.info('i')
     logger.warn('w')
@@ -167,7 +167,7 @@ describe('createSdkLogger', () => {
   })
 
   it('enabled-state is captured at construction time', () => {
-    const disabled = createSdkLogger('sovereign:test')
+    const disabled = createSdkLogger('mesh:test')
     process.env.DEBUG = '*'
     // Set AFTER construction — still disabled.
     disabled.info('x')
@@ -175,8 +175,8 @@ describe('createSdkLogger', () => {
   })
 
   it('does not emit when namespace excluded', () => {
-    process.env.DEBUG = '*,-sovereign:excluded'
-    const logger = createSdkLogger('sovereign:excluded')
+    process.env.DEBUG = '*,-mesh:excluded'
+    const logger = createSdkLogger('mesh:excluded')
     logger.info('hidden')
     expect(stderrSpy).not.toHaveBeenCalled()
   })

@@ -40,7 +40,7 @@ describe.skipIf(!RUN)('MCP E2E (gated by RUN_MCP_E2E=1)', () => {
       expect(code, `driver exited ${code}; stderr=${stderr}`).toBe(0)
       expect(stdout).toMatch(/Stage 1: handshake OK/)
       expect(stdout).toMatch(
-        /sovereign_check_env, sovereign_deploy, sovereign_site_record, sovereign_status/,
+        /mesh_check_env, mesh_deploy, mesh_site_record, mesh_status/,
       )
       expect(stdout).toMatch(/PASS/)
     },

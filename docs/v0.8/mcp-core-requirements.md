@@ -21,9 +21,9 @@ artifacts that let an agent find the kit without being told its name.**
 
 4. Programmatic SDK extraction (no console output, no spinners, no
    `process.exit`).
-5. MCP server binary (`ton-sovereign-mcp`) using stdio transport.
-6. Tools: `sovereign_deploy`, `sovereign_check_env`, `sovereign_status`, and
-   `sovereign_site_record`. (2 → 3 in rc6; 3 → 4 in v0.10 — see
+5. MCP server binary (`ton-mesh-harness-mcp`) using stdio transport.
+6. Tools: `mesh_deploy`, `mesh_check_env`, `mesh_status`, and
+   `mesh_site_record`. (2 → 3 in rc6; 3 → 4 in v0.10 — see
    "Tool count history" below.)
 7. Progress notifications and cancellation per MCP spec.
 8. Stable error code contract for the tools.
@@ -31,8 +31,8 @@ artifacts that let an agent find the kit without being told its name.**
    config at `~/.config/ton/config.json` directly via the same loader
    `@ton/mcp` uses. See [P-1 probe memo](../archive/v0.8/at-mcp-probe.md) for the verified
    contract. `@ton/mcp` is NOT a runtime dep; it's a peer MCP server an
-   agent may load alongside `ton-sovereign-mcp`.
-10. In-repo skill markdown at `skills/sovereign-deploy.md` referencing
+   agent may load alongside `ton-mesh-harness-mcp`.
+10. In-repo skill markdown at `skills/mesh-deploy.md` referencing
     the now-stable MCP tool names.
 11. `templates/.well-known/mcp.json` template (MCP-server self-description
     for the local dashboard; **not** a provenance manifest — distinct from
@@ -52,11 +52,11 @@ Updated per concept-update 2026-05-10:
 - `mcp.ton.org` registry submission — no submission flow exists today; revisit
   when one does. ([P-1 probe](../archive/v0.8/at-mcp-probe.md) Phase 2.75 landscape findings.)
 - Additional tools beyond the rc6 three-tool surface (e.g.
-  `sovereign_redeploy`, `sovereign_stop`) — 0.8.x once the
-  three-tool contract is validated by V3/V4. `sovereign_status`
+  `mesh_redeploy`, `mesh_stop`) — 0.8.x once the
+  three-tool contract is validated by V3/V4. `mesh_status`
   graduated into 0.8.0 GA scope at rc6 (was originally listed
   here as deferred — the one-shot bag-propagation snapshot turned
-  out to be small enough to ship in v0.8.0). `sovereign_site_record`
+  out to be small enough to ship in v0.8.0). `mesh_site_record`
   later shipped in v0.10 (a one-shot deeplink builder; see below and
   [`v0.10/site-hosting.md`](../v0.10/site-hosting.md)).
 - `.well-known/ton-deploy.json` provenance manifest (Codex C axis from
@@ -68,7 +68,7 @@ Updated per concept-update 2026-05-10:
 ## Functional requirements
 
 ### F1. MCP server binary
-- `bin: { "ton-sovereign-mcp": "./dist/mcp.js" }` added to `package.json`.
+- `bin: { "ton-mesh-harness-mcp": "./dist/mcp.js" }` added to `package.json`.
 - Stdio transport via `@modelcontextprotocol/sdk`.
 - Implements MCP methods: `initialize`, `tools/list`, `tools/call`.
 - Handles `notifications/cancelled`.
@@ -78,7 +78,7 @@ Updated per concept-update 2026-05-10:
 
 ### F2. Tools exposed
 
-#### `sovereign_deploy`
+#### `mesh_deploy`
 
 **Tool description (matters for [V4] #26 red-team test discoverability):**
 
@@ -145,9 +145,9 @@ CLI backwards compat:
 - On `keep_alive=true`, the daemon survives the tool call. The MCP
   server tracks the spawned daemon and kills it on its own shutdown
   (so an agent that disconnects doesn't leak a daemon). v0.8.x will
-  add a `sovereign_stop` tool for explicit control.
+  add a `mesh_stop` tool for explicit control.
 
-#### `sovereign_check_env`
+#### `mesh_check_env`
 
 **Input**:
 
@@ -174,7 +174,7 @@ CLI backwards compat:
 - Reuses `cli/doctor.ts` logic, exposed via the SDK.
 - `ready === blocking.length === 0`.
 
-#### `sovereign_status` *(added rc6)*
+#### `mesh_status` *(added rc6)*
 
 One-shot snapshot of a bag's network state. Designed for the
 post-`keep_alive: false` deploy "did my bag propagate yet?" question
@@ -211,11 +211,11 @@ at `src/sdk/status.ts`; the snapshot semantic differs from
   agent can see `bag_accessible: true` paired with `domain.matches:
   false` (the bag is live, but the .ton record points elsewhere).
 
-#### `sovereign_site_record` *(added v0.10)*
+#### `mesh_site_record` *(added v0.10)*
 
 Build (but do **not** broadcast) a Tonkeeper sign link that sets ONLY the
 `site` (`dns_adnl_address`) record for a domain — no bag, no storage write, no
-daemon. A one-shot like `sovereign_status`. The SDK boundary is
+daemon. A one-shot like `mesh_status`. The SDK boundary is
 `src/sdk/site-record.ts`; the agent surfaces `tonkeeper_deeplink` to the human
 holding the domain, who signs once. Full flow: [`v0.10/site-hosting.md`](../v0.10/site-hosting.md).
 
@@ -236,7 +236,7 @@ and returns the deeplink. Nothing is sent on-chain — the deeplink writes the
 record once a wallet signs it.
 
 ### F3. Progress notifications
-- Sent during `sovereign_deploy` calls.
+- Sent during `mesh_deploy` calls.
 - Schema per event: `{ phase: string, message: string, percent?: number, data?: object }`.
 - Phases (in order): `env_check`, `bag_creating`, `daemon_starting`,
   `bag_uploaded`, `awaiting_signature`, `dns_signing`, `dns_confirmed`,
@@ -255,7 +255,7 @@ reason about.
 | Phase at cancel | Daemon | Local bag artifacts | DNS write | Path 1 `may_have_published` | Path 2 `may_have_published` |
 |---|---|---|---|---|---|
 | `env_check`, `bag_creating` | killed | none yet | not initiated | `false` | `false` |
-| `daemon_starting`, `bag_uploaded` | killed | bag exists in `~/.ton-sovereign-deploy/storage/` | not initiated | `false` | `false` |
+| `daemon_starting`, `bag_uploaded` | killed | bag exists in `~/.ton-mesh/storage/` | not initiated | `false` | `false` |
 | `awaiting_signature` (Path 1) | killed | bag exists | request sent to wallet | `true` (wallet may sign + broadcast even after cancellation) | n/a |
 | `awaiting_signature` (Path 2, pre-broadcast) | killed | bag exists | not initiated | n/a | `false` (kit owns key, cancellation is effective) |
 | `dns_signing` (Path 2, post-broadcast) | killed | bag exists | broadcast already | n/a | `true` (a broadcast tx cannot be unbroadcast) |
@@ -280,7 +280,7 @@ reason about.
 
 **Daemon is always killed** on cancellation regardless of phase. **Local bag
 artifacts are NOT cleaned up** by the kit on cancel — the agent / human can
-inspect or reuse them; if undesired, delete `~/.ton-sovereign-deploy/storage/`
+inspect or reuse them; if undesired, delete `~/.ton-mesh/storage/`
 manually.
 
 **Path 1 close-out:** the kit closes its TonConnect session locally on cancel,
@@ -304,7 +304,7 @@ the calling agent via `may_have_published: true`.
   - `ERR_DNS_TX_TIMEOUT` — DNS tx not confirmed within window.
   - `ERR_VERIFY_FAILED` — bag served from daemon but record/hash mismatch.
   - `ERR_CANCELLED` — client cancelled mid-flight; check `data.may_have_published` for honest semantics (see F4).
-  - `ERR_BUSY` — concurrent tool call rejected; v0.8.0 serialises `sovereign_deploy` invocations (one at a time per server process). The agent should retry after the in-flight call completes. Multi-deploy is a v0.8.x topic.
+  - `ERR_BUSY` — concurrent tool call rejected; v0.8.0 serialises `mesh_deploy` invocations (one at a time per server process). The agent should retry after the in-flight call completes. Multi-deploy is a v0.8.x topic.
   - `ERR_INTERNAL` — unhandled.
 - Adding new codes is non-breaking; renaming or removing is breaking
   (require kit minor bump + tool description note).
@@ -337,17 +337,17 @@ the calling agent via `may_have_published: true`.
 ### NF4. Transport
 - `@modelcontextprotocol/sdk` Node package, stdio server.
 - No network listener. No HTTP. No stored state on disk beyond what
-  the existing kit already writes (`~/.ton-sovereign-deploy/`).
+  the existing kit already writes (`~/.ton-mesh/`).
 
 ### NF5. No regression
 - All v0.6 + v0.7 unit + integration tests still pass.
-- `npx ton-sovereign-deploy …` produces the same human output as v0.7 (incl. `--site-auto` flow).
+- `npx ton-mesh-harness …` produces the same human output as v0.7 (incl. `--site-auto` flow).
 - `--json-output` behavior is preserved.
 
 ### NF6. Wallet config compose (filesystem-level, [P-1] verdict + post-F2-review correction)
 - For `wallet.kind === "agentic"`, the SDK reads `~/.config/ton/config.json` (or `$TON_CONFIG_PATH` override) **with its own loader**, not via a `@ton/walletkit` API. The original probe assumed `@ton/walletkit` exposed a config loader; it does not (it exports `TonWalletKit` + `Signer` only). Implementation reads the config file with a strict zod schema, then instantiates `@ton/walletkit`'s `Signer` (`Signer.fromPrivateKey` / `Signer.fromMnemonic`) to sign the BOC.
 - The shared resource is the **on-disk config file** — same file `@ton/mcp` writes via `agentic_start_root_wallet_setup` / `agentic_import_wallet`. The SDK does NOT spawn or RPC into `@ton/mcp`.
-- The SDK does NOT bundle or vendor `@ton/mcp`. `@ton/mcp` is a peer MCP server an agent may load alongside `ton-sovereign-mcp`.
+- The SDK does NOT bundle or vendor `@ton/mcp`. `@ton/mcp` is a peer MCP server an agent may load alongside `ton-mesh-harness-mcp`.
 - `@ton/walletkit` is a runtime dep for `Signer` and wallet adapters only. Version pin tracks `@ton/mcp`'s pin (alpha-tracking-alpha is acceptable for v0.8.0; flag as v0.8.x stability TODO once both stabilise).
 - **Schema-skew defence:** the loader emits a runtime warning when the config schema version is unrecognised, so a future `@ton/mcp` schema change fails loud rather than silent.
 
@@ -362,18 +362,18 @@ the calling agent via `may_have_published: true`.
 4. [V4] #26 red-team agent test executed against the CLI path; result documented in CHANGELOG `[0.8.0-rc1]`.
 
 ### GA (week 6)
-5. `npx -y --package ton-sovereign-deploy ton-sovereign-mcp` (dual-bin invocation) boots and responds to MCP `initialize`.
-6. `tools/list` returns the GA tools — `sovereign_check_env`, `sovereign_deploy`, `sovereign_status` (and, from v0.10, `sovereign_site_record`) — all with valid JSON Schemas matching the tables above. Tool descriptions include "deploy a static site to .ton" (or close paraphrase) for [V4] discoverability. (rc6 expansion: `sovereign_status` was originally deferred; promoted into GA scope when the one-shot bag-propagation snapshot turned out to be small. v0.10 added `sovereign_site_record`.)
+5. `npx -y --package ton-mesh-harness ton-mesh-harness-mcp` (dual-bin invocation) boots and responds to MCP `initialize`.
+6. `tools/list` returns the GA tools — `mesh_check_env`, `mesh_deploy`, `mesh_status` (and, from v0.10, `mesh_site_record`) — all with valid JSON Schemas matching the tables above. Tool descriptions include "deploy a static site to .ton" (or close paraphrase) for [V4] discoverability. (rc6 expansion: `mesh_status` was originally deferred; promoted into GA scope when the one-shot bag-propagation snapshot turned out to be small. v0.10 added `mesh_site_record`.)
 7. From a Claude Code session connected to the server:
-   a. `sovereign_check_env` returns a structured result.
-   b. `sovereign_deploy` against a sample `dist/` on testnet (Path 1 *and* Path 2) completes end-to-end, receiving `bag_id`, `daemon_api_url`, and a non-error result.
+   a. `mesh_check_env` returns a structured result.
+   b. `mesh_deploy` against a sample `dist/` on testnet (Path 1 *and* Path 2) completes end-to-end, receiving `bag_id`, `daemon_api_url`, and a non-error result.
    c. **Path 1:** the agent sees `awaiting_signature` progress with a `signing_url` and can hand it off.
    d. **Path 2:** the agent sees `awaiting_signature` with `signing_mode: "agentic"` and `signing_url: null`; signing proceeds autonomously.
    e. Cancelling mid-deploy returns `ERR_CANCELLED`. If cancelled before `awaiting_signature`, no daemon is left running. If cancelled after, `data.may_have_published` is set per F4.
 8. `src/sdk/` has zero `console.*` calls (verified by lint).
-9. `npx ton-sovereign-deploy …` works unchanged for v0.7 users (including `--site-auto`).
+9. `npx ton-mesh-harness …` works unchanged for v0.7 users (including `--site-auto`).
 10. JSON Schema snapshot test passes.
-11. In-repo `skills/sovereign-deploy.md` references stable MCP tool names; `templates/.well-known/mcp.json` template lives in repo; PR to `ton-org/skills` opened.
+11. In-repo `skills/mesh-deploy.md` references stable MCP tool names; `templates/.well-known/mcp.json` template lives in repo; PR to `ton-org/skills` opened.
 12. [V4] #26 red-team agent test re-run against the MCP path; result documented in CHANGELOG `[0.8.0]`.
 
 ## Open implementation questions
@@ -383,7 +383,7 @@ spec-level questions:
 
 1. **`keep_alive=true` daemon ownership**: the MCP server holds the
    daemon process handle. If the agent disconnects (stdin closes),
-   the server kills the daemon. v0.8.x will add `sovereign_stop` and
+   the server kills the daemon. v0.8.x will add `mesh_stop` and
    detached mode for true persistence.
 2. **Concurrent calls**: 0.8.0 serialises tool calls (one deploy at a
    time). Concurrent calls return `ERR_BUSY` (added to the code list

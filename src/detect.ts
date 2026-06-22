@@ -25,6 +25,6 @@ export function detectBuildDir(cwd: string, override?: string): string {
   throw new Error(
     `No build directory found in ${cwd}.\n` +
     `Checked: ${PRIORITY_DIRS.join(', ')}\n` +
-    `Pass the path explicitly: ton-sovereign-deploy ./your-build-dir`
+    `Pass the path explicitly: ton-mesh-harness ./your-build-dir`
   )
 }

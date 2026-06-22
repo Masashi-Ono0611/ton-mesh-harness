@@ -6,8 +6,8 @@
 // Windows is not yet supported (TODO — Windows Service / scheduled task).
 //
 // User-scope only (no root install). One unit per bag, labelled
-// `ton-sovereign.<bag_id>`, backed by a persistent seed dir under
-// ~/.ton-sovereign/seeds/<bag_id>/.
+// `ton-mesh.<bag_id>`, backed by a persistent seed dir under
+// ~/.ton-mesh/seeds/<bag_id>/.
 //
 // This module is platform/IO glue (no console — callers render output).
 
@@ -23,7 +23,7 @@ import {
 import os from 'node:os'
 import path from 'node:path'
 
-export const SEEDS_ROOT = path.join(os.homedir(), '.ton-sovereign', 'seeds')
+export const SEEDS_ROOT = path.join(os.homedir(), '.ton-mesh', 'seeds')
 
 export interface ServiceMeta {
   bag_id: string
@@ -70,7 +70,7 @@ function assertBagId(bagId: string): void {
 }
 
 export function serviceLabel(bagId: string): string {
-  return `ton-sovereign.${bagId}`
+  return `ton-mesh.${bagId}`
 }
 export function seedDir(bagId: string): string {
   return path.join(SEEDS_ROOT, bagId)
@@ -126,7 +126,7 @@ export function buildSystemdUnit(meta: ServiceMeta): string {
   if (meta.network_config_path) args.push('--network-config', meta.network_config_path)
   const execStart = args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ')
   return `[Unit]
-Description=ton-sovereign-deploy seed daemon (bag ${meta.bag_id})
+Description=ton-mesh-harness seed daemon (bag ${meta.bag_id})
 After=network-online.target
 
 [Service]
@@ -148,7 +148,7 @@ function launchdPlistPath(label: string): string {
   return path.join(os.homedir(), 'Library', 'LaunchAgents', `${label}.plist`)
 }
 function systemdUnitName(bagId: string): string {
-  return `ton-sovereign-${bagId}.service`
+  return `ton-mesh-${bagId}.service`
 }
 function systemdUnitPath(bagId: string): string {
   return path.join(os.homedir(), '.config', 'systemd', 'user', systemdUnitName(bagId))

@@ -1,5 +1,5 @@
 /**
- * Opt-in HTTP transport for ton-sovereign-mcp (#33).
+ * Opt-in HTTP transport for ton-mesh-harness-mcp (#33).
  *
  * stdio stays the default (local-host MCP clients). `--http <addr>` binds a
  * Streamable-HTTP MCP endpoint at `/mcp` for remote / reverse-proxied
@@ -154,7 +154,7 @@ export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<
           res.writeHead(500, { 'content-type': 'text/plain' }).end('internal error')
         }
         process.stderr.write(
-          `ton-sovereign-mcp: HTTP request error: ${err instanceof Error ? err.message : String(err)}\n`,
+          `ton-mesh-harness-mcp: HTTP request error: ${err instanceof Error ? err.message : String(err)}\n`,
         )
       }
     })()
@@ -166,7 +166,7 @@ export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<
   })
 
   process.stderr.write(
-    `ton-sovereign-mcp: HTTP transport listening on http://${addr.host}:${addr.port}${MCP_HTTP_PATH}` +
+    `ton-mesh-harness-mcp: HTTP transport listening on http://${addr.host}:${addr.port}${MCP_HTTP_PATH}` +
       `${token ? ' (bearer auth on)' : ''}${corsOrigins.length ? ` (CORS: ${corsOrigins.join(', ')})` : ''}\n`,
   )
 }

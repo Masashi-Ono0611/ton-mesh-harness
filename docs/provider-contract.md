@@ -31,7 +31,7 @@ node scripts/close-storage-contract.cjs <storage-contract-address>
 - When the contract has `is_active=false`, either the client (you) or the provider can send `op::close_contract (0x79f937ea)`. The full contract balance is then returned to the client (mode 128+32) and the contract self-destructs.
 - Field-verified (Round 7 → close): 0.05 TON sent → `0.3281 TON` returned → contract `nonexist`. Net loss only 0.022 TON.
 
-The script reuses your existing TonConnect session (`~/.ton-sovereign/tonconnect.json`), so no wallet pairing is required.
+The script reuses your existing TonConnect session (`~/.ton-mesh/tonconnect.json`), so no wallet pairing is required.
 
 ---
 

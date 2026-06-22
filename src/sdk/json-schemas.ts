@@ -42,7 +42,7 @@ export interface ToolJsonSchema {
   output: JsonSchema
 }
 
-const SCHEMA_VERSION = '0.8.0'
+const SCHEMA_VERSION = '0.13.0'
 
 // `zodToJsonSchema` is typed as accepting a `ZodType<any, ZodTypeDef, any>`,
 // which our complex schemas (z.discriminatedUnion of strict objects with
@@ -55,35 +55,35 @@ const SCHEMA_VERSION = '0.8.0'
 const toJson = (schema: unknown, name: string): JsonSchema =>
   zodToJsonSchema(schema as never, { name, target: 'jsonSchema7' }) as unknown as JsonSchema
 
-export const SOVEREIGN_DEPLOY_TOOL: ToolJsonSchema = {
-  name: 'sovereign_deploy',
+export const MESH_DEPLOY_TOOL: ToolJsonSchema = {
+  name: 'mesh_deploy',
   input: toJson(DeployOptionsSchema, 'DeployOptions'),
   output: toJson(DeployResultSchema, 'DeployResult'),
 }
 
-export const SOVEREIGN_CHECK_ENV_TOOL: ToolJsonSchema = {
-  name: 'sovereign_check_env',
+export const MESH_CHECK_ENV_TOOL: ToolJsonSchema = {
+  name: 'mesh_check_env',
   input: toJson(CheckEnvOptionsSchema, 'CheckEnvOptions'),
   output: toJson(CheckEnvResultSchema, 'CheckEnvResult'),
 }
 
-export const SOVEREIGN_STATUS_TOOL: ToolJsonSchema = {
-  name: 'sovereign_status',
+export const MESH_STATUS_TOOL: ToolJsonSchema = {
+  name: 'mesh_status',
   input: toJson(StatusOptionsSchema, 'StatusOptions'),
   output: toJson(StatusResultSchema, 'StatusResult'),
 }
 
-export const SOVEREIGN_SITE_RECORD_TOOL: ToolJsonSchema = {
-  name: 'sovereign_site_record',
+export const MESH_SITE_RECORD_TOOL: ToolJsonSchema = {
+  name: 'mesh_site_record',
   input: toJson(SiteRecordOptionsSchema, 'SiteRecordOptions'),
   output: toJson(SiteRecordResultSchema, 'SiteRecordResult'),
 }
 
 export const ALL_TOOLS: readonly ToolJsonSchema[] = [
-  SOVEREIGN_DEPLOY_TOOL,
-  SOVEREIGN_CHECK_ENV_TOOL,
-  SOVEREIGN_STATUS_TOOL,
-  SOVEREIGN_SITE_RECORD_TOOL,
+  MESH_DEPLOY_TOOL,
+  MESH_CHECK_ENV_TOOL,
+  MESH_STATUS_TOOL,
+  MESH_SITE_RECORD_TOOL,
 ]
 
 export const SUPPLEMENTARY_SCHEMAS = {

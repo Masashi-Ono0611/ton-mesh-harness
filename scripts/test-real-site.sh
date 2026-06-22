@@ -13,11 +13,11 @@ cat > index.html << 'HTML'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TON Sovereign Deploy Test</title>
+    <title>TON Mesh Deploy Test</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>TON Sovereign Deploy Test</h1>
+    <h1>TON Mesh Deploy Test</h1>
     <p>This is a test site deployed to TON Storage.</p>
     <p>Bag size: ~500 KB</p>
     <p>Status: Testing network propagation</p>
@@ -41,7 +41,7 @@ CSS
 
 # JS file (~400 KB)
 cat > app.js << JS
-console.log('TON Sovereign Deploy Test');
+console.log('TON Mesh Deploy Test');
 $(for i in {1..10000}; do echo "const var$i = 'data$i';"; done)
 console.log('Loaded');
 JS

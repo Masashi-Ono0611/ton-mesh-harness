@@ -52,7 +52,7 @@ const baseSpec = (exeName: string, expectedSha256?: Record<string, string>) => (
 describe('installBinary SHA-256 verification', () => {
   beforeEach(() => {
     spawnSyncMock.mockClear()
-    try { rmSync(path.join(sandboxDir, '.ton-sovereign'), { recursive: true, force: true }) } catch {}
+    try { rmSync(path.join(sandboxDir, '.ton-mesh'), { recursive: true, force: true }) } catch {}
   })
   afterEach(() => { spawnSyncMock.mockReset() })
 

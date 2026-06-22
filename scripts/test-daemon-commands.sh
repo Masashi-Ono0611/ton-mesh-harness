@@ -1,9 +1,9 @@
 #!/bin/bash
 # Check the storage-daemon status
 
-DAEMON_BIN="$HOME/.ton-sovereign/bin/storage-daemon"
-CLI_BIN="$HOME/.ton-sovereign/bin/storage-daemon-cli"
-CONFIG="$HOME/.ton-sovereign/bin/global.config.json"
+DAEMON_BIN="$HOME/.ton-mesh/bin/storage-daemon"
+CLI_BIN="$HOME/.ton-mesh/bin/storage-daemon-cli"
+CONFIG="$HOME/.ton-mesh/bin/global.config.json"
 
 echo "=== Checking storage-daemon binaries ==="
 ls -lh "$DAEMON_BIN" "$CLI_BIN" "$CONFIG" 2>&1 || echo "Binaries not found"

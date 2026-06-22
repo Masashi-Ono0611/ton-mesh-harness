@@ -43,7 +43,7 @@ export interface StartRldpHttpProxyOptions {
   /**
    * `--site-keyring` override: path to the persisted 32-byte seed file backing
    * the ADNL identity. When absent, a per-domain default under
-   * `~/.ton-sovereign/site-keyring/` is used. Either way the identity is
+   * `~/.ton-mesh/site-keyring/` is used. Either way the identity is
    * reused across runs so the on-chain `site` record stays valid.
    */
   siteKeyring?: string
@@ -83,7 +83,7 @@ export async function startRldpHttpProxy(
   //     by default; on Windows the user-profile ACL is the protection.
   //   - Cleaned up via rmSync in kill() (previously LEAKED on every
   //     run — every --site auto invocation left a stray dir in /tmp).
-  const sessionDir = mkdtempSync(path.join(tmpdir(), `ton-sovereign-proxy-${process.pid}-`))
+  const sessionDir = mkdtempSync(path.join(tmpdir(), `ton-mesh-proxy-${process.pid}-`))
   const dbDir = path.join(sessionDir, 'db')
   mkdirSync(dbDir, { recursive: true, mode: 0o700 })
 

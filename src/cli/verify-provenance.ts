@@ -3,7 +3,7 @@ import chalk from 'chalk'
 import { verifyManifest, type ProvenanceManifest } from '../sdk/provenance'
 
 /**
- * `ton-sovereign-deploy verify-provenance <file|url>` (#34).
+ * `ton-mesh-harness verify-provenance <file|url>` (#34).
  *
  * Reads a `.well-known/ton-deploy.json` manifest — from a local path, or
  * fetched from an `http(s)://` URL (e.g. a gateway serving the deployed

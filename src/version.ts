@@ -10,4 +10,4 @@
  *
  * NO `console.*` IN THIS FILE — lint-enforced.
  */
-export const SOVEREIGN_DEPLOY_VERSION = '0.12.0'
+export const MESH_HARNESS_VERSION = '0.13.0'

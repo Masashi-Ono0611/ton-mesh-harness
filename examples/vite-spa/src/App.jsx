@@ -16,7 +16,7 @@ export default function App() {
       </p>
       <p>
         Flow: <code>npm run build</code> → <code>dist/</code> →{' '}
-        <code>npx ton-sovereign-deploy ./dist</code>.
+        <code>npx ton-mesh-harness ./dist</code>.
       </p>
       <p>
         See this directory's <code>README.md</code> for the TonConnect and

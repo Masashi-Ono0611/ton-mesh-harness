@@ -15,7 +15,7 @@ These describe how the kit works today; keep them accurate.
 |---|---|
 | [`v0.10/site-hosting.md`](./v0.10/site-hosting.md) | hosting a `.ton` site end-to-end — `site-record` / `--site-auto` / `--site-keyring` / cloud reachability / `--daemon-mode service` (#77–#81) |
 | [`v0.9/daemon-service-mode.md`](./v0.9/daemon-service-mode.md) | `--daemon-mode` (embedded/detached/service) + launchd/systemd ownership for bag seeders **and** site gateways (#37) |
-| [`v0.9/mcp-http-transport.md`](./v0.9/mcp-http-transport.md) | `ton-sovereign-mcp --http` transport, auth, CORS, threat model (#33) |
+| [`v0.9/mcp-http-transport.md`](./v0.9/mcp-http-transport.md) | `ton-mesh-harness-mcp --http` transport, auth, CORS, threat model (#33) |
 | [`v0.9/provenance.md`](./v0.9/provenance.md) | signed `.well-known/ton-deploy.json` manifest + `verify-provenance` (#34) |
 | [`v0.9/release-runbook.md`](./v0.9/release-runbook.md) | daemon version bump + SHA-256 refresh workflow (#32) |
 | [`v0.9/agent-compat.md`](./v0.9/agent-compat.md) | cross-agent MCP discovery config + red-team protocol (#35) |

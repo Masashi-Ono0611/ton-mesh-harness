@@ -31,7 +31,7 @@ export interface SiteHostResult {
   siteAdnlHex: string
 }
 
-const SITE_ADNL_TXT_PATH = path.join(os.homedir(), '.ton-sovereign', 'site-adnl.txt')
+const SITE_ADNL_TXT_PATH = path.join(os.homedir(), '.ton-mesh', 'site-adnl.txt')
 
 /**
  * Install + spawn rldp-http-proxy with a freshly minted ADNL identity,
@@ -143,7 +143,7 @@ export function installSiteServiceForDomain(opts: InstallSiteServiceOptions): In
     console.log(chalk.dim(`  Domain:   ${opts.domain}`))
     console.log(chalk.dim(`  Site ADNL: ${identity.shortIdHex} (${created ? 'minted' : 'reused'})`))
     console.log(chalk.dim(`  identity: ${siteKeyringPath}`))
-    console.log(chalk.dim(`  Manage:   ton-sovereign-deploy service list | service stop-site ${opts.domain}`))
+    console.log(chalk.dim(`  Manage:   ton-mesh-harness service list | service stop-site ${opts.domain}`))
     // On a headless Linux VM the systemd --user unit won't restart after an
     // unattended reboot unless lingering is enabled once (#83).
     const lingerHint = lingerAdvisory()

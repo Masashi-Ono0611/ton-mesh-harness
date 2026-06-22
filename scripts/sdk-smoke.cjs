@@ -13,7 +13,7 @@
  *   - DeployOptionsSchema.parse({...minimal}) round-trips with the
  *     expected defaults (validates the wallet discriminator + defaults
  *     work via the published bundle).
- *   - SOVEREIGN_DEPLOY_VERSION matches package.json::version.
+ *   - MESH_HARNESS_VERSION matches package.json::version.
  *
  * The CI matrix runs this alongside cli-smoke.cjs + mcp-smoke.cjs so
  * an accidental drop from src/sdk.ts surfaces immediately.
@@ -86,10 +86,10 @@ assert(Array.isArray(sdk.ALL_TOOLS), 'ALL_TOOLS must be an array')
 assert(sdk.ALL_TOOLS.length === 4, `ALL_TOOLS length expected 4, got ${sdk.ALL_TOOLS.length}`)
 const toolNames = sdk.ALL_TOOLS.map((t) => t.name).sort()
 const expected = [
-  'sovereign_check_env',
-  'sovereign_deploy',
-  'sovereign_site_record',
-  'sovereign_status',
+  'mesh_check_env',
+  'mesh_deploy',
+  'mesh_site_record',
+  'mesh_status',
 ]
 assert(
   JSON.stringify(toolNames) === JSON.stringify(expected),
@@ -98,13 +98,13 @@ assert(
 
 // 6. Version pin matches package.json
 assert(
-  sdk.SOVEREIGN_DEPLOY_VERSION === PKG.version,
-  `version drift: sdk=${sdk.SOVEREIGN_DEPLOY_VERSION}, package.json=${PKG.version}`,
+  sdk.MESH_HARNESS_VERSION === PKG.version,
+  `version drift: sdk=${sdk.MESH_HARNESS_VERSION}, package.json=${PKG.version}`,
 )
 
 // 7. Logger
 assert(typeof sdk.createSdkLogger === 'function', 'createSdkLogger must be exported')
-const logger = sdk.createSdkLogger('sovereign:smoke')
+const logger = sdk.createSdkLogger('mesh:smoke')
 assert(typeof logger.debug === 'function', 'logger.debug missing')
 assert(typeof logger.info === 'function', 'logger.info missing')
 assert(typeof logger.warn === 'function', 'logger.warn missing')
@@ -115,7 +115,7 @@ const w = sdk.parseWalletInput('Tonkeeper')
 assert(w.kind === 'tonconnect', 'parseWalletInput should lift string → tonconnect')
 
 process.stdout.write(
-  `SDK smoke OK — version=${sdk.SOVEREIGN_DEPLOY_VERSION}; ` +
+  `SDK smoke OK — version=${sdk.MESH_HARNESS_VERSION}; ` +
     `tools=${toolNames.join(', ')}; ` +
     `schemas=${schemaNames.length}; ` +
     `exports=${Object.keys(sdk).length}\n`,

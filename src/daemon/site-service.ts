@@ -2,7 +2,7 @@
 //
 // `--site-auto --daemon-mode service` hands the proxy + static server to
 // launchd (macOS) / systemd --user (Linux) so a `.ton` site survives CLI exit
-// and reboots. The OS runs `ton-sovereign-deploy site-serve …` (a foreground
+// and reboots. The OS runs `ton-mesh-harness site-serve …` (a foreground
 // entrypoint that re-derives the SAME ADNL from the persisted seed), so the
 // on-chain `site` record stays valid across restarts.
 //
@@ -11,7 +11,7 @@
 // must not be destabilized. The duplicated OS glue (~80 lines) is the cost.
 //
 // User-scope only (no root). One unit per domain, label
-// `ton-sovereign-site.<domain>`, namespace ~/.ton-sovereign/sites/<domain>/.
+// `ton-mesh-site.<domain>`, namespace ~/.ton-mesh/sites/<domain>/.
 // Restart-on-failure ONLY (crash), so a clean stop stays stopped.
 //
 // Platform/IO glue — no console (callers render output).
@@ -28,11 +28,11 @@ import {
 import os from 'node:os'
 import path from 'node:path'
 
-export const SITES_ROOT = path.join(os.homedir(), '.ton-sovereign', 'sites')
+export const SITES_ROOT = path.join(os.homedir(), '.ton-mesh', 'sites')
 
 export interface SiteServiceMeta {
   domain: string // e.g. "mysite.ton"
-  label: string // ton-sovereign-site.<sanitized domain>
+  label: string // ton-mesh-site.<sanitized domain>
   build_dir: string // absolute path to the static files
   site_keyring: string // absolute path to the persisted ADNL seed
   public_ip: string | null // pinned --site-public-ip, or null (auto-detect)
@@ -80,7 +80,7 @@ function assertDomain(domain: string): void {
 }
 
 export function siteServiceLabel(domain: string): string {
-  return `ton-sovereign-site.${domain}`
+  return `ton-mesh-site.${domain}`
 }
 export function siteDir(domain: string): string {
   return path.join(SITES_ROOT, domain)
@@ -151,7 +151,7 @@ export function buildSiteSystemdUnit(meta: SiteServiceMeta): string {
   // Restart=on-failure (NOT always): a clean stop (systemctl stop → SIGTERM →
   // exit 0) stays stopped; only a crash restarts. Avoids the #37 resurrection.
   return `[Unit]
-Description=ton-sovereign-deploy site gateway (${meta.domain})
+Description=ton-mesh-harness site gateway (${meta.domain})
 After=network-online.target
 
 [Service]
@@ -173,7 +173,7 @@ function launchdPlistPath(label: string): string {
   return path.join(os.homedir(), 'Library', 'LaunchAgents', `${label}.plist`)
 }
 function systemdUnitName(domain: string): string {
-  return `ton-sovereign-site-${domain}.service`
+  return `ton-mesh-site-${domain}.service`
 }
 function systemdUnitPath(domain: string): string {
   return path.join(os.homedir(), '.config', 'systemd', 'user', systemdUnitName(domain))
