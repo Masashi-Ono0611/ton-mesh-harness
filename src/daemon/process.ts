@@ -69,6 +69,10 @@ export async function startDaemon(
   // Capture spawn errors into a checkable variable instead of throwing
   // from the event handler (which becomes an unhandled exception that
   // bypasses the caller's try/catch). Same pattern as tonutils-process.
+  // NOTE: a spawn failure (ENOENT / EACCES) emits 'error' ASYNCHRONOUSLY on
+  // the next event-loop tick — so the synchronous check below almost never
+  // sees it. waitForDaemon polls getSpawnError() so the real cause surfaces
+  // within ~200 ms instead of after the full 30 s key-gen timeout.
   let spawnError: Error | undefined
   child.on('error', (err) => { spawnError = err })
 
@@ -109,7 +113,7 @@ export async function startDaemon(
     throw new Error(`storage-daemon failed to start: ${spawnError.message}`)
   }
 
-  await waitForDaemon(handle, resolvedPaths)
+  await waitForDaemon(handle, resolvedPaths, () => spawnError)
 
   return handle
 }
@@ -120,6 +124,7 @@ export async function startDaemon(
 async function waitForDaemon(
   handle: DaemonHandle,
   paths: DaemonPaths,
+  getSpawnError: () => Error | undefined = () => undefined,
   timeoutMs = 30_000
 ): Promise<void> {
   const keyDir = path.join(handle.dbDir, 'cli-keys')
@@ -127,19 +132,37 @@ async function waitForDaemon(
   const serverPub = path.join(keyDir, 'server.pub')
   const deadline = Date.now() + timeoutMs
 
+  // A spawn failure (ENOENT: binary missing; EACCES: not executable) surfaces
+  // here, since child.on('error') fires asynchronously after startDaemon's
+  // synchronous check. Without this the loop below would wait the full 30 s for
+  // keys the dead process can never write, then throw a misleading "did not
+  // generate CLI keys" error that hides the real ENOENT/EACCES cause. Checked
+  // at the top of every poll iteration, so the real cause surfaces within one
+  // sleep interval (~200 ms in the key-wait loop, ~500 ms in the connect loop).
+  const failFastOnSpawnError = (): void => {
+    const err = getSpawnError()
+    if (err) {
+      handle.kill()
+      throw new Error(`storage-daemon failed to start: ${err.message}`)
+    }
+  }
+
   // Wait for the daemon to generate its CLI key files (written on first launch)
   while (Date.now() < deadline) {
+    failFastOnSpawnError()
     if (existsSync(clientKey) && existsSync(serverPub)) break
     await sleep(200)
   }
 
   if (!existsSync(clientKey) || !existsSync(serverPub)) {
+    failFastOnSpawnError()
     handle.kill()
     throw new Error('storage-daemon did not generate CLI keys within timeout')
   }
 
   // Then wait for the daemon to accept connections
   while (Date.now() < deadline) {
+    failFastOnSpawnError()
     const result = spawnSync(paths.cli, [
       '-v', '0',
       '-I', `127.0.0.1:${handle.cliPort}`,
