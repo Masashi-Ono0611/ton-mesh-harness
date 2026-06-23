@@ -7,7 +7,17 @@
 // pasted across all three. This module hosts the shared helpers; per-
 // binary modules call into them with their own URL.
 
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
+import {
+  accessSync,
+  chmodSync,
+  constants as fsConstants,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
@@ -29,7 +39,18 @@ export function downloadFile(url: string, dest: string): void {
   const tmp = dest + '.tmp'
   const result = spawnSync('curl', ['-fsSL', '-o', tmp, url], { stdio: 'inherit' })
   if (result.status !== 0) {
-    throw new Error(`Failed to download ${url} (curl exit ${result.status})`)
+    // curl writes the output file before it knows the request failed, so a
+    // non-zero exit (HTTP error, network drop) or a spawn failure (curl not on
+    // PATH → result.error, status null) can leave a partial / zero-byte `.tmp`
+    // behind. Remove it so it can't be mistaken for a good download by a later
+    // existsSync check or a retry.
+    try { unlinkSync(tmp) } catch { /* may not have been created */ }
+    const reason = result.error
+      ? result.error.message
+      : result.signal
+        ? `curl killed by ${result.signal}`
+        : `curl exit ${result.status}`
+    throw new Error(`Failed to download ${url} (${reason})`)
   }
   renameSync(tmp, dest)
 }
@@ -40,10 +61,28 @@ export function downloadFile(url: string, dest: string): void {
  */
 export function chmodExecutable(absPath: string): void {
   if (process.platform === 'win32') return
+  // Use Node's chmodSync rather than shelling out to `chmod`. spawnSync('chmod')
+  // returns a non-zero `status` (or a `result.error`, e.g. chmod not on PATH)
+  // on failure WITHOUT throwing, so the old try/catch silently swallowed it —
+  // leaving a downloaded daemon non-executable, which then fails much later
+  // with a confusing EACCES at spawn time.
   try {
-    spawnSync('chmod', ['+x', absPath])
-  } catch {
-    /* ignore — caller validates via existsSync, not permission bits */
+    chmodSync(absPath, 0o755)
+  } catch (err) {
+    // chmod can fail on filesystems that don't model unix permission bits
+    // (vfat/exFAT, some FUSE mounts) or under EPERM/EROFS. That's only a real
+    // problem if the binary isn't executable — on perm-less filesystems it
+    // typically already is. Re-check: tolerate the chmod failure when the file
+    // is executable anyway, but surface it when it is genuinely not (which is
+    // the confusing-spawn-EACCES case #17 is about).
+    try {
+      accessSync(absPath, fsConstants.X_OK)
+    } catch {
+      throw new Error(
+        `chmodExecutable: ${absPath} is not executable and chmod failed: ` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
   }
 }
 
