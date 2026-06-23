@@ -16,7 +16,7 @@
  * NOTE: not in src/sdk/, so console/process IO is allowed here.
  */
 
-import { createServer } from 'node:http'
+import { createServer, type Server as HttpServer } from 'node:http'
 import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
@@ -62,9 +62,10 @@ function isLoopback(host: string): boolean {
 
 /**
  * Bind the HTTP transport and connect it to `server`. Resolves once the
- * listener is up; the process then stays alive serving requests.
+ * listener is up (returning the underlying http.Server so callers/tests can
+ * close it); the process then stays alive serving requests.
  */
-export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<void> {
+export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<HttpServer> {
   const token = process.env.MCP_HTTP_TOKEN?.trim() || ''
   if (!isLoopback(addr.host) && !token) {
     throw new Error(
@@ -123,13 +124,33 @@ export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<
         const chunks: Buffer[] = []
         let size = 0
         let tooLarge = false
-        for await (const c of req) {
-          size += (c as Buffer).length
-          if (size > MAX_BODY_BYTES) {
-            tooLarge = true
-            break
+        try {
+          for await (const c of req) {
+            size += (c as Buffer).length
+            if (size > MAX_BODY_BYTES) {
+              tooLarge = true
+              break
+            }
+            chunks.push(c as Buffer)
           }
-          chunks.push(c as Buffer)
+        } catch (err) {
+          // The request stream errored mid-body — client aborted the POST, or
+          // the socket was reset / closed prematurely (ECONNRESET, aborted).
+          // The async iterator rejects here; without this catch the rejection
+          // escapes the fire-and-forget handler and, under Node's default
+          // --unhandled-rejections=throw, takes down the whole server. Swallow
+          // it, best-effort 400 if the socket is still writable, and move on.
+          if (!res.headersSent) {
+            try {
+              res.writeHead(400, { 'content-type': 'text/plain' }).end('request aborted')
+            } catch {
+              /* socket already gone */
+            }
+          }
+          process.stderr.write(
+            `ton-mesh-harness-mcp: HTTP request body read aborted: ${err instanceof Error ? err.message : String(err)}\n`,
+          )
+          return
         }
         if (tooLarge) {
           res.writeHead(413, { 'content-type': 'text/plain' }).end('payload too large')
@@ -157,7 +178,22 @@ export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<
           `ton-mesh-harness-mcp: HTTP request error: ${err instanceof Error ? err.message : String(err)}\n`,
         )
       }
-    })()
+    })().catch((err) => {
+      // Defense in depth: every async path above is already guarded, but a
+      // late stream/socket error (e.g. a write after headers, a teardown
+      // race) must never surface as an unhandledRejection — that crashes the
+      // entire HTTP MCP server. Absorb it here as the last line of defense.
+      if (!res.headersSent) {
+        try {
+          res.writeHead(500, { 'content-type': 'text/plain' }).end('internal error')
+        } catch {
+          /* socket already gone */
+        }
+      }
+      process.stderr.write(
+        `ton-mesh-harness-mcp: HTTP request handler error: ${err instanceof Error ? err.message : String(err)}\n`,
+      )
+    })
   })
 
   await new Promise<void>((resolve, reject) => {
@@ -169,4 +205,5 @@ export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<
     `ton-mesh-harness-mcp: HTTP transport listening on http://${addr.host}:${addr.port}${MCP_HTTP_PATH}` +
       `${token ? ' (bearer auth on)' : ''}${corsOrigins.length ? ` (CORS: ${corsOrigins.join(', ')})` : ''}\n`,
   )
+  return httpServer
 }
