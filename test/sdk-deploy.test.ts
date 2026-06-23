@@ -6,7 +6,7 @@
  * F5 ERR_BUSY serialisation — paths that don't need a real daemon spawn.
  */
 import { describe, expect, it } from 'vitest'
-import { SdkError, deploy } from '../src/sdk/deploy'
+import { SdkError, deploy, mapDaemonStartError } from '../src/sdk/deploy'
 
 const DAEMON_GUARD = process.env.RUN_DAEMON_TESTS === '1'
 const describeIfDaemon = DAEMON_GUARD ? describe : describe.skip
@@ -191,4 +191,60 @@ describeIfDaemon('SDK deploy() — happy path (RUN_DAEMON_TESTS=1)', () => {
       rmSync(dir, { recursive: true, force: true })
     }
   }, 120_000)
+})
+
+describe('mapDaemonStartError — F5 error-code classification (#98)', () => {
+  // The verbatim message tonutils-process.ts throws when the daemon loses the
+  // UDP-port race (exited non-zero on bind). It contains "exited with code",
+  // which the ERR_DAEMON_SPAWN heuristic also matches — so the port-collision
+  // branch must win first.
+  const PORT_COLLISION_MSG =
+    'tonutils-storage exited with code 1 during startup. ' +
+    "Most common cause: another process bound the daemon's UDP ListenAddr " +
+    "(likely TON Browser.app's bundled tonutils-storage) between our probe and the daemon's bind. " +
+    'Re-run, or stop the other tonutils instance first.'
+
+  it('classifies the UDP-port-collision template as ERR_PORT_BUSY (not ERR_DAEMON_SPAWN)', () => {
+    const e = mapDaemonStartError(new Error(PORT_COLLISION_MSG))
+    expect(e).toBeInstanceOf(SdkError)
+    expect(e.code).toBe('ERR_PORT_BUSY')
+    expect(e.fixHint).toContain('Quit any conflicting')
+  })
+
+  it('still classifies a genuine spawn ENOENT as ERR_DAEMON_SPAWN', () => {
+    const e = mapDaemonStartError(new Error('tonutils-storage spawn failed: spawn /opt/bin/storage ENOENT'))
+    expect(e.code).toBe('ERR_DAEMON_SPAWN')
+    expect(e.fixHint).toContain('doctor')
+  })
+
+  it('still classifies a config-gen spawn failure as ERR_DAEMON_SPAWN', () => {
+    const e = mapDaemonStartError(new Error('tonutils-storage spawn (config-gen step) failed: spawn EACCES'))
+    expect(e.code).toBe('ERR_DAEMON_SPAWN')
+  })
+
+  it('classifies an HTTP-API readiness timeout as ERR_DAEMON_API_TIMEOUT', () => {
+    const e = mapDaemonStartError(
+      new Error('tonutils-storage did not accept HTTP on http://127.0.0.1:5550 within 30000 ms'),
+    )
+    expect(e.code).toBe('ERR_DAEMON_API_TIMEOUT')
+  })
+
+  it('classifies a literal EADDRINUSE message as ERR_PORT_BUSY', () => {
+    const e = mapDaemonStartError(new Error('listen EADDRINUSE: address already in use 0.0.0.0:17655'))
+    expect(e.code).toBe('ERR_PORT_BUSY')
+  })
+
+  // Pin each added alternate independently so a future regex refactor that drops
+  // one (the production template happens to contain both) is caught.
+  it('matches the "bound the daemon" alternate even without "UDP ListenAddr"', () => {
+    expect(mapDaemonStartError(new Error('exited with code 1; another process bound the daemon socket')).code).toBe(
+      'ERR_PORT_BUSY',
+    )
+  })
+
+  it('matches the "UDP ListenAddr" alternate even without "bound the daemon"', () => {
+    expect(mapDaemonStartError(new Error('exited with code 1 — could not claim UDP ListenAddr')).code).toBe(
+      'ERR_PORT_BUSY',
+    )
+  })
 })
