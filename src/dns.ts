@@ -140,7 +140,10 @@ export function buildChangeDnsSiteRecordBody(adnlHex: string, flags: number = 0)
  * shorthand `mysite` — #102/#19).
  */
 function toDotTon(domain: string): string {
-  return domain.endsWith('.ton') ? domain : `${domain}.ton`
+  // Case-insensitive suffix check so an already-suffixed domain in any case
+  // (e.g. `foo.TON`) isn't double-suffixed to `foo.TON.ton`. The original
+  // casing is preserved (TONAPI treats the label case-insensitively).
+  return domain.toLowerCase().endsWith('.ton') ? domain : `${domain}.ton`
 }
 
 interface TonApiDnsInfo {

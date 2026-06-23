@@ -25,10 +25,13 @@ describe('pollDnsSiteRecord — malformed TONAPI `sites` does not crash the poll
     })
   }
 
-  it('still matches a well-formed sites array (case/0x-insensitive)', async () => {
+  it('matches case/0x-insensitively on BOTH the sites value and the expected arg', async () => {
+    // sites carries a 0x-prefixed UPPERCASE value AND the expected arg is passed
+    // 0x-prefixed UPPERCASE — so both the sites-side and the expected-side
+    // normalization (lowercase + strip 0x) must run for this to match.
     mockGet.mockResolvedValue({ sites: ['0x' + EXPECTED_ADNL.toUpperCase()] })
     await expect(
-      pollDnsSiteRecord('mysite.ton', EXPECTED_ADNL, 5_000, 5, false, { silent: true }),
+      pollDnsSiteRecord('mysite.ton', '0x' + EXPECTED_ADNL.toUpperCase(), 5_000, 5, false, { silent: true }),
     ).resolves.toBe(true)
   })
 })
@@ -57,8 +60,20 @@ describe('pollDnsRecord — timeout hint normalizes a shorthand domain (#102/#19
 
   it('leaves an already-.ton domain unchanged in the hint', async () => {
     mockGet.mockResolvedValue({ storage: 'deadbeef' })
-    await pollDnsRecord('mysite.ton', 'a'.repeat(64), 20, 5, false)
+    const ok = await pollDnsRecord('mysite.ton', 'a'.repeat(64), 20, 5, false)
+    expect(ok).toBe(false)
     const hint = logs.find((l) => l.includes('/v2/dns/'))
+    expect(hint).toBeDefined()
     expect(hint).toContain('/v2/dns/mysite.ton/resolve')
+    expect(hint).not.toContain('/v2/dns/mysite.ton.ton/resolve')
+  })
+
+  it('does not double-suffix an already-.ton domain in any case (toDotTon)', async () => {
+    mockGet.mockResolvedValue({ storage: 'deadbeef' })
+    await pollDnsRecord('Mysite.TON', 'a'.repeat(64), 20, 5, false)
+    const hint = logs.find((l) => l.includes('/v2/dns/'))
+    // case preserved, NOT double-suffixed to `Mysite.TON.ton`
+    expect(hint).toContain('/v2/dns/Mysite.TON/resolve')
+    expect(hint).not.toContain('.TON.ton')
   })
 })
