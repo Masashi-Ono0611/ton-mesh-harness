@@ -72,10 +72,23 @@ async function probeBag(
           last_error: null,
         }
       }
+      // StatusResultSchema requires bag_size_bytes / bag_file_count to be
+      // NON-NEGATIVE INTEGERS (or null). TONAPI normally obliges, but a
+      // malformed response (negative, fractional, NaN) previously slipped past
+      // the bare `typeof === 'number'` check and made the final
+      // StatusResultSchema.parse() throw a raw ZodError — violating status()'s
+      // "never throws on a network response" contract. Coerce anything that
+      // isn't a clean non-negative integer to null. (#102/#12)
+      const size =
+        typeof data.size === 'number' && Number.isInteger(data.size) && data.size >= 0 ? data.size : null
+      const files =
+        typeof data.file_count === 'number' && Number.isInteger(data.file_count) && data.file_count >= 0
+          ? data.file_count
+          : null
       return {
         accessible: true,
-        size: typeof data.size === 'number' ? data.size : null,
-        files: typeof data.file_count === 'number' ? data.file_count : null,
+        size,
+        files,
         unavailable_reason: null,
         last_error: null,
       }

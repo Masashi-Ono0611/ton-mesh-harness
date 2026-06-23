@@ -117,6 +117,16 @@ describe('per-field env getters (#69)', () => {
     expect(() => announcePortFromEnv({ MESH_ANNOUNCE_PORT: '70000' })).toThrow(/1\.\.65535/)
     expect(announcePortFromEnv({})).toBeUndefined()
   })
+
+  // #102/#13: Number() silently accepts scientific notation and hex, mapping
+  // the env value to a different port than the operator wrote.
+  it('announcePortFromEnv: rejects scientific-notation / hex / non-decimal strings', () => {
+    expect(() => announcePortFromEnv({ MESH_ANNOUNCE_PORT: '1e4' })).toThrow(/decimal integer/)
+    expect(() => announcePortFromEnv({ MESH_ANNOUNCE_PORT: '0x10' })).toThrow(/decimal integer/)
+    expect(() => announcePortFromEnv({ MESH_ANNOUNCE_PORT: '165.5' })).toThrow(/decimal integer/)
+    expect(() => announcePortFromEnv({ MESH_ANNOUNCE_PORT: ' 80 ' })).not.toThrow() // trimmed, plain digits
+    expect(announcePortFromEnv({ MESH_ANNOUNCE_PORT: '17655' })).toBe(17655)
+  })
 })
 
 describe('resolveAnnounce (#69 CLI-flag-over-env precedence)', () => {
