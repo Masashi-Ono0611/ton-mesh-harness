@@ -10,7 +10,10 @@
  *  - binds 127.0.0.1 by default; a non-loopback bind REQUIRES MCP_HTTP_TOKEN.
  *  - bearer-token auth enforced whenever MCP_HTTP_TOKEN is set.
  *  - CORS off unless MCP_HTTP_CORS_ORIGINS lists explicit origins.
- *  - DNS-rebinding protection on (Host pinned to the bind addr).
+ *  - DNS-rebinding Host pinning on for concrete binds (loopback / a specific
+ *    IP); add public hostnames via MCP_HTTP_ALLOWED_HOSTS. A wildcard bind
+ *    (0.0.0.0 / ::) can't be pinned, so with no MCP_HTTP_ALLOWED_HOSTS the
+ *    Host check is disabled and the mandatory bearer token is the authn (#100).
  *  - TLS is out of scope — terminate at a reverse proxy.
  *
  * NOTE: not in src/sdk/, so console/process IO is allowed here.
@@ -60,6 +63,52 @@ function isLoopback(host: string): boolean {
   return host === '127.0.0.1' || host === '::1' || host === 'localhost'
 }
 
+/** True for a wildcard bind address — no single Host value can be pinned. */
+function isWildcardHost(host: string): boolean {
+  // IPv4 any (0.0.0.0) and the IPv6 any forms: '::', its bracketed form '[::]',
+  // and the explicit '::0' / '[::0]' spellings.
+  return (
+    host === '0.0.0.0' ||
+    host === '::' ||
+    host === '[::]' ||
+    host === '::0' ||
+    host === '[::0]'
+  )
+}
+
+/**
+ * Decide DNS-rebinding Host pinning for the transport (#100).
+ *
+ * Strict Host pinning (`enableDnsRebindingProtection`) only works when the bind
+ * address is a concrete host the client echoes back in its `Host` header. A
+ * WILDCARD bind (`0.0.0.0` / `::`) can't be pinned — the literal `0.0.0.0:port`
+ * is never a real client's `Host` — so strict pinning 403s every legitimate
+ * remote request, breaking the documented `--http 0.0.0.0:port` case.
+ *
+ * Resolution: always allow loopback + the bind literal + any operator-supplied
+ * `MCP_HTTP_ALLOWED_HOSTS`. For a wildcard bind with NO explicit hosts, disable
+ * pinning and rely on the mandatory bearer token (a non-loopback bind already
+ * requires `MCP_HTTP_TOKEN`) as the real authn; the operator opts back into
+ * strict pinning by naming hosts in `MCP_HTTP_ALLOWED_HOSTS`.
+ */
+export function computeHostPinning(
+  addr: HttpAddr,
+  allowedHostsEnv: string | undefined,
+): { enableDnsRebindingProtection: boolean; allowedHosts: string[] } {
+  const extra = (allowedHostsEnv || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const allowedHosts = [
+    `${addr.host}:${addr.port}`,
+    `127.0.0.1:${addr.port}`,
+    `localhost:${addr.port}`,
+    ...extra,
+  ]
+  const enableDnsRebindingProtection = !(isWildcardHost(addr.host) && extra.length === 0)
+  return { enableDnsRebindingProtection, allowedHosts }
+}
+
 /**
  * Bind the HTTP transport and connect it to `server`. Resolves once the
  * listener is up (returning the underlying http.Server so callers/tests can
@@ -78,12 +127,23 @@ export async function runHttpTransport(server: Server, addr: HttpAddr): Promise<
     .map((s) => s.trim())
     .filter(Boolean)
 
+  const { enableDnsRebindingProtection, allowedHosts } = computeHostPinning(
+    addr,
+    process.env.MCP_HTTP_ALLOWED_HOSTS,
+  )
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
     enableJsonResponse: true,
-    enableDnsRebindingProtection: true,
-    allowedHosts: [`${addr.host}:${addr.port}`, `127.0.0.1:${addr.port}`, `localhost:${addr.port}`],
+    enableDnsRebindingProtection,
+    allowedHosts,
   })
+  if (!enableDnsRebindingProtection) {
+    process.stderr.write(
+      `ton-mesh-harness-mcp: DNS-rebinding Host check disabled for wildcard bind ${addr.host} ` +
+        `— the bearer token is the authn for this remote-exposed endpoint. ` +
+        `Set MCP_HTTP_ALLOWED_HOSTS=host:port[,…] to re-enable strict Host pinning.\n`,
+    )
+  }
   await server.connect(transport)
 
   const httpServer = createServer((req, res) => {

@@ -58,14 +58,39 @@ MCP_HTTP_CORS_ORIGINS="https://my-agent.example,https://localhost:3000" \
 Only listed origins get `Access-Control-Allow-Origin`; preflight
 (`OPTIONS`) is answered only for them.
 
+## Allowed hosts (DNS-rebinding)
+
+The server pins the `Host` header (DNS-rebinding protection). The allow-list is
+always loopback (`127.0.0.1` / `localhost`) plus the bind literal, and you can
+add more with `MCP_HTTP_ALLOWED_HOSTS` (comma-separated `host:port`):
+
+```bash
+# Direct exposure on a public IP/hostname — name the Host(s) clients send:
+MCP_HTTP_ALLOWED_HOSTS="mcp.example.com:8765,203.0.113.5:8765" \
+  MCP_HTTP_TOKEN=… npx ton-mesh-harness-mcp --http 0.0.0.0:8765
+```
+
+A **wildcard bind** (`0.0.0.0` / `::`) can't be pinned — the literal
+`0.0.0.0:<port>` is never a real client's `Host`, so strict pinning would `403`
+every remote request. So for a wildcard bind:
+
+- with `MCP_HTTP_ALLOWED_HOSTS` set → strict pinning stays on, limited to those
+  hosts (recommended for direct exposure);
+- with none set → Host pinning is **disabled** and the **mandatory bearer
+  token** is the authn (the server logs a warning to stderr). Put it behind a
+  reverse proxy to `127.0.0.1`, or set `MCP_HTTP_ALLOWED_HOSTS`, for strict Host
+  pinning.
+
 ## Threat model
 
 - **No TLS** — out of scope. Terminate TLS at a reverse proxy (nginx,
   Caddy, Cloudflare Tunnel) in front of the kit; never expose a raw
   non-loopback bind to the internet.
-- **DNS-rebinding protection** is on: the `Host` header is pinned to the
-  bind address, so a malicious page can't drive `localhost` via a victim's
-  browser.
+- **DNS-rebinding protection** pins the `Host` header for any concrete bind
+  (loopback or a specific IP), plus the hosts named in `MCP_HTTP_ALLOWED_HOSTS`,
+  so a malicious page can't drive `localhost` via a victim's browser. A wildcard
+  bind with no `MCP_HTTP_ALLOWED_HOSTS` can't be pinned and instead relies on
+  the mandatory bearer token (see [Allowed hosts](#allowed-hosts-dns-rebinding)).
 - **Single client / single instance** per the MCP spec; the kit's
   process-level `ERR_BUSY` gate already serializes concurrent
   `mesh_deploy` calls, which applies equally over HTTP.
