@@ -178,10 +178,22 @@ function normalize(rawInput: DeployInput): DeployOptions {
  * The daemon-process module throws `Error(message)` for several distinct
  * causes (spawn crash / config gen / port collision / API never came up);
  * we route them to the right ERR_* code by message inspection.
+ *
+ * @internal Exported for unit tests only. The published SDK surface is
+ * curated in `src/sdk.ts` (which omits this); the `export *` in
+ * `src/sdk/index.ts` is an internal-only bundle, not a published entry.
  */
-function mapDaemonStartError(err: unknown): SdkError {
+export function mapDaemonStartError(err: unknown): SdkError {
   const msg = err instanceof Error ? err.message : String(err)
-  if (/EADDRINUSE|address already in use|udp.*busy|UDP.*in use/i.test(msg)) {
+  // Port-collision check MUST run before the spawn check below: the tonutils
+  // daemon reports a lost UDP-port race as "...exited with code N during
+  // startup. Most common cause: another process bound the daemon's UDP
+  // ListenAddr...". That string contains "exited with code", so without the
+  // "UDP ListenAddr"/"bound the daemon" alternatives here it would fall through
+  // to the spawn branch and be mislabelled ERR_DAEMON_SPAWN with the wrong fix
+  // hint. The added phrases are unique to the port-collision template, so
+  // genuine spawn crashes (spawn ENOENT, config-gen) still reach ERR_DAEMON_SPAWN.
+  if (/EADDRINUSE|address already in use|udp.*busy|UDP.*in use|UDP ListenAddr|bound the daemon/i.test(msg)) {
     return new SdkError('ERR_PORT_BUSY', `tonutils-storage UDP port collision: ${msg}`, {
       severity: 'fatal',
       fixHint: 'Quit any conflicting tonutils-storage / TON Browser.app instance, then retry.',
