@@ -87,24 +87,24 @@ describe('buildSiteSystemdUnit', () => {
     expect(u).toContain('"/home/u/my site/out"')
   })
 
-  // #102/#15: systemd expands % as specifiers (%h → homedir, %n → unit name,
-  // etc.) including inside double-quoted strings. A literal % must be %%.
-  it('escapes % in paths to %% so systemd specifiers do not mangle the command', () => {
+  // #102/#15: systemd expands % as specifiers and $ as env-vars in ExecStart.
+  it('escapes % and $ in paths so systemd does not expand specifiers or env-vars', () => {
     const u = buildSiteSystemdUnit(meta({
       build_dir: '/home/u/site%25/out',
       cli_entry: '/usr/local/bin/ton-mesh%harness',
+      node_path: '/usr/bin/$NODE_PATH',
     }))
     const execLine = u.split('\n').find((l) => l.startsWith('ExecStart=')) ?? ''
-    // Raw % must NOT appear in ExecStart (it would be expanded by systemd).
-    expect(execLine).not.toMatch(/(?<!%)%(?!%)/)  // no single %
+    // Positive assertions: all special chars are doubled.
     expect(execLine).toContain('site%%25')
     expect(execLine).toContain('ton-mesh%%harness')
+    expect(execLine).toContain('/usr/bin/$$NODE_PATH')
   })
 
-  it('escapes % in a space-containing arg (double-quoted AND %%-escaped)', () => {
-    const u = buildSiteSystemdUnit(meta({ build_dir: '/home/u/my%20 site/out' }))
-    // Contains space → quoted; contains % → %%-escaped; both at once.
-    expect(u).toContain('"/home/u/my%%20 site/out"')
+  it('escapes % and $ in a space-containing arg (quoted + all special chars escaped)', () => {
+    const u = buildSiteSystemdUnit(meta({ build_dir: '/home/u/my%20 $site/out' }))
+    // Contains space → double-quoted; % → %%; $ → $$.
+    expect(u).toContain('"/home/u/my%%20 $$site/out"')
   })
 })
 

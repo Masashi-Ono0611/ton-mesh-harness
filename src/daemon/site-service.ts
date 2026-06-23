@@ -147,15 +147,29 @@ ${argXml}
 /**
  * Escape a single argument for systemd's `ExecStart=` line.
  *
- * systemd expands `%` sequences as specifiers (`%h` → home dir, `%n` →
- * unit name, etc.) inside ExecStart values — including inside double-quoted
- * strings. A literal `%` must be written as `%%`. Paths on real deployments
- * can contain `%` (e.g. `~/.local/share/ton-mesh%test/db`), so the absence
- * of this escape would silently mangle the command. (#102/#15)
+ * systemd expands:
+ *   - `%` sequences as specifiers (`%h` → home dir, `%n` → unit name, etc.)
+ *   - `$VAR` / `${VAR}` as environment-variable references
+ * both inside bare words AND inside double-quoted strings. Each must be
+ * doubled (`%%` / `$$`). Additionally, `"` and `\` inside a quoted arg must
+ * be backslash-escaped, and we match only space/tab (not newline) for the
+ * quoting decision so an injected newline in a path can't add new directives.
+ * (#102/#15)
  */
 function escapeSystemdExecArg(a: string): string {
-  const escaped = a.replace(/%/g, '%%')   // % → %% before any other quoting
-  return /\s/.test(escaped) ? `"${escaped}"` : escaped
+  // NOTE: use replacement functions (not string literals) for % and $:
+  // in String.replace() the replacement string '$$' means a LITERAL '$'
+  // (not two dollars), so .replace(/\$/g, '$$') would be a no-op.
+  const escaped = a
+    .replace(/%/g, () => '%%')   // % → %%
+    .replace(/\$/g, () => '$$')  // $ → $$
+  // Only quote when the arg contains space or tab. Newlines in paths would
+  // inject additional ExecStart directives — they are a separate error, and
+  // the caller should validate paths before reaching here.
+  if (/[ \t]/.test(escaped)) {
+    return `"${escaped.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return escaped
 }
 
 export function buildSiteSystemdUnit(meta: SiteServiceMeta): string {
