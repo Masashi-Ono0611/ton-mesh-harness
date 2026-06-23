@@ -350,6 +350,22 @@ export async function runDeployTonutils(
 // no-op rebuild yields the same id and the daemon treats it as idempotent.
 // -----------------------------------------------------------------------
 
+/**
+ * Emit a watch-mode redeploy progress line on the correct channel. Under
+ * --json-output, stdout must stay a clean JSON stream — and watch CAN run with
+ * --json-output (an explicit `--watch` overrides json-output's one-shot
+ * default in cli.ts), so these human-readable lines would otherwise corrupt
+ * the JSON. Route them to stderr instead (the kit's "diagnostics on stderr"
+ * rule, same as DEBUG output), so the redeploy/failure signal is preserved
+ * without polluting stdout. Non-json runs keep using stdout.
+ *
+ * @internal exported for unit tests.
+ */
+export function redeployLog(jsonOutput: boolean | undefined, line: string): void {
+  if (jsonOutput) process.stderr.write(line + '\n')
+  else console.log(line)
+}
+
 export async function runWatchModeTonutils(
   deployed: TonutilsDeployReturn,
   opts: {
@@ -393,12 +409,12 @@ export async function runWatchModeTonutils(
       try {
         const r = await tonutilsCreate(daemon, { path: buildDir, description })
         if (r.bag_id === initial.bagId) {
-          console.log(chalk.dim(`  ↻ no-op (bag id unchanged: ${r.bag_id.slice(0, 12)}…)`))
+          redeployLog(opts.jsonOutput, chalk.dim(`  ↻ no-op (bag id unchanged: ${r.bag_id.slice(0, 12)}…)`))
         } else {
-          console.log(chalk.green(`  ↻ Re-deployed: ${r.bag_id}`))
+          redeployLog(opts.jsonOutput, chalk.green(`  ↻ Re-deployed: ${r.bag_id}`))
         }
       } catch (err) {
-        console.log(chalk.yellow(`  ⚠ re-deploy failed: ${err instanceof Error ? err.message : err}`))
+        redeployLog(opts.jsonOutput, chalk.yellow(`  ⚠ re-deploy failed: ${err instanceof Error ? err.message : err}`))
       }
     },
   })
