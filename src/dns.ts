@@ -132,12 +132,23 @@ export function buildChangeDnsSiteRecordBody(adnlHex: string, flags: number = 0)
 // GET https://testnet.tonapi.io/v2/dns/{domain}  (testnet)
 // -----------------------------------------------------------------------
 
+/**
+ * Append `.ton` when a bare/shorthand domain was passed. Used everywhere a
+ * domain is turned into a TONAPI URL so the query and any "check manually" hint
+ * always reference the SAME normalized domain (the timeout hint previously used
+ * the raw input, printing a wrong URL like `/v2/dns/mysite/resolve` for the
+ * shorthand `mysite` — #102/#19).
+ */
+function toDotTon(domain: string): string {
+  return domain.endsWith('.ton') ? domain : `${domain}.ton`
+}
+
 interface TonApiDnsInfo {
   item?: { address: string }
 }
 
 export async function getDomainNftAddress(domain: string, testnet = false): Promise<Address> {
-  const cleanDomain = domain.endsWith('.ton') ? domain : `${domain}.ton`
+  const cleanDomain = toDotTon(domain)
   const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/dns/${encodeURIComponent(cleanDomain)}`
 
   try {
@@ -181,7 +192,7 @@ export function extractStorageBagId(data: TonApiDnsRecord | null | undefined): s
 }
 
 async function getDnsResolved(domain: string, testnet = false): Promise<TonApiDnsRecord | null> {
-  const cleanDomain = domain.endsWith('.ton') ? domain : `${domain}.ton`
+  const cleanDomain = toDotTon(domain)
   const url = `${getNetworkConfig(testnet).tonapiUrl}/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`
 
   try {
@@ -221,7 +232,7 @@ export async function pollDnsRecord(
 
   spinner?.warn('DNS propagation timed out — the transaction may still be pending.')
   if (!silent) {
-    console.log(chalk.dim('  Check manually: ' + getNetworkConfig(testnet).tonapiUrl + '/v2/dns/' + encodeURIComponent(domain) + '/resolve'))
+    console.log(chalk.dim('  Check manually: ' + getNetworkConfig(testnet).tonapiUrl + '/v2/dns/' + encodeURIComponent(toDotTon(domain)) + '/resolve'))
   }
   return false
 }
@@ -253,7 +264,15 @@ export async function pollDnsSiteRecord(
 
   while (Date.now() < deadline) {
     const data = await getDnsResolved(domain, testnet)
-    const sites = (data?.sites ?? []).map((s) => s.toLowerCase().replace(/^0x/, ''))
+    // TONAPI is flaky for `sites` and the declared `string[]` type is not
+    // guaranteed at runtime — guard against a non-array `sites` (null/object)
+    // and non-string elements so a malformed response can't crash the poll
+    // loop (#102/#11). extractStorageBagId already takes the same defensive
+    // stance for `storage`.
+    const rawSites: unknown = data?.sites
+    const sites = (Array.isArray(rawSites) ? rawSites : [])
+      .filter((s): s is string => typeof s === 'string')
+      .map((s) => s.toLowerCase().replace(/^0x/, ''))
     if (sites.includes(expected)) {
       spinner?.succeed('Site record confirmed on-chain!')
       return true
