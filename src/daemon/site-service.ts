@@ -144,9 +144,23 @@ ${argXml}
 `
 }
 
+/**
+ * Escape a single argument for systemd's `ExecStart=` line.
+ *
+ * systemd expands `%` sequences as specifiers (`%h` → home dir, `%n` →
+ * unit name, etc.) inside ExecStart values — including inside double-quoted
+ * strings. A literal `%` must be written as `%%`. Paths on real deployments
+ * can contain `%` (e.g. `~/.local/share/ton-mesh%test/db`), so the absence
+ * of this escape would silently mangle the command. (#102/#15)
+ */
+function escapeSystemdExecArg(a: string): string {
+  const escaped = a.replace(/%/g, '%%')   // % → %% before any other quoting
+  return /\s/.test(escaped) ? `"${escaped}"` : escaped
+}
+
 export function buildSiteSystemdUnit(meta: SiteServiceMeta): string {
   const execStart = siteServeArgs(meta)
-    .map((a) => (/\s/.test(a) ? `"${a}"` : a))
+    .map(escapeSystemdExecArg)
     .join(' ')
   // Restart=on-failure (NOT always): a clean stop (systemctl stop → SIGTERM →
   // exit 0) stays stopped; only a crash restarts. Avoids the #37 resurrection.

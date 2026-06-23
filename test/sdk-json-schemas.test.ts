@@ -8,6 +8,7 @@ import {
   SUPPLEMENTARY_SCHEMAS,
   SCHEMA_VERSION,
 } from '../src/sdk/json-schemas'
+import { MESH_HARNESS_VERSION } from '../src/version'
 
 /**
  * Snapshot tests — any zod change that shifts the public MCP `tools/list`
@@ -15,6 +16,13 @@ import {
  * `bunx vitest run test/sdk-json-schemas.test.ts -u`.
  */
 describe('SDK JSON Schemas (V1 snapshot)', () => {
+  // #102/#18: SCHEMA_VERSION used to be a hardcoded duplicate of the string in
+  // src/version.ts; now it's derived from MESH_HARNESS_VERSION so a release
+  // bump of version.ts propagates here without a second manual edit.
+  it('SCHEMA_VERSION matches MESH_HARNESS_VERSION (single source of truth)', () => {
+    expect(SCHEMA_VERSION).toBe(MESH_HARNESS_VERSION)
+  })
+
   it('ships exactly the GA tools with the kit minor as SCHEMA_VERSION', () => {
     expect(SCHEMA_VERSION).toBe('0.13.0')
     expect(ALL_TOOLS.map((t) => t.name).sort()).toEqual([

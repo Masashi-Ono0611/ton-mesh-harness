@@ -419,9 +419,16 @@ export async function* deploy(
     // Hook AbortSignal → daemon kill, so any in-flight HTTP call we make
     // next will reject. We ALSO checkAborted() in the immediate vicinity;
     // the listener catches abort-during-await cases the polling can't.
+    //
+    // Guard: check `daemonOwned` before killing. Once the deploy hands the
+    // daemon off (service install → OS manager, detached → caller), we set
+    // `daemonOwned = false`. The listener must respect that — killing the
+    // daemon at that point would tear down a seeder the caller just received
+    // or that the OS service just started. (#102/#8)
     const sig = control.signal
     if (sig) {
       signalListener = () => {
+        if (!daemonOwned) return
         try {
           daemon?.kill()
         } catch {
@@ -734,6 +741,9 @@ export async function* deploy(
         )
       }
       daemonService = meta.label
+      // OS service manager is now the owner — finally-block and the abort
+      // signal listener must NOT kill this daemon. (#102/#8)
+      daemonOwned = false
       seedStatus = 'seeding'
       nextActions.push({
         description:

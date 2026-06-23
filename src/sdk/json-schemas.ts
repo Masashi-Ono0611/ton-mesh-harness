@@ -11,6 +11,7 @@
  */
 
 import { zodToJsonSchema } from 'zod-to-json-schema'
+import { MESH_HARNESS_VERSION } from '../version'
 import {
   CheckEnvOptionsSchema,
   CheckEnvResultSchema,
@@ -42,7 +43,10 @@ export interface ToolJsonSchema {
   output: JsonSchema
 }
 
-const SCHEMA_VERSION = '0.13.0'
+// Derived from the single SoT in src/version.ts (kept in sync by
+// scripts/release.sh). Previously hardcoded here separately, which could
+// diverge from the installed package version. (#102/#18)
+const SCHEMA_VERSION = MESH_HARNESS_VERSION
 
 // `zodToJsonSchema` is typed as accepting a `ZodType<any, ZodTypeDef, any>`,
 // which our complex schemas (z.discriminatedUnion of strict objects with

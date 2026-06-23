@@ -115,6 +115,20 @@ ${argXml}
 `
 }
 
+/**
+ * Escape a single argument for systemd's `ExecStart=` line.
+ *
+ * systemd expands `%` sequences as specifiers (`%h` → home dir, `%n` →
+ * unit name, etc.) inside ExecStart values — including inside double-quoted
+ * strings. A literal `%` must be written as `%%`. Paths on real deployments
+ * can contain `%` (e.g. `~/.local/share/ton-mesh%test/db`), so the absence
+ * of this escape would silently mangle the command. (#102/#15)
+ */
+function escapeSystemdExecArg(a: string): string {
+  const escaped = a.replace(/%/g, '%%')   // % → %% before any other quoting
+  return /\s/.test(escaped) ? `"${escaped}"` : escaped
+}
+
 export function buildSystemdUnit(meta: ServiceMeta): string {
   // `-daemon` = non-interactive mode (no command-line REPL). Without it the
   // binary starts its interactive prompt; under launchd/systemd (no usable
@@ -124,7 +138,7 @@ export function buildSystemdUnit(meta: ServiceMeta): string {
   // weight here. See #53 follow-up.
   const args = [meta.daemon_path, '-daemon', '--api', `127.0.0.1:${meta.api_port}`, '--db', meta.db_dir]
   if (meta.network_config_path) args.push('--network-config', meta.network_config_path)
-  const execStart = args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ')
+  const execStart = args.map(escapeSystemdExecArg).join(' ')
   return `[Unit]
 Description=ton-mesh-harness seed daemon (bag ${meta.bag_id})
 After=network-online.target
