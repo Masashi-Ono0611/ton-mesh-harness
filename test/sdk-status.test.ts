@@ -42,6 +42,22 @@ describe('status()', () => {
     expect(r.domain).toBeNull()
   })
 
+  // #102/#12: a malformed TONAPI size (negative / fractional) must NOT make
+  // status() throw a raw ZodError from StatusResultSchema.parse — it should
+  // coerce to null and still resolve (the "never throws on a network response"
+  // contract).
+  it('coerces a malformed (negative / fractional) TONAPI size to null without throwing', async () => {
+    mocks.httpsGetMock.mockResolvedValueOnce({
+      status: 'active',
+      size: -5,
+      file_count: 3.14,
+    })
+    const r = await status({ bag_id: 'abc123' })
+    expect(r.bag_accessible).toBe(true)
+    expect(r.bag_size_bytes).toBeNull()
+    expect(r.bag_file_count).toBeNull()
+  })
+
   it('TONAPI 404 / network failure → bag_accessible false, sizes null', async () => {
     mocks.httpsGetMock.mockRejectedValueOnce(new Error('timeout'))
     const r = await status({ bag_id: 'abc123' })

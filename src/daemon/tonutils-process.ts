@@ -117,6 +117,15 @@ export function announceIpFromEnv(env: NodeJS.ProcessEnv): string | undefined {
 export function announcePortFromEnv(env: NodeJS.ProcessEnv): number | undefined {
   const portRaw = env.MESH_ANNOUNCE_PORT?.trim()
   if (!portRaw) return undefined
+  // Require a plain decimal integer. `Number()` would silently accept
+  // scientific notation and hex ("1e4" → 10000, "0x10" → 16), binding the
+  // daemon (and any firewall rule keyed off the env value) to a different port
+  // than the operator wrote. (#102/#13)
+  if (!/^\d+$/.test(portRaw)) {
+    throw new Error(
+      `MESH_ANNOUNCE_PORT must be a plain decimal integer in 1..65535 (got "${portRaw}").`,
+    )
+  }
   const port = Number(portRaw)
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error(

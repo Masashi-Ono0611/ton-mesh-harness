@@ -6,6 +6,7 @@ import { createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, ren
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import http, { type Server } from 'node:http'
+import { isIP } from 'node:net'
 import {
   generateAdnlIdentity,
   loadOrCreateSiteSeed,
@@ -267,7 +268,9 @@ export async function detectPublicIp(): Promise<string | null> {
     const r = await fetch('https://api.ipify.org', { signal: ac.signal })
     if (!r.ok) return null
     const ip = (await r.text()).trim()
-    return /^\d+\.\d+\.\d+\.\d+$/.test(ip) ? ip : null
+    // isIP() validates octet ranges; the old /^\d+\.\d+\.\d+\.\d+$/ accepted
+    // out-of-range junk like "999.999.999.999". (#102/#14)
+    return isIP(ip) === 4 ? ip : null
   } catch {
     return null
   } finally {
