@@ -45,3 +45,35 @@ export function getBinaryName(base: 'storage-daemon' | 'storage-daemon-cli'): st
   const platformSuffix = PLATFORM_MAP[getPlatformKey()]
   return `${base}-${platformSuffix}`
 }
+
+/**
+ * Resolve the platform key used to look up a pinned SHA-256 for the legacy
+ * storage-daemon binaries (src/daemon/installer.ts).
+ *
+ * TON publishes a SINGLE x86-64 Windows asset (`storage-daemon.exe`) for all
+ * Windows architectures — `getBinaryName` returns that one file regardless of
+ * arch — but the hash map only pins `win32-x64`. Without this mapping,
+ * `win32-arm64` / `win32-ia32` look up an `undefined` hash and the integrity
+ * check is silently skipped (trust-on-first-use), installing an unverified —
+ * and on 32-bit, unrunnable — binary.
+ *
+ * - `win32-arm64` → `win32-x64`: the downloaded file IS the x64 `.exe`, which
+ *   64-bit ARM Windows runs under its built-in x64 emulation; verify it against
+ *   the known x64 hash.
+ * - `win32-ia32` → throw: a 32-bit OS cannot run an x64 binary, so fail fast
+ *   with a clear message instead of installing a broken, unverified binary.
+ * - every other key passes through unchanged.
+ *
+ * @throws {Error} on 32-bit Windows (`win32-ia32`).
+ */
+export function daemonHashKey(platformKey: string): string {
+  if (platformKey === 'win32-ia32') {
+    throw new Error(
+      '32-bit Windows (ia32) is not supported: TON publishes only an x86-64 ' +
+        'storage-daemon.exe, which cannot run on a 32-bit OS. Use 64-bit Windows (x64, ' +
+        'or ARM64 via the built-in x64 emulation).',
+    )
+  }
+  if (platformKey === 'win32-arm64') return 'win32-x64'
+  return platformKey
+}
