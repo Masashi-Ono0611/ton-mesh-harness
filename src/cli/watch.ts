@@ -4,6 +4,7 @@ import { startDaemon } from '../daemon'
 import { createBag } from '../upload'
 import { printResult } from '../output'
 import { watchBuildDir } from '../watch'
+import { installCleanupOnExit } from './output-mode'
 
 export interface WatchModeOptions {
   testnet?: boolean
@@ -66,22 +67,17 @@ export async function runWatchMode(
     },
   })
 
-  // Override cleanup handlers
-  const originalCleanup = () => {
+  // On SIGINT/SIGTERM, stop watching and kill the daemon. Route through the
+  // shared installCleanupOnExit helper (same as runDeploy / runWatchModeTonutils)
+  // rather than a bare process.exit(): the ton-core daemon's kill() defers its
+  // cleanup to async callbacks (child 'exit' → rmSync of the temp session dir,
+  // plus a SIGKILL escalation timer). A synchronous process.exit() here tore the
+  // event loop down in the same tick, so neither fired — leaking the mkdtemp
+  // session dir and risking an orphaned daemon on every Ctrl+C. installCleanupOnExit
+  // sets process.exitCode and arms a REF'd drain timer so those land first.
+  installCleanupOnExit(() => {
     stopWatching()
     daemon.kill()
-  }
-
-  process.removeListener('SIGINT', () => {})
-  process.removeListener('SIGTERM', () => {})
-
-  process.on('SIGINT', () => {
-    originalCleanup()
-    process.exit(130)
-  })
-  process.on('SIGTERM', () => {
-    originalCleanup()
-    process.exit(143)
   })
 
   // Keep process alive (forever)
