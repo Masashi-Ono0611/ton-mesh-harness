@@ -12,6 +12,25 @@ type StorageObject = Record<string, string>
 export class FSStorage implements Storage {
   constructor(private readonly path: string) {}
 
+  // Serialises read-modify-write mutations. setItem/removeItem each do
+  // readObject() → mutate → writeObject(); without a lock two concurrent
+  // mutations (e.g. the TonConnect SDK persisting `last_event_id` and the
+  // bridge connection at the same time) both read the same base object and the
+  // second writeObject overwrites the first's change — a lost update. Chaining
+  // through this promise runs them one at a time within this instance.
+  private mutationChain: Promise<unknown> = Promise.resolve()
+
+  private serialize<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.mutationChain.then(fn, fn)
+    // Keep the chain alive whether `fn` resolves or rejects, and don't let a
+    // rejection propagate to the next queued mutation.
+    this.mutationChain = run.then(
+      () => undefined,
+      () => undefined,
+    )
+    return run
+  }
+
   private async readObject(): Promise<StorageObject> {
     try {
       // Reject symlinks BEFORE reading. The TonConnect bridge session
@@ -66,12 +85,15 @@ export class FSStorage implements Storage {
         )
       }
     } catch (err) {
-      // ENOENT is expected on first write.
-      if (err instanceof Error && (err as { code?: string }).code !== 'ENOENT') {
-        // Re-throw anything other than ENOENT — but allow our own throw
-        // about non-regular-file to surface.
-        if ((err as { code?: string }).code === undefined) throw err
-      }
+      // ENOENT is expected on the first write (no file yet) — swallow only
+      // that. Everything else must surface: our own "not a regular file"
+      // throw (no `code`), AND real fs errors from lstat such as EACCES /
+      // ELOOP / ENOTDIR. The previous logic re-threw only when `code` was
+      // undefined, so a non-ENOENT fs error was silently swallowed — the
+      // write then proceeded, defeating the symlink defense and hiding the
+      // permission/loop failure.
+      const code = err instanceof Error ? (err as { code?: string }).code : undefined
+      if (code !== 'ENOENT') throw err
     }
     await fs.writeFile(this.path, JSON.stringify(obj), { mode: 0o600 })
     // writeFile honours mode only on file creation; chmod ensures it is set
@@ -80,9 +102,11 @@ export class FSStorage implements Storage {
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    const obj = await this.readObject()
-    obj[key] = value
-    await this.writeObject(obj)
+    return this.serialize(async () => {
+      const obj = await this.readObject()
+      obj[key] = value
+      await this.writeObject(obj)
+    })
   }
 
   async getItem(key: string): Promise<string | null> {
@@ -91,8 +115,10 @@ export class FSStorage implements Storage {
   }
 
   async removeItem(key: string): Promise<void> {
-    const obj = await this.readObject()
-    delete obj[key]
-    await this.writeObject(obj)
+    return this.serialize(async () => {
+      const obj = await this.readObject()
+      delete obj[key]
+      await this.writeObject(obj)
+    })
   }
 }
