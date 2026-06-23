@@ -76,4 +76,18 @@ describe('buildSystemdUnit', () => {
     const u = buildSystemdUnit(meta({ network_config_path: '/cfg/testnet.json' }))
     expect(u).toContain('--network-config /cfg/testnet.json')
   })
+
+  // #102/#15: systemd expands % as specifiers and $ as env-vars in ExecStart.
+  // Both must be doubled (%% / $$). A literal $ in a path (rare but valid
+  // on Linux) would otherwise be silently expanded.
+  it('escapes % and $ in paths so systemd does not expand specifiers or env-vars', () => {
+    const u = buildSystemdUnit(meta({
+      daemon_path: '/home/u/.ton-mesh%test/bin/tonutils-storage',
+      db_dir: '/home/u/seeds/$BAG/abc123/db',
+    }))
+    const execLine = u.split('\n').find((l) => l.startsWith('ExecStart=')) ?? ''
+    // Positive assertions: both special chars are doubled.
+    expect(execLine).toContain('.ton-mesh%%test')
+    expect(execLine).toContain('/seeds/$$BAG/')
+  })
 })

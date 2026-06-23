@@ -144,9 +144,37 @@ ${argXml}
 `
 }
 
+/**
+ * Escape a single argument for systemd's `ExecStart=` line.
+ *
+ * systemd expands:
+ *   - `%` sequences as specifiers (`%h` → home dir, `%n` → unit name, etc.)
+ *   - `$VAR` / `${VAR}` as environment-variable references
+ * both inside bare words AND inside double-quoted strings. Each must be
+ * doubled (`%%` / `$$`). Additionally, `"` and `\` inside a quoted arg must
+ * be backslash-escaped, and we match only space/tab (not newline) for the
+ * quoting decision so an injected newline in a path can't add new directives.
+ * (#102/#15)
+ */
+function escapeSystemdExecArg(a: string): string {
+  // NOTE: use replacement functions (not string literals) for % and $:
+  // in String.replace() the replacement string '$$' means a LITERAL '$'
+  // (not two dollars), so .replace(/\$/g, '$$') would be a no-op.
+  const escaped = a
+    .replace(/%/g, () => '%%')   // % → %%
+    .replace(/\$/g, () => '$$')  // $ → $$
+  // Only quote when the arg contains space or tab. Newlines in paths would
+  // inject additional ExecStart directives — they are a separate error, and
+  // the caller should validate paths before reaching here.
+  if (/[ \t]/.test(escaped)) {
+    return `"${escaped.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return escaped
+}
+
 export function buildSiteSystemdUnit(meta: SiteServiceMeta): string {
   const execStart = siteServeArgs(meta)
-    .map((a) => (/\s/.test(a) ? `"${a}"` : a))
+    .map(escapeSystemdExecArg)
     .join(' ')
   // Restart=on-failure (NOT always): a clean stop (systemctl stop → SIGTERM →
   // exit 0) stays stopped; only a crash restarts. Avoids the #37 resurrection.

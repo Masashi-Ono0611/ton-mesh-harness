@@ -86,6 +86,26 @@ describe('buildSiteSystemdUnit', () => {
     const u = buildSiteSystemdUnit(meta({ build_dir: '/home/u/my site/out' }))
     expect(u).toContain('"/home/u/my site/out"')
   })
+
+  // #102/#15: systemd expands % as specifiers and $ as env-vars in ExecStart.
+  it('escapes % and $ in paths so systemd does not expand specifiers or env-vars', () => {
+    const u = buildSiteSystemdUnit(meta({
+      build_dir: '/home/u/site%25/out',
+      cli_entry: '/usr/local/bin/ton-mesh%harness',
+      node_path: '/usr/bin/$NODE_PATH',
+    }))
+    const execLine = u.split('\n').find((l) => l.startsWith('ExecStart=')) ?? ''
+    // Positive assertions: all special chars are doubled.
+    expect(execLine).toContain('site%%25')
+    expect(execLine).toContain('ton-mesh%%harness')
+    expect(execLine).toContain('/usr/bin/$$NODE_PATH')
+  })
+
+  it('escapes % and $ in a space-containing arg (quoted + all special chars escaped)', () => {
+    const u = buildSiteSystemdUnit(meta({ build_dir: '/home/u/my%20 $site/out' }))
+    // Contains space → double-quoted; % → %%; $ → $$.
+    expect(u).toContain('"/home/u/my%%20 $$site/out"')
+  })
 })
 
 describe('domain validation (path-traversal guard)', () => {

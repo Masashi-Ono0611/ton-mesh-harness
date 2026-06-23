@@ -115,6 +115,34 @@ ${argXml}
 `
 }
 
+/**
+ * Escape a single argument for systemd's `ExecStart=` line.
+ *
+ * systemd expands:
+ *   - `%` sequences as specifiers (`%h` → home dir, `%n` → unit name, etc.)
+ *   - `$VAR` / `${VAR}` as environment-variable references
+ * both inside bare words AND inside double-quoted strings. Each must be
+ * doubled (`%%` / `$$`). Additionally, `"` and `\` inside a quoted arg must
+ * be backslash-escaped, and we match only space/tab (not newline) for the
+ * quoting decision so an injected newline in a path can't add new directives.
+ * (#102/#15)
+ */
+function escapeSystemdExecArg(a: string): string {
+  // NOTE: use replacement functions (not string literals) for % and $:
+  // in String.replace() the replacement string '$$' means a LITERAL '$'
+  // (not two dollars), so .replace(/\$/g, '$$') would be a no-op.
+  const escaped = a
+    .replace(/%/g, () => '%%')   // % → %%
+    .replace(/\$/g, () => '$$')  // $ → $$
+  // Only quote when the arg contains space or tab. Newlines in paths would
+  // inject additional ExecStart directives — they are a separate error, and
+  // the caller should validate paths before reaching here.
+  if (/[ \t]/.test(escaped)) {
+    return `"${escaped.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return escaped
+}
+
 export function buildSystemdUnit(meta: ServiceMeta): string {
   // `-daemon` = non-interactive mode (no command-line REPL). Without it the
   // binary starts its interactive prompt; under launchd/systemd (no usable
@@ -124,7 +152,7 @@ export function buildSystemdUnit(meta: ServiceMeta): string {
   // weight here. See #53 follow-up.
   const args = [meta.daemon_path, '-daemon', '--api', `127.0.0.1:${meta.api_port}`, '--db', meta.db_dir]
   if (meta.network_config_path) args.push('--network-config', meta.network_config_path)
-  const execStart = args.map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(' ')
+  const execStart = args.map(escapeSystemdExecArg).join(' ')
   return `[Unit]
 Description=ton-mesh-harness seed daemon (bag ${meta.bag_id})
 After=network-online.target
