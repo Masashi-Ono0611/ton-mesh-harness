@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0098EA">
 <meta name="color-scheme" content="light">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>TON Mesh Harness — ship any static site to .ton</title>
 <meta name="description" content="One-command CLI + MCP server to ship any static site to TON Storage and a .ton domain — the npx-style tool for TON's digital-resistance stack.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,6 +32,11 @@
 
   /* ---------- hero ---------- */
   header{padding:72px 0 52px; border-bottom:1px solid var(--line);}
+  .hero-row{display:flex; align-items:center; gap:44px; flex-wrap:wrap;}
+  .hero-text{flex:1 1 440px; min-width:0;}
+  .hero-mascot{flex:0 0 auto; margin-left:auto;}
+  .hero-mascot img{display:block; width:172px; height:172px;}
+  @media(max-width:620px){ .hero-mascot{margin:0 auto;} .hero-mascot img{width:128px; height:128px;} }
   .kicker{font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--ton); font-weight:600; margin-bottom:22px;}
   h1{font-size:70px; font-weight:800; letter-spacing:-.035em; line-height:1.02; margin-bottom:22px;}
   h1 .accent{color:var(--ton);}
@@ -101,10 +107,15 @@
 
   <!-- ============ HERO ============ -->
   <header>
-    <div class="kicker">ton-projects/ton-mesh-harness · CLI + MCP server</div>
-    <h1>TON Mesh <span class="accent">Harness</span></h1>
-    <p class="tagline">The frontend can&rsquo;t be taken down<br><strong>if there&rsquo;s no server to take down.</strong></p>
-    <p class="sub">One command ships any static build to TON Storage and a <code>.ton</code> domain — zero infra setup. The <code>npx</code>-style CLI for TON&rsquo;s digital-resistance stack, built for engineers.</p>
+    <div class="hero-row">
+      <div class="hero-text">
+        <div class="kicker">ton-projects/ton-mesh-harness · CLI + MCP server</div>
+        <h1>TON Mesh <span class="accent">Harness</span></h1>
+        <p class="tagline">The frontend can&rsquo;t be taken down<br><strong>if there&rsquo;s no server to take down.</strong></p>
+        <p class="sub">One command ships any static build to TON Storage and a <code>.ton</code> domain — zero infra setup. The <code>npx</code>-style CLI for TON&rsquo;s digital-resistance stack, built for engineers.</p>
+      </div>
+      <div class="hero-mascot"><img src="mascot.svg" width="172" height="172" alt="ton-mesh-harness mascot — a cypherpunk hooded dog in sunglasses"></div>
+    </div>
   </header>
 
   <!-- ============ 01 CONCEPT ============ -->
