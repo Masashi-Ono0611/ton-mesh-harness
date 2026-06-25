@@ -42,7 +42,11 @@ describe.skipIf(!RUN)('MCP E2E (gated by RUN_MCP_E2E=1)', () => {
       expect(stdout).toMatch(
         /mesh_check_env, mesh_deploy, mesh_site_record, mesh_status/,
       )
-      expect(stdout).toMatch(/PASS/)
+      // Machine-readable verdict (#122): a successful run emits a PASS verdict
+      // — scope=stage1-only when unarmed (the default) or scope=full-e2e when
+      // run with a signing env. Either is a pass; both are distinguishable from
+      // a silent exit 0.
+      expect(stdout).toMatch(/VERDICT verdict=PASS scope=(stage1-only|full-e2e)/)
     },
     // 9 min: a worst-case mesh_deploy (DEPLOY_TIMEOUT_MS = 7 min) + the
     // bounded TONAPI landing post-check (≤~41s) + handshake must finish

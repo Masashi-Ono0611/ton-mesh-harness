@@ -8,6 +8,15 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **e2e driver emits a machine-readable PASS/SKIP/BLOCKED/FAIL verdict (#122).**
+  The driver previously had only exit 0 vs exit 1, so a stage-1-only run, a full
+  green run, and a silently-skipped stage were all indistinguishable. It now
+  emits one grep-able line per run —
+  `[e2e] VERDICT verdict=<…> scope=<…> stages=<…>` — and reserves exit 1 for a
+  true FAIL (exit 2 for BLOCKED, exit 0 for PASS/SKIP), so CI can tell a
+  stage-1-only run (`scope=stage1-only`) from a full E2E (`scope=full-e2e`) and
+  see each stage's PASS / SKIP / BLOCKED.
+
 - **Toncenter tx-hash resolve is now key-able on the TonConnect path and
   reports throttling instead of a silent null (#120).** The agentic path
   threaded a Toncenter API key into the tx-hash resolve but the TonConnect path

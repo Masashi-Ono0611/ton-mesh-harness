@@ -58,8 +58,13 @@
  * reached `done` but TONAPI could not confirm storage==bag_id within the
  * window, and/or (with E2E_VERIFY_RENDER) the site did not serve HTTP 200.
  * Not a clean pass, not a hard fail (do not green a release on it):
- * "PASS (full E2E)" requires TONAPI to confirm the bag and any armed
- * render check to pass.
+ * a full-e2e PASS requires TONAPI to confirm the bag and any armed render
+ * check to pass.
+ *
+ * Every terminal state also emits one machine-readable line for CI (#122):
+ *   [e2e] VERDICT verdict=<PASS|SKIP|BLOCKED|FAIL> scope=<stage1-only|full-e2e|e2e> [stages=…] [detail="…"]
+ * so a stage-1-only run (scope=stage1-only) is distinguishable from a full
+ * E2E (scope=full-e2e) rather than both being an opaque exit 0.
  */
 
 const { spawn, execSync } = require('node:child_process')
@@ -541,8 +546,34 @@ async function stage3Cancel() {
   log('Stage 3: no leaked tonutils-storage / storage-daemon process — clean')
 }
 
+// Coarse stage progress, updated by main() before each throwable stage so the
+// FAIL verdict (emitted from the top-level catch, outside main's scope) can
+// still report which stage failed — otherwise FAIL is the one terminal state
+// with no `stages=` breakdown (#122 / Codex P2). The in-progress stage is
+// `RUNNING`; the catch rewrites it to `FAIL`.
+let lastStages = 'stage1:RUNNING'
+
+/**
+ * Emit the single machine-readable verdict line (#122). One grep-able line so
+ * CI can tell PASS / SKIP / BLOCKED / FAIL apart and a stage-1-only run is
+ * distinguishable from a full E2E (via `scope` + per-stage `stages`), instead
+ * of every outcome collapsing into exit 0 vs exit 1.
+ *   verdict: PASS | SKIP | BLOCKED | FAIL
+ *   scope:   stage1-only | full-e2e
+ *   stages:  comma list like `stage1:PASS,stage2:BLOCKED,render:SKIP,stage3:SKIP`
+ */
+function emitVerdict({ verdict, scope, stages, detail }) {
+  let line = `VERDICT verdict=${verdict} scope=${scope}`
+  if (stages) line += ` stages=${stages}`
+  // Collapse CR/LF (e.g. the Stage 3 leak list is newline-joined) + quotes so
+  // the verdict stays a single grep-able line (#122 / Codex P2).
+  if (detail) line += ` detail="${String(detail).replace(/[\r\n]+/g, '; ').replace(/"/g, "'")}"`
+  log(line)
+}
+
 async function main() {
   prepareSourceDir()
+  lastStages = 'stage1:RUNNING'
   const srv = spawnServer()
   await handshake(srv)
   const checkEnv = await stage1ListAndCheck(srv)
@@ -556,11 +587,14 @@ async function main() {
     log('Stage 2/3 SKIPPED. To run the real mainnet deploy, set ONE signing path:')
     log('  • E2E_TONCONNECT=1  — human-approved (scan the QR in Tonkeeper)')
     log('  • E2E_AUTO_SIGN=1   — agentic (requires a configured @ton/mcp wallet)')
-    log('PASS (stage 1 only).')
+    // Stage 1 passed but the deploy was intentionally not run — PASS-but-partial,
+    // distinguished from a full run by scope (not a silent exit-0). (#122)
+    emitVerdict({ verdict: 'PASS', scope: 'stage1-only', stages: 'stage1:PASS,stage2:SKIP,stage3:SKIP' })
     return
   }
 
-  const dnsVerdict = await stage2Deploy(srv, checkEnv)
+  lastStages = 'stage1:PASS,stage2:RUNNING'
+  const dnsVerdict = await stage2Deploy(srv, checkEnv) // 'PASS' | 'BLOCKED' (FAIL throws)
   try {
     srv.child.kill()
   } catch {
@@ -568,19 +602,25 @@ async function main() {
   }
 
   // Stage 2b — opt-in render confirmation (#118). Uses TONAPI + the gateway
-  // over HTTP, so it runs after the MCP server is torn down.
-  let renderVerdict = 'PASS'
+  // over HTTP, so it runs after the MCP server is torn down. SKIP unless armed.
+  let renderVerdict = 'SKIP'
   if (VERIFY_RENDER && DOMAIN) {
-    renderVerdict = (await stage2bRenderConfirm(DOMAIN)).verdict
+    renderVerdict = (await stage2bRenderConfirm(DOMAIN)).verdict // 'PASS' | 'BLOCKED'
   } else if (VERIFY_RENDER && !DOMAIN) {
     log('Stage 2b SKIPPED — E2E_VERIFY_RENDER=1 needs E2E_MAINNET_DOMAIN to check a site record.')
   }
 
+  let stage3Verdict = 'SKIP'
   if (CANCEL) {
-    await stage3Cancel()
+    lastStages = `stage1:PASS,stage2:${dnsVerdict},render:${renderVerdict},stage3:RUNNING`
+    await stage3Cancel() // throws (FAIL) on a leaked daemon
+    stage3Verdict = 'PASS'
   } else {
     log('Stage 3 SKIPPED (set E2E_CANCEL=1 to run the cancellation hygiene check).')
   }
+
+  const stages =
+    `stage1:PASS,stage2:${dnsVerdict},render:${renderVerdict},stage3:${stage3Verdict}`
 
   if (dnsVerdict === 'BLOCKED' || renderVerdict === 'BLOCKED') {
     const which = [
@@ -590,15 +630,27 @@ async function main() {
       .filter(Boolean)
       .join(' + ')
     log(`BLOCKED (exit 2) — ${which}; this is NOT a clean PASS. See the stage logs above.`)
+    emitVerdict({ verdict: 'BLOCKED', scope: 'full-e2e', stages, detail: which })
     process.exitCode = 2
     return
   }
-  log('PASS (full E2E).')
+  emitVerdict({ verdict: 'PASS', scope: 'full-e2e', stages })
 }
 
 if (require.main === module) {
   main().catch((err) => {
-    process.stderr.write(`E2E FAILED: ${err instanceof Error ? err.message : String(err)}\n`)
+    const msg = err instanceof Error ? err.message : String(err)
+    process.stderr.write(`E2E FAILED: ${msg}\n`)
+    // Mirror the PASS/BLOCKED verdict line on stdout so CI parses one format
+    // for every terminal state (#122). Exit 1 is reserved for a true FAIL.
+    // `lastStages` carries the per-stage breakdown; the in-progress stage that
+    // threw is rewritten RUNNING→FAIL so the failing stage is explicit.
+    emitVerdict({
+      verdict: 'FAIL',
+      scope: 'e2e',
+      stages: lastStages.replace(/RUNNING/g, 'FAIL'),
+      detail: msg.slice(0, 200),
+    })
     process.exit(1)
   })
 }
