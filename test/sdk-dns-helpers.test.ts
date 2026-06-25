@@ -35,6 +35,7 @@ import {
   buildAwaitingSignatureTonConnect,
   buildDnsMessageBatch,
   buildVerifyingEvent,
+  confirmDnsWriteOrThrow,
   DNS_UPDATE_AMOUNT_NANO,
   kickoffTxHashResolve,
   pollDnsConfirmationOrThrow,
@@ -286,6 +287,67 @@ describe('awaitTxHashWithGrace', () => {
     expect(TX_HASH_GRACE_MS).toBe(15_000)
     const out = await awaitTxHashWithGrace(Promise.resolve({ txHash: '0xabc', throttled: false }))
     expect(out).toEqual({ txHash: '0xabc', throttled: false })
+  })
+})
+
+describe('confirmDnsWriteOrThrow (#119)', () => {
+  const timeout = () => new SdkError('ERR_DNS_TX_TIMEOUT', 'did not propagate', { severity: 'recoverable' })
+  const resolved = (txHash: string | null, throttled = false) => Promise.resolve({ txHash, throttled })
+
+  it('happy path: TONAPI poll resolves → returns the tx hash, not via fallback', async () => {
+    const verifyOnChain = vi.fn().mockResolvedValue(false)
+    const out = await confirmDnsWriteOrThrow({
+      poll: () => Promise.resolve(),
+      txHashResolvePromise: resolved('0xabc'),
+      verifyOnChain,
+    })
+    expect(out).toEqual({ txHash: '0xabc', throttled: false, viaChainFallback: false })
+    expect(verifyOnChain).not.toHaveBeenCalled() // on-chain check skipped on the happy path
+  })
+
+  it('TONAPI timed out BUT the storage record IS on-chain → confirms via fallback, no throw', async () => {
+    const out = await confirmDnsWriteOrThrow({
+      poll: () => Promise.reject(timeout()),
+      txHashResolvePromise: resolved('0xdead'),
+      verifyOnChain: () => Promise.resolve(true),
+    })
+    expect(out).toEqual({ txHash: '0xdead', throttled: false, viaChainFallback: true })
+  })
+
+  it('does NOT confirm on a resolved tx hash alone — only an on-chain match counts (#119 Codex-P1)', async () => {
+    // A wallet tx can be indexed (resolver returns a hash) while the NFT
+    // change_dns_record failed (e.g. wrong-owner wallet). verifyOnChain=false
+    // → must STILL throw, never confirm on the wallet tx hash.
+    await expect(
+      confirmDnsWriteOrThrow({
+        poll: () => Promise.reject(timeout()),
+        txHashResolvePromise: resolved('0xindexed-but-action-failed'),
+        verifyOnChain: () => Promise.resolve(false),
+      }),
+    ).rejects.toMatchObject({ code: 'ERR_DNS_TX_TIMEOUT' })
+  })
+
+  it('rethrows a non-timeout error unchanged (e.g. ERR_CANCELLED), without an on-chain check', async () => {
+    const cancelled = new SdkError('ERR_CANCELLED', 'cancelled', { severity: 'fatal' })
+    const verifyOnChain = vi.fn().mockResolvedValue(true)
+    await expect(
+      confirmDnsWriteOrThrow({
+        poll: () => Promise.reject(cancelled),
+        txHashResolvePromise: resolved('0xabc'),
+        verifyOnChain,
+      }),
+    ).rejects.toMatchObject({ code: 'ERR_CANCELLED' })
+    expect(verifyOnChain).not.toHaveBeenCalled()
+  })
+
+  it('a throwing verifyOnChain does NOT mask the recoverable timeout — treated as not-confirmed (agy review)', async () => {
+    await expect(
+      confirmDnsWriteOrThrow({
+        poll: () => Promise.reject(timeout()),
+        txHashResolvePromise: resolved(null),
+        verifyOnChain: () => Promise.reject(new Error('rpc exploded')),
+      }),
+    ).rejects.toMatchObject({ code: 'ERR_DNS_TX_TIMEOUT' })
   })
 })
 

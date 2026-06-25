@@ -19,20 +19,41 @@ import { normalizedExternalInHashHex, type TxHashResolution } from './resolve-tx
 import { networkFromTestnetFlag } from './endpoints'
 import { createSdkLogger } from './log'
 import {
-  awaitTxHashWithGrace,
   buildAwaitingSignatureAgentic,
   buildAwaitingSignatureTonConnect,
   buildDnsMessageBatch,
   buildVerifyingEvent,
+  confirmDnsWriteOrThrow,
   kickoffTxHashResolve,
   pollDnsConfirmationOrThrow,
   resolveDomainNftOrThrow,
 } from './dns-helpers'
+import { storageRecordMatchesOnChain } from './dns-onchain'
 import { makeAbortChecker, safeAbort } from './abort'
 import { SdkError } from './deploy'
 import type { DeployEvent } from './schemas'
+import type { Address } from '@ton/core'
+import type { AgenticNetwork } from './agentic-config'
 
 const log = createSdkLogger('mesh:dns')
+
+/**
+ * On-chain confirmation predicate for `confirmDnsWriteOrThrow`'s timeout
+ * fallback (#119). Covers the STORAGE record only: when a site (ADNL) record is
+ * also being written, we cannot yet confirm it on-chain (no de-risked parser),
+ * so we return false — the timeout rethrows rather than risk confirming a deploy
+ * whose site record didn't land. `deploy()` / mesh_deploy is storage-only, so
+ * this only affects direct `writeDnsRecord(site_adnl)` callers (Codex P2).
+ */
+function verifyDnsWriteOnChain(
+  opts: { bag_id: string; site_adnl?: string | null },
+  nftAddress: Address,
+  network: AgenticNetwork,
+  toncenterApiKey: string | undefined,
+): Promise<boolean> {
+  if (opts.site_adnl) return Promise.resolve(false)
+  return storageRecordMatchesOnChain({ nftAddress, network, expectedBag: opts.bag_id, toncenterApiKey })
+}
 
 export interface DnsWriteOptions {
   /** `.ton` domain (e.g. `"myprotocol.ton"`). */
@@ -278,20 +299,25 @@ export async function* writeDnsRecord(
       }
     }
 
-    await pollDnsConfirmationOrThrow({
-      domain: opts.domain,
-      bagId: opts.bag_id,
-      siteAdnl: opts.site_adnl,
-      testnet: !!opts.testnet,
-      checkAborted,
-      timeoutHint: 'The wallet sent the tx; chain may still be settling, or TONAPI is lagging.',
+    const { txHash, throttled, viaChainFallback } = await confirmDnsWriteOrThrow({
+      poll: () =>
+        pollDnsConfirmationOrThrow({
+          domain: opts.domain,
+          bagId: opts.bag_id,
+          siteAdnl: opts.site_adnl,
+          testnet: !!opts.testnet,
+          checkAborted,
+          timeoutHint: 'The wallet sent the tx; chain may still be settling, or TONAPI is lagging.',
+        }),
+      txHashResolvePromise,
+      verifyOnChain: () => verifyDnsWriteOnChain(opts, nftAddress, network, opts.toncenter_api_key),
     })
-
-    const { txHash, throttled } = await awaitTxHashWithGrace(txHashResolvePromise)
 
     yield {
       phase: 'dns_confirmed',
-      message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
+      message: viaChainFallback
+        ? `${opts.domain} storage record confirmed on-chain (bag ${opts.bag_id.slice(0, 12)}…); TONAPI propagation still lagging`
+        : `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
       data: {
         domain: opts.domain,
         bag_id: opts.bag_id,
@@ -302,7 +328,9 @@ export async function* writeDnsRecord(
     }
 
     yield buildVerifyingEvent(
-      'DNS record propagated via TONAPI; downstream gateway resolution may still be settling',
+      viaChainFallback
+        ? 'DNS storage record confirmed on-chain via dnsresolve; TONAPI propagation still settling'
+        : 'DNS record propagated via TONAPI; downstream gateway resolution may still be settling',
     )
 
     return { message_boc: messageBoc, tx_hash: txHash, tx_resolve_throttled: throttled }
@@ -456,20 +484,25 @@ export async function* writeDnsRecordAgentic(
     // here only short-circuits the long TONAPI poll.
     checkAborted()
 
-    await pollDnsConfirmationOrThrow({
-      domain: opts.domain,
-      bagId: opts.bag_id,
-      siteAdnl: opts.site_adnl,
-      testnet: !!opts.testnet,
-      checkAborted,
-      timeoutHint: `Toncenter accepted the BOC (message_hash: ${sent.message_hash}); chain may still be settling.`,
+    const { txHash, throttled, viaChainFallback } = await confirmDnsWriteOrThrow({
+      poll: () =>
+        pollDnsConfirmationOrThrow({
+          domain: opts.domain,
+          bagId: opts.bag_id,
+          siteAdnl: opts.site_adnl,
+          testnet: !!opts.testnet,
+          checkAborted,
+          timeoutHint: `Toncenter accepted the BOC (message_hash: ${sent.message_hash}); chain may still be settling.`,
+        }),
+      txHashResolvePromise,
+      verifyOnChain: () => verifyDnsWriteOnChain(opts, nftAddress, network, selection.toncenter_api_key),
     })
-
-    const { txHash, throttled } = await awaitTxHashWithGrace(txHashResolvePromise)
 
     yield {
       phase: 'dns_confirmed',
-      message: `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
+      message: viaChainFallback
+        ? `${opts.domain} storage record confirmed on-chain (bag ${opts.bag_id.slice(0, 12)}…); TONAPI propagation still lagging`
+        : `${opts.domain} resolves to bag ${opts.bag_id.slice(0, 12)}…`,
       data: {
         domain: opts.domain,
         bag_id: opts.bag_id,
@@ -479,7 +512,11 @@ export async function* writeDnsRecordAgentic(
       },
     }
 
-    yield buildVerifyingEvent('DNS record propagated via TONAPI')
+    yield buildVerifyingEvent(
+      viaChainFallback
+        ? 'DNS storage record confirmed on-chain via dnsresolve; TONAPI propagation still settling'
+        : 'DNS record propagated via TONAPI',
+    )
 
     return {
       message_hash: sent.message_hash,

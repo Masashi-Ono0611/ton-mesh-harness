@@ -82,6 +82,17 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A landed DNS write is no longer thrown back as a failed deploy when
+  TONAPI's cache lags — now confirmed authoritatively on-chain (#119).** When
+  `pollDnsConfirmationOrThrow` times out (TONAPI's flaky `/dns/resolve` didn't
+  reflect the write), the deploy now reads the domain NFT's `storage` record
+  directly via the `dnsresolve` get-method (`resolveStorageRecordOnChain`,
+  Toncenter `runMethod`) and confirms iff it equals the deployed bag. This
+  proves the `change_dns_record` ACTION succeeded — unlike trusting a resolved
+  wallet tx hash, which only proves the wallet's transaction was indexed (a
+  non-owner wallet's tx still indexes while the DNS never changes). Both deploy
+  paths go through `confirmDnsWriteOrThrow`; a timeout with no on-chain match
+  still surfaces the recoverable error.
 - **e2e driver no longer mutates the committed test fixture (#121).** A domain
   deploy injects a provenance manifest (`.well-known/ton-deploy.json`) into its
   `source_dir` before bagging; the e2e driver passed the version-controlled
