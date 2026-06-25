@@ -24,7 +24,7 @@ import {
   pollDnsRecord,
   pollDnsSiteRecord,
 } from '../dns'
-import { resolveTxHashFromMessageHash } from './resolve-tx'
+import { resolveTxHashFromMessageHash, type TxHashResolution } from './resolve-tx'
 import { SdkError } from './deploy'
 import type { AgenticNetwork } from './agentic-config'
 import type { DeployEvent } from './schemas'
@@ -182,7 +182,7 @@ export function kickoffTxHashResolve(args: {
   internalAbortSignal: AbortSignal
   callerSignal?: AbortSignal
   toncenterApiKey?: string
-}): Promise<string | null> {
+}): Promise<TxHashResolution> {
   const combiner = new AbortController()
   args.internalAbortSignal.addEventListener('abort', () => combiner.abort(), { once: true })
   args.callerSignal?.addEventListener('abort', () => combiner.abort(), { once: true })
@@ -190,7 +190,7 @@ export function kickoffTxHashResolve(args: {
     toncenter_api_key: args.toncenterApiKey,
     timeout_ms: 90_000,
     signal: combiner.signal,
-  }).catch(() => null)
+  }).catch(() => ({ txHash: null, throttled: false }))
 }
 
 /**
@@ -212,12 +212,14 @@ export const TX_HASH_GRACE_MS = 15_000
  * Toncenter is still lagging beyond the grace).
  */
 export function awaitTxHashWithGrace(
-  resolvePromise: Promise<string | null>,
+  resolvePromise: Promise<TxHashResolution>,
   graceMs = TX_HASH_GRACE_MS,
-): Promise<string | null> {
+): Promise<TxHashResolution> {
   let timer: ReturnType<typeof setTimeout> | undefined
-  const grace = new Promise<null>((r) => {
-    timer = setTimeout(() => r(null), graceMs)
+  // On the grace cutoff the resolver is still pending (Toncenter lagging, not
+  // erroring) → throttled:false. A settled throttle result wins the race.
+  const grace = new Promise<TxHashResolution>((r) => {
+    timer = setTimeout(() => r({ txHash: null, throttled: false }), graceMs)
   })
   // clearTimeout when the resolver wins so the (now 15s) fallback timer
   // does NOT keep the Node event loop alive on the happy path (Codex P2).

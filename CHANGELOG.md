@@ -8,6 +8,18 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Toncenter tx-hash resolve is now key-able on the TonConnect path and
+  reports throttling instead of a silent null (#120).** The agentic path
+  threaded a Toncenter API key into the tx-hash resolve but the TonConnect path
+  did not, so it hit the public per-IP rate limit and `dns_tx_hash` came back
+  null even on a landed write — indistinguishable from "not indexed yet". The
+  resolve now (a) accepts a key on the TonConnect path (`DnsWriteOptions.toncenter_api_key`,
+  sourced from `TONCENTER_API_KEY` by `deploy()`), and (b) returns
+  `{ txHash, throttled }` so a rate-limited/unauthorized resolve surfaces a
+  `next_actions` hint ("supply a Toncenter API key") rather than a silent null.
+  A BOC that isn't a parseable external-in message now emits a (DEBUG-gated)
+  `warn` so it is diagnosable separately from index lag.
+
 - **Storage-vs-site viewability breadcrumb + opt-in render confirmation
   (#118).** A `mesh_deploy` writes only the `.ton` **storage** (bag) record,
   not a **site** (ADNL) record, so `<domain>.ton` is not browser-openable via

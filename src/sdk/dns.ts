@@ -15,8 +15,9 @@ import { TonConnectProvider } from '../wallet/TonConnectProvider'
 import { TONCONNECT_MANIFEST_URL, getTonConnectStoragePath } from '../wallet/constants'
 import { agenticSignAndSend } from './agentic-sign'
 import { loadAgenticConfig } from './agentic-config'
-import { normalizedExternalInHashHex } from './resolve-tx'
+import { normalizedExternalInHashHex, type TxHashResolution } from './resolve-tx'
 import { networkFromTestnetFlag } from './endpoints'
+import { createSdkLogger } from './log'
 import {
   awaitTxHashWithGrace,
   buildAwaitingSignatureAgentic,
@@ -30,6 +31,8 @@ import {
 import { makeAbortChecker, safeAbort } from './abort'
 import { SdkError } from './deploy'
 import type { DeployEvent } from './schemas'
+
+const log = createSdkLogger('mesh:dns')
 
 export interface DnsWriteOptions {
   /** `.ton` domain (e.g. `"myprotocol.ton"`). */
@@ -45,6 +48,13 @@ export interface DnsWriteOptions {
    * TonConnect manifest's wallet list. Defaults to `Tonkeeper`.
    */
   connector_name?: string
+  /**
+   * Optional Toncenter API key for the tx-hash resolve. The agentic path
+   * sources this from `~/.config/ton/config.json`; the TonConnect path has no
+   * such config, so without a key the resolve hits the public per-IP rate
+   * limit and `dns_tx_hash` may come back null even on a landed write. (#120)
+   */
+  toncenter_api_key?: string
 }
 
 export interface DnsWriteControl {
@@ -66,6 +76,13 @@ export interface DnsWriteResult {
    * poll succeeded — `message_boc` is still the indexable identifier.
    */
   tx_hash: string | null
+  /**
+   * True when the tx-hash resolve was rate-limited / unauthorized by Toncenter
+   * (so `tx_hash` is null because the resolver never had a fair chance, not
+   * because the tx isn't indexed). Lets the caller hint "supply a Toncenter
+   * API key" rather than a silent null. (#120)
+   */
+  tx_resolve_throttled: boolean
 }
 
 /**
@@ -234,7 +251,10 @@ export async function* writeDnsRecord(
     // before hashing — the raw cell hash does NOT match Toncenter's
     // index. `normalizedExternalInHashHex` zeros src + import_fee and
     // re-hashes (Codex S2.7 review MAJOR 1 fix).
-    let txHashResolvePromise: Promise<string | null> = Promise.resolve(null)
+    let txHashResolvePromise: Promise<TxHashResolution> = Promise.resolve({
+      txHash: null,
+      throttled: false,
+    })
     if (messageBoc) {
       const bocHashHex = normalizedExternalInHashHex(messageBoc)
       if (bocHashHex) {
@@ -243,6 +263,17 @@ export async function* writeDnsRecord(
           network,
           internalAbortSignal: txResolveAbort.signal,
           callerSignal: control.signal,
+          // Without a key the TonConnect resolve hits Toncenter's public
+          // per-IP rate limit; tx_hash then comes back null even on a landed
+          // write (the agentic path threads its config key the same way). (#120)
+          toncenterApiKey: opts.toncenter_api_key,
+        })
+      } else {
+        // BOC present but not a parseable external-in message — the resolver
+        // can't run, so tx_hash will be null for a different reason than index
+        // lag. Surface it for diagnosis (warn is DEBUG-gated). (#120)
+        log.warn('tonconnect:boc-unparseable', {
+          reason: 'normalizedExternalInHashHex returned null — wallet returned an unexpected envelope',
         })
       }
     }
@@ -256,7 +287,7 @@ export async function* writeDnsRecord(
       timeoutHint: 'The wallet sent the tx; chain may still be settling, or TONAPI is lagging.',
     })
 
-    const txHash = await awaitTxHashWithGrace(txHashResolvePromise)
+    const { txHash, throttled } = await awaitTxHashWithGrace(txHashResolvePromise)
 
     yield {
       phase: 'dns_confirmed',
@@ -274,7 +305,7 @@ export async function* writeDnsRecord(
       'DNS record propagated via TONAPI; downstream gateway resolution may still be settling',
     )
 
-    return { message_boc: messageBoc, tx_hash: txHash }
+    return { message_boc: messageBoc, tx_hash: txHash, tx_resolve_throttled: throttled }
   } finally {
     // Cancel an in-flight Toncenter resolve poll if the generator
     // exits early (consumer break-early on for-await, propagation
@@ -325,6 +356,8 @@ export interface DnsWriteAgenticResult {
    * and is surfaced in `next_actions`.
    */
   tx_hash: string | null
+  /** True when the tx-hash resolve was rate-limited / unauthorized (#120). */
+  tx_resolve_throttled: boolean
 }
 
 /**
@@ -432,7 +465,7 @@ export async function* writeDnsRecordAgentic(
       timeoutHint: `Toncenter accepted the BOC (message_hash: ${sent.message_hash}); chain may still be settling.`,
     })
 
-    const txHash = await awaitTxHashWithGrace(txHashResolvePromise)
+    const { txHash, throttled } = await awaitTxHashWithGrace(txHashResolvePromise)
 
     yield {
       phase: 'dns_confirmed',
@@ -452,6 +485,7 @@ export async function* writeDnsRecordAgentic(
       message_hash: sent.message_hash,
       from_address: sent.from_address,
       tx_hash: txHash,
+      tx_resolve_throttled: throttled,
     }
   } finally {
     // Cancel an in-flight Toncenter resolve poll if the generator

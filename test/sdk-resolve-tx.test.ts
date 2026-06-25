@@ -41,7 +41,7 @@ describe('resolveTxHashFromMessageHash', () => {
 
   it('returns null on malformed hex (fast-fail, no network call)', async () => {
     const out = await resolveTxHashFromMessageHash('0xnot_hex', 'mainnet', { timeout_ms: 100 })
-    expect(out).toBeNull()
+    expect(out.txHash).toBeNull()
     expect(mocks.apiClientCtorMock).not.toHaveBeenCalled()
   })
 
@@ -53,7 +53,7 @@ describe('resolveTxHashFromMessageHash', () => {
       timeout_ms: 80,
       interval_ms: 10,
     })
-    expect(out).toBeNull()
+    expect(out.txHash).toBeNull()
     // The lookup WAS attempted (not fast-failed at the regex).
     expect(mocks.getTransactionsByHashMock).toHaveBeenCalled()
   })
@@ -66,7 +66,7 @@ describe('resolveTxHashFromMessageHash', () => {
       timeout_ms: 5_000,
       interval_ms: 10,
     })
-    expect(out).toBe('0xdeadbeef1234')
+    expect(out.txHash).toBe('0xdeadbeef1234')
   })
 
   it('lower-cases and prefixes 0x once, even if input is uppercase or already prefixed', async () => {
@@ -77,7 +77,7 @@ describe('resolveTxHashFromMessageHash', () => {
       timeout_ms: 5_000,
       interval_ms: 10,
     })
-    expect(out).toBe('0xabcdef')
+    expect(out.txHash).toBe('0xabcdef')
   })
 
   it('polls until success', async () => {
@@ -89,17 +89,51 @@ describe('resolveTxHashFromMessageHash', () => {
       timeout_ms: 5_000,
       interval_ms: 1,
     })
-    expect(out).toBe('0xcafe1234')
+    expect(out.txHash).toBe('0xcafe1234')
     expect(mocks.getTransactionsByHashMock.mock.calls.length).toBeGreaterThanOrEqual(3)
   })
 
-  it('returns null on timeout', async () => {
+  it('returns null on timeout, throttled=false when responses were just empty (#120)', async () => {
     mocks.getTransactionsByHashMock.mockResolvedValue({ transactions: [] })
     const out = await resolveTxHashFromMessageHash(goodHex, 'mainnet', {
       timeout_ms: 80,
       interval_ms: 10,
     })
-    expect(out).toBeNull()
+    expect(out).toEqual({ txHash: null, throttled: false })
+  })
+
+  it('reports throttled=true on timeout when the last failures were rate-limit/auth (#120)', async () => {
+    mocks.getTransactionsByHashMock
+      .mockRejectedValueOnce(new Error('429 too many requests'))
+      .mockRejectedValue(new Error('401 unauthorized'))
+    const out = await resolveTxHashFromMessageHash(goodHex, 'mainnet', {
+      timeout_ms: 60,
+      interval_ms: 10,
+    })
+    expect(out).toEqual({ txHash: null, throttled: true })
+  })
+
+  it('reports throttled=false when the last failure recovered to a benign not-indexed (#120)', async () => {
+    mocks.getTransactionsByHashMock
+      .mockRejectedValueOnce(new Error('429 too many requests'))
+      .mockResolvedValue({ transactions: [] }) // recovered → not throttled at timeout
+    const out = await resolveTxHashFromMessageHash(goodHex, 'mainnet', {
+      timeout_ms: 60,
+      interval_ms: 10,
+    })
+    expect(out).toEqual({ txHash: null, throttled: false })
+  })
+
+  it('gives up EARLY after 5 consecutive throttles (does not poll the full window) (#120)', async () => {
+    mocks.getTransactionsByHashMock.mockRejectedValue(new Error('429 too many requests'))
+    const out = await resolveTxHashFromMessageHash(goodHex, 'mainnet', {
+      // Long window — but it must bail after ~5 attempts, not poll for 10s.
+      timeout_ms: 10_000,
+      interval_ms: 1,
+    })
+    expect(out).toEqual({ txHash: null, throttled: true })
+    // 5 consecutive throttles trigger give-up — far fewer than a full 10s poll.
+    expect(mocks.getTransactionsByHashMock.mock.calls.length).toBe(5)
   })
 
   it('swallows toncenter errors and keeps polling', async () => {
@@ -111,7 +145,7 @@ describe('resolveTxHashFromMessageHash', () => {
       timeout_ms: 5_000,
       interval_ms: 1,
     })
-    expect(out).toBe('0xok42')
+    expect(out.txHash).toBe('0xok42')
   })
 
   it('aborts immediately on pre-aborted signal', async () => {
@@ -122,7 +156,7 @@ describe('resolveTxHashFromMessageHash', () => {
       interval_ms: 100,
       signal: controller.signal,
     })
-    expect(out).toBeNull()
+    expect(out.txHash).toBeNull()
   })
 
   it('selects testnet endpoint for testnet network', async () => {
