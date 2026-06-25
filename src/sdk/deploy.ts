@@ -545,6 +545,10 @@ export async function* deploy(
     let dnsSubmissionHash: string | null = null
     let dnsTxHash: string | null = null
     let dnsResolveThrottled = false
+    // Whether a Toncenter API key backed the tx-hash resolve. Default true so a
+    // null hash WITHOUT key info (shouldn't happen on a domain deploy — the
+    // generator always reports it) doesn't wrongly advise setting a key. (#132)
+    let dnsResolverKeyUsed = true
     if (opts.domain) {
       let dnsAwaitingSignatureSeen = false
       let dnsBroadcastEnqueued = false
@@ -611,6 +615,7 @@ export async function* deploy(
               if (v && 'message_hash' in v && v.message_hash) dnsSubmissionHash = v.message_hash
               if (v && 'tx_hash' in v && v.tx_hash) dnsTxHash = v.tx_hash
               if (v && 'tx_resolve_throttled' in v && v.tx_resolve_throttled) dnsResolveThrottled = true
+              if (v && 'resolver_api_key_used' in v) dnsResolverKeyUsed = !!v.resolver_api_key_used
               break
             }
             const ev = step.value
@@ -698,17 +703,27 @@ export async function* deploy(
       })
     }
     // Diagnostic (IN ADDITION to the single pointer above, not instead of it):
-    // when the resolve was throttled/unauthorized, a null dns_tx_hash is
-    // fixable with a Toncenter API key — say so rather than leave a silent
-    // null indistinguishable from index lag. (#120)
-    if (opts.domain && !dnsTxHash && dnsResolveThrottled) {
+    // explain a null dns_tx_hash and how to fix it. Distinguish the common
+    // no-key case (public per-IP rate limit / slow index — the #120 throttle
+    // flag misses this because it only catches hard 429s) from a hard throttle
+    // that occurred DESPITE a key. Either way the API-key advice or the
+    // "even with a key" note beats a silent null indistinguishable from lag.
+    // (#120 / #132)
+    if (opts.domain && !dnsTxHash && !dnsResolverKeyUsed) {
+      nextActions.push({
+        description:
+          `dns_tx_hash is null and NO Toncenter API key backed the resolve, so it likely hit the public ` +
+          `per-IP rate limit / slow index. The DNS write itself still landed — verify via mesh_status or ` +
+          `TONAPI /v2/dns/${opts.domain}/resolve. To populate dns_tx_hash on future deploys, set a ` +
+          `Toncenter API key: TONCENTER_API_KEY env for mesh_deploy, or the toncenter_api_key option for ` +
+          `a direct writeDnsRecord caller.`,
+      })
+    } else if (opts.domain && !dnsTxHash && dnsResolveThrottled) {
       nextActions.push({
         description:
           `dns_tx_hash is null because the Toncenter tx-hash resolve was rate-limited or unauthorized ` +
-          `(not just lagging). The DNS write itself still landed — verify via mesh_status or TONAPI ` +
-          `/v2/dns/${opts.domain}/resolve. To populate dns_tx_hash on future deploys, set a Toncenter API ` +
-          `key: TONCENTER_API_KEY env for mesh_deploy, or the toncenter_api_key option for a direct ` +
-          `writeDnsRecord caller.`,
+          `even with an API key (not just lagging). The DNS write itself still landed — verify via ` +
+          `mesh_status or TONAPI /v2/dns/${opts.domain}/resolve.`,
       })
     }
 
@@ -818,7 +833,9 @@ export async function* deploy(
       bag_id: created.bag_id,
       bag_size_bytes: details.size,
       dns_tx_hash: dnsTxHash,
-      daemon_api_url: daemon.apiUrl,
+      // null when the daemon was stopped (embedded mode) — the URL would point
+      // at a dead endpoint; mirrors daemon_pid. (#134)
+      daemon_api_url: seedStatus === 'stopped' ? null : daemon.apiUrl,
       daemon_pid: daemonPid,
       seed_status: seedStatus,
       daemon_service: daemonService,

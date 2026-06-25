@@ -197,6 +197,8 @@ describe('writeDnsRecordAgentic — integration (#117/#119/#120)', () => {
       from_address: SELECTION.wallet.address,
       tx_hash: '0xtxhash',
       tx_resolve_throttled: false,
+      // SELECTION carries a toncenter_api_key → the resolve was key-backed (#132)
+      resolver_api_key_used: true,
     })
 
     // On the happy path the on-chain verifier is NEVER consulted.
@@ -325,6 +327,16 @@ describe('writeDnsRecordAgentic — integration (#117/#119/#120)', () => {
     // Nothing was signed/sent — the failure is pre-broadcast.
     expect(mocks.agenticSignAndSend).not.toHaveBeenCalled()
   })
+
+  it('scenario 7 — agentic config with no Toncenter key → resolver_api_key_used:false (#132)', async () => {
+    // The agentic key is sourced from the config; when absent, the generator
+    // must report resolver_api_key_used:false so deploy() can advise setting one.
+    mocks.loadAgenticConfig.mockReturnValue({ ...SELECTION, toncenter_api_key: undefined })
+    mocks.pollDnsRecord.mockResolvedValue(true)
+
+    const { result } = await runGen(writeDnsRecordAgentic(OPTS()))
+    expect((result as { resolver_api_key_used: boolean }).resolver_api_key_used).toBe(false)
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -368,6 +380,8 @@ describe('writeDnsRecord (TonConnect) — integration (#117/#119/#120)', () => {
       message_boc: 'fakeboc',
       tx_hash: '0xtxhash',
       tx_resolve_throttled: false,
+      // TC_OPTS supplies no toncenter_api_key → the resolve ran key-less (#132)
+      resolver_api_key_used: false,
     })
 
     expect(mocks.storageRecordMatchesOnChain).not.toHaveBeenCalled()
