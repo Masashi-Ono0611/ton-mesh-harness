@@ -217,20 +217,27 @@ export async function pollDnsRecord(
   timeoutMs = 300_000,
   intervalMs = 10_000,
   testnet = false,
-  opts: { silent?: boolean } = {},
+  opts: { silent?: boolean; signal?: AbortSignal } = {},
 ): Promise<boolean> {
   const silent = !!opts.silent
   const spinner = silent ? null : ora('Waiting for DNS record to propagate...').start()
   const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
+    // Bail promptly on caller abort rather than waiting out the full timeout —
+    // the caller (pollDnsConfirmationOrThrow) re-checks and throws ERR_CANCELLED
+    // once we return. (#135)
+    if (opts.signal?.aborted) {
+      spinner?.stop()
+      return false
+    }
     const data = await getDnsResolved(domain, testnet)
     const current = extractStorageBagId(data)
     if (current === expectedBagId.toLowerCase()) {
       spinner?.succeed('DNS record confirmed on-chain!')
       return true
     }
-    await sleep(intervalMs)
+    await sleep(intervalMs, opts.signal)
   }
 
   spinner?.warn('DNS propagation timed out — the transaction may still be pending.')
@@ -258,7 +265,7 @@ export async function pollDnsSiteRecord(
   timeoutMs = 180_000,
   intervalMs = 10_000,
   testnet = false,
-  opts: { silent?: boolean } = {},
+  opts: { silent?: boolean; signal?: AbortSignal } = {},
 ): Promise<boolean> {
   const silent = !!opts.silent
   const spinner = silent ? null : ora('Waiting for site record to propagate...').start()
@@ -266,6 +273,10 @@ export async function pollDnsSiteRecord(
   const expected = expectedAdnlHex.toLowerCase().replace(/^0x/, '')
 
   while (Date.now() < deadline) {
+    if (opts.signal?.aborted) {
+      spinner?.stop()
+      return false
+    }
     const data = await getDnsResolved(domain, testnet)
     // TONAPI is flaky for `sites` and the declared `string[]` type is not
     // guaranteed at runtime — guard against a non-array `sites` (null/object)
@@ -280,7 +291,7 @@ export async function pollDnsSiteRecord(
       spinner?.succeed('Site record confirmed on-chain!')
       return true
     }
-    await sleep(intervalMs)
+    await sleep(intervalMs, opts.signal)
   }
 
   spinner?.warn(
@@ -292,6 +303,25 @@ export async function pollDnsSiteRecord(
   return false
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms))
+/**
+ * Sleep that resolves early when `signal` aborts, so the propagation pollers
+ * don't wait out a full interval after a caller cancellation. (#135)
+ */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve()
+      return
+    }
+    let onAbort: (() => void) | undefined
+    const timer = setTimeout(() => {
+      if (onAbort) signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    onAbort = () => {
+      clearTimeout(timer)
+      resolve()
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
 }

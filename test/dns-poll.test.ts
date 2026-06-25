@@ -36,6 +36,53 @@ describe('pollDnsSiteRecord — malformed TONAPI `sites` does not crash the poll
   })
 })
 
+describe('pollDnsRecord / pollDnsSiteRecord — abort responsiveness (#135)', () => {
+  beforeEach(() => mockGet.mockReset())
+
+  it('pollDnsRecord returns false immediately when the signal is already aborted (before any fetch)', async () => {
+    mockGet.mockResolvedValue({ storage: 'deadbeef' }) // never matches the expected bag
+    const ctrl = new AbortController()
+    ctrl.abort()
+    const start = Date.now()
+    const ok = await pollDnsRecord('mysite.ton', 'a'.repeat(64), 60_000, 10_000, false, {
+      silent: true,
+      signal: ctrl.signal,
+    })
+    expect(ok).toBe(false)
+    expect(Date.now() - start).toBeLessThan(500) // NOT the full 60s timeout
+    expect(mockGet).not.toHaveBeenCalled() // bailed at the loop top, before fetching
+  })
+
+  it('pollDnsRecord bails within one abort (interrupting the sleep), not the full timeout', async () => {
+    mockGet.mockResolvedValue({ storage: 'deadbeef' }) // never matches → would sleep 10s/iter
+    const ctrl = new AbortController()
+    setTimeout(() => ctrl.abort(), 50) // abort during the first 10s sleep
+    const start = Date.now()
+    const ok = await pollDnsRecord('mysite.ton', 'a'.repeat(64), 60_000, 10_000, false, {
+      silent: true,
+      signal: ctrl.signal,
+    })
+    expect(ok).toBe(false)
+    // Without the abortable sleep this waits ~10s for the first interval; with
+    // it, the sleep is cut short and the next loop-top check returns at once.
+    expect(Date.now() - start).toBeLessThan(2_000)
+  })
+
+  it('pollDnsSiteRecord also returns false promptly on a pre-aborted signal', async () => {
+    mockGet.mockResolvedValue({ sites: [] }) // never matches
+    const ctrl = new AbortController()
+    ctrl.abort()
+    const start = Date.now()
+    const ok = await pollDnsSiteRecord('mysite.ton', EXPECTED_ADNL, 60_000, 10_000, false, {
+      silent: true,
+      signal: ctrl.signal,
+    })
+    expect(ok).toBe(false)
+    expect(Date.now() - start).toBeLessThan(500)
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+})
+
 describe('pollDnsRecord — timeout hint normalizes a shorthand domain (#102/#19)', () => {
   let logs: string[]
   let logSpy: ReturnType<typeof vi.spyOn>

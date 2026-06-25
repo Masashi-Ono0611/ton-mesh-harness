@@ -120,6 +120,13 @@ export async function pollDnsConfirmationOrThrow(args: {
   testnet: boolean
   /** Optional — called between polls to short-circuit on caller abort. */
   checkAborted?: () => void
+  /**
+   * Optional caller abort signal, threaded into the pollers so a cancellation
+   * mid-poll bails within one interval (and interrupts the sleep) instead of
+   * waiting out the full 5-min/3-min timeout. The poller returns false on
+   * abort; `checkAborted` below then throws ERR_CANCELLED. (#135)
+   */
+  signal?: AbortSignal
   /** Optional — when omitted, the inner poller emits its own spinner. */
   silent?: boolean
   timeoutHint: string
@@ -132,7 +139,7 @@ export async function pollDnsConfirmationOrThrow(args: {
     300_000,
     10_000,
     args.testnet,
-    { silent },
+    { silent, signal: args.signal },
   )
   noopCheck()
 
@@ -144,7 +151,7 @@ export async function pollDnsConfirmationOrThrow(args: {
       180_000,
       10_000,
       args.testnet,
-      { silent },
+      { silent, signal: args.signal },
     )
     noopCheck()
   }
