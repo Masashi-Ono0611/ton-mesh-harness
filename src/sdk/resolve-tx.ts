@@ -92,25 +92,51 @@ export interface ResolveTxOptions {
   toncenter_api_key?: string
 }
 
+/** Outcome of a tx-hash resolve. */
+export interface TxHashResolution {
+  /** Tx hash as `0x<hex>` if Toncenter indexed the message, else null. */
+  txHash: string | null
+  /**
+   * True when the resolve kept hitting auth / rate-limit / 5xx responses and
+   * never got a fair chance — as opposed to the tx simply not being indexed
+   * yet. Only meaningful when `txHash` is null; lets the caller surface "add a
+   * Toncenter API key" instead of an indistinguishable silent null. (#120)
+   */
+  throttled: boolean
+}
+
+/**
+ * Classify a Toncenter error as the KEY/AUTH-fixable class (401/403/429,
+ * rate-limit, unauthorized, quota) — the only kind where "supply a Toncenter
+ * API key" is the right advice. A 5xx is a server-side OUTAGE (a key won't fix
+ * it and a later retry may still succeed), and 404/empty is benign
+ * not-yet-indexed; neither counts as throttled. (#120 / Codex P2)
+ */
+function isThrottleError(err: unknown): boolean {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase()
+  return /\b(401|403|429)\b/.test(msg) || /rate.?limit|too many request|unauthor|forbidden|quota/.test(msg)
+}
+
 /**
  * Look up the transaction whose inbound message has the given hash.
  *
  * @param messageHashHex Normalized message hash returned by
  *   `ApiClientToncenter.sendBoc()` — either `0x<hex>` or bare hex.
- * @returns Tx hash as `0x<hex>` if Toncenter has indexed the message,
- *   `null` on timeout / not-yet-indexed / network error.
+ * @returns `{ txHash, throttled }` — `txHash` is `0x<hex>` if Toncenter has
+ *   indexed the message, else null (with `throttled` distinguishing a
+ *   rate-limited/unauthorized resolve from a not-yet-indexed one).
  */
 export async function resolveTxHashFromMessageHash(
   messageHashHex: string,
   network: AgenticNetwork,
   opts: ResolveTxOptions = {},
-): Promise<string | null> {
+): Promise<TxHashResolution> {
   const stripped = messageHashHex.replace(/^0x/i, '').toLowerCase()
   // Walletkit's sendBoc returns `0x${Base64ToBigInt(...).toString(16)}`,
   // which DROPS leading zero nibbles. A 32-byte hash with a leading zero
   // byte becomes 62-63 hex chars. Accept 1..64 and left-pad to 64 before
   // converting to base64 (Codex S2.7 review MAJOR 2 fix).
-  if (!/^[0-9a-f]{1,64}$/.test(stripped)) return null
+  if (!/^[0-9a-f]{1,64}$/.test(stripped)) return { txHash: null, throttled: false }
   const padded = stripped.padStart(64, '0')
   const msgHashB64 = Buffer.from(padded, 'hex').toString('base64')
 
@@ -121,10 +147,19 @@ export async function resolveTxHashFromMessageHash(
   log.debug('poll:start', { msg_hash: messageHashHex, network, timeout_ms: opts.timeout_ms })
 
   let attempts = 0
+  // Tracks whether the LAST failure was a throttle/auth/5xx (vs not-indexed),
+  // so a timeout can report why it gave up. (#120)
+  let lastThrottle = false
+  // Give up early after this many CONSECUTIVE throttle/auth errors: polling a
+  // rejecting endpoint for the full 90s window is pointless, and settling with
+  // throttled=true quickly lets the deploy's grace race observe it (otherwise
+  // the ~15s grace timer wins first and the throttle signal is lost). (#120)
+  const THROTTLE_GIVEUP = 5
+  let consecutiveThrottle = 0
   while (Date.now() < deadline) {
     if (opts.signal?.aborted) {
       log.debug('poll:aborted', { attempts })
-      return null
+      return { txHash: null, throttled: false }
     }
     attempts++
     try {
@@ -134,17 +169,28 @@ export async function resolveTxHashFromMessageHash(
       if (hit?.hash) {
         const h = hit.hash.replace(/^0x/i, '')
         log.info('poll:hit', { attempts, tx_hash: `0x${h.toLowerCase()}` })
-        return `0x${h.toLowerCase()}`
+        return { txHash: `0x${h.toLowerCase()}`, throttled: false }
       }
+      // A successful empty response means "not indexed yet" — not a throttle.
+      lastThrottle = false
+      consecutiveThrottle = 0
     } catch (err) {
-      // 404 / rate-limit / DNS / 5xx — keep polling within the deadline.
+      // 404 / rate-limit / DNS / 5xx — keep polling within the deadline, but
+      // remember whether this was a throttle/auth/5xx so a timeout can say so.
+      lastThrottle = isThrottleError(err)
+      consecutiveThrottle = lastThrottle ? consecutiveThrottle + 1 : 0
       log.debug('poll:miss', {
         attempts,
+        throttle: lastThrottle,
         error: err instanceof Error ? err.message : String(err),
       })
+      if (consecutiveThrottle >= THROTTLE_GIVEUP) {
+        log.debug('poll:throttle-giveup', { attempts, consecutiveThrottle })
+        return { txHash: null, throttled: true }
+      }
     }
     await sleep(intervalMs, opts.signal)
   }
-  log.debug('poll:timeout', { attempts })
-  return null
+  log.debug('poll:timeout', { attempts, throttle: lastThrottle })
+  return { txHash: null, throttled: lastThrottle }
 }

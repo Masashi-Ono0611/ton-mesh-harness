@@ -192,14 +192,14 @@ describe('kickoffTxHashResolve', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('delegates to resolveTxHashFromMessageHash with combined signal', async () => {
-    dnsMocks.resolveTxHashFromMessageHash.mockResolvedValueOnce('0xabc')
+    dnsMocks.resolveTxHashFromMessageHash.mockResolvedValueOnce({ txHash: '0xabc', throttled: false })
     const internal = new AbortController()
     const out = await kickoffTxHashResolve({
       messageHashHex: '0xff',
       network: 'mainnet',
       internalAbortSignal: internal.signal,
     })
-    expect(out).toBe('0xabc')
+    expect(out).toEqual({ txHash: '0xabc', throttled: false })
     expect(dnsMocks.resolveTxHashFromMessageHash).toHaveBeenCalledTimes(1)
     const args = dnsMocks.resolveTxHashFromMessageHash.mock.calls[0]
     expect(args[0]).toBe('0xff')
@@ -213,7 +213,7 @@ describe('kickoffTxHashResolve', () => {
         await new Promise<void>((resolve) => {
           opts.signal?.addEventListener('abort', () => resolve(), { once: true })
         })
-        return null
+        return { txHash: null, throttled: false }
       },
     )
     const internal = new AbortController()
@@ -225,7 +225,7 @@ describe('kickoffTxHashResolve', () => {
       callerSignal: caller.signal,
     })
     caller.abort()
-    await expect(promise).resolves.toBeNull()
+    await expect(promise).resolves.toEqual({ txHash: null, throttled: false })
   })
 
   it('aborts when internal signal aborts', async () => {
@@ -234,7 +234,7 @@ describe('kickoffTxHashResolve', () => {
         await new Promise<void>((resolve) => {
           opts.signal?.addEventListener('abort', () => resolve(), { once: true })
         })
-        return null
+        return { txHash: null, throttled: false }
       },
     )
     const internal = new AbortController()
@@ -244,10 +244,10 @@ describe('kickoffTxHashResolve', () => {
       internalAbortSignal: internal.signal,
     })
     internal.abort()
-    await expect(promise).resolves.toBeNull()
+    await expect(promise).resolves.toEqual({ txHash: null, throttled: false })
   })
 
-  it('returns null when resolveTxHashFromMessageHash throws (best-effort)', async () => {
+  it('returns {null,false} when resolveTxHashFromMessageHash throws (best-effort)', async () => {
     dnsMocks.resolveTxHashFromMessageHash.mockRejectedValueOnce(new Error('boom'))
     const internal = new AbortController()
     const out = await kickoffTxHashResolve({
@@ -255,23 +255,28 @@ describe('kickoffTxHashResolve', () => {
       network: 'mainnet',
       internalAbortSignal: internal.signal,
     })
-    expect(out).toBeNull()
+    expect(out).toEqual({ txHash: null, throttled: false })
   })
 })
 
 describe('awaitTxHashWithGrace', () => {
-  it('returns the hash when promise resolves before grace', async () => {
-    const promise = Promise.resolve('0xabc')
+  it('returns the resolution when promise resolves before grace', async () => {
+    const promise = Promise.resolve({ txHash: '0xabc', throttled: false })
     const out = await awaitTxHashWithGrace(promise, 5_000)
-    expect(out).toBe('0xabc')
+    expect(out).toEqual({ txHash: '0xabc', throttled: false })
   })
 
-  it('returns null when promise still pending after grace cutoff', async () => {
-    const promise = new Promise<string>(() => {
+  it('preserves throttled=true from a settled resolution', async () => {
+    const out = await awaitTxHashWithGrace(Promise.resolve({ txHash: null, throttled: true }), 5_000)
+    expect(out).toEqual({ txHash: null, throttled: true })
+  })
+
+  it('returns {null,false} when promise still pending after grace cutoff', async () => {
+    const promise = new Promise<{ txHash: string | null; throttled: boolean }>(() => {
       /* never resolves */
     })
     const out = await awaitTxHashWithGrace(promise, 50)
-    expect(out).toBeNull()
+    expect(out).toEqual({ txHash: null, throttled: false })
   })
 
   it('defaults to TX_HASH_GRACE_MS (15s) when grace not specified (#117)', async () => {
@@ -279,8 +284,8 @@ describe('awaitTxHashWithGrace', () => {
     // when Toncenter lags TONAPI. Assert the constant + that an
     // already-settled promise returns immediately (no real 15s wait here).
     expect(TX_HASH_GRACE_MS).toBe(15_000)
-    const out = await awaitTxHashWithGrace(Promise.resolve('0xabc'))
-    expect(out).toBe('0xabc')
+    const out = await awaitTxHashWithGrace(Promise.resolve({ txHash: '0xabc', throttled: false }))
+    expect(out).toEqual({ txHash: '0xabc', throttled: false })
   })
 })
 

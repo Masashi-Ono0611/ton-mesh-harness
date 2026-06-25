@@ -544,13 +544,19 @@ export async function* deploy(
     let messageBoc: string | null = null
     let dnsSubmissionHash: string | null = null
     let dnsTxHash: string | null = null
+    let dnsResolveThrottled = false
     if (opts.domain) {
       let dnsAwaitingSignatureSeen = false
       let dnsBroadcastEnqueued = false
       try {
         let inner: AsyncGenerator<
           DeployEvent,
-          { message_boc?: string | null; message_hash?: string; tx_hash?: string | null } | undefined,
+          {
+            message_boc?: string | null
+            message_hash?: string
+            tx_hash?: string | null
+            tx_resolve_throttled?: boolean
+          } | undefined,
           void
         >
         if (opts.wallet.kind === 'tonconnect') {
@@ -561,6 +567,10 @@ export async function* deploy(
               bag_id: created.bag_id,
               testnet: opts.testnet,
               connector_name: opts.wallet.connector,
+              // The TonConnect path has no agentic config to source a Toncenter
+              // key from, so honour TONCENTER_API_KEY from the env — without it
+              // the tx-hash resolve hits the public rate limit (#120).
+              toncenter_api_key: process.env.TONCENTER_API_KEY,
             },
             { signal: control.signal },
           ) as typeof inner
@@ -600,6 +610,7 @@ export async function* deploy(
               if (v && 'message_boc' in v && v.message_boc) messageBoc = v.message_boc
               if (v && 'message_hash' in v && v.message_hash) dnsSubmissionHash = v.message_hash
               if (v && 'tx_hash' in v && v.tx_hash) dnsTxHash = v.tx_hash
+              if (v && 'tx_resolve_throttled' in v && v.tx_resolve_throttled) dnsResolveThrottled = true
               break
             }
             const ev = step.value
@@ -684,6 +695,20 @@ export async function* deploy(
         description:
           `DNS write submitted via TonConnect. Signed-message BOC (NOT the on-chain tx hash): ${messageBoc}. ` +
           `Tx hash resolve timed out — look up the wallet's outgoing transactions on TONAPI within a minute of dispatch.`,
+      })
+    }
+    // Diagnostic (IN ADDITION to the single pointer above, not instead of it):
+    // when the resolve was throttled/unauthorized, a null dns_tx_hash is
+    // fixable with a Toncenter API key — say so rather than leave a silent
+    // null indistinguishable from index lag. (#120)
+    if (opts.domain && !dnsTxHash && dnsResolveThrottled) {
+      nextActions.push({
+        description:
+          `dns_tx_hash is null because the Toncenter tx-hash resolve was rate-limited or unauthorized ` +
+          `(not just lagging). The DNS write itself still landed — verify via mesh_status or TONAPI ` +
+          `/v2/dns/${opts.domain}/resolve. To populate dns_tx_hash on future deploys, set a Toncenter API ` +
+          `key: TONCENTER_API_KEY env for mesh_deploy, or the toncenter_api_key option for a direct ` +
+          `writeDnsRecord caller.`,
       })
     }
 

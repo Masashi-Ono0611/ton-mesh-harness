@@ -12,7 +12,7 @@ import {
   pollDnsConfirmationOrThrow,
   resolveDomainNftOrThrow,
 } from '../sdk/dns-helpers'
-import { normalizedExternalInHashHex } from '../sdk/resolve-tx'
+import { normalizedExternalInHashHex, type TxHashResolution } from '../sdk/resolve-tx'
 import { networkFromTestnetFlag, tonviewerTxUrl } from '../sdk/endpoints'
 import { safeAbort } from '../sdk/abort'
 import { siteGatewayUrl } from '../output'
@@ -108,7 +108,10 @@ export async function runDnsRegistration(
 
     // Kick off the tx-hash resolve in parallel with the TONAPI poll
     // (or before the JSON-mode early return). Aborted in `finally`.
-    let txHashResolvePromise: Promise<string | null> = Promise.resolve(null)
+    let txHashResolvePromise: Promise<TxHashResolution> = Promise.resolve({
+      txHash: null,
+      throttled: false,
+    })
     if (messageBoc) {
       const bocHashHex = normalizedExternalInHashHex(messageBoc)
       if (bocHashHex) {
@@ -116,6 +119,7 @@ export async function runDnsRegistration(
           messageHashHex: `0x${bocHashHex}`,
           network,
           internalAbortSignal: txResolveAbort.signal,
+          toncenterApiKey: process.env.TONCENTER_API_KEY,
         })
       }
     }
@@ -148,7 +152,7 @@ export async function runDnsRegistration(
       return
     }
 
-    const txHash = await awaitTxHashWithGrace(txHashResolvePromise)
+    const { txHash, throttled } = await awaitTxHashWithGrace(txHashResolvePromise)
 
     log()
     log(chalk.green(`  ✅ ${domain} now points to your site!`))
@@ -168,6 +172,11 @@ export async function runDnsRegistration(
     if (txHash) {
       log(chalk.dim(`     Tx:  ${txHash}`))
       log(chalk.dim(`     View: ${tonviewerTxUrl(txHash, testnet)}`))
+    } else if (throttled) {
+      // Distinct from a plain lag: the resolve was rate-limited/unauthorized,
+      // so a Toncenter API key fixes it (the DNS write still landed). (#120)
+      log(chalk.yellow('     (Tx hash resolve was rate-limited/unauthorized by Toncenter — the DNS'))
+      log(chalk.dim('      write still landed; set TONCENTER_API_KEY to populate the tx hash next time)'))
     } else if (messageBoc) {
       log(chalk.dim('     (Tx hash resolve timed out — tonviewer typically indexes within ~10s)'))
     }
