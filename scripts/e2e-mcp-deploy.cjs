@@ -111,6 +111,9 @@ const DOMAIN = process.env.E2E_MAINNET_DOMAIN || null
 // content. A storage-only deploy (the mesh_deploy default) has no site record,
 // so this emits BLOCKED, never PASS — it cannot render via ton.run.
 const VERIFY_RENDER = process.env.E2E_VERIFY_RENDER === '1'
+// Force a fresh TonConnect pairing (QR) by clearing any cached session at
+// startup, so a restored session doesn't silently skip the QR. (#131)
+const FRESH_PAIR = process.env.E2E_FRESH_PAIR === '1'
 
 function send(child, msg) {
   child.stdin.write(JSON.stringify(msg) + '\n')
@@ -392,9 +395,19 @@ async function stage2Deploy(srv, checkEnv) {
     for (const p of progs.slice(lastProgressSeen)) {
       log(`  progress: ${p.params?.message ?? ''}`)
       const url = p.params?._meta?.data?.signing_url
-      if (url && !signingUrlShown && !String(url).includes('restored-session')) {
+      if (url && !signingUrlShown) {
         signingUrlShown = true
-        renderSigningUrl(url)
+        if (String(url).includes('restored-session')) {
+          // A cached TonConnect pairing was reused — connect() restored it, so
+          // no QR is drawn and the tx request is pushed to the already-paired
+          // Tonkeeper instead. Without this message the run just looks hung
+          // (the operator waits for a QR that never comes). (#131)
+          log('  AWAITING SIGNATURE — reusing a paired Tonkeeper session (no QR drawn).')
+          log('  → Approve the request IN your Tonkeeper app. To force a fresh QR,')
+          log('    delete ~/.ton-mesh/tonconnect.json (or run with E2E_FRESH_PAIR=1).')
+        } else {
+          renderSigningUrl(url)
+        }
       }
     }
     lastProgressSeen = progs.length
@@ -438,6 +451,17 @@ async function stage2Deploy(srv, checkEnv) {
     .map((a) => a && a.description)
     .find((desc) => typeof desc === 'string' && /browser-openable|site \(ADNL\) record/i.test(desc))
   if (viewHint) log(`Stage 2: viewability — ${viewHint}`)
+  // Surface WHY dns_tx_hash may be null (the SDK emits a BOC / message-hash
+  // fallback or a throttle/API-key hint as a next_action). Without this, the
+  // `dns_tx_hash=(none)` line above reads as a silent dead-end. (#132)
+  const txHint = (Array.isArray(sc.next_actions) ? sc.next_actions : [])
+    .map((a) => a && a.description)
+    .find(
+      (desc) =>
+        typeof desc === 'string' &&
+        /signed-message boc|normalized message hash|dns_tx_hash|tx hash resolve/i.test(desc),
+    )
+  if (txHint) log(`Stage 2: dns-tx — ${txHint}`)
 
   // PASS (TONAPI confirmed the bag) or BLOCKED (reached `done` but TONAPI
   // never confirmed) bubble up to main(): BLOCKED must NOT print
@@ -573,6 +597,17 @@ function emitVerdict({ verdict, scope, stages, detail }) {
 
 async function main() {
   prepareSourceDir()
+  if (FRESH_PAIR) {
+    // Clear any cached TonConnect pairing so connect() does a FRESH pairing and
+    // renders a QR, instead of restoring a session and silently skipping it.
+    // Path mirrors getTonConnectStoragePath() in src/wallet/constants.ts. (#131)
+    try {
+      fs.rmSync(path.join(os.homedir(), '.ton-mesh', 'tonconnect.json'), { force: true })
+      log('E2E_FRESH_PAIR=1 — cleared cached TonConnect session; a fresh QR will be drawn.')
+    } catch {
+      /* best-effort */
+    }
+  }
   lastStages = 'stage1:RUNNING'
   const srv = spawnServer()
   await handshake(srv)
