@@ -104,6 +104,14 @@ export interface DnsWriteResult {
    * API key" rather than a silent null. (#120)
    */
   tx_resolve_throttled: boolean
+  /**
+   * Whether a Toncenter API key backed the tx-hash resolve. When false and
+   * `tx_hash` is null, the public per-IP rate limit / slow index is the likely
+   * cause (not a hard 429), so the caller should advise setting a key — the
+   * #120 throttle flag only catches hard rate-limits, missing the common
+   * no-key case. (#132)
+   */
+  resolver_api_key_used: boolean
 }
 
 /**
@@ -334,7 +342,12 @@ export async function* writeDnsRecord(
         : 'DNS record propagated via TONAPI; downstream gateway resolution may still be settling',
     )
 
-    return { message_boc: messageBoc, tx_hash: txHash, tx_resolve_throttled: throttled }
+    return {
+      message_boc: messageBoc,
+      tx_hash: txHash,
+      tx_resolve_throttled: throttled,
+      resolver_api_key_used: !!opts.toncenter_api_key,
+    }
   } finally {
     // Cancel an in-flight Toncenter resolve poll if the generator
     // exits early (consumer break-early on for-await, propagation
@@ -387,6 +400,8 @@ export interface DnsWriteAgenticResult {
   tx_hash: string | null
   /** True when the tx-hash resolve was rate-limited / unauthorized (#120). */
   tx_resolve_throttled: boolean
+  /** Whether a Toncenter API key backed the tx-hash resolve (#132). */
+  resolver_api_key_used: boolean
 }
 
 /**
@@ -525,6 +540,7 @@ export async function* writeDnsRecordAgentic(
       from_address: sent.from_address,
       tx_hash: txHash,
       tx_resolve_throttled: throttled,
+      resolver_api_key_used: !!selection.toncenter_api_key,
     }
   } finally {
     // Cancel an in-flight Toncenter resolve poll if the generator

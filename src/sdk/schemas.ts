@@ -160,9 +160,11 @@ export const DeployResultSchema = z.strictObject({
    * `http://127.0.0.1:7100`). Renamed from `dashboard_url` in [S3] review
    * — the daemon does not serve a dashboard HTML page; it exposes a JSON
    * API. The kit's actual dashboard is a separate static file the CLI
-   * may open in a browser.
+   * may open in a browser. `null` when `seed_status: "stopped"` (embedded
+   * mode kills the daemon before `done`), since the URL would point at a
+   * dead endpoint — mirrors `daemon_pid`. (#134)
    */
-  daemon_api_url: z.string(),
+  daemon_api_url: z.string().nullable(),
   /** Non-null only for `daemon_mode: "detached"` (the caller owns the pid). */
   daemon_pid: z.number().int().nullable(),
   seed_status: z.enum(['seeding', 'stopped']),

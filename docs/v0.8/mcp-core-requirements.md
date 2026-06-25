@@ -133,7 +133,7 @@ CLI backwards compat:
 | `bag_id` | string | hex |
 | `bag_size_bytes` | number | |
 | `dns_tx_hash` | string \| null | null if `domain` was null |
-| `daemon_api_url` | string | tonutils-storage daemon's local HTTP API base (renamed from `dashboard_url` in [S3] review — the daemon serves JSON, not a dashboard) |
+| `daemon_api_url` | string \| null | tonutils-storage daemon's local HTTP API base (renamed from `dashboard_url` in [S3] review — the daemon serves JSON, not a dashboard); `null` when `seed_status: "stopped"` (embedded mode killed the daemon, so the URL would be dead) (#134) |
 | `daemon_pid` | number \| null | non-null only when `keep_alive=true` |
 | `seed_status` | `"seeding" \| "stopped"` | |
 | `next_actions` | `{ description: string }[]` | hints (e.g. "set up detached daemon" — informational only in v0.8.0) |

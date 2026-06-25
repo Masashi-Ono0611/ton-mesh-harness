@@ -286,7 +286,10 @@ exports[`SDK JSON Schemas (V1 snapshot) > mesh_deploy schemas (input + output) 2
           "type": "integer",
         },
         "daemon_api_url": {
-          "type": "string",
+          "type": [
+            "string",
+            "null",
+          ],
         },
         "daemon_pid": {
           "anyOf": [
@@ -703,7 +706,10 @@ exports[`SDK JSON Schemas (V1 snapshot) > supplementary schemas (WalletSpec, Dep
                   "type": "integer",
                 },
                 "daemon_api_url": {
-                  "type": "string",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
                 },
                 "daemon_pid": {
                   "anyOf": [
