@@ -226,6 +226,46 @@ export function awaitTxHashWithGrace(
   return Promise.race([resolvePromise, grace]).finally(() => clearTimeout(timer))
 }
 
+/**
+ * Confirm a DNS write, preferring TONAPI propagation but falling back to an
+ * AUTHORITATIVE on-chain check. `pollDnsConfirmationOrThrow` throws
+ * `ERR_DNS_TX_TIMEOUT` when TONAPI's (flaky, cache-lagged) `/dns/resolve`
+ * doesn't reflect the record within its window — yet the write may have landed.
+ *
+ * On that timeout we ask `verifyOnChain()`, which reads the NFT's `storage`
+ * record directly via the `dnsresolve` get-method (`resolveStorageRecordOnChain`)
+ * and returns true iff it equals the deployed bag. This proves the
+ * `change_dns_record` ACTION succeeded — unlike trusting the resolved wallet tx
+ * hash, which only proves the wallet's transaction was indexed (a non-owner
+ * wallet's tx still indexes while the DNS never changes; #119 Codex-P1). Only a
+ * timeout with NO on-chain confirmation surfaces the recoverable error.
+ *
+ * @throws the original `ERR_DNS_TX_TIMEOUT` when TONAPI lagged AND the on-chain
+ *   record does not (yet) match; rethrows any other error unchanged.
+ */
+export async function confirmDnsWriteOrThrow(args: {
+  poll: () => Promise<void>
+  txHashResolvePromise: Promise<TxHashResolution>
+  verifyOnChain: () => Promise<boolean>
+}): Promise<{ txHash: string | null; throttled: boolean; viaChainFallback: boolean }> {
+  try {
+    await args.poll()
+    const { txHash, throttled } = await awaitTxHashWithGrace(args.txHashResolvePromise)
+    return { txHash, throttled, viaChainFallback: false }
+  } catch (err) {
+    if (!(err instanceof SdkError) || err.code !== 'ERR_DNS_TX_TIMEOUT') throw err
+    // TONAPI propagation poll timed out — is the record on-chain anyway? The
+    // verifier is best-effort: a throw inside it must NOT mask the recoverable
+    // ERR_DNS_TX_TIMEOUT, so treat any verifier error as "not confirmed" (agy
+    // review). The shipped verifier already never throws, but the helper is
+    // generic — keep it robust to any callback.
+    const landed = await args.verifyOnChain().catch(() => false)
+    if (!landed) throw err
+    const { txHash, throttled } = await awaitTxHashWithGrace(args.txHashResolvePromise)
+    return { txHash, throttled, viaChainFallback: true }
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase event builders
 // ─────────────────────────────────────────────────────────────────────────────
