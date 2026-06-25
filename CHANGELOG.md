@@ -6,6 +6,23 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Storage-vs-site viewability breadcrumb + opt-in render confirmation
+  (#118).** A `mesh_deploy` writes only the `.ton` **storage** (bag) record,
+  not a **site** (ADNL) record, so `<domain>.ton` is not browser-openable via
+  the `ton.run` RLDP gateway — but the result carried no signal of this, so a
+  "green" deploy could 404 everywhere with no explanation. The deploy result's
+  `next_actions` now includes a breadcrumb explaining this and the would-be
+  `<domain>.ton.run` URL (stronger when `seed_status` is `stopped`), the
+  `mesh_deploy` tool description states it is storage-only and points to
+  `mesh_site_record`, and the e2e driver gains an opt-in `E2E_VERIFY_RENDER=1`
+  **Stage 2b** that fetches a site's gateway URL, asserts HTTP 200, and surfaces
+  the URL for a human to confirm the rendered content (BLOCKED, never PASS, for
+  a storage-only deploy). `siteGatewayUrl` moved to `src/sdk/endpoints.ts`
+  (re-exported from `src/output.ts`) so the SDK can build the URL without the
+  CLI-output module.
+
 ### Changed
 
 - **BREAKING — renamed to `ton-mesh-harness`.** The package, both bins, the MCP

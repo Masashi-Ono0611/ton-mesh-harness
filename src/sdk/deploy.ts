@@ -38,7 +38,7 @@ import {
   resolveTunnelConfig as resolveTunnelConfigCore,
   TunnelConfigError,
 } from '../utils/tunnel-config'
-import { tonviewerTxUrl } from './endpoints'
+import { storageOnlyViewabilityHint, tonviewerTxUrl } from './endpoints'
 import { createSdkLogger } from './log'
 import { emitProvenanceManifest } from './provenance'
 import { getTonutilsPaths } from '../daemon/tonutils-installer'
@@ -770,6 +770,23 @@ export async function* deploy(
       }
       daemonOwned = false
       seedStatus = 'stopped'
+    }
+
+    // ─── viewability breadcrumb (#118) ───────────────────────────────────
+    // deploy() only ever writes the STORAGE record, so a domain deploy is
+    // NOT browser-openable via the ton.run RLDP gateway. The result carried
+    // no signal of this, so a "green" deploy could 404 everywhere with no
+    // explanation. Surface the storage-vs-site reality + how to get a
+    // browser-openable URL. (Placed after seedStatus so the "nothing seeding"
+    // note is honest.)
+    if (opts.domain) {
+      nextActions.push({
+        description: storageOnlyViewabilityHint({
+          domain: opts.domain,
+          seedStatus,
+          testnet: opts.testnet,
+        }),
+      })
     }
 
     const result: DeployResult = {
