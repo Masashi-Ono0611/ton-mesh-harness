@@ -173,6 +173,60 @@ describe('pollDnsConfirmationOrThrow', () => {
     ).rejects.toThrowError(SdkError)
   })
 
+  it('surfaces ERR_CANCELLED (not ERR_DNS_TX_TIMEOUT) when the poller bails on abort (#135)', async () => {
+    // The abort-aware poller returns false on cancellation; the checkAborted
+    // call right after it must throw ERR_CANCELLED BEFORE the !confirmed →
+    // ERR_DNS_TX_TIMEOUT branch, so a cancel doesn't masquerade as a timeout.
+    dnsMocks.pollDnsRecord.mockResolvedValueOnce(false)
+    const checkAborted = vi.fn(() => {
+      throw new SdkError('ERR_CANCELLED', 'DNS write cancelled.', { severity: 'fatal' })
+    })
+    await expect(
+      pollDnsConfirmationOrThrow({
+        domain: 'foo.ton',
+        bagId: 'bag',
+        siteAdnl: undefined,
+        testnet: false,
+        checkAborted,
+        timeoutHint: 'h',
+      }),
+    ).rejects.toMatchObject({ code: 'ERR_CANCELLED' })
+  })
+
+  it('surfaces ERR_CANCELLED for a signal-only caller (no checkAborted), not ERR_DNS_TX_TIMEOUT (#135 hardening)', async () => {
+    // A caller that passes `signal` but wires no `checkAborted`: the poller
+    // returns false on abort, so without the decoupled signal fallback this
+    // would wrongly throw ERR_DNS_TX_TIMEOUT. (code-review hardening)
+    dnsMocks.pollDnsRecord.mockResolvedValueOnce(false)
+    const ctrl = new AbortController()
+    ctrl.abort()
+    await expect(
+      pollDnsConfirmationOrThrow({
+        domain: 'foo.ton',
+        bagId: 'bag',
+        siteAdnl: undefined,
+        testnet: false,
+        signal: ctrl.signal,
+        timeoutHint: 'h',
+      }),
+    ).rejects.toMatchObject({ code: 'ERR_CANCELLED' })
+  })
+
+  it('threads the abort signal into the pollers (#135)', async () => {
+    dnsMocks.pollDnsRecord.mockResolvedValueOnce(true)
+    const signal = new AbortController().signal
+    await pollDnsConfirmationOrThrow({
+      domain: 'foo.ton',
+      bagId: 'bag',
+      siteAdnl: undefined,
+      testnet: false,
+      signal,
+      timeoutHint: 'h',
+    })
+    // pollDnsRecord(domain, bagId, timeout, interval, testnet, opts) — opts is arg[5]
+    expect(dnsMocks.pollDnsRecord.mock.calls[0][5]).toMatchObject({ signal })
+  })
+
   it('checkAborted runs between polls', async () => {
     dnsMocks.pollDnsRecord.mockResolvedValueOnce(true)
     dnsMocks.pollDnsSiteRecord.mockResolvedValueOnce(true)

@@ -120,21 +120,41 @@ export async function pollDnsConfirmationOrThrow(args: {
   testnet: boolean
   /** Optional — called between polls to short-circuit on caller abort. */
   checkAborted?: () => void
+  /**
+   * Optional caller abort signal, threaded into the pollers so a cancellation
+   * mid-poll bails within one interval (and interrupts the sleep) instead of
+   * waiting out the full 5-min/3-min timeout. The poller returns false on
+   * abort; `checkAborted` below then throws ERR_CANCELLED. (#135)
+   */
+  signal?: AbortSignal
   /** Optional — when omitted, the inner poller emits its own spinner. */
   silent?: boolean
   timeoutHint: string
 }): Promise<void> {
   const silent = args.silent ?? true
-  const noopCheck = args.checkAborted ?? (() => {})
+  // Turn a cancellation into ERR_CANCELLED — called right after each poll (the
+  // abort-aware poller returns false on abort). `checkAborted`, when the caller
+  // wired it, throws with its own message; the `signal` fallback makes the
+  // contract hold even for a caller that passed `signal` but no `checkAborted`,
+  // so a cancel never falls through to the ERR_DNS_TX_TIMEOUT branch below.
+  // (#135 code-review hardening)
+  const throwIfAborted = (): void => {
+    args.checkAborted?.()
+    if (args.signal?.aborted) {
+      throw new SdkError('ERR_CANCELLED', `DNS confirmation for ${args.domain} cancelled.`, {
+        severity: 'fatal',
+      })
+    }
+  }
   const confirmedStorage = await pollDnsRecord(
     args.domain,
     args.bagId,
     300_000,
     10_000,
     args.testnet,
-    { silent },
+    { silent, signal: args.signal },
   )
-  noopCheck()
+  throwIfAborted()
 
   let confirmedSite = true
   if (args.siteAdnl) {
@@ -144,9 +164,9 @@ export async function pollDnsConfirmationOrThrow(args: {
       180_000,
       10_000,
       args.testnet,
-      { silent },
+      { silent, signal: args.signal },
     )
-    noopCheck()
+    throwIfAborted()
   }
 
   if (!confirmedStorage || !confirmedSite) {
