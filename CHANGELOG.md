@@ -73,6 +73,14 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **e2e driver no longer mutates the committed test fixture (#121).** A domain
+  deploy injects a provenance manifest (`.well-known/ton-deploy.json`) into its
+  `source_dir` before bagging; the e2e driver passed the version-controlled
+  `test/fixtures/minimal-site`, so a run left an untracked artifact and
+  perturbed the bag content-hash for the integration tests that bag the same
+  fixture. The driver now deploys from a throwaway tmp copy (created lazily, so
+  importing the script for unit tests has no filesystem side effect), and
+  `.gitignore` covers `test/fixtures/*/.well-known/` as belt-and-suspenders.
 - **e2e acceptance gate no longer false-fails a successful on-chain deploy
   (#117).** The MCP e2e driver (`scripts/e2e-mcp-deploy.cjs`) gated on a
   non-null `dns_tx_hash`, but that field is best-effort and is legitimately

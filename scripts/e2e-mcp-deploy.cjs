@@ -64,9 +64,30 @@
 
 const { spawn, execSync } = require('node:child_process')
 const path = require('node:path')
+const fs = require('node:fs')
+const os = require('node:os')
 
 const SERVER_PATH = path.resolve(__dirname, '..', 'dist', 'mcp.js')
 const FIXTURE_DIR = path.resolve(__dirname, '..', 'test', 'fixtures', 'minimal-site')
+
+// Deploy from a throwaway COPY of the fixture, never the committed tree: a
+// domain deploy injects a provenance manifest (.well-known/ton-deploy.json)
+// into source_dir before bagging, which would dirty the repo and perturb the
+// bag content-hash for the integration tests that also bag this fixture (#121).
+// Created lazily by main() (NOT at module load) so importing this file for the
+// unit test of assessDnsLanding has no filesystem side effect.
+let SOURCE_DIR = FIXTURE_DIR
+function prepareSourceDir() {
+  SOURCE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ton-mesh-e2e-src-'))
+  fs.cpSync(FIXTURE_DIR, SOURCE_DIR, { recursive: true })
+  process.on('exit', () => {
+    try {
+      fs.rmSync(SOURCE_DIR, { recursive: true, force: true })
+    } catch {
+      /* best-effort temp cleanup */
+    }
+  })
+}
 const HANDSHAKE_TIMEOUT_MS = 10_000
 // Must exceed the SDK's internal max: the storage-record DNS poll runs up
 // to 5 min (pollDnsRecord) + the tx-hash grace (TX_HASH_GRACE_MS, 15s) +
@@ -181,7 +202,7 @@ async function stage1ListAndCheck(srv) {
     jsonrpc: '2.0',
     id: 3,
     method: 'tools/call',
-    params: { name: 'mesh_check_env', arguments: { source_dir: FIXTURE_DIR } },
+    params: { name: 'mesh_check_env', arguments: { source_dir: SOURCE_DIR } },
   })
   const res = await awaitFrame(srv, (f) => f.id === 3, HANDSHAKE_TIMEOUT_MS, 'check_env')
   const sc = res.result?.structuredContent
@@ -347,7 +368,7 @@ async function stage2Deploy(srv, checkEnv) {
     params: {
       name: 'mesh_deploy',
       arguments: {
-        source_dir: FIXTURE_DIR,
+        source_dir: SOURCE_DIR,
         domain: DOMAIN,
         wallet,
         testnet: false,
@@ -482,7 +503,7 @@ async function stage3Cancel() {
     params: {
       name: 'mesh_deploy',
       arguments: {
-        source_dir: FIXTURE_DIR,
+        source_dir: SOURCE_DIR,
         domain: null,
         wallet: { kind: 'agentic' },
         testnet: false,
@@ -521,6 +542,7 @@ async function stage3Cancel() {
 }
 
 async function main() {
+  prepareSourceDir()
   const srv = spawnServer()
   await handshake(srv)
   const checkEnv = await stage1ListAndCheck(srv)
