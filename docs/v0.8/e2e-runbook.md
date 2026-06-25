@@ -88,8 +88,12 @@ The MCP client config a real agent would use (per
 - `mesh_check_env` returns a well-formed result (`ready` boolean,
   `wallet_signers_available` includes `agentic`).
 - `mesh_deploy` reaches a `done` payload with a non-empty `bag_id`.
-- With a domain set: `dns_tx_hash` is non-null and resolves on
-  https://tonviewer.com.
+- With a domain set: the DNS write **landed on-chain** — TONAPI
+  `/v2/dns/<domain>/resolve` returns `storage` == the deploy's `bag_id`.
+  `dns_tx_hash` MAY be null when Toncenter's tx index lagged the TONAPI
+  DNS poll (see §1.5); a null hash on an otherwise-`done` deploy is still
+  a PASS, so the gate checks `storage == bag_id`, not the hash (#117).
+  When `dns_tx_hash` is present it resolves on https://tonviewer.com.
 - All five MCP primitives exercised: `initialize`, `tools/list`,
   `tools/call`, `notifications/progress`, `notifications/cancelled`
   (the last via §1.6).

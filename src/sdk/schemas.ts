@@ -146,7 +146,14 @@ export const NextActionSchema = z.strictObject({
 export const DeployResultSchema = z.strictObject({
   bag_id: z.string(),
   bag_size_bytes: z.number().int().nonnegative(),
-  /** Null if `domain` was null on input. */
+  /**
+   * Real on-chain tx hash of the `change_dns_record` write. Null when
+   * `domain` was null on input (no DNS write), AND — best-effort — when
+   * Toncenter's tx index lagged the TONAPI DNS poll past the grace window
+   * (#117): a null hash on an otherwise-successful deploy still means the
+   * write landed (verify via TONAPI `resolve` storage==bag_id). The
+   * submitted-tx pointer is surfaced in `next_actions` in that case.
+   */
   dns_tx_hash: z.string().nullable(),
   /**
    * The tonutils-storage daemon's local HTTP API base (e.g.

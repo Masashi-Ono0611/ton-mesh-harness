@@ -39,6 +39,7 @@ import {
   kickoffTxHashResolve,
   pollDnsConfirmationOrThrow,
   resolveDomainNftOrThrow,
+  TX_HASH_GRACE_MS,
 } from '../src/sdk/dns-helpers'
 import { SdkError } from '../src/sdk/deploy'
 
@@ -273,15 +274,14 @@ describe('awaitTxHashWithGrace', () => {
     expect(out).toBeNull()
   })
 
-  it('uses default 3000ms grace when not specified', async () => {
-    const start = Date.now()
-    const promise = new Promise<string>(() => {})
-    const out = await awaitTxHashWithGrace(promise)
-    const elapsed = Date.now() - start
-    expect(out).toBeNull()
-    expect(elapsed).toBeGreaterThanOrEqual(2_500)
-    expect(elapsed).toBeLessThanOrEqual(4_000)
-  }, 10_000)
+  it('defaults to TX_HASH_GRACE_MS (15s) when grace not specified (#117)', async () => {
+    // The default was raised 3s → 15s so dns_tx_hash populates more often
+    // when Toncenter lags TONAPI. Assert the constant + that an
+    // already-settled promise returns immediately (no real 15s wait here).
+    expect(TX_HASH_GRACE_MS).toBe(15_000)
+    const out = await awaitTxHashWithGrace(Promise.resolve('0xabc'))
+    expect(out).toBe('0xabc')
+  })
 })
 
 describe('buildVerifyingEvent', () => {

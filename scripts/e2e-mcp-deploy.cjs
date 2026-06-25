@@ -31,8 +31,12 @@
  *         from env).
  *     Calls mesh_deploy on test/fixtures/minimal-site against
  *     E2E_MAINNET_DOMAIN (optional). Asserts the deploy reaches a `done`
- *     payload with a bag_id; if a domain was given, asserts a non-null
- *     dns_tx_hash.
+ *     payload with a bag_id; if a domain was given, asserts the DNS write
+ *     LANDED ON-CHAIN by re-resolving the domain via TONAPI and checking
+ *     `storage` == bag_id — NOT by requiring a non-null dns_tx_hash (that
+ *     field is best-effort and is legitimately null when Toncenter's tx
+ *     index lags the TONAPI DNS poll; gating on it false-FAILed a
+ *     fully-successful mainnet deploy on 2026-06-25, see #117).
  *
  *   Stage 3 — CANCELLATION, only when `E2E_AUTO_SIGN=1` AND
  *     `E2E_CANCEL=1`: starts a deploy, sends notifications/cancelled
@@ -43,6 +47,10 @@
  *     hygiene, not on a response frame.)
  *
  * Exit 0 = pass OR gracefully-skipped. Exit 1 = a real failure.
+ * Exit 2 = BLOCKED: with a domain set, the deploy reached `done` but
+ * TONAPI could not independently confirm storage==bag_id within the
+ * window — not a clean pass, not a hard fail (do not green a release on
+ * it). "PASS (full E2E)" therefore requires TONAPI to confirm the bag.
  */
 
 const { spawn, execSync } = require('node:child_process')
@@ -51,7 +59,11 @@ const path = require('node:path')
 const SERVER_PATH = path.resolve(__dirname, '..', 'dist', 'mcp.js')
 const FIXTURE_DIR = path.resolve(__dirname, '..', 'test', 'fixtures', 'minimal-site')
 const HANDSHAKE_TIMEOUT_MS = 10_000
-const DEPLOY_TIMEOUT_MS = 5 * 60_000 // mainnet deploy: upload + DNS confirm
+// Must exceed the SDK's internal max: the storage-record DNS poll runs up
+// to 5 min (pollDnsRecord) + the tx-hash grace (TX_HASH_GRACE_MS, 15s) +
+// bag-upload headroom. The prior 5-min value equalled the SDK poll exactly,
+// so a slow-but-successful deploy could race this await (Codex P2 / #117).
+const DEPLOY_TIMEOUT_MS = 7 * 60_000
 
 const AGENTIC = process.env.E2E_AUTO_SIGN === '1'
 const TONCONNECT = process.env.E2E_TONCONNECT === '1'
@@ -193,6 +205,101 @@ function renderSigningUrl(url) {
   log('')
 }
 
+/**
+ * Resolve a `.ton` domain's TON Storage DNS record via TONAPI, returning
+ * the bag id (lowercased hex) or null on any error / not-yet-propagated.
+ * This is the GROUND-TRUTH check the deploy gate uses instead of trusting
+ * the best-effort `dns_tx_hash` field (#117).
+ */
+async function tonapiResolveStorage(domain) {
+  // Mirror the SDK's shorthand normalization (src/sdk/site-record.ts:53 /
+  // status.ts:141): a bare `myname` is deployed to `myname.ton`, so the
+  // post-check must resolve the SAME `.ton` form or it would false-BLOCK a
+  // successful paid deploy. Lowercase first so a cased suffix like
+  // `example.TON` normalizes to `example.ton`, not `example.TON.ton` —
+  // TON DNS is case-insensitive and TONAPI resolves lowercased (Codex P2).
+  const d = String(domain).toLowerCase()
+  const cleanDomain = d.endsWith('.ton') ? d : `${d}.ton`
+  const ctrl = new AbortController()
+  // 8s per fetch keeps the bounded post-check (≤4 tries) well inside the
+  // remaining harness budget after a worst-case 5-min mesh_deploy (Codex P2).
+  const timer = setTimeout(() => ctrl.abort(), 8_000)
+  try {
+    const r = await fetch(`https://tonapi.io/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`, {
+      headers: { accept: 'application/json' },
+      signal: ctrl.signal,
+    })
+    if (!r.ok) return null
+    const j = await r.json()
+    return typeof j.storage === 'string' && j.storage ? j.storage.toLowerCase() : null
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * Poll TONAPI until its `storage` record MATCHES the expected bag, or the
+ * window expires. The SDK's own propagation poll already saw the match
+ * before it yielded `done`, but a load-balanced TONAPI backend can briefly
+ * serve a STALE previous bag afterward — so we poll for the match rather
+ * than trust the first non-empty read (which would re-introduce the
+ * false-negative this fix removes; Codex P2). Returns the match flag plus
+ * the last value seen (for diagnostics).
+ */
+async function pollTonapiStorageMatch(domain, expectedBag, tries, intervalMs) {
+  const want = String(expectedBag || '').toLowerCase()
+  let lastStorage = null
+  for (let i = 0; i < tries; i++) {
+    const storage = await tonapiResolveStorage(domain)
+    if (storage) lastStorage = storage
+    if (storage && storage === want) return { matched: true, lastStorage: storage }
+    if (i < tries - 1) await wait(intervalMs)
+  }
+  return { matched: false, lastStorage }
+}
+
+/**
+ * Pure verdict: did the `.ton` DNS write land? Gated on TONAPI ground
+ * truth — whether TONAPI resolved the domain's `storage` to the deployed
+ * bag within the poll window (`tonapiMatched`). `dns_tx_hash` /
+ * `next_actions` are only a fallback when TONAPI never confirmed, so an
+ * indexer-lag null hash never reads as FAIL. A non-matching / stale /
+ * unreachable TONAPI read is BLOCKED, never FAIL: the SDK already
+ * confirmed landing before it yielded `done` (it throws otherwise), so a
+ * reached-`done` deploy is never grounds for FAIL — only "could not
+ * independently re-confirm". FAIL is reserved for the degenerate case of
+ * no DNS-write evidence at all. Exported for unit tests. See #117.
+ *
+ * @returns { verdict: 'PASS' | 'FAIL' | 'BLOCKED', reason: string }
+ */
+function assessDnsLanding({ domain, result, tonapiMatched, lastStorage }) {
+  if (!domain) {
+    return { verdict: 'PASS', reason: 'storage-only deploy; no DNS record to verify' }
+  }
+  const bag = String((result && result.bag_id) || '').toLowerCase()
+  if (tonapiMatched) {
+    return { verdict: 'PASS', reason: `TONAPI resolve storage == bag_id (${bag.slice(0, 12)}…)` }
+  }
+  // TONAPI did not confirm the new bag within the window (lag, stale
+  // backend, or unreachable). Fall back to the SDK's own success signal:
+  // reaching `done` with a DNS-write pointer means its propagation poll
+  // already succeeded.
+  const actions = result && Array.isArray(result.next_actions) ? result.next_actions : []
+  const dnsSubmitted =
+    !!(result && result.dns_tx_hash) ||
+    actions.some((a) => /DNS write (confirmed|submitted)/i.test((a && a.description) || ''))
+  if (dnsSubmitted) {
+    const seen = lastStorage ? `last TONAPI storage=${String(lastStorage).slice(0, 12)}…` : 'TONAPI unreachable'
+    return {
+      verdict: 'BLOCKED',
+      reason: `deploy reached done with a DNS-write pointer, but TONAPI did not confirm storage==bag_id within the window (${seen})`,
+    }
+  }
+  return { verdict: 'FAIL', reason: 'no TONAPI confirmation and no DNS-write pointer in deploy result' }
+}
+
 async function stage2Deploy(srv, checkEnv) {
   const wallet = TONCONNECT
     ? { kind: 'tonconnect', connector: 'Tonkeeper' }
@@ -257,10 +364,28 @@ async function stage2Deploy(srv, checkEnv) {
   if (!sc || typeof sc.bag_id !== 'string' || !sc.bag_id) {
     throw new Error(`deploy result missing bag_id: ${JSON.stringify(res.result).slice(0, 400)}`)
   }
-  if (DOMAIN && (sc.dns_tx_hash === null || sc.dns_tx_hash === undefined)) {
-    throw new Error(`deploy with domain=${DOMAIN} but dns_tx_hash is null — DNS write did not land`)
-  }
   log(`Stage 2: deploy DONE — bag_id=${sc.bag_id} dns_tx_hash=${sc.dns_tx_hash ?? '(none)'} seed_status=${sc.seed_status}`)
+
+  if (!DOMAIN) return 'PASS'
+
+  // Gate on GROUND TRUTH (TONAPI resolve `storage` == bag_id), NOT on a
+  // non-null dns_tx_hash. A null hash on an otherwise-`done` deploy still
+  // means the change_dns_record landed — the old non-null assertion
+  // false-FAILed a fully-successful mainnet deploy on 2026-06-25 (#117).
+  // Bounded budget: ≤4 tries × (8s fetch + 3s gap) ≈ 41s worst case, so a
+  // worst-case 5-min mesh_deploy + this post-check stays under the gated
+  // harness timeout in test/mcp-e2e.test.ts (raised to 8 min) (Codex P2).
+  const { matched, lastStorage } = await pollTonapiStorageMatch(DOMAIN, sc.bag_id, 4, 3_000)
+  const { verdict, reason } = assessDnsLanding({ domain: DOMAIN, result: sc, tonapiMatched: matched, lastStorage })
+  log(`Stage 2: DNS landing ${verdict} — ${reason}`)
+  if (verdict === 'FAIL') {
+    throw new Error(`deploy with domain=${DOMAIN}: DNS write did not land — ${reason}`)
+  }
+  // PASS (TONAPI confirmed the bag) or BLOCKED (reached `done` but TONAPI
+  // never confirmed) bubble up to main(): BLOCKED must NOT print
+  // "PASS (full E2E)" (Codex P2 — BLOCKED ≠ PASS), so the gate only greens
+  // a domain deploy when TONAPI independently confirms storage==bag_id.
+  return verdict
 }
 
 async function stage3Cancel() {
@@ -333,7 +458,7 @@ async function main() {
     return
   }
 
-  await stage2Deploy(srv, checkEnv)
+  const dnsVerdict = await stage2Deploy(srv, checkEnv)
   try {
     srv.child.kill()
   } catch {
@@ -345,10 +470,26 @@ async function main() {
   } else {
     log('Stage 3 SKIPPED (set E2E_CANCEL=1 to run the cancellation hygiene check).')
   }
+
+  if (dnsVerdict === 'BLOCKED') {
+    log(
+      'BLOCKED (exit 2) — deploy reached `done` but TONAPI could not independently ' +
+        'confirm storage==bag_id within the window; this is NOT a clean PASS. ' +
+        'Re-run, or check TONAPI availability / the domain on tonviewer.',
+    )
+    process.exitCode = 2
+    return
+  }
   log('PASS (full E2E).')
 }
 
-main().catch((err) => {
-  process.stderr.write(`E2E FAILED: ${err instanceof Error ? err.message : String(err)}\n`)
-  process.exit(1)
-})
+if (require.main === module) {
+  main().catch((err) => {
+    process.stderr.write(`E2E FAILED: ${err instanceof Error ? err.message : String(err)}\n`)
+    process.exit(1)
+  })
+}
+
+// Exported for unit tests (test/e2e-dns-landing.test.ts). The `require.main`
+// guard above keeps `main()` from running when this file is `require`d.
+module.exports = { assessDnsLanding }
