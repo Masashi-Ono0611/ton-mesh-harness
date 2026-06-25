@@ -111,6 +111,9 @@ const DOMAIN = process.env.E2E_MAINNET_DOMAIN || null
 // content. A storage-only deploy (the mesh_deploy default) has no site record,
 // so this emits BLOCKED, never PASS — it cannot render via ton.run.
 const VERIFY_RENDER = process.env.E2E_VERIFY_RENDER === '1'
+// Force a fresh TonConnect pairing (QR) by clearing any cached session at
+// startup, so a restored session doesn't silently skip the QR. (#131)
+const FRESH_PAIR = process.env.E2E_FRESH_PAIR === '1'
 
 function send(child, msg) {
   child.stdin.write(JSON.stringify(msg) + '\n')
@@ -392,9 +395,19 @@ async function stage2Deploy(srv, checkEnv) {
     for (const p of progs.slice(lastProgressSeen)) {
       log(`  progress: ${p.params?.message ?? ''}`)
       const url = p.params?._meta?.data?.signing_url
-      if (url && !signingUrlShown && !String(url).includes('restored-session')) {
+      if (url && !signingUrlShown) {
         signingUrlShown = true
-        renderSigningUrl(url)
+        if (String(url).includes('restored-session')) {
+          // A cached TonConnect pairing was reused — connect() restored it, so
+          // no QR is drawn and the tx request is pushed to the already-paired
+          // Tonkeeper instead. Without this message the run just looks hung
+          // (the operator waits for a QR that never comes). (#131)
+          log('  AWAITING SIGNATURE — reusing a paired Tonkeeper session (no QR drawn).')
+          log('  → Approve the request IN your Tonkeeper app. To force a fresh QR,')
+          log('    delete ~/.ton-mesh/tonconnect.json (or run with E2E_FRESH_PAIR=1).')
+        } else {
+          renderSigningUrl(url)
+        }
       }
     }
     lastProgressSeen = progs.length
@@ -415,6 +428,7 @@ async function stage2Deploy(srv, checkEnv) {
     throw new Error(`deploy result missing bag_id: ${JSON.stringify(res.result).slice(0, 400)}`)
   }
   log(`Stage 2: deploy DONE — bag_id=${sc.bag_id} dns_tx_hash=${sc.dns_tx_hash ?? '(none)'} seed_status=${sc.seed_status}`)
+  lastSeedStatus = sc.seed_status ?? null // for the VERDICT seed qualifier (#133)
 
   if (!DOMAIN) return 'PASS'
 
@@ -438,6 +452,17 @@ async function stage2Deploy(srv, checkEnv) {
     .map((a) => a && a.description)
     .find((desc) => typeof desc === 'string' && /browser-openable|site \(ADNL\) record/i.test(desc))
   if (viewHint) log(`Stage 2: viewability — ${viewHint}`)
+  // Surface WHY dns_tx_hash may be null (the SDK emits a BOC / message-hash
+  // fallback or a throttle/API-key hint as a next_action). Without this, the
+  // `dns_tx_hash=(none)` line above reads as a silent dead-end. (#132)
+  const txHint = (Array.isArray(sc.next_actions) ? sc.next_actions : [])
+    .map((a) => a && a.description)
+    .find(
+      (desc) =>
+        typeof desc === 'string' &&
+        /signed-message boc|normalized message hash|dns_tx_hash|tx hash resolve/i.test(desc),
+    )
+  if (txHint) log(`Stage 2: dns-tx — ${txHint}`)
 
   // PASS (TONAPI confirmed the bag) or BLOCKED (reached `done` but TONAPI
   // never confirmed) bubble up to main(): BLOCKED must NOT print
@@ -552,6 +577,12 @@ async function stage3Cancel() {
 // with no `stages=` breakdown (#122 / Codex P2). The in-progress stage is
 // `RUNNING`; the catch rewrites it to `FAIL`.
 let lastStages = 'stage1:RUNNING'
+// Seed status of the deployed bag, captured from the deploy result so the
+// machine-readable VERDICT line can carry it. A `verdict=PASS` only means the
+// DNS record landed — NOT that the content is being served; `seed=stopped`
+// tells a downstream consumer the bag is currently un-seeded / not retrievable
+// (the e2e uses keep_alive:false by design). null until a deploy runs. (#133)
+let lastSeedStatus = null
 
 /**
  * Emit the single machine-readable verdict line (#122). One grep-able line so
@@ -562,9 +593,13 @@ let lastStages = 'stage1:RUNNING'
  *   scope:   stage1-only | full-e2e
  *   stages:  comma list like `stage1:PASS,stage2:BLOCKED,render:SKIP,stage3:SKIP`
  */
-function emitVerdict({ verdict, scope, stages, detail }) {
+function emitVerdict({ verdict, scope, stages, detail, seed }) {
   let line = `VERDICT verdict=${verdict} scope=${scope}`
   if (stages) line += ` stages=${stages}`
+  // Seed/retrievability qualifier (#133): a PASS gates on the DNS record
+  // landing, never on the content being served. Surfacing seed=<status> keeps
+  // a machine consumer from reading `verdict=PASS` as "live and fetchable".
+  if (seed) line += ` seed=${seed} retrievable=unverified`
   // Collapse CR/LF (e.g. the Stage 3 leak list is newline-joined) + quotes so
   // the verdict stays a single grep-able line (#122 / Codex P2).
   if (detail) line += ` detail="${String(detail).replace(/[\r\n]+/g, '; ').replace(/"/g, "'")}"`
@@ -573,6 +608,17 @@ function emitVerdict({ verdict, scope, stages, detail }) {
 
 async function main() {
   prepareSourceDir()
+  if (FRESH_PAIR) {
+    // Clear any cached TonConnect pairing so connect() does a FRESH pairing and
+    // renders a QR, instead of restoring a session and silently skipping it.
+    // Path mirrors getTonConnectStoragePath() in src/wallet/constants.ts. (#131)
+    try {
+      fs.rmSync(path.join(os.homedir(), '.ton-mesh', 'tonconnect.json'), { force: true })
+      log('E2E_FRESH_PAIR=1 — cleared cached TonConnect session; a fresh QR will be drawn.')
+    } catch {
+      /* best-effort */
+    }
+  }
   lastStages = 'stage1:RUNNING'
   const srv = spawnServer()
   await handshake(srv)
@@ -630,11 +676,11 @@ async function main() {
       .filter(Boolean)
       .join(' + ')
     log(`BLOCKED (exit 2) — ${which}; this is NOT a clean PASS. See the stage logs above.`)
-    emitVerdict({ verdict: 'BLOCKED', scope: 'full-e2e', stages, detail: which })
+    emitVerdict({ verdict: 'BLOCKED', scope: 'full-e2e', stages, detail: which, seed: lastSeedStatus })
     process.exitCode = 2
     return
   }
-  emitVerdict({ verdict: 'PASS', scope: 'full-e2e', stages })
+  emitVerdict({ verdict: 'PASS', scope: 'full-e2e', stages, seed: lastSeedStatus })
 }
 
 if (require.main === module) {
@@ -650,6 +696,7 @@ if (require.main === module) {
       scope: 'e2e',
       stages: lastStages.replace(/RUNNING/g, 'FAIL'),
       detail: msg.slice(0, 200),
+      seed: lastSeedStatus,
     })
     process.exit(1)
   })
