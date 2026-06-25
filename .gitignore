@@ -11,8 +11,11 @@ dist/
 examples/*/out/
 examples/*/.next/
 examples/*/.astro/
-# provenance manifest written at deploy time
+# provenance manifest written at deploy time (a domain deploy injects
+# .well-known/ton-deploy.json into source_dir). The e2e driver deploys from a
+# tmp copy (#121), but cover the committed fixtures too as belt-and-suspenders.
 examples/*/.well-known/
+test/fixtures/*/.well-known/
 
 # OS / editor / agent metadata — never belongs in the repo
 .DS_Store
