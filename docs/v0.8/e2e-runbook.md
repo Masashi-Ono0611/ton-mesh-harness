@@ -66,6 +66,10 @@ E2E_AUTO_SIGN=1 \
 E2E_MAINNET_DOMAIN=yourname.ton \
 TON_CONFIG_PATH=$HOME/.config/ton/config.json \
   node scripts/e2e-mcp-deploy.cjs
+
+# ...add E2E_VERIFY_RENDER=1 to also check the site renders (see §1.8):
+E2E_VERIFY_RENDER=1 E2E_AUTO_SIGN=1 E2E_MAINNET_DOMAIN=yourname.ton \
+  node scripts/e2e-mcp-deploy.cjs
 ```
 
 The MCP client config a real agent would use (per
@@ -136,6 +140,27 @@ ps -A -o pid,command | grep -E 'tonutils-storage|storage-daemon' | grep -v grep
 - **Domain re-use**: a `.ton` domain's storage record is simply
   overwritten by the next deploy — no release step needed. Re-running
   against the same domain just points it at the new bag.
+
+### 1.8 Render confirmation & storage-only viewability (#118)
+
+A green gate proves the on-chain DNS write landed + the MCP surface works —
+**not** that the site renders in a browser. `mesh_deploy` writes only the
+**storage** (bag) DNS record, not a **site** (ADNL) record, so `<domain>.ton`
+is **NOT** browser-openable via the `ton.run` RLDP gateway (it 404s); a
+storage-only domain renders only in a TON-DNS-native client (MyTonWallet /
+Tonkeeper in-app TON Browser) while a reachable node seeds the bag. The deploy
+result's `next_actions` now carries this breadcrumb (with the would-be
+`<domain>.ton.run` URL), and the driver logs it as `Stage 2: viewability — …`.
+
+To get a browser-openable URL, set a site record via `mesh_site_record` (point
+the domain at a resident `rldp-http-proxy` ADNL) and run a public gateway
+(`--site-auto --daemon-mode service`; see the `ton-mesh-host` runbook).
+
+Opt-in `E2E_VERIFY_RENDER=1` adds **Stage 2b**: if the domain has a site
+record, it fetches the `ton.run` gateway URL, asserts HTTP 200, and prints the
+URL for you to open and **confirm the rendered content**. For a storage-only
+deploy (no site record) it emits **BLOCKED** (exit 2), never PASS — it cannot
+render via `ton.run`.
 
 ---
 

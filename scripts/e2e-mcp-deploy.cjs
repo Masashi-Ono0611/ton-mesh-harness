@@ -38,6 +38,13 @@
  *     index lags the TONAPI DNS poll; gating on it false-FAILed a
  *     fully-successful mainnet deploy on 2026-06-25, see #117).
  *
+ *   Stage 2b — RENDER CONFIRM, opt-in via `E2E_VERIFY_RENDER=1` (needs a
+ *     domain): checks whether the domain has a site (ADNL) record and, if
+ *     so, fetches its ton.run gateway URL, asserts HTTP 200, and prints the
+ *     URL for the human to open and confirm the rendered content. A
+ *     storage-only deploy (the mesh_deploy default) has no site record and
+ *     is not browser-openable, so this emits BLOCKED, never PASS (#118).
+ *
  *   Stage 3 — CANCELLATION, only when `E2E_AUTO_SIGN=1` AND
  *     `E2E_CANCEL=1`: starts a deploy, sends notifications/cancelled
  *     mid-flight, then asserts no leaked daemon process matching
@@ -47,10 +54,12 @@
  *     hygiene, not on a response frame.)
  *
  * Exit 0 = pass OR gracefully-skipped. Exit 1 = a real failure.
- * Exit 2 = BLOCKED: with a domain set, the deploy reached `done` but
- * TONAPI could not independently confirm storage==bag_id within the
- * window — not a clean pass, not a hard fail (do not green a release on
- * it). "PASS (full E2E)" therefore requires TONAPI to confirm the bag.
+ * Exit 2 = BLOCKED: an observation could not be confirmed — the deploy
+ * reached `done` but TONAPI could not confirm storage==bag_id within the
+ * window, and/or (with E2E_VERIFY_RENDER) the site did not serve HTTP 200.
+ * Not a clean pass, not a hard fail (do not green a release on it):
+ * "PASS (full E2E)" requires TONAPI to confirm the bag and any armed
+ * render check to pass.
  */
 
 const { spawn, execSync } = require('node:child_process')
@@ -70,6 +79,12 @@ const TONCONNECT = process.env.E2E_TONCONNECT === '1'
 const ARMED = AGENTIC || TONCONNECT
 const CANCEL = process.env.E2E_CANCEL === '1'
 const DOMAIN = process.env.E2E_MAINNET_DOMAIN || null
+// Opt-in render confirmation (#118): after a domain deploy, check whether the
+// domain has a site (ADNL) record and, if so, fetch its ton.run gateway URL,
+// assert HTTP 200, and surface the URL for the human to confirm the rendered
+// content. A storage-only deploy (the mesh_deploy default) has no site record,
+// so this emits BLOCKED, never PASS — it cannot render via ton.run.
+const VERIFY_RENDER = process.env.E2E_VERIFY_RENDER === '1'
 
 function send(child, msg) {
   child.stdin.write(JSON.stringify(msg) + '\n')
@@ -206,18 +221,17 @@ function renderSigningUrl(url) {
 }
 
 /**
- * Resolve a `.ton` domain's TON Storage DNS record via TONAPI, returning
- * the bag id (lowercased hex) or null on any error / not-yet-propagated.
- * This is the GROUND-TRUTH check the deploy gate uses instead of trusting
- * the best-effort `dns_tx_hash` field (#117).
+ * Fetch a `.ton` domain's full TONAPI resolve payload (`{ storage, sites, … }`)
+ * or null on any error. Single fetch choke point for both the storage gate
+ * (#117) and the render check (#118).
  */
-async function tonapiResolveStorage(domain) {
+async function tonapiResolveJson(domain) {
   // Mirror the SDK's shorthand normalization (src/sdk/site-record.ts:53 /
-  // status.ts:141): a bare `myname` is deployed to `myname.ton`, so the
-  // post-check must resolve the SAME `.ton` form or it would false-BLOCK a
-  // successful paid deploy. Lowercase first so a cased suffix like
-  // `example.TON` normalizes to `example.ton`, not `example.TON.ton` —
-  // TON DNS is case-insensitive and TONAPI resolves lowercased (Codex P2).
+  // status.ts:141): a bare `myname` is deployed to `myname.ton`, so we must
+  // resolve the SAME `.ton` form or it would false-BLOCK a successful paid
+  // deploy. Lowercase first so a cased suffix like `example.TON` normalizes to
+  // `example.ton`, not `example.TON.ton` — TON DNS is case-insensitive and
+  // TONAPI resolves lowercased (Codex P2).
   const d = String(domain).toLowerCase()
   const cleanDomain = d.endsWith('.ton') ? d : `${d}.ton`
   const ctrl = new AbortController()
@@ -230,13 +244,23 @@ async function tonapiResolveStorage(domain) {
       signal: ctrl.signal,
     })
     if (!r.ok) return null
-    const j = await r.json()
-    return typeof j.storage === 'string' && j.storage ? j.storage.toLowerCase() : null
+    return await r.json()
   } catch {
     return null
   } finally {
     clearTimeout(timer)
   }
+}
+
+/**
+ * Resolve a `.ton` domain's TON Storage DNS record via TONAPI, returning
+ * the bag id (lowercased hex) or null on any error / not-yet-propagated.
+ * This is the GROUND-TRUTH check the deploy gate uses instead of trusting
+ * the best-effort `dns_tx_hash` field (#117).
+ */
+async function tonapiResolveStorage(domain) {
+  const j = await tonapiResolveJson(domain)
+  return j && typeof j.storage === 'string' && j.storage ? j.storage.toLowerCase() : null
 }
 
 /**
@@ -381,11 +405,67 @@ async function stage2Deploy(srv, checkEnv) {
   if (verdict === 'FAIL') {
     throw new Error(`deploy with domain=${DOMAIN}: DNS write did not land — ${reason}`)
   }
+  // Surface the storage-vs-site viewability breadcrumb the SDK now emits
+  // (#118) so the operator sees where/how the site can be viewed — or why a
+  // storage-only deploy is not browser-openable yet, plus the would-be URL.
+  const viewHint = (Array.isArray(sc.next_actions) ? sc.next_actions : [])
+    .map((a) => a && a.description)
+    .find((desc) => typeof desc === 'string' && /browser-openable|site \(ADNL\) record/i.test(desc))
+  if (viewHint) log(`Stage 2: viewability — ${viewHint}`)
+
   // PASS (TONAPI confirmed the bag) or BLOCKED (reached `done` but TONAPI
   // never confirmed) bubble up to main(): BLOCKED must NOT print
   // "PASS (full E2E)" (Codex P2 — BLOCKED ≠ PASS), so the gate only greens
   // a domain deploy when TONAPI independently confirms storage==bag_id.
   return verdict
+}
+
+/**
+ * Opt-in render confirmation (#118): does the deployed `.ton` site actually
+ * serve content a human can view? A mesh_deploy writes only the STORAGE
+ * record, so by default the domain has no site (ADNL) record and is NOT
+ * browser-openable via the ton.run RLDP gateway — that case is BLOCKED (not
+ * FAIL), with a hint to set a site record. When a site record DOES exist we
+ * fetch its ton.run gateway URL, assert HTTP 200, and print the URL for the
+ * human to open and confirm the rendered content.
+ *
+ * @returns { verdict: 'PASS' | 'BLOCKED', reason: string }
+ */
+async function stage2bRenderConfirm(domain) {
+  log('Stage 2b: render confirmation (E2E_VERIFY_RENDER=1)')
+  // Gate on the gateway's ACTUAL response (ground truth), NOT on TONAPI's
+  // flaky `sites` array: a domain with a site record can show empty/stale
+  // `sites` yet still serve HTTP 200 (Codex P2). `sites` is consulted only as
+  // a non-authoritative hint when the fetch fails. URL mirrors
+  // src/sdk/endpoints.ts siteGatewayUrl (ton.run is mainnet-only).
+  const d = String(domain).toLowerCase()
+  const gatewayUrl = `https://${d.endsWith('.ton') ? d : `${d}.ton`}.run`
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), 15_000)
+  let status = 0
+  try {
+    const r = await fetch(gatewayUrl, { signal: ctrl.signal, redirect: 'follow' })
+    status = r.status
+  } catch (err) {
+    log(`Stage 2b: gateway fetch error: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    clearTimeout(timer)
+  }
+  if (status === 200) {
+    log(`Stage 2b: RENDER OK — gateway ${gatewayUrl} returned HTTP 200.`)
+    log(`Stage 2b: 👉 Open ${gatewayUrl} in your browser / TON Browser and CONFIRM the page shows your content.`)
+    return { verdict: 'PASS', reason: `gateway ${gatewayUrl} HTTP 200` }
+  }
+  // Non-200 → add the TONAPI `sites` read as a hint (not the gate) to explain
+  // the likely cause: storage-only (no site record) vs proxy still settling.
+  const resolved = await tonapiResolveJson(domain)
+  const sites = resolved && Array.isArray(resolved.sites) ? resolved.sites : []
+  const hint =
+    sites.length === 0
+      ? ' TONAPI shows no site (ADNL) record — likely a storage-only deploy; set one via mesh_site_record + run a gateway.'
+      : ' TONAPI shows a site record, so the rldp-http-proxy may still be settling or be unreachable.'
+  log(`Stage 2b: BLOCKED — gateway ${gatewayUrl} returned HTTP ${status || 'no-response'}.${hint}`)
+  return { verdict: 'BLOCKED', reason: `gateway ${gatewayUrl} HTTP ${status || 'no-response'}` }
 }
 
 async function stage3Cancel() {
@@ -465,18 +545,29 @@ async function main() {
     /* ignore */
   }
 
+  // Stage 2b — opt-in render confirmation (#118). Uses TONAPI + the gateway
+  // over HTTP, so it runs after the MCP server is torn down.
+  let renderVerdict = 'PASS'
+  if (VERIFY_RENDER && DOMAIN) {
+    renderVerdict = (await stage2bRenderConfirm(DOMAIN)).verdict
+  } else if (VERIFY_RENDER && !DOMAIN) {
+    log('Stage 2b SKIPPED — E2E_VERIFY_RENDER=1 needs E2E_MAINNET_DOMAIN to check a site record.')
+  }
+
   if (CANCEL) {
     await stage3Cancel()
   } else {
     log('Stage 3 SKIPPED (set E2E_CANCEL=1 to run the cancellation hygiene check).')
   }
 
-  if (dnsVerdict === 'BLOCKED') {
-    log(
-      'BLOCKED (exit 2) — deploy reached `done` but TONAPI could not independently ' +
-        'confirm storage==bag_id within the window; this is NOT a clean PASS. ' +
-        'Re-run, or check TONAPI availability / the domain on tonviewer.',
-    )
+  if (dnsVerdict === 'BLOCKED' || renderVerdict === 'BLOCKED') {
+    const which = [
+      dnsVerdict === 'BLOCKED' ? 'DNS landing (TONAPI could not confirm storage==bag_id)' : null,
+      renderVerdict === 'BLOCKED' ? 'render (gateway did not serve HTTP 200)' : null,
+    ]
+      .filter(Boolean)
+      .join(' + ')
+    log(`BLOCKED (exit 2) — ${which}; this is NOT a clean PASS. See the stage logs above.`)
     process.exitCode = 2
     return
   }
