@@ -44,6 +44,9 @@ describe.skipIf(!RUN)('MCP E2E (gated by RUN_MCP_E2E=1)', () => {
       )
       expect(stdout).toMatch(/PASS/)
     },
-    6 * 60_000,
+    // 9 min: a worst-case mesh_deploy (DEPLOY_TIMEOUT_MS = 7 min) + the
+    // bounded TONAPI landing post-check (≤~41s) + handshake must finish
+    // before Vitest kills an armed run (#117).
+    9 * 60_000,
   )
 })

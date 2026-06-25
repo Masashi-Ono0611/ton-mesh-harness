@@ -9,10 +9,14 @@
  * rather than throwing — the caller decides whether to surface null
  * with a fix-hint or wait longer.
  *
- * Toncenter's tx index typically catches up within ~5-15s of broadcast
- * acceptance, well before TONAPI's DNS-record poll succeeds, so the
- * resolve runs in parallel with the propagation poll and adds zero
- * latency to the happy path.
+ * Toncenter's tx index OFTEN catches up within ~5-15s of broadcast, but
+ * NOT always before TONAPI's DNS-record poll succeeds: on 2026-06-25 a
+ * live mainnet deploy saw TONAPI propagate the storage record FIRST, so
+ * the resolve had not finished when the DNS poll returned (#117). The
+ * resolve runs in parallel with the propagation poll and adds latency
+ * only when still pending at the grace cutoff (`TX_HASH_GRACE_MS` in
+ * dns-helpers.ts). Because the order is not guaranteed, `dns_tx_hash` is
+ * best-effort and may be null even on a fully-successful deploy.
  *
  * Spec: docs/v0.8/mcp-core-requirements.md §F2 (DeployResult.dns_tx_hash).
  *

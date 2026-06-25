@@ -194,18 +194,34 @@ export function kickoffTxHashResolve(args: {
 }
 
 /**
- * After TONAPI confirms DNS propagation, give the tx-hash resolver
- * a short grace period. Returns whatever it has at the cutoff (real
- * hash, or null if Toncenter is still lagging beyond the grace).
+ * Default grace the deploy waits for the parallel Toncenter tx-hash
+ * resolver AFTER TONAPI confirms DNS propagation. Raised from 3s → 15s
+ * (#117): when TONAPI propagates the storage record BEFORE Toncenter
+ * indexes the tx — the inverse of the order `resolve-tx.ts` once assumed —
+ * a 3s grace expired and left `dns_tx_hash` null on fully-successful
+ * deploys. 15s lets Toncenter catch up in the common lagging case while
+ * only ever adding latency to that case (the happy path returns early the
+ * moment the resolver settles). It cannot eliminate the race, so the
+ * tx-hash field stays best-effort / nullable by contract.
+ */
+export const TX_HASH_GRACE_MS = 15_000
+
+/**
+ * After TONAPI confirms DNS propagation, give the tx-hash resolver a grace
+ * period. Returns whatever it has at the cutoff (real hash, or null if
+ * Toncenter is still lagging beyond the grace).
  */
 export function awaitTxHashWithGrace(
   resolvePromise: Promise<string | null>,
-  graceMs = 3_000,
+  graceMs = TX_HASH_GRACE_MS,
 ): Promise<string | null> {
-  return Promise.race([
-    resolvePromise,
-    new Promise<null>((r) => setTimeout(() => r(null), graceMs)),
-  ])
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const grace = new Promise<null>((r) => {
+    timer = setTimeout(() => r(null), graceMs)
+  })
+  // clearTimeout when the resolver wins so the (now 15s) fallback timer
+  // does NOT keep the Node event loop alive on the happy path (Codex P2).
+  return Promise.race([resolvePromise, grace]).finally(() => clearTimeout(timer))
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

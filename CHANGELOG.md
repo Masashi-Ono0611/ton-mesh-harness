@@ -42,6 +42,22 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
   no-console ESLint gate. npm publish (OIDC trusted publishing) and the Node
   smoke matrix are retained.
 
+### Fixed
+
+- **e2e acceptance gate no longer false-fails a successful on-chain deploy
+  (#117).** The MCP e2e driver (`scripts/e2e-mcp-deploy.cjs`) gated on a
+  non-null `dns_tx_hash`, but that field is best-effort and is legitimately
+  null when Toncenter's tx index lags the TONAPI DNS poll — a fully-successful
+  2026-06-25 mainnet deploy (`change_dns_record` tx landed, TONAPI `storage`
+  == `bag_id`) was reported FAILED. The driver now verifies the write landed
+  on-chain via TONAPI `/v2/dns/<domain>/resolve` (`storage` == `bag_id`)
+  instead of trusting the convenience hash, and the tx-hash grace window
+  (`awaitTxHashWithGrace` default, now `TX_HASH_GRACE_MS`) was raised 3s → 15s
+  so `dns_tx_hash` populates more often when Toncenter lags. The runbook
+  pass-criteria and the `dns_tx_hash` / `resolve-tx` doc comments were
+  corrected to drop the false "Toncenter always indexes before TONAPI
+  propagates" premise.
+
 ## [0.12.0] – 2026-06-22
 
 ### Added
