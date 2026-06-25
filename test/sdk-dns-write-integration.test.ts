@@ -428,4 +428,13 @@ describe('writeDnsRecord (TonConnect) — integration (#117/#119/#120)', () => {
     // The finally{} cleanup must run even on the error path.
     expect(mocks.tcDispose).toHaveBeenCalledTimes(1)
   })
+
+  it('TC-5 — a TonConnect deploy WITH a toncenter_api_key reports resolver_api_key_used:true (#132)', async () => {
+    // Completes the 2×2 matrix: agentic-with-key (scenario 1) / agentic-no-key
+    // (scenario 7) / tonconnect-no-key (TC-1) were covered; this is the
+    // tonconnect-with-key TRUE cell.
+    mocks.pollDnsRecord.mockResolvedValue(true)
+    const { result } = await runGen(writeDnsRecord(TC_OPTS({ toncenter_api_key: 'TEST_KEY' })))
+    expect((result as { resolver_api_key_used: boolean }).resolver_api_key_used).toBe(true)
+  })
 })
