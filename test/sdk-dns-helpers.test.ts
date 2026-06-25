@@ -193,6 +193,25 @@ describe('pollDnsConfirmationOrThrow', () => {
     ).rejects.toMatchObject({ code: 'ERR_CANCELLED' })
   })
 
+  it('surfaces ERR_CANCELLED for a signal-only caller (no checkAborted), not ERR_DNS_TX_TIMEOUT (#135 hardening)', async () => {
+    // A caller that passes `signal` but wires no `checkAborted`: the poller
+    // returns false on abort, so without the decoupled signal fallback this
+    // would wrongly throw ERR_DNS_TX_TIMEOUT. (code-review hardening)
+    dnsMocks.pollDnsRecord.mockResolvedValueOnce(false)
+    const ctrl = new AbortController()
+    ctrl.abort()
+    await expect(
+      pollDnsConfirmationOrThrow({
+        domain: 'foo.ton',
+        bagId: 'bag',
+        siteAdnl: undefined,
+        testnet: false,
+        signal: ctrl.signal,
+        timeoutHint: 'h',
+      }),
+    ).rejects.toMatchObject({ code: 'ERR_CANCELLED' })
+  })
+
   it('threads the abort signal into the pollers (#135)', async () => {
     dnsMocks.pollDnsRecord.mockResolvedValueOnce(true)
     const signal = new AbortController().signal
