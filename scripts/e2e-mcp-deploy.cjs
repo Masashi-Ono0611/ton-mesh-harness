@@ -751,6 +751,12 @@ async function stage3Cancel() {
   // returns a real error frame; a success frame means the deploy COMPLETED
   // despite the cancel. Without this the harness ignored the result and a
   // pre-bag error read as a vacuous PASS (#143).
+  // NOTE on timing: pre-bag errors and "never reached bag" surface fast, well
+  // inside the 3s settle window, so the BLOCKED guards below fire reliably — the
+  // load-bearing #143 wins. A 'completed' frame only appears if the WHOLE deploy
+  // (bag + DNS + broadcast + tx-resolve) finished in ~3s, which a real deploy
+  // never does; the on-chain TONAPI poll further down is the backstop that
+  // catches a slow funded-owner write a failed cancel let land.
   const resultFrame = srv.frames().find((f) => f.id === requestId)
   let deployOutcome = 'cancelled'
   if (resultFrame && resultFrame.result) {
