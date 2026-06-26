@@ -25,7 +25,7 @@ describe('SDK JSON Schemas (V1 snapshot)', () => {
 
   it('ships exactly the GA tools with the kit minor as SCHEMA_VERSION', () => {
     // SCHEMA_VERSION is derived from MESH_HARNESS_VERSION (src/version.ts).
-    // The explicit '0.13.0' lock lives in the "matches MESH_HARNESS_VERSION"
+    // The explicit '0.13.1' lock lives in the "matches MESH_HARNESS_VERSION"
     // test above; here we just confirm it's a semver-shaped string so any
     // future release keeps a valid schema version without double-hardcoding.
     expect(SCHEMA_VERSION).toMatch(/^\d+\.\d+\.\d+/)

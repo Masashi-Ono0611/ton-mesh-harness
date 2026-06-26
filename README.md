@@ -42,7 +42,7 @@ TON already has the infrastructure to fix this. Using it required specialist kno
 
 ## Status
 
-**Latest: v0.13.0** — renamed to `ton-mesh-harness` (formerly `ton-sovereign-deploy`): the package, both bins, the MCP tool names (`mesh_*`), env vars (`MESH_ANNOUNCE_*`), daemon service labels (`ton-mesh.*`), the on-disk session dir (`~/.ton-mesh/`), and the debug namespace (`mesh:*`) all moved off the `sovereign` brand. Pure rebrand — no runtime behaviour changed. See [CHANGELOG](CHANGELOG.md) for the full migration map and prior releases.
+**Latest: v0.13.1** — automated npm publishing restored via OIDC trusted publishing: the first release cut through the `vX.Y.Z`-tag pipeline, with no shippable code change since v0.13.0. That v0.13.0 release was the rename to `ton-mesh-harness` (formerly `ton-sovereign-deploy`): the package, both bins, the MCP tool names (`mesh_*`), env vars (`MESH_ANNOUNCE_*`), daemon service labels (`ton-mesh.*`), the on-disk session dir (`~/.ton-mesh/`), and the debug namespace (`mesh:*`) all moved off the `sovereign` brand — a pure rebrand, no runtime behaviour changed. See [CHANGELOG](CHANGELOG.md) for the full migration map and prior releases.
 
 **Not yet shipped (upstream-blocked):** NAT traversal [#29](https://github.com/Masashi-Ono0611/ton-mesh-harness/issues/29), Payment Network real client [#30](https://github.com/Masashi-Ono0611/ton-mesh-harness/issues/30).
 

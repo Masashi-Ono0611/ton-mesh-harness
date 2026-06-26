@@ -1,6 +1,6 @@
 {
   "name": "ton-mesh-harness",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "TON Mesh Harness — one-command CLI + MCP server to deploy a static site to .ton (TON Storage + .ton DNS + ADNL), self-host first, agent-callable. CLI, MCP server (4 tools), and a programmable SDK on one deploy contract.",
   "main": "./dist/sdk.js",
   "types": "./dist/sdk.d.ts",
