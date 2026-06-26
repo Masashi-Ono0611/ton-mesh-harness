@@ -76,7 +76,6 @@
   .step{border:1px solid var(--line); border-radius:12px; padding:22px 22px 20px; background:var(--bg);}
   .step .st{font-size:17px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px;}
   .step .st .k{color:var(--ton); font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:12px; font-weight:600; letter-spacing:.06em; margin-right:10px;}
-  .step .ver{font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:11px; font-weight:700; color:var(--ton-deep); background:var(--ton-tint); border:1px solid #B9E4F8; border-radius:6px; padding:1px 7px; margin-left:8px; vertical-align:middle;}
   .step .sd{font-size:14.5px; color:var(--muted); line-height:1.55; margin-bottom:15px;}
   .step .sd b{color:var(--ink); font-weight:600;}
   .cmd{background:var(--ink); border-radius:10px; padding:15px 17px; font-family:"Geist Mono",ui-monospace,Menlo,monospace; font-size:12.5px; line-height:1.7; color:#E8F1F8; overflow-x:auto; white-space:pre;}
@@ -263,7 +262,7 @@
       </div>
 
       <div class="step">
-        <div class="st"><span class="k">HOST</span>Keep a .ton site online<span class="ver">v0.13</span></div>
+        <div class="st"><span class="k">HOST</span>Keep a .ton site online</div>
         <div class="sd">Run a resident <b>rldp-http-proxy</b> so <b>mysite.ton</b> opens in <b>TON Browser</b>, handed to launchd / systemd so it survives reboot — with a stable on-chain identity.</div>
         <div class="cmd"><span class="c"># serve the site as an OS service that auto-restarts</span>
 <span class="p">$ </span>npx ton-mesh-harness ./dist <span class="f">--domain</span> mysite.ton \
