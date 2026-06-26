@@ -789,12 +789,17 @@ async function main() {
   }
 
   let stage3Verdict = 'SKIP'
+  // Cause shown in the BLOCKED VERDICT detail — defaults to the on-chain
+  // unobservable case (stage3Cancel), overridden by the no-agentic guard so a
+  // CI triager isn't pointed at TONAPI when the real cause is wallet config.
+  let stage3BlockedReason = 'cancellation (could not confirm the cancelled bag stayed off-chain)'
   if (CANCEL && !checkEnv.wallet_signers_available.includes('agentic')) {
     // Cancellation uses the agentic signer; without a configured agentic wallet
     // the Stage 3 deploy would error before bag-create and the test would look
     // like a vacuous pass. The operator ASKED for cancellation, so this is
     // BLOCKED (couldn't run), not a silent SKIP and not a clean PASS. (#123)
     stage3Verdict = 'BLOCKED'
+    stage3BlockedReason = 'cancellation could not run — no agentic wallet configured (runbook §1.1)'
     log(
       'Stage 3 BLOCKED — cancellation runs through the agentic signer, but no agentic ' +
         'wallet is configured (signers=' +
@@ -815,7 +820,7 @@ async function main() {
     const which = [
       dnsVerdict === 'BLOCKED' ? 'DNS landing (TONAPI could not confirm storage==bag_id)' : null,
       renderVerdict === 'BLOCKED' ? 'render (gateway did not serve HTTP 200)' : null,
-      stage3Verdict === 'BLOCKED' ? 'cancellation (could not confirm the cancelled bag stayed off-chain)' : null,
+      stage3Verdict === 'BLOCKED' ? stage3BlockedReason : null,
     ]
       .filter(Boolean)
       .join(' + ')
