@@ -68,16 +68,25 @@ export function normalizedExternalInHashHex(bocBase64: string): string | null {
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
-    if (signal?.aborted) return resolve()
-    const t = setTimeout(resolve, ms)
-    signal?.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(t)
-        resolve()
-      },
-      { once: true },
-    )
+    if (signal?.aborted) {
+      resolve()
+      return
+    }
+    // Remove the abort listener on the NORMAL timer-fire path too — otherwise it
+    // accumulates one dangling listener per poll iteration (this sleep runs in
+    // resolveTxHashFromMessageHash's ~45-iteration loop), which can trip
+    // AbortSignal's default 10-listener cap with a MaxListenersExceededWarning on
+    // the slow resolve. Mirrors the #135-hardened sleep in src/dns.ts. (#149)
+    let onAbort: (() => void) | undefined
+    const timer = setTimeout(() => {
+      if (onAbort) signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    onAbort = () => {
+      clearTimeout(timer)
+      resolve()
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
   })
 }
 
