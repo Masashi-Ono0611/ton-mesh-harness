@@ -103,7 +103,12 @@ const DEPLOY_TIMEOUT_MS = 7 * 60_000
 const AGENTIC = process.env.E2E_AUTO_SIGN === '1'
 const TONCONNECT = process.env.E2E_TONCONNECT === '1'
 const ARMED = AGENTIC || TONCONNECT
-const CANCEL = process.env.E2E_CANCEL === '1'
+// Run ONLY the Stage 3 cancellation (skip the Stage 2 deploy). A near-zero-gas
+// way to exercise cancellation on mainnet: the cancel fires BEFORE the
+// broadcast, so the agentic wallet never signs or spends — a throwaway,
+// unfunded, non-domain-owning wallet suffices. Implies E2E_CANCEL. (#123)
+const CANCEL_ONLY = process.env.E2E_CANCEL_ONLY === '1'
+const CANCEL = process.env.E2E_CANCEL === '1' || CANCEL_ONLY
 // Target network. Default mainnet (back-compat); E2E_TESTNET=1 routes the
 // deploys + TONAPI reads to testnet (free gas) — used by the #123 agentic
 // cancellation variant so it can exercise a real on-chain flow without
@@ -754,24 +759,54 @@ async function main() {
   }
 
   lastStages = 'stage1:PASS,stage2:RUNNING'
-  const dnsVerdict = await stage2Deploy(srv, checkEnv) // 'PASS' | 'BLOCKED' (FAIL throws)
-  try {
-    srv.child.kill()
-  } catch {
-    /* ignore */
-  }
-
-  // Stage 2b — opt-in render confirmation (#118). Uses TONAPI + the gateway
-  // over HTTP, so it runs after the MCP server is torn down. SKIP unless armed.
+  // Stage 2 (deploy) — skipped under E2E_CANCEL_ONLY so the cancellation can be
+  // exercised on mainnet without a funded, domain-owning wallet (the Stage 3
+  // cancel fires pre-broadcast, so nothing is signed or spent). (#123)
+  let dnsVerdict = 'SKIP'
   let renderVerdict = 'SKIP'
-  if (VERIFY_RENDER && DOMAIN) {
-    renderVerdict = (await stage2bRenderConfirm(DOMAIN)).verdict // 'PASS' | 'BLOCKED'
-  } else if (VERIFY_RENDER && !DOMAIN) {
-    log('Stage 2b SKIPPED — E2E_VERIFY_RENDER=1 needs E2E_MAINNET_DOMAIN to check a site record.')
+  if (CANCEL_ONLY) {
+    log('Stage 2 SKIPPED (E2E_CANCEL_ONLY=1) — running only the Stage 3 cancellation check.')
+    try {
+      srv.child.kill()
+    } catch {
+      /* ignore */
+    }
+  } else {
+    dnsVerdict = await stage2Deploy(srv, checkEnv) // 'PASS' | 'BLOCKED' (FAIL throws)
+    try {
+      srv.child.kill()
+    } catch {
+      /* ignore */
+    }
+
+    // Stage 2b — opt-in render confirmation (#118). Uses TONAPI + the gateway
+    // over HTTP, so it runs after the MCP server is torn down. SKIP unless armed.
+    if (VERIFY_RENDER && DOMAIN) {
+      renderVerdict = (await stage2bRenderConfirm(DOMAIN)).verdict // 'PASS' | 'BLOCKED'
+    } else if (VERIFY_RENDER && !DOMAIN) {
+      log('Stage 2b SKIPPED — E2E_VERIFY_RENDER=1 needs E2E_MAINNET_DOMAIN to check a site record.')
+    }
   }
 
   let stage3Verdict = 'SKIP'
-  if (CANCEL) {
+  // Cause shown in the BLOCKED VERDICT detail — defaults to the on-chain
+  // unobservable case (stage3Cancel), overridden by the no-agentic guard so a
+  // CI triager isn't pointed at TONAPI when the real cause is wallet config.
+  let stage3BlockedReason = 'cancellation (could not confirm the cancelled bag stayed off-chain)'
+  if (CANCEL && !checkEnv.wallet_signers_available.includes('agentic')) {
+    // Cancellation uses the agentic signer; without a configured agentic wallet
+    // the Stage 3 deploy would error before bag-create and the test would look
+    // like a vacuous pass. The operator ASKED for cancellation, so this is
+    // BLOCKED (couldn't run), not a silent SKIP and not a clean PASS. (#123)
+    stage3Verdict = 'BLOCKED'
+    stage3BlockedReason = 'cancellation could not run — no agentic wallet configured (runbook §1.1)'
+    log(
+      'Stage 3 BLOCKED — cancellation runs through the agentic signer, but no agentic ' +
+        'wallet is configured (signers=' +
+        JSON.stringify(checkEnv.wallet_signers_available) +
+        '). Set up ~/.config/ton/config.json (see docs/v0.8/e2e-runbook.md §1.1).',
+    )
+  } else if (CANCEL) {
     lastStages = `stage1:PASS,stage2:${dnsVerdict},render:${renderVerdict},stage3:RUNNING`
     stage3Verdict = await stage3Cancel() // 'PASS' | 'BLOCKED' (FAIL throws)
   } else {
@@ -785,7 +820,7 @@ async function main() {
     const which = [
       dnsVerdict === 'BLOCKED' ? 'DNS landing (TONAPI could not confirm storage==bag_id)' : null,
       renderVerdict === 'BLOCKED' ? 'render (gateway did not serve HTTP 200)' : null,
-      stage3Verdict === 'BLOCKED' ? 'cancellation (could not confirm the cancelled bag stayed off-chain)' : null,
+      stage3Verdict === 'BLOCKED' ? stage3BlockedReason : null,
     ]
       .filter(Boolean)
       .join(' + ')
