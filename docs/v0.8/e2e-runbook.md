@@ -10,12 +10,14 @@ the real agent-native deploy.
 
 > **Note (v0.9):** testnet is now also supported on the MCP/tonutils path —
 > `mesh_deploy` with `testnet:true` starts the daemon with the testnet
-> `--network-config` and writes DNS via testnet endpoints. It needs testnet
-> TON + a testnet `.ton` domain, and bag propagation depends on testnet
-> ADNL liveness (self-host via your own daemon). The earlier "mainnet-only"
-> guard is gone. The legacy `--daemon-backend=ton-core` testnet path (§2)
-> still exists for the C++ backend, but the tonutils/MCP path no longer
-> requires it.
+> `--network-config` and writes DNS via testnet endpoints; the earlier
+> "mainnet-only" guard is gone. **Caveat:** testnet has no readily-obtainable
+> `.ton` domain (only `temp.ton` subdomains via Fift scripting), so any flow
+> that writes a DNS record — including the Stage 3 cancellation gate (§1.6) —
+> runs on **mainnet** today. The `E2E_TESTNET=1` / `E2E_TESTNET_DOMAIN=…`
+> plumbing is reserved for the day testnet `.ton` names become obtainable. The
+> legacy `--daemon-backend=ton-core` testnet path (§2) still exists for the
+> C++ backend, but the tonutils/MCP path no longer requires it.
 
 The automated driver is `scripts/e2e-mcp-deploy.cjs` (a portable `.cjs`,
 matching `scripts/mcp-smoke.cjs` — GNU `timeout` is not on macOS runners).
@@ -43,16 +45,18 @@ is held by `@ton/mcp` in `~/.config/ton/config.json` (or `$TON_CONFIG_PATH`).
    ~1 TON for headroom across a few runs.
 3. Check the balance on https://tonviewer.com (mainnet) by address.
 
-**Testnet variant (recommended for the cancellation check, §1.6).** The Stage 3
-cancellation test is process/on-chain hygiene, not value transfer — run it on
-**testnet** to avoid spending mainnet TON and to keep the agentic signing key
-away from real funds. Choose testnet when setting up the `@ton/mcp` wallet
-(it writes a `network: "testnet"` entry), fund the testnet address from a TON
-testnet faucet (free), and pass `E2E_TESTNET=1` (+ `E2E_TESTNET_DOMAIN=…`).
-**Secret handling is identical on both networks**: the signing seed lives only
-in the `@ton/mcp`-managed `~/.config/ton/config.json` (or `$TON_CONFIG_PATH`);
-never put a raw seed in an env var, `.env`, or shell argument — the driver
-reads the config file the same way the real agent flow does.
+**Stage 3 cancellation does NOT need this funded wallet.** The cancel fires
+before the broadcast, so it runs at near-zero gas with a **throwaway, unfunded,
+non-owner** wallet on mainnet — see §1.6 (it generates that wallet for you).
+Testnet would avoid mainnet gas entirely, but there's no obtainable testnet
+`.ton` domain yet (see the v0.9 note above), so the cancellation gate runs on
+mainnet cancel-only today; `E2E_TESTNET=1` / `E2E_TESTNET_DOMAIN=…` are reserved
+plumbing for when that changes.
+
+**Secret handling:** the signing seed lives only in the `@ton/mcp`-managed
+`~/.config/ton/config.json` (or `$TON_CONFIG_PATH`) — stored in plaintext at
+mode 0600; never put a raw seed in an env var, `.env`, or shell argument. The
+driver reads the config file the same way the real agent flow does.
 
 ### 1.2 Domain
 
@@ -80,6 +84,15 @@ TON_CONFIG_PATH=$HOME/.config/ton/config.json \
 
 # ...add E2E_VERIFY_RENDER=1 to also check the site renders (see §1.8):
 E2E_VERIFY_RENDER=1 E2E_AUTO_SIGN=1 E2E_MAINNET_DOMAIN=yourname.ton \
+  node scripts/e2e-mcp-deploy.cjs
+
+# Human-approved mainnet deploy instead of agentic (no stored key — the driver
+# surfaces a signing URL + terminal QR you approve in Tonkeeper):
+E2E_TONCONNECT=1 E2E_MAINNET_DOMAIN=yourname.ton \
+  node scripts/e2e-mcp-deploy.cjs
+# A restored TonConnect session reconnects silently (no QR). Force a fresh
+# pairing QR by clearing the cached session first (#131):
+E2E_TONCONNECT=1 E2E_FRESH_PAIR=1 E2E_MAINNET_DOMAIN=yourname.ton \
   node scripts/e2e-mcp-deploy.cjs
 ```
 
@@ -128,10 +141,13 @@ The MCP client config a real agent would use (per
 Need an `agentic` signer first (so Stage 1 reports it and Stage 3 can run). For
 the cancel-only path the wallet is never used, so generate a **throwaway,
 unfunded** one in one command (refuses to clobber an existing config; delete it
-after):
+after). **Never send TON to this address** — it's worthless by construction (the
+cancel fires pre-broadcast so it never signs or spends) and its plaintext
+mnemonic is deleted by the `rm`:
 
 ```bash
-node scripts/make-throwaway-agentic-config.cjs   # writes ~/.config/ton/config.json
+bun run build                                    # driver spawns dist/mcp.js (§1.3)
+node scripts/make-throwaway-agentic-config.cjs   # writes ~/.config/ton/config.json (mode 0600)
 # … run the test (below) … then:  rm ~/.config/ton/config.json
 ```
 
@@ -162,26 +178,39 @@ E2E_AUTO_SIGN=1 E2E_CANCEL_ONLY=1 \
 
 Stage 3 starts an **agentic** deploy and sends `notifications/cancelled`
 mid-flight (a human can't sign a deploy that's about to be cancelled, so
-cancellation is inherently the agentic-signing flow — it needs the wallet from
-§1.1, on **testnet** for a free, zero-risk run). Per the MCP cancellation
-contract the `ERR_CANCELLED` *response* is suppressed (`src/mcp.ts` handleDeploy
-F4 caveat), so the assertions are:
+cancellation is inherently the agentic-signing flow — it uses the throwaway
+wallet from above). Per the MCP cancellation contract the `ERR_CANCELLED`
+*response* is suppressed (`src/mcp.ts` handleDeploy F4 caveat), so the assertions
+are:
 
 - **Process hygiene (always)** — no leaked `tonutils-storage` / `storage-daemon`
   process after the cancel.
-- **On-chain prevention (when a domain is set, #123)** — Stage 3 deploys a
-  FRESH bag (a unique marker is appended to the throwaway tmp source so the bag
-  differs from the domain's current storage), cancels BEFORE the broadcast, then
-  reads the domain's `storage` record via TONAPI. The cancelled bag must NOT
-  have become the resolved storage — i.e. the write was prevented.
+- **On-chain non-landing (when a domain is set, #123)** — Stage 3 deploys a
+  FRESH bag (a unique marker is appended to the throwaway tmp source), cancels
+  BEFORE the broadcast, then polls the domain's `storage` record via TONAPI over
+  a settle window: the cancelled bag must NOT become the resolved storage.
+
+  > ⚠️ **What a `cancel-only` PASS actually proves.** With the throwaway,
+  > **unfunded, non-owner** wallet, a `change_dns_record` can never land anyway
+  > (it's owner-gated and needs gas), so this check is **necessary, not
+  > sufficient**: it catches a catastrophic accidental write, but a PASS does NOT
+  > prove cancellation *did* the preventing. What cancel-only genuinely validates
+  > is **daemon hygiene + that the SDK reaches the pre-broadcast abort window**;
+  > the CI-runnable proof that the cancel short-circuits the broadcast lives in
+  > the SDK tests (`sdk-dns-write-integration` / `sdk-deploy-may-have-published`,
+  > #146). A *falsifiable* on-chain prevention proof needs a **funded OWNER**
+  > wallet (so an un-cancelled write would land) — run that separately without
+  > `E2E_CANCEL_ONLY`.
 
 Verdict (`assessCancellation`, exit-coded per #122 — PASS=0, BLOCKED=2, FAIL=1):
-- **PASS** — no leaked daemon AND the cancelled bag did not land.
-- **BLOCKED** — TONAPI couldn't resolve the domain to confirm, OR the cancel
-  raced past the broadcast (`may_have_published`: the F4 contract permits the
-  write to land if cancelled after `dns_signing`). Re-run, or read storage
-  manually.
-- **FAIL** — a daemon leaked, OR the bag landed despite a pre-broadcast cancel.
+- **PASS** — no leaked daemon AND the cancelled bag did not become resolved
+  storage (see the caveat above for what that does / doesn't prove).
+- **BLOCKED** — the deploy errored or never reached bag-create (cancellation not
+  exercised), OR TONAPI couldn't resolve the domain, OR the cancel raced past the
+  broadcast (`may_have_published`: the F4 contract permits the write to land if
+  cancelled after `dns_signing`). Re-run, or read storage manually.
+- **FAIL** — a daemon leaked, the deploy ran to completion despite the cancel, OR
+  the bag landed despite a pre-broadcast cancel.
 
 Manual process check:
 
@@ -196,8 +225,8 @@ ps -A -o pid,command | grep -E 'tonutils-storage|storage-daemon' | grep -v grep
   ```bash
   rm -rf "${TMPDIR:-/tmp}"/ton-mesh-*-*  # session + proxy + tonutils dirs
   ```
-- **TonConnect session** (only relevant for the human-signed Path 1, not
-  the agentic E2E): `rm -rf ~/.config/ton-mesh-harness/`.
+- **TonConnect session** (only relevant for the human-signed TonConnect path,
+  `E2E_TONCONNECT=1` in §1.3 — not the agentic E2E): `rm -rf ~/.config/ton-mesh-harness/`.
 - **Domain re-use**: a `.ton` domain's storage record is simply
   overwritten by the next deploy — no release step needed. Re-running
   against the same domain just points it at the new bag.
