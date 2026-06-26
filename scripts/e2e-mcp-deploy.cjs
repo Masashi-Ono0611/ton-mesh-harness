@@ -109,7 +109,10 @@ const CANCEL = process.env.E2E_CANCEL === '1'
 // cancellation variant so it can exercise a real on-chain flow without
 // spending mainnet TON. (#123)
 const TESTNET = process.env.E2E_TESTNET === '1'
-const DOMAIN = process.env.E2E_MAINNET_DOMAIN || process.env.E2E_TESTNET_DOMAIN || null
+// Domain is network-gated so a testnet domain never deploys on mainnet (or
+// vice-versa): testnet runs read E2E_TESTNET_DOMAIN, mainnet runs read
+// E2E_MAINNET_DOMAIN. (code-review P3)
+const DOMAIN = (TESTNET ? process.env.E2E_TESTNET_DOMAIN : process.env.E2E_MAINNET_DOMAIN) || null
 // Opt-in render confirmation (#118): after a domain deploy, check whether the
 // domain has a site (ADNL) record and, if so, fetch its ton.run gateway URL,
 // assert HTTP 200, and surface the URL for the human to confirm the rendered
@@ -515,7 +518,7 @@ async function stage2bRenderConfirm(domain) {
   }
   // Non-200 → add the TONAPI `sites` read as a hint (not the gate) to explain
   // the likely cause: storage-only (no site record) vs proxy still settling.
-  const resolved = await tonapiResolveJson(domain)
+  const resolved = await tonapiResolveJson(domain, TESTNET)
   const sites = resolved && Array.isArray(resolved.sites) ? resolved.sites : []
   const hint =
     sites.length === 0
@@ -665,13 +668,16 @@ async function stage3Cancel() {
   // of the domain's storage record? Bounded TONAPI read (few tries × short gap).
   let afterStorage = null
   if (DOMAIN && cancelledBag && leaked.length === 0) {
-    // A single read of the CURRENT storage is enough — the cancel-prevented
-    // state is the pre-existing record (not a fresh write), so TONAPI already
-    // has it. Retry only to ride out a transient null. null → BLOCKED.
-    for (let i = 0; i < 3 && afterStorage === null; i++) {
-      afterStorage = await tonapiResolveStorage(DOMAIN, TESTNET)
-      if (afterStorage === null && i < 2) await wait(3_000)
-    }
+    // Give the would-be write a fair chance to LAND before concluding it was
+    // prevented: poll for the cancelled bag over a settle window ≥ TON finality
+    // + TONAPI propagation (~tens of seconds). A single early read would
+    // false-PASS — it sees the pre-existing bag before a failed-cancel
+    // broadcast could surface (code-review P2). pollTonapiStorageMatch
+    // early-returns the moment the bag DOES land (→ FAIL/BLOCKED); only a full
+    // no-match window means "prevented". lastStorage is null iff TONAPI never
+    // resolved at all → BLOCKED.
+    const { matched, lastStorage } = await pollTonapiStorageMatch(DOMAIN, cancelledBag, 6, 5_000, TESTNET)
+    afterStorage = matched ? String(cancelledBag).toLowerCase() : lastStorage
   }
   const { verdict, reason } = assessCancellation({ leaked, cancelledBag, afterStorage, cancelledPreBroadcast })
   log(`Stage 3: ${verdict} — ${reason}`)
