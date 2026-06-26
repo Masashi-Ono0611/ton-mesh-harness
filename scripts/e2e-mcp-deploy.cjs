@@ -100,15 +100,19 @@ const HANDSHAKE_TIMEOUT_MS = 10_000
 // so a slow-but-successful deploy could race this await (Codex P2 / #117).
 const DEPLOY_TIMEOUT_MS = 7 * 60_000
 
-const AGENTIC = process.env.E2E_AUTO_SIGN === '1'
-const TONCONNECT = process.env.E2E_TONCONNECT === '1'
-const ARMED = AGENTIC || TONCONNECT
 // Run ONLY the Stage 3 cancellation (skip the Stage 2 deploy). A near-zero-gas
 // way to exercise cancellation on mainnet: the cancel fires BEFORE the
 // broadcast, so the agentic wallet never signs or spends — a throwaway,
-// unfunded, non-domain-owning wallet suffices. Implies E2E_CANCEL. (#123)
+// unfunded, non-domain-owning wallet suffices. Implies E2E_CANCEL *and*
+// E2E_AUTO_SIGN: cancellation runs through the agentic signer, so
+// `E2E_CANCEL_ONLY=1` alone must still ARM the run — otherwise main() falls
+// through to the !ARMED stage1-only branch and reports a misleading PASS before
+// the cancellation ever runs. (#123/#145)
 const CANCEL_ONLY = process.env.E2E_CANCEL_ONLY === '1'
 const CANCEL = process.env.E2E_CANCEL === '1' || CANCEL_ONLY
+const AGENTIC = process.env.E2E_AUTO_SIGN === '1' || CANCEL_ONLY
+const TONCONNECT = process.env.E2E_TONCONNECT === '1'
+const ARMED = AGENTIC || TONCONNECT
 // Target network. Default mainnet (back-compat); E2E_TESTNET=1 routes the
 // deploys + TONAPI reads to testnet (free gas) — used by the #123 agentic
 // cancellation variant so it can exercise a real on-chain flow without
@@ -235,12 +239,26 @@ async function stage1ListAndCheck(srv) {
   return sc
 }
 
-function leakedDaemons() {
+/**
+ * Running tonutils-storage / storage-daemon processes (this run's driver and
+ * grep excluded), as `{ pid, line }`. Stage 3 snapshots this BEFORE the deploy
+ * and diffs AFTER the cancel, so a PRE-EXISTING daemon — TON Browser.app's
+ * bundled one, or a prior `--daemon-mode service`/`detached` seeder — is never
+ * mis-attributed to a cancellation cleanup leak. A system-wide match would
+ * false-FAIL on a developer machine, which is the documented run environment
+ * (#147).
+ */
+function storageDaemonProcs() {
   try {
     const out = execSync('ps -A -o pid,command 2>/dev/null', { encoding: 'utf8' })
-    return out
-      .split('\n')
-      .filter((l) => /tonutils-storage|storage-daemon/.test(l) && !/e2e-mcp-deploy|grep/.test(l))
+    const procs = []
+    for (const l of out.split('\n')) {
+      if (!/tonutils-storage|storage-daemon/.test(l)) continue
+      if (/e2e-mcp-deploy|grep/.test(l)) continue
+      const m = /^\s*(\d+)\s/.exec(l)
+      if (m) procs.push({ pid: m[1], line: l.trim() })
+    }
+    return procs
   } catch {
     return []
   }
@@ -534,25 +552,78 @@ async function stage2bRenderConfirm(domain) {
 }
 
 /**
- * Pure verdict for the cancellation test (#123). A mid-flight cancel must
- * (a) leave no daemon running and (b) NOT let the in-flight deploy's bag become
- * the domain's resolved storage — the write must have been prevented.
- *   - leaked daemon                         → FAIL (cleanup leaked)
- *   - no bag captured (cancelled pre-bag)   → PASS (daemon-hygiene only)
- *   - storage unobservable                  → BLOCKED (can't independently confirm)
+ * Pure verdict for the cancellation test (#123). Inputs are derived in
+ * stage3Cancel; this is the testable decision table.
+ *
+ * What a PASS actually proves depends on the wallet:
+ *  - With the throwaway UNFUNDED, NON-OWNER wallet used by E2E_CANCEL_ONLY, the
+ *    in-flight bag can NEVER become the domain's storage (a change_dns_record is
+ *    owner-gated and needs gas), so the `afterStorage === cancelledBag` FAIL
+ *    branch is UNREACHABLE — a PASS proves daemon hygiene + a clean pre-broadcast
+ *    cancel, NOT on-chain prevention. The CI-runnable proof that the cancel
+ *    actually short-circuits the broadcast lives in the SDK tests (#146); this
+ *    live e2e is a hygiene/regression guard, not affirmative prevention proof
+ *    (#142).
+ *  - With a FUNDED, domain-OWNING wallet (a Stage-2-class run), an un-cancelled
+ *    write WOULD land, so the FAIL branch becomes reachable and the on-chain
+ *    assertion is genuinely falsifiable.
+ *
+ * Decision table (domainMode = a `.ton` domain was targeted; deployOutcome from
+ * the mesh_deploy result frame — 'cancelled' | 'errored' | 'completed'):
+ *   - leaked daemon (NEW since the deploy)    → FAIL (cleanup leaked)
+ *   - domain + deploy completed despite cancel → FAIL (cancel didn't stop it; #143)
+ *   - domain + deploy errored pre-cancel      → BLOCKED (not exercised; #143)
+ *   - domain + no bag in 60s                  → BLOCKED (not exercised; #143)
+ *   - no-domain, cancelled pre-bag            → PASS (daemon-hygiene only)
+ *   - storage unobservable                    → BLOCKED (can't independently confirm)
  *   - cancelled bag IS resolved storage:
- *       cancelled BEFORE the broadcast      → FAIL (cancellation failed to prevent it)
- *       cancelled AFTER the broadcast       → BLOCKED (may_have_published; the F4
- *                                             contract allows the write to land)
- *   - else                                  → PASS
+ *       cancelled BEFORE the broadcast        → FAIL (cancellation failed to prevent it)
+ *       cancelled AFTER the broadcast         → BLOCKED (may_have_published; the F4
+ *                                               contract allows the write to land)
+ *   - else                                    → PASS
  * Exported for unit tests.
  */
-function assessCancellation({ leaked, cancelledBag, afterStorage, cancelledPreBroadcast }) {
+function assessCancellation({
+  leaked,
+  cancelledBag,
+  afterStorage,
+  cancelledPreBroadcast,
+  domainMode = false,
+  deployOutcome = 'cancelled',
+}) {
   if (Array.isArray(leaked) && leaked.length > 0) {
     return { verdict: 'FAIL', reason: `leaked daemon process(es) after cancel: ${leaked.join(', ')}` }
   }
+  // The deploy ran to completion despite the cancel — the write was NOT
+  // prevented. Only conclusive with a domain (a storage-only/no-domain deploy
+  // completes normally and the test only asserts daemon hygiene). (#143)
+  if (domainMode && deployOutcome === 'completed') {
+    return {
+      verdict: 'FAIL',
+      reason: 'deploy ran to completion despite the cancel — cancellation did not stop the deploy',
+    }
+  }
+  // The deploy errored for its OWN reason (not our cancel — a clean cancel
+  // suppresses the ERR_CANCELLED response) before the cancellation could be
+  // exercised, so nothing can be concluded about cancellation. (#143)
+  if (domainMode && deployOutcome === 'errored') {
+    return {
+      verdict: 'BLOCKED',
+      reason: 'deploy errored before the cancellation window — cancellation not exercised (see the stage log)',
+    }
+  }
   if (!cancelledBag) {
-    return { verdict: 'PASS', reason: 'cancelled before a bag was created; no leaked daemon' }
+    // Domain path: no bag means the deploy never reached bag-create within the
+    // 60s window, so the cancel had no in-flight write to prevent → can't
+    // confirm prevention (previously a vacuous PASS; #143). No-domain path:
+    // cancelling at first progress before any bag is the intended
+    // hygiene-only check → PASS.
+    return domainMode
+      ? {
+          verdict: 'BLOCKED',
+          reason: 'deploy never reached bag creation within 60s — cancellation not exercised against an in-flight write',
+        }
+      : { verdict: 'PASS', reason: 'cancelled before a bag was created; no leaked daemon' }
   }
   const bag12 = String(cancelledBag).slice(0, 12)
   if (afterStorage === null) {
@@ -580,8 +651,10 @@ function assessCancellation({ leaked, cancelledBag, afterStorage, cancelledPreBr
 
 /**
  * Append a unique marker to the throwaway tmp SOURCE_DIR so the Stage 3 deploy
- * produces a FRESH bag (≠ the domain's current storage). Without this, "the
- * cancelled bag did not land" is trivially true and proves nothing. (#123)
+ * produces a FRESH bag (≠ the domain's current storage), so a genuine landing
+ * would be distinguishable from the pre-existing bag. (Note: with the non-owner
+ * throwaway wallet the write can't land regardless — this only bites for a
+ * funded-owner variant; see assessCancellation's docblock. #123/#142)
  */
 function freshenSourceDir() {
   const marker = `\n<!-- e2e-cancel ${Date.now()} -->\n`
@@ -598,14 +671,21 @@ function freshenSourceDir() {
 }
 
 async function stage3Cancel() {
-  // With a domain we assert the cancel prevented the on-chain write; without
-  // one it falls back to the original daemon-hygiene-only check.
+  // With a domain we check whether the cancelled bag stayed OUT of the domain's
+  // storage record; with the throwaway non-owner wallet it can't change that
+  // record anyway, so this is a hygiene + clean-pre-broadcast-cancel check, not
+  // affirmative on-chain prevention proof (see assessCancellation's docblock;
+  // #142). Without a domain it is the original daemon-hygiene-only check.
   log(
     `Stage 3: cancellation hygiene check${
       DOMAIN ? ` (domain=${DOMAIN} on ${TESTNET ? 'TESTNET' : 'MAINNET'})` : ' (storage-only, daemon hygiene)'
     }`,
   )
   if (DOMAIN) freshenSourceDir()
+  // Baseline the storage daemons BEFORE the deploy spawns its own, so the
+  // post-cancel leak check counts only NEW processes, not a pre-existing TON
+  // Browser / seeder daemon (#147).
+  const daemonsBefore = new Set(storageDaemonProcs().map((p) => p.pid))
   const srv = spawnServer()
   await handshake(srv)
 
@@ -630,20 +710,23 @@ async function stage3Cancel() {
 
   // Cancel mid-flight, ideally BEFORE the broadcast. With a domain we wait for
   // bag_uploaded so we can capture the bag_id (to assert it never lands), then
-  // cancel at once; if dns_signing already fired we record that we cancelled
-  // post-broadcast (may_have_published). Without a domain, cancel at first
-  // progress (original behaviour).
+  // cancel at once; without a domain, cancel at first progress (original
+  // behaviour). Phase comes from the structured `_meta.phase` the MCP server
+  // attaches to every progress notification (src/mcp.ts) — not a free-text
+  // message regex, which would silently break if the wording drifted (#144).
   let cancelledBag = null
-  let cancelledPreBroadcast = true
   const deadline = Date.now() + 60_000
   while (Date.now() < deadline) {
     const progs = srv.frames().filter((f) => f.method === 'notifications/progress')
-    for (const p of progs) {
-      const m = /bag created:\s*([0-9a-f]{64})/i.exec(p.params?.message ?? '')
-      if (m) cancelledBag = m[1].toLowerCase()
+    if (DOMAIN) {
+      for (const p of progs) {
+        if (p.params?._meta?.phase === 'bag_uploaded') {
+          const bag = p.params._meta.data?.bag_id
+          if (typeof bag === 'string') cancelledBag = bag.toLowerCase()
+        }
+      }
     }
-    const sawSigning = progs.some((p) => /\[dns_signing\]/.test(p.params?.message ?? ''))
-    if (sawSigning) cancelledPreBroadcast = false
+    const sawSigning = progs.some((p) => p.params?._meta?.phase === 'dns_signing')
     // Domain path: cancel once we have the bag (or we already missed the
     // pre-broadcast window). No-domain path: cancel at first progress.
     if ((DOMAIN && (cancelledBag || sawSigning)) || (!DOMAIN && progs.length > 0)) break
@@ -654,12 +737,41 @@ async function stage3Cancel() {
     method: 'notifications/cancelled',
     params: { requestId, reason: 'e2e cancellation test' },
   })
+  await wait(3000)
+
+  // Re-derive pre/post-broadcast from the FULLY buffered progress stream: the
+  // dns_signing frame is emitted only after the broadcast and can arrive AFTER
+  // the cancel-decision window closed, so a value frozen at break time would be
+  // stale (#144).
+  const progsFinal = srv.frames().filter((f) => f.method === 'notifications/progress')
+  const cancelledPreBroadcast = !progsFinal.some((p) => p.params?._meta?.phase === 'dns_signing')
+  // Classify the deploy's own outcome from its result frame (id 20). A clean
+  // cancel makes the MCP server SUPPRESS the ERR_CANCELLED response (F4), so no
+  // frame ⇒ 'cancelled'. A self-error (e.g. ERR_DAEMON_SPAWN before bag-create)
+  // returns a real error frame; a success frame means the deploy COMPLETED
+  // despite the cancel. Without this the harness ignored the result and a
+  // pre-bag error read as a vacuous PASS (#143).
+  // NOTE on timing: pre-bag errors and "never reached bag" surface fast, well
+  // inside the 3s settle window, so the BLOCKED guards below fire reliably — the
+  // load-bearing #143 wins. A 'completed' frame only appears if the WHOLE deploy
+  // (bag + DNS + broadcast + tx-resolve) finished in ~3s, which a real deploy
+  // never does; the on-chain TONAPI poll further down is the backstop that
+  // catches a slow funded-owner write a failed cancel let land.
+  const resultFrame = srv.frames().find((f) => f.id === requestId)
+  let deployOutcome = 'cancelled'
+  if (resultFrame && resultFrame.result) {
+    if (resultFrame.result.isError) {
+      const code = resultFrame.result.structuredContent?.code
+      deployOutcome = code === 'ERR_CANCELLED' ? 'cancelled' : 'errored'
+    } else {
+      deployOutcome = 'completed'
+    }
+  }
   log(
     `Stage 3: sent notifications/cancelled mid-flight${
       cancelledBag ? ` (in-flight bag ${cancelledBag.slice(0, 12)}…, ${cancelledPreBroadcast ? 'pre' : 'post'}-broadcast)` : ''
-    }`,
+    }; deploy ${deployOutcome}`,
   )
-  await wait(3000)
 
   try {
     srv.child.kill()
@@ -668,23 +780,33 @@ async function stage3Cancel() {
   }
   await wait(1500)
 
-  const leaked = leakedDaemons()
-  // On-chain assertion (domain path, no leak): did the cancelled bag stay OUT
-  // of the domain's storage record? Bounded TONAPI read (few tries × short gap).
+  // Leak = a storage daemon that is NEW since the pre-deploy baseline (#147).
+  const leaked = storageDaemonProcs()
+    .filter((p) => !daemonsBefore.has(p.pid))
+    .map((p) => p.line)
+  // On-chain check (domain path, no leak, deploy not self-errored): did the
+  // cancelled bag stay OUT of the domain's storage record? Bounded TONAPI read.
   let afterStorage = null
-  if (DOMAIN && cancelledBag && leaked.length === 0) {
+  if (DOMAIN && cancelledBag && leaked.length === 0 && deployOutcome !== 'errored') {
     // Give the would-be write a fair chance to LAND before concluding it was
     // prevented: poll for the cancelled bag over a settle window ≥ TON finality
     // + TONAPI propagation (~tens of seconds). A single early read would
     // false-PASS — it sees the pre-existing bag before a failed-cancel
-    // broadcast could surface (code-review P2). pollTonapiStorageMatch
+    // broadcast could surface (code-review P2 / #139). pollTonapiStorageMatch
     // early-returns the moment the bag DOES land (→ FAIL/BLOCKED); only a full
     // no-match window means "prevented". lastStorage is null iff TONAPI never
     // resolved at all → BLOCKED.
     const { matched, lastStorage } = await pollTonapiStorageMatch(DOMAIN, cancelledBag, 6, 5_000, TESTNET)
     afterStorage = matched ? String(cancelledBag).toLowerCase() : lastStorage
   }
-  const { verdict, reason } = assessCancellation({ leaked, cancelledBag, afterStorage, cancelledPreBroadcast })
+  const { verdict, reason } = assessCancellation({
+    leaked,
+    cancelledBag,
+    afterStorage,
+    cancelledPreBroadcast,
+    domainMode: Boolean(DOMAIN),
+    deployOutcome,
+  })
   log(`Stage 3: ${verdict} — ${reason}`)
   if (verdict === 'FAIL') throw new Error(`Stage 3: ${reason}`)
   return verdict // 'PASS' | 'BLOCKED'
