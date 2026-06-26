@@ -28,8 +28,9 @@
     "win32"
   ],
   "scripts": {
-    "build": "bun run scripts/build.ts && bun run build:types",
+    "build": "node scripts/gen-version.mjs && bun run scripts/build.ts && bun run build:types",
     "build:types": "tsc -p tsconfig.build.json",
+    "gen:version": "node scripts/gen-version.mjs",
     "dev": "bun run scripts/build.ts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -37,7 +38,7 @@
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/cli-smoke.cjs && node scripts/mcp-smoke.cjs && node scripts/mcp-http-smoke.cjs && node scripts/sdk-smoke.cjs",
     "smoke:full": "bun run smoke && node scripts/tarball-smoke.cjs",
-    "verify": "bun run lint && bun run typecheck && bun run test && bun run build && bun run smoke",
+    "verify": "node scripts/gen-version.mjs --check && bun run lint && bun run typecheck && bun run test && bun run build && bun run smoke",
     "pack:dry": "npm pack --dry-run"
   },
   "files": [

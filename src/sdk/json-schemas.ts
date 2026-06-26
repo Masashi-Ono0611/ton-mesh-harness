@@ -43,9 +43,9 @@ export interface ToolJsonSchema {
   output: JsonSchema
 }
 
-// Derived from the single SoT in src/version.ts (kept in sync by
-// scripts/release.sh). Previously hardcoded here separately, which could
-// diverge from the installed package version. (#102/#18)
+// Derived from MESH_HARNESS_VERSION (src/version.ts is generated from
+// package.json#version by scripts/gen-version.mjs). Previously hardcoded here
+// separately, which could diverge from the installed package version. (#102/#18)
 const SCHEMA_VERSION = MESH_HARNESS_VERSION
 
 // `zodToJsonSchema` is typed as accepting a `ZodType<any, ZodTypeDef, any>`,

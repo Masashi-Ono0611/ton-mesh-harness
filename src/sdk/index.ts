@@ -23,7 +23,7 @@
  * - `walletkit-network`: isolated walletkit factory module (Node 22+
  *   dir-import workaround boundary).
  * - `abort`: AbortSignal → ERR_CANCELLED + safeAbort() (S2.7 cleanup).
- * - `version`: single source of truth for the kit's version string.
+ * - `version`: the kit's version string, generated from package.json.
  */
 
 export * from './schemas'
