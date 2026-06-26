@@ -62,7 +62,7 @@ async function main() {
 
   const envPath = process.env.TON_CONFIG_PATH && process.env.TON_CONFIG_PATH.trim()
   const configPath = envPath
-    ? path.resolve(envPath.trim())
+    ? path.resolve(envPath)
     : path.join(os.homedir(), '.config', 'ton', 'config.json')
 
   // Never clobber a real config — the only durable state this touches.
@@ -93,9 +93,16 @@ async function main() {
     /* best-effort — lock the key dir to the owner */
   }
   // writeFileSync's `mode` is the file-CREATION mode — POSIX IGNORES it when
-  // --force overwrites an EXISTING (possibly looser, e.g. 0644) file. chmod
-  // explicitly so the mnemonic is never left world-readable, and read the
-  // ACTUAL mode back so the success line can't overstate it (#148).
+  // overwriting an EXISTING (possibly looser, e.g. 0644) file, which would write
+  // the mnemonic into a world-readable file. Unlink any existing file first so
+  // writeFileSync always CREATES fresh at 0600 — no window where the plaintext
+  // mnemonic sits in a looser file. chmod + read the ACTUAL mode back are
+  // belt-and-suspenders so the success line can't overstate the on-disk mode (#148).
+  try {
+    fs.unlinkSync(configPath)
+  } catch {
+    /* fresh create — nothing to remove */
+  }
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), { mode: 0o600 })
   fs.chmodSync(configPath, 0o600)
   const modeStr = (fs.statSync(configPath).mode & 0o777).toString(8).padStart(3, '0')
