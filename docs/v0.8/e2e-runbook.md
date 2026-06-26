@@ -125,6 +125,16 @@ The MCP client config a real agent would use (per
 
 ### 1.6 Cancellation variant (Stage 3)
 
+Need an `agentic` signer first (so Stage 1 reports it and Stage 3 can run). For
+the cancel-only path the wallet is never used, so generate a **throwaway,
+unfunded** one in one command (refuses to clobber an existing config; delete it
+after):
+
+```bash
+node scripts/make-throwaway-agentic-config.cjs   # writes ~/.config/ton/config.json
+# … run the test (below) … then:  rm ~/.config/ton/config.json
+```
+
 ```bash
 # Daemon-hygiene only (storage-only, no on-chain assertion):
 E2E_AUTO_SIGN=1 E2E_CANCEL=1 node scripts/e2e-mcp-deploy.cjs
