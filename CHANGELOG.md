@@ -8,6 +8,25 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **The e2e suite can verify agentic-deploy cancellation at near-zero gas and
+  zero key risk (#123).** A Stage 3 drives a real `agentic` deploy and sends
+  `notifications/cancelled` mid-flight; because the cancel fires *before* the
+  DNS broadcast, the wallet never signs or spends, so a **throwaway, unfunded,
+  non-owner** wallet suffices. `E2E_CANCEL_ONLY=1` runs only Stage 3 (skipping
+  the funded-owner Stage 2 deploy), and a new generator —
+  `scripts/make-throwaway-agentic-config.cjs` — writes a disposable
+  `~/.config/ton/config.json` (mode 0600, "never fund this address") for it.
+  The gate asserts daemon hygiene (no leaked storage-daemon, snapshotted by PID
+  so a pre-existing daemon isn't mis-attributed) and, when a domain is set, that
+  the on-chain `storage` record did not change to the cancelled bag.
+  **Scope, stated honestly:** with a non-owner unfunded wallet the DNS write can
+  never land regardless of cancellation, so a `cancel-only` PASS proves the
+  abort reaches the pre-broadcast window and leaves no daemon — it is
+  *necessary, not sufficient*, for on-chain prevention. A *falsifiable*
+  prevention proof needs a funded **owner** wallet (run separately, without
+  `E2E_CANCEL_ONLY`); the falsifiable cancellation assertions now live in the CI
+  unit tests. See [`docs/v0.8/e2e-runbook.md`](docs/v0.8/e2e-runbook.md) §1.6.
+
 - **e2e driver emits a machine-readable PASS/SKIP/BLOCKED/FAIL verdict (#122).**
   The driver previously had only exit 0 vs exit 1, so a stage-1-only run, a full
   green run, and a silently-skipped stage were all indistinguishable. It now
@@ -82,6 +101,13 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`resolve-tx` no longer leaks an abort listener on the normal timer path
+  (#149).** The internal `sleep(ms, signal)` used while polling for a tx hash
+  registered an `abort` listener but removed it only on abort, so every
+  completed sleep left a listener attached to the `AbortSignal` for the rest of
+  the deploy. It now removes the listener on the timer-fire path too (mirroring
+  the `src/dns.ts` #135 hardening), bounding listener growth during a long
+  resolve.
 - **A landed DNS write is no longer thrown back as a failed deploy when
   TONAPI's cache lags — now confirmed authoritatively on-chain (#119).** When
   `pollDnsConfirmationOrThrow` times out (TONAPI's flaky `/dns/resolve` didn't
