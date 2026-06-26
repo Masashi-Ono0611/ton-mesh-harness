@@ -5,13 +5,21 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
  * Regression guard for the #139 fix (#146).
  *
  * Stage 3's on-chain prevention check reads TONAPI over a SETTLE WINDOW
- * (pollTonapiStorageMatch — 6 tries × 5s) rather than a single early read,
- * precisely so a failed-cancel broadcast that lands a few seconds late is
- * OBSERVED and reported FAIL/BLOCKED instead of being missed and false-PASSing.
- * The pure assessCancellation tests take `afterStorage` as a direct input, so
- * they never exercise how it is DERIVED. Reverting `tries: 6 → 1` would
- * re-introduce the #139 false-PASS with the whole suite still green — unless
- * this test locks the window.
+ * (pollTonapiStorageMatch) rather than a single early read, precisely so a
+ * failed-cancel broadcast that lands a few seconds late is OBSERVED and reported
+ * FAIL/BLOCKED instead of being missed and false-PASSing. The pure
+ * assessCancellation tests take `afterStorage` as a direct input, so they never
+ * exercise how it is DERIVED.
+ *
+ * What this locks: the loop's NO-EARLY-STOP semantics — it must keep polling
+ * past a stale/non-matching read rather than returning on the first non-empty
+ * value (the literal #139 bug, which "broke on the first non-null value"). A
+ * mutation that early-stops on the first read fails test 1 below.
+ *
+ * What this does NOT lock: the call-site WINDOW SIZE — stage3Cancel passes
+ * `tries: 6` (e2e-mcp-deploy.cjs); these tests pass their own `tries`, so a
+ * revert of that call-site count to 1 would NOT be caught here. The window size
+ * is a robustness margin, separate from the no-early-stop semantics this guards.
  */
 const require = createRequire(import.meta.url)
 const { pollTonapiStorageMatch } = require('../scripts/e2e-mcp-deploy.cjs') as {
