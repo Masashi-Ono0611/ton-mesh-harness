@@ -9,12 +9,18 @@ import { describe, expect, it } from 'vitest'
  * `require.main === module` guard keeps `main()` from running on import.
  */
 const require = createRequire(import.meta.url)
-const { assessDnsLanding } = require('../scripts/e2e-mcp-deploy.cjs') as {
+const { assessDnsLanding, assessCancellation } = require('../scripts/e2e-mcp-deploy.cjs') as {
   assessDnsLanding: (args: {
     domain: string | null
     result: { bag_id?: string; dns_tx_hash?: string | null; next_actions?: { description?: string }[] }
     tonapiMatched: boolean
     lastStorage?: string | null
+  }) => { verdict: 'PASS' | 'FAIL' | 'BLOCKED'; reason: string }
+  assessCancellation: (args: {
+    leaked: string[]
+    cancelledBag: string | null
+    afterStorage: string | null
+    cancelledPreBroadcast: boolean
   }) => { verdict: 'PASS' | 'FAIL' | 'BLOCKED'; reason: string }
 }
 
@@ -99,5 +105,77 @@ describe('assessDnsLanding (e2e DNS-landing gate, #117)', () => {
       tonapiMatched: false,
     })
     expect(r.verdict).toBe('PASS')
+  })
+})
+
+describe('assessCancellation (e2e Stage 3 cancellation gate, #123)', () => {
+  it('FAIL when a daemon leaked after the cancel (cleanup hygiene)', () => {
+    const r = assessCancellation({
+      leaked: ['12345 tonutils-storage'],
+      cancelledBag: BAG,
+      afterStorage: OTHER,
+      cancelledPreBroadcast: true,
+    })
+    expect(r.verdict).toBe('FAIL')
+  })
+
+  it('PASS (daemon-hygiene only) when cancelled before a bag was created', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: null,
+      afterStorage: null,
+      cancelledPreBroadcast: true,
+    })
+    expect(r.verdict).toBe('PASS')
+  })
+
+  it('PASS when no leak and the cancelled bag did NOT become the resolved storage', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: BAG,
+      afterStorage: OTHER, // domain still resolves to a different (pre-existing) bag
+      cancelledPreBroadcast: true,
+    })
+    expect(r.verdict).toBe('PASS')
+  })
+
+  it('matches the cancelled bag case-insensitively (FAIL on a pre-broadcast landing)', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: BAG.toUpperCase(),
+      afterStorage: BAG, // lowercase resolved value equals the (upper) cancelled bag
+      cancelledPreBroadcast: true,
+    })
+    expect(r.verdict).toBe('FAIL')
+  })
+
+  it('FAIL when cancelled BEFORE the broadcast yet the bag landed (cancellation failed)', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: BAG,
+      afterStorage: BAG,
+      cancelledPreBroadcast: true,
+    })
+    expect(r.verdict).toBe('FAIL')
+  })
+
+  it('BLOCKED (not FAIL) when cancelled AFTER the broadcast and the bag landed (may_have_published)', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: BAG,
+      afterStorage: BAG,
+      cancelledPreBroadcast: false,
+    })
+    expect(r.verdict).toBe('BLOCKED')
+  })
+
+  it('BLOCKED when TONAPI could not resolve the domain to confirm prevention', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: BAG,
+      afterStorage: null,
+      cancelledPreBroadcast: true,
+    })
+    expect(r.verdict).toBe('BLOCKED')
   })
 })

@@ -104,7 +104,15 @@ const AGENTIC = process.env.E2E_AUTO_SIGN === '1'
 const TONCONNECT = process.env.E2E_TONCONNECT === '1'
 const ARMED = AGENTIC || TONCONNECT
 const CANCEL = process.env.E2E_CANCEL === '1'
-const DOMAIN = process.env.E2E_MAINNET_DOMAIN || null
+// Target network. Default mainnet (back-compat); E2E_TESTNET=1 routes the
+// deploys + TONAPI reads to testnet (free gas) — used by the #123 agentic
+// cancellation variant so it can exercise a real on-chain flow without
+// spending mainnet TON. (#123)
+const TESTNET = process.env.E2E_TESTNET === '1'
+// Domain is network-gated so a testnet domain never deploys on mainnet (or
+// vice-versa): testnet runs read E2E_TESTNET_DOMAIN, mainnet runs read
+// E2E_MAINNET_DOMAIN. (code-review P3)
+const DOMAIN = (TESTNET ? process.env.E2E_TESTNET_DOMAIN : process.env.E2E_MAINNET_DOMAIN) || null
 // Opt-in render confirmation (#118): after a domain deploy, check whether the
 // domain has a site (ADNL) record and, if so, fetch its ton.run gateway URL,
 // assert HTTP 200, and surface the URL for the human to confirm the rendered
@@ -254,7 +262,7 @@ function renderSigningUrl(url) {
  * or null on any error. Single fetch choke point for both the storage gate
  * (#117) and the render check (#118).
  */
-async function tonapiResolveJson(domain) {
+async function tonapiResolveJson(domain, testnet = false) {
   // Mirror the SDK's shorthand normalization (src/sdk/site-record.ts:53 /
   // status.ts:141): a bare `myname` is deployed to `myname.ton`, so we must
   // resolve the SAME `.ton` form or it would false-BLOCK a successful paid
@@ -268,7 +276,8 @@ async function tonapiResolveJson(domain) {
   // remaining harness budget after a worst-case 5-min mesh_deploy (Codex P2).
   const timer = setTimeout(() => ctrl.abort(), 8_000)
   try {
-    const r = await fetch(`https://tonapi.io/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`, {
+    const host = testnet ? 'https://testnet.tonapi.io' : 'https://tonapi.io'
+    const r = await fetch(`${host}/v2/dns/${encodeURIComponent(cleanDomain)}/resolve`, {
       headers: { accept: 'application/json' },
       signal: ctrl.signal,
     })
@@ -287,8 +296,8 @@ async function tonapiResolveJson(domain) {
  * This is the GROUND-TRUTH check the deploy gate uses instead of trusting
  * the best-effort `dns_tx_hash` field (#117).
  */
-async function tonapiResolveStorage(domain) {
-  const j = await tonapiResolveJson(domain)
+async function tonapiResolveStorage(domain, testnet = false) {
+  const j = await tonapiResolveJson(domain, testnet)
   return j && typeof j.storage === 'string' && j.storage ? j.storage.toLowerCase() : null
 }
 
@@ -301,11 +310,11 @@ async function tonapiResolveStorage(domain) {
  * false-negative this fix removes; Codex P2). Returns the match flag plus
  * the last value seen (for diagnostics).
  */
-async function pollTonapiStorageMatch(domain, expectedBag, tries, intervalMs) {
+async function pollTonapiStorageMatch(domain, expectedBag, tries, intervalMs, testnet = false) {
   const want = String(expectedBag || '').toLowerCase()
   let lastStorage = null
   for (let i = 0; i < tries; i++) {
-    const storage = await tonapiResolveStorage(domain)
+    const storage = await tonapiResolveStorage(domain, testnet)
     if (storage) lastStorage = storage
     if (storage && storage === want) return { matched: true, lastStorage: storage }
     if (i < tries - 1) await wait(intervalMs)
@@ -365,7 +374,7 @@ async function stage2Deploy(srv, checkEnv) {
         'or point TON_CONFIG_PATH at a valid config. See docs/v0.8/e2e-runbook.md.',
     )
   }
-  log(`Stage 2: deploying ${FIXTURE_DIR} → domain=${DOMAIN ?? '(storage-only, dns_tx_hash will be null)'} on MAINNET`)
+  log(`Stage 2: deploying ${FIXTURE_DIR} → domain=${DOMAIN ?? '(storage-only, dns_tx_hash will be null)'} on ${TESTNET ? 'TESTNET' : 'MAINNET'}`)
   log(`Stage 2: signing path = ${wallet.kind}${TONCONNECT ? ' (approve on your phone when the QR appears)' : ''}`)
 
   const progressToken = 'e2e-deploy-1'
@@ -379,7 +388,7 @@ async function stage2Deploy(srv, checkEnv) {
         source_dir: SOURCE_DIR,
         domain: DOMAIN,
         wallet,
-        testnet: false,
+        testnet: TESTNET,
         keep_alive: false,
       },
       _meta: { progressToken },
@@ -439,7 +448,7 @@ async function stage2Deploy(srv, checkEnv) {
   // Bounded budget: ≤4 tries × (8s fetch + 3s gap) ≈ 41s worst case, so a
   // worst-case 5-min mesh_deploy + this post-check stays under the gated
   // harness timeout in test/mcp-e2e.test.ts (raised to 8 min) (Codex P2).
-  const { matched, lastStorage } = await pollTonapiStorageMatch(DOMAIN, sc.bag_id, 4, 3_000)
+  const { matched, lastStorage } = await pollTonapiStorageMatch(DOMAIN, sc.bag_id, 4, 3_000, TESTNET)
   const { verdict, reason } = assessDnsLanding({ domain: DOMAIN, result: sc, tonapiMatched: matched, lastStorage })
   log(`Stage 2: DNS landing ${verdict} — ${reason}`)
   if (verdict === 'FAIL') {
@@ -509,7 +518,7 @@ async function stage2bRenderConfirm(domain) {
   }
   // Non-200 → add the TONAPI `sites` read as a hint (not the gate) to explain
   // the likely cause: storage-only (no site record) vs proxy still settling.
-  const resolved = await tonapiResolveJson(domain)
+  const resolved = await tonapiResolveJson(domain, TESTNET)
   const sites = resolved && Array.isArray(resolved.sites) ? resolved.sites : []
   const hint =
     sites.length === 0
@@ -519,8 +528,79 @@ async function stage2bRenderConfirm(domain) {
   return { verdict: 'BLOCKED', reason: `gateway ${gatewayUrl} HTTP ${status || 'no-response'}` }
 }
 
+/**
+ * Pure verdict for the cancellation test (#123). A mid-flight cancel must
+ * (a) leave no daemon running and (b) NOT let the in-flight deploy's bag become
+ * the domain's resolved storage — the write must have been prevented.
+ *   - leaked daemon                         → FAIL (cleanup leaked)
+ *   - no bag captured (cancelled pre-bag)   → PASS (daemon-hygiene only)
+ *   - storage unobservable                  → BLOCKED (can't independently confirm)
+ *   - cancelled bag IS resolved storage:
+ *       cancelled BEFORE the broadcast      → FAIL (cancellation failed to prevent it)
+ *       cancelled AFTER the broadcast       → BLOCKED (may_have_published; the F4
+ *                                             contract allows the write to land)
+ *   - else                                  → PASS
+ * Exported for unit tests.
+ */
+function assessCancellation({ leaked, cancelledBag, afterStorage, cancelledPreBroadcast }) {
+  if (Array.isArray(leaked) && leaked.length > 0) {
+    return { verdict: 'FAIL', reason: `leaked daemon process(es) after cancel: ${leaked.join(', ')}` }
+  }
+  if (!cancelledBag) {
+    return { verdict: 'PASS', reason: 'cancelled before a bag was created; no leaked daemon' }
+  }
+  const bag12 = String(cancelledBag).slice(0, 12)
+  if (afterStorage === null) {
+    return {
+      verdict: 'BLOCKED',
+      reason: `no leaked daemon, but TONAPI could not resolve the domain to confirm the cancelled bag (${bag12}…) did not land`,
+    }
+  }
+  if (afterStorage === String(cancelledBag).toLowerCase()) {
+    return cancelledPreBroadcast
+      ? {
+          verdict: 'FAIL',
+          reason: `cancelled BEFORE the broadcast, yet the cancelled bag (${bag12}…) IS the resolved storage — cancellation failed to prevent the write`,
+        }
+      : {
+          verdict: 'BLOCKED',
+          reason: `cancelled AFTER the broadcast (may_have_published); the bag (${bag12}…) landed, which the F4 contract permits — not a clean prevention`,
+        }
+  }
+  return {
+    verdict: 'PASS',
+    reason: `no leaked daemon and the cancelled bag (${bag12}…) did not become the resolved storage`,
+  }
+}
+
+/**
+ * Append a unique marker to the throwaway tmp SOURCE_DIR so the Stage 3 deploy
+ * produces a FRESH bag (≠ the domain's current storage). Without this, "the
+ * cancelled bag did not land" is trivially true and proves nothing. (#123)
+ */
+function freshenSourceDir() {
+  const marker = `\n<!-- e2e-cancel ${Date.now()} -->\n`
+  const idx = path.join(SOURCE_DIR, 'index.html')
+  try {
+    fs.appendFileSync(idx, marker)
+  } catch {
+    try {
+      fs.writeFileSync(path.join(SOURCE_DIR, 'e2e-cancel-nonce.txt'), String(Date.now()))
+    } catch {
+      /* best-effort — a non-fresh bag only weakens the on-chain assertion */
+    }
+  }
+}
+
 async function stage3Cancel() {
-  log('Stage 3: cancellation hygiene check')
+  // With a domain we assert the cancel prevented the on-chain write; without
+  // one it falls back to the original daemon-hygiene-only check.
+  log(
+    `Stage 3: cancellation hygiene check${
+      DOMAIN ? ` (domain=${DOMAIN} on ${TESTNET ? 'TESTNET' : 'MAINNET'})` : ' (storage-only, daemon hygiene)'
+    }`,
+  )
+  if (DOMAIN) freshenSourceDir()
   const srv = spawnServer()
   await handshake(srv)
 
@@ -534,27 +614,46 @@ async function stage3Cancel() {
       name: 'mesh_deploy',
       arguments: {
         source_dir: SOURCE_DIR,
-        domain: null,
+        domain: DOMAIN,
         wallet: { kind: 'agentic' },
-        testnet: false,
+        testnet: TESTNET,
         keep_alive: false,
       },
       _meta: { progressToken },
     },
   })
 
-  // Cancel as soon as the deploy emits its first progress (mid-flight).
-  const deadline = Date.now() + 30_000
+  // Cancel mid-flight, ideally BEFORE the broadcast. With a domain we wait for
+  // bag_uploaded so we can capture the bag_id (to assert it never lands), then
+  // cancel at once; if dns_signing already fired we record that we cancelled
+  // post-broadcast (may_have_published). Without a domain, cancel at first
+  // progress (original behaviour).
+  let cancelledBag = null
+  let cancelledPreBroadcast = true
+  const deadline = Date.now() + 60_000
   while (Date.now() < deadline) {
-    if (srv.frames().some((f) => f.method === 'notifications/progress')) break
-    await wait(100)
+    const progs = srv.frames().filter((f) => f.method === 'notifications/progress')
+    for (const p of progs) {
+      const m = /bag created:\s*([0-9a-f]{64})/i.exec(p.params?.message ?? '')
+      if (m) cancelledBag = m[1].toLowerCase()
+    }
+    const sawSigning = progs.some((p) => /\[dns_signing\]/.test(p.params?.message ?? ''))
+    if (sawSigning) cancelledPreBroadcast = false
+    // Domain path: cancel once we have the bag (or we already missed the
+    // pre-broadcast window). No-domain path: cancel at first progress.
+    if ((DOMAIN && (cancelledBag || sawSigning)) || (!DOMAIN && progs.length > 0)) break
+    await wait(50)
   }
   send(srv.child, {
     jsonrpc: '2.0',
     method: 'notifications/cancelled',
     params: { requestId, reason: 'e2e cancellation test' },
   })
-  log('Stage 3: sent notifications/cancelled mid-flight')
+  log(
+    `Stage 3: sent notifications/cancelled mid-flight${
+      cancelledBag ? ` (in-flight bag ${cancelledBag.slice(0, 12)}…, ${cancelledPreBroadcast ? 'pre' : 'post'}-broadcast)` : ''
+    }`,
+  )
   await wait(3000)
 
   try {
@@ -565,10 +664,25 @@ async function stage3Cancel() {
   await wait(1500)
 
   const leaked = leakedDaemons()
-  if (leaked.length > 0) {
-    throw new Error(`Stage 3: leaked daemon process(es) after cancel:\n${leaked.join('\n')}`)
+  // On-chain assertion (domain path, no leak): did the cancelled bag stay OUT
+  // of the domain's storage record? Bounded TONAPI read (few tries × short gap).
+  let afterStorage = null
+  if (DOMAIN && cancelledBag && leaked.length === 0) {
+    // Give the would-be write a fair chance to LAND before concluding it was
+    // prevented: poll for the cancelled bag over a settle window ≥ TON finality
+    // + TONAPI propagation (~tens of seconds). A single early read would
+    // false-PASS — it sees the pre-existing bag before a failed-cancel
+    // broadcast could surface (code-review P2). pollTonapiStorageMatch
+    // early-returns the moment the bag DOES land (→ FAIL/BLOCKED); only a full
+    // no-match window means "prevented". lastStorage is null iff TONAPI never
+    // resolved at all → BLOCKED.
+    const { matched, lastStorage } = await pollTonapiStorageMatch(DOMAIN, cancelledBag, 6, 5_000, TESTNET)
+    afterStorage = matched ? String(cancelledBag).toLowerCase() : lastStorage
   }
-  log('Stage 3: no leaked tonutils-storage / storage-daemon process — clean')
+  const { verdict, reason } = assessCancellation({ leaked, cancelledBag, afterStorage, cancelledPreBroadcast })
+  log(`Stage 3: ${verdict} — ${reason}`)
+  if (verdict === 'FAIL') throw new Error(`Stage 3: ${reason}`)
+  return verdict // 'PASS' | 'BLOCKED'
 }
 
 // Coarse stage progress, updated by main() before each throwable stage so the
@@ -659,8 +773,7 @@ async function main() {
   let stage3Verdict = 'SKIP'
   if (CANCEL) {
     lastStages = `stage1:PASS,stage2:${dnsVerdict},render:${renderVerdict},stage3:RUNNING`
-    await stage3Cancel() // throws (FAIL) on a leaked daemon
-    stage3Verdict = 'PASS'
+    stage3Verdict = await stage3Cancel() // 'PASS' | 'BLOCKED' (FAIL throws)
   } else {
     log('Stage 3 SKIPPED (set E2E_CANCEL=1 to run the cancellation hygiene check).')
   }
@@ -668,10 +781,11 @@ async function main() {
   const stages =
     `stage1:PASS,stage2:${dnsVerdict},render:${renderVerdict},stage3:${stage3Verdict}`
 
-  if (dnsVerdict === 'BLOCKED' || renderVerdict === 'BLOCKED') {
+  if (dnsVerdict === 'BLOCKED' || renderVerdict === 'BLOCKED' || stage3Verdict === 'BLOCKED') {
     const which = [
       dnsVerdict === 'BLOCKED' ? 'DNS landing (TONAPI could not confirm storage==bag_id)' : null,
       renderVerdict === 'BLOCKED' ? 'render (gateway did not serve HTTP 200)' : null,
+      stage3Verdict === 'BLOCKED' ? 'cancellation (could not confirm the cancelled bag stayed off-chain)' : null,
     ]
       .filter(Boolean)
       .join(' + ')
@@ -704,4 +818,4 @@ if (require.main === module) {
 
 // Exported for unit tests (test/e2e-dns-landing.test.ts). The `require.main`
 // guard above keeps `main()` from running when this file is `require`d.
-module.exports = { assessDnsLanding }
+module.exports = { assessDnsLanding, assessCancellation }
