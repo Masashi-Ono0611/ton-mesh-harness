@@ -23,6 +23,10 @@ async function main() {
   const args = process.argv.slice(2)
   const force = args.includes('--force')
   const netIdx = args.indexOf('--network')
+  if (netIdx >= 0 && !args[netIdx + 1]) {
+    console.error('--network requires a value (mainnet|testnet)')
+    process.exit(1)
+  }
   const network = netIdx >= 0 ? args[netIdx + 1] : 'mainnet'
   if (network !== 'mainnet' && network !== 'testnet') {
     console.error(`--network must be mainnet|testnet (got "${network}")`)
