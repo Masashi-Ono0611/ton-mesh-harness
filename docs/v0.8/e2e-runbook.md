@@ -129,11 +129,26 @@ The MCP client config a real agent would use (per
 # Daemon-hygiene only (storage-only, no on-chain assertion):
 E2E_AUTO_SIGN=1 E2E_CANCEL=1 node scripts/e2e-mcp-deploy.cjs
 
-# Full on-chain assertion on TESTNET (recommended — free gas, no mainnet risk):
-E2E_AUTO_SIGN=1 E2E_CANCEL=1 E2E_TESTNET=1 \
-  E2E_TESTNET_DOMAIN=yourname.ton \
+# RECOMMENDED — mainnet on-chain assertion at near-zero gas + zero key risk.
+# The cancel fires BEFORE the broadcast, so the agentic wallet never signs or
+# spends — a THROWAWAY, unfunded, non-domain-owning wallet suffices.
+# E2E_CANCEL_ONLY skips the Stage 2 deploy (which would need a funded OWNER
+# wallet); the domain is only used to resolve the NFT + compare storage.
+E2E_AUTO_SIGN=1 E2E_CANCEL_ONLY=1 \
+  E2E_MAINNET_DOMAIN=somedomain.ton \
   node scripts/e2e-mcp-deploy.cjs
 ```
+
+> **Why mainnet, not testnet?** Testnet has no `.ton` name auction — only
+> `temp.ton` subdomains via Fift scripting — so the on-chain assertion can't get
+> a testnet `.ton` domain the wallet controls. The `E2E_TESTNET=1` +
+> `E2E_TESTNET_DOMAIN=…` plumbing exists for the day that changes, but the
+> practical path today is the **mainnet `E2E_CANCEL_ONLY`** recipe above:
+> because the cancel beats the broadcast, it costs no gas and needs no real
+> funds or domain ownership — only an agentic config that exists (so Stage 1
+> reports `agentic`). Full agentic DEPLOY coverage (Stage 2) still needs a
+> funded owner wallet; run that separately without `E2E_CANCEL_ONLY` when you
+> want it.
 
 Stage 3 starts an **agentic** deploy and sends `notifications/cancelled`
 mid-flight (a human can't sign a deploy that's about to be cancelled, so
