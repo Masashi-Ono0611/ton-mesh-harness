@@ -337,6 +337,27 @@ describe('writeDnsRecordAgentic — integration (#117/#119/#120)', () => {
     const { result } = await runGen(writeDnsRecordAgentic(OPTS()))
     expect((result as { resolver_api_key_used: boolean }).resolver_api_key_used).toBe(false)
   })
+
+  it('scenario 8 — abort after awaiting_signature, before broadcast → ERR_CANCELLED, never signs/sends (#146)', async () => {
+    // The #123 core safety invariant: a pre-broadcast cancel must short-circuit
+    // BEFORE agenticSignAndSend, so the throwaway wallet never signs or spends.
+    // This locks the GENERATOR-level pre-broadcast guard (the checkAborted()
+    // before agenticSignAndSend in dns.ts) against a regression that drops the
+    // signal threading — the leaf agenticSignAndSend guard alone can't catch
+    // that, and no other test drove the real generator with an aborting signal.
+    mocks.pollDnsRecord.mockResolvedValue(true)
+    const ac = new AbortController()
+    const gen = writeDnsRecordAgentic(OPTS(), { signal: ac.signal })
+
+    const first = await gen.next()
+    expect(first.done).toBe(false)
+    expect((first.value as DeployEvent).phase).toBe('awaiting_signature')
+
+    ac.abort()
+    await expect(gen.next()).rejects.toMatchObject({ code: 'ERR_CANCELLED' })
+
+    expect(mocks.agenticSignAndSend).not.toHaveBeenCalled()
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -436,5 +457,23 @@ describe('writeDnsRecord (TonConnect) — integration (#117/#119/#120)', () => {
     mocks.pollDnsRecord.mockResolvedValue(true)
     const { result } = await runGen(writeDnsRecord(TC_OPTS({ toncenter_api_key: 'TEST_KEY' })))
     expect((result as { resolver_api_key_used: boolean }).resolver_api_key_used).toBe(true)
+  })
+
+  it('TC-6 — abort after awaiting_signature, before send → ERR_CANCELLED, never sends, still disposes (#146)', async () => {
+    // Symmetric to agentic scenario 8: the cancel must short-circuit BEFORE
+    // wallet.sendTransactionMulti, and the bridge must still be disposed on the
+    // abort path (the SSE-leak guard runs in finally).
+    const ac = new AbortController()
+    const gen = writeDnsRecord(TC_OPTS(), { signal: ac.signal })
+
+    const first = await gen.next()
+    expect(first.done).toBe(false)
+    expect((first.value as DeployEvent).phase).toBe('awaiting_signature')
+
+    ac.abort()
+    await expect(gen.next()).rejects.toMatchObject({ code: 'ERR_CANCELLED' })
+
+    expect(mocks.tcSend).not.toHaveBeenCalled()
+    expect(mocks.tcDispose).toHaveBeenCalledTimes(1)
   })
 })

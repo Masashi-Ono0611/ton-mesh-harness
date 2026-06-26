@@ -975,4 +975,6 @@ if (require.main === module) {
 
 // Exported for unit tests (test/e2e-dns-landing.test.ts). The `require.main`
 // guard above keeps `main()` from running when this file is `require`d.
-module.exports = { assessDnsLanding, assessCancellation }
+// pollTonapiStorageMatch is exported so a regression test can lock the #139
+// settle-window (it must NOT early-stop on the first stale read). (#146)
+module.exports = { assessDnsLanding, assessCancellation, pollTonapiStorageMatch }
