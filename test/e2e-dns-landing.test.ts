@@ -21,6 +21,8 @@ const { assessDnsLanding, assessCancellation } = require('../scripts/e2e-mcp-dep
     cancelledBag: string | null
     afterStorage: string | null
     cancelledPreBroadcast: boolean
+    domainMode?: boolean
+    deployOutcome?: 'cancelled' | 'errored' | 'completed'
   }) => { verdict: 'PASS' | 'FAIL' | 'BLOCKED'; reason: string }
 }
 
@@ -115,16 +117,18 @@ describe('assessCancellation (e2e Stage 3 cancellation gate, #123)', () => {
       cancelledBag: BAG,
       afterStorage: OTHER,
       cancelledPreBroadcast: true,
+      domainMode: true,
     })
     expect(r.verdict).toBe('FAIL')
   })
 
-  it('PASS (daemon-hygiene only) when cancelled before a bag was created', () => {
+  it('PASS (daemon-hygiene only) when cancelled before a bag was created (no-domain path)', () => {
     const r = assessCancellation({
       leaked: [],
       cancelledBag: null,
       afterStorage: null,
       cancelledPreBroadcast: true,
+      domainMode: false,
     })
     expect(r.verdict).toBe('PASS')
   })
@@ -135,6 +139,7 @@ describe('assessCancellation (e2e Stage 3 cancellation gate, #123)', () => {
       cancelledBag: BAG,
       afterStorage: OTHER, // domain still resolves to a different (pre-existing) bag
       cancelledPreBroadcast: true,
+      domainMode: true,
     })
     expect(r.verdict).toBe('PASS')
   })
@@ -145,6 +150,7 @@ describe('assessCancellation (e2e Stage 3 cancellation gate, #123)', () => {
       cancelledBag: BAG.toUpperCase(),
       afterStorage: BAG, // lowercase resolved value equals the (upper) cancelled bag
       cancelledPreBroadcast: true,
+      domainMode: true,
     })
     expect(r.verdict).toBe('FAIL')
   })
@@ -155,6 +161,7 @@ describe('assessCancellation (e2e Stage 3 cancellation gate, #123)', () => {
       cancelledBag: BAG,
       afterStorage: BAG,
       cancelledPreBroadcast: true,
+      domainMode: true,
     })
     expect(r.verdict).toBe('FAIL')
   })
@@ -165,6 +172,7 @@ describe('assessCancellation (e2e Stage 3 cancellation gate, #123)', () => {
       cancelledBag: BAG,
       afterStorage: BAG,
       cancelledPreBroadcast: false,
+      domainMode: true,
     })
     expect(r.verdict).toBe('BLOCKED')
   })
@@ -175,7 +183,58 @@ describe('assessCancellation (e2e Stage 3 cancellation gate, #123)', () => {
       cancelledBag: BAG,
       afterStorage: null,
       cancelledPreBroadcast: true,
+      domainMode: true,
     })
     expect(r.verdict).toBe('BLOCKED')
+  })
+
+  // #143 — the result frame is now read; a deploy that errors/never reaches
+  // bag-create no longer collapses to a vacuous PASS in the domain path.
+  it('BLOCKED (not PASS) when a domain deploy never reached bag creation in the window', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: null, // no bag_uploaded seen in 60s
+      afterStorage: null,
+      cancelledPreBroadcast: true,
+      domainMode: true,
+      deployOutcome: 'cancelled',
+    })
+    expect(r.verdict).toBe('BLOCKED')
+  })
+
+  it('BLOCKED when the domain deploy errored before the cancellation window', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: null,
+      afterStorage: null,
+      cancelledPreBroadcast: true,
+      domainMode: true,
+      deployOutcome: 'errored',
+    })
+    expect(r.verdict).toBe('BLOCKED')
+  })
+
+  it('FAIL when a domain deploy ran to completion despite the cancel', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: BAG,
+      afterStorage: OTHER,
+      cancelledPreBroadcast: true,
+      domainMode: true,
+      deployOutcome: 'completed',
+    })
+    expect(r.verdict).toBe('FAIL')
+  })
+
+  it('PASS (no-domain hygiene) ignores deployOutcome=completed', () => {
+    const r = assessCancellation({
+      leaked: [],
+      cancelledBag: null,
+      afterStorage: null,
+      cancelledPreBroadcast: true,
+      domainMode: false,
+      deployOutcome: 'completed',
+    })
+    expect(r.verdict).toBe('PASS')
   })
 })
