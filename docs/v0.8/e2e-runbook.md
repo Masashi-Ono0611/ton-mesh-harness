@@ -43,6 +43,17 @@ is held by `@ton/mcp` in `~/.config/ton/config.json` (or `$TON_CONFIG_PATH`).
    ~1 TON for headroom across a few runs.
 3. Check the balance on https://tonviewer.com (mainnet) by address.
 
+**Testnet variant (recommended for the cancellation check, §1.6).** The Stage 3
+cancellation test is process/on-chain hygiene, not value transfer — run it on
+**testnet** to avoid spending mainnet TON and to keep the agentic signing key
+away from real funds. Choose testnet when setting up the `@ton/mcp` wallet
+(it writes a `network: "testnet"` entry), fund the testnet address from a TON
+testnet faucet (free), and pass `E2E_TESTNET=1` (+ `E2E_TESTNET_DOMAIN=…`).
+**Secret handling is identical on both networks**: the signing seed lives only
+in the `@ton/mcp`-managed `~/.config/ton/config.json` (or `$TON_CONFIG_PATH`);
+never put a raw seed in an env var, `.env`, or shell argument — the driver
+reads the config file the same way the real agent flow does.
+
 ### 1.2 Domain
 
 You need a real mainnet `.ton` domain the wallet controls (buy/manage at
@@ -112,17 +123,42 @@ The MCP client config a real agent would use (per
   `transactionsByMessage`; under load it may need a retry. Set a
   `toncenter_api_key` in the config's `networks.mainnet` to raise limits.
 
-### 1.6 Cancellation variant
+### 1.6 Cancellation variant (Stage 3)
 
 ```bash
+# Daemon-hygiene only (storage-only, no on-chain assertion):
 E2E_AUTO_SIGN=1 E2E_CANCEL=1 node scripts/e2e-mcp-deploy.cjs
+
+# Full on-chain assertion on TESTNET (recommended — free gas, no mainnet risk):
+E2E_AUTO_SIGN=1 E2E_CANCEL=1 E2E_TESTNET=1 \
+  E2E_TESTNET_DOMAIN=yourname.ton \
+  node scripts/e2e-mcp-deploy.cjs
 ```
 
-Stage 3 starts a deploy, sends `notifications/cancelled` mid-flight, then
-asserts no leaked `tonutils-storage` / `storage-daemon` process. Per the
-MCP cancellation contract the `ERR_CANCELLED` *response* is suppressed
-(`src/mcp.ts` handleDeploy F4 caveat) — so the assertion is on **process
-hygiene**, not on a response frame. Manual check:
+Stage 3 starts an **agentic** deploy and sends `notifications/cancelled`
+mid-flight (a human can't sign a deploy that's about to be cancelled, so
+cancellation is inherently the agentic-signing flow — it needs the wallet from
+§1.1, on **testnet** for a free, zero-risk run). Per the MCP cancellation
+contract the `ERR_CANCELLED` *response* is suppressed (`src/mcp.ts` handleDeploy
+F4 caveat), so the assertions are:
+
+- **Process hygiene (always)** — no leaked `tonutils-storage` / `storage-daemon`
+  process after the cancel.
+- **On-chain prevention (when a domain is set, #123)** — Stage 3 deploys a
+  FRESH bag (a unique marker is appended to the throwaway tmp source so the bag
+  differs from the domain's current storage), cancels BEFORE the broadcast, then
+  reads the domain's `storage` record via TONAPI. The cancelled bag must NOT
+  have become the resolved storage — i.e. the write was prevented.
+
+Verdict (`assessCancellation`, exit-coded per #122 — PASS=0, BLOCKED=2, FAIL=1):
+- **PASS** — no leaked daemon AND the cancelled bag did not land.
+- **BLOCKED** — TONAPI couldn't resolve the domain to confirm, OR the cancel
+  raced past the broadcast (`may_have_published`: the F4 contract permits the
+  write to land if cancelled after `dns_signing`). Re-run, or read storage
+  manually.
+- **FAIL** — a daemon leaked, OR the bag landed despite a pre-broadcast cancel.
+
+Manual process check:
 
 ```bash
 ps -A -o pid,command | grep -E 'tonutils-storage|storage-daemon' | grep -v grep
