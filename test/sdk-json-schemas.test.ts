@@ -16,18 +16,19 @@ import { MESH_HARNESS_VERSION } from '../src/version'
  * `bunx vitest run test/sdk-json-schemas.test.ts -u`.
  */
 describe('SDK JSON Schemas (V1 snapshot)', () => {
-  // #102/#18: SCHEMA_VERSION used to be a hardcoded duplicate of the string in
-  // src/version.ts; now it's derived from MESH_HARNESS_VERSION so a release
-  // bump of version.ts propagates here without a second manual edit.
+  // #102/#18: SCHEMA_VERSION used to be a hardcoded duplicate of the version
+  // string; now it's derived from MESH_HARNESS_VERSION (src/version.ts, which
+  // is generated from package.json) so a release bump propagates here for free.
   it('SCHEMA_VERSION matches MESH_HARNESS_VERSION (single source of truth)', () => {
     expect(SCHEMA_VERSION).toBe(MESH_HARNESS_VERSION)
   })
 
   it('ships exactly the GA tools with the kit minor as SCHEMA_VERSION', () => {
-    // SCHEMA_VERSION is derived from MESH_HARNESS_VERSION (src/version.ts).
-    // The explicit '0.13.1' lock lives in the "matches MESH_HARNESS_VERSION"
-    // test above; here we just confirm it's a semver-shaped string so any
-    // future release keeps a valid schema version without double-hardcoding.
+    // SCHEMA_VERSION is derived from MESH_HARNESS_VERSION (src/version.ts,
+    // generated from package.json). The exact-match assertion lives in the
+    // "matches MESH_HARNESS_VERSION" test above; here we just confirm it's a
+    // semver-shaped string so any future release keeps a valid schema version
+    // without double-hardcoding.
     expect(SCHEMA_VERSION).toMatch(/^\d+\.\d+\.\d+/)
     expect(ALL_TOOLS.map((t) => t.name).sort()).toEqual([
       'mesh_check_env',

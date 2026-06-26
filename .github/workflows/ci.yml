@@ -1,5 +1,6 @@
 # [D1] #19 — CI workflow.
 # Runs the full quality bar on every PR + main push:
+#   - Version sync (src/version.ts is regenerated from package.json#version)
 #   - Lint (eslint src/sdk, no-console rule)
 #   - Type-check (tsc --noEmit with noUnusedLocals + strict)
 #   - Tests (vitest, RUN_DAEMON_TESTS skipped — those spawn real daemons)
@@ -57,6 +58,14 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Version sync (src/version.ts ⇔ package.json)
+        # src/version.ts is GENERATED from package.json#version by
+        # scripts/gen-version.mjs (the build regenerates it). This gate fails
+        # fast with an actionable message when a commit bumps package.json but
+        # forgets to regenerate src/version.ts — the exact drift that broke the
+        # 0.13.1 release tag before this was automated.
+        run: node scripts/gen-version.mjs --check
 
       - name: Lint (SDK no-console gate)
         run: bun run lint

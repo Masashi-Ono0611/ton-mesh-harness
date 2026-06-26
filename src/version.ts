@@ -1,12 +1,12 @@
 /**
- * Single source of truth for the kit's version string. Imported by
- * `src/cli.ts` and `src/mcp.ts`; previously each file hardcoded its
- * own copy and they drifted (rc2 → rc5 sync was missed twice).
+ * AUTO-GENERATED — DO NOT EDIT.
  *
- * MUST match `package.json#version` exactly. The `scripts/cli-smoke.cjs`
- * CI step validates the published binary surfaces a semver-shaped
- * string, so a forgotten bump here triggers a build-time failure even
- * if `package.json` is correct.
+ * Mirrors `package.json#version`, written by `scripts/gen-version.mjs`.
+ * package.json is the single source of truth; this generated module lets the
+ * CLI / MCP / SDK import the version without reading package.json at runtime
+ * (the published bundle has no package.json on its import path). To change the
+ * version, bump `package.json#version` and run `bun run gen:version` — the
+ * `build` script regenerates it too, and CI fails if this file drifts.
  *
  * NO `console.*` IN THIS FILE — lint-enforced.
  */

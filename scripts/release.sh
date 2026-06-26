@@ -54,16 +54,11 @@ node -e "
 "
 
 # ---------------------------------------------------------------------------
-# 2. src/version.ts
+# 2. src/version.ts — GENERATED from package.json#version (bumped above) by
+#    scripts/gen-version.mjs. Replaces the old in-place sed so version.ts can
+#    never drift from package.json, even on a hand-rolled release.
 # ---------------------------------------------------------------------------
-node -e "
-  const fs = require('fs');
-  const f = './src/version.ts';
-  const src = fs.readFileSync(f, 'utf-8');
-  const out = src.replace(/MESH_HARNESS_VERSION = '[^']+'/, \"MESH_HARNESS_VERSION = '$VERSION'\");
-  if (out === src) { console.error('error: did not find MESH_HARNESS_VERSION in', f); process.exit(1); }
-  fs.writeFileSync(f, out);
-"
+node scripts/gen-version.mjs
 
 # ---------------------------------------------------------------------------
 # 3. CHANGELOG.md — promote GA pre-draft for x.y.0 releases (no pre-release

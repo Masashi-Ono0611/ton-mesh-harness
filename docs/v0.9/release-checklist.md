@@ -32,9 +32,12 @@ For a normal x.y.z bump, use the prep script:
 scripts/release.sh 0.9.1
 ```
 
-It bumps `package.json`, `src/version.ts`, the README status/quickstart lines,
-promotes the `GA-PREDRAFT` block to `## [0.9.1] – <date>`, and runs
-`bun run verify` + the tarball smoke. Inspect the diff, open a PR, merge.
+It bumps `package.json` and regenerates `src/version.ts` from it, flips the
+README status/quickstart lines, promotes the `GA-PREDRAFT` block to
+`## [0.9.1] – <date>`, and runs `bun run verify` + the tarball smoke. Inspect
+the diff, open a PR, merge. (If you ever bump `package.json` by hand instead of
+running this script, run `bun run gen:version` so `src/version.ts` stays in
+sync — CI's version-sync gate fails otherwise.)
 
 > v0.9.0 itself bundled v0.8 + the v0.9 reserve by hand (the GA-PREDRAFT was
 > v0.8-shaped, and 0.8.0 was skipped as a public version). From v0.9.1 on, the
