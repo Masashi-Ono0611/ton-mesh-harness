@@ -6,6 +6,19 @@ the project follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.1] – 2026-06-27
+
+### Changed
+
+- Re-established automated npm publishing via OIDC trusted publishing after the
+  rename to `ton-mesh-harness`. A renamed package is brand-new to npm, and
+  trusted publishing cannot attach to a name that has never been published, so
+  `0.13.0` was a one-time manual bootstrap publish; `0.13.1` is the first
+  release cut through the automated `vX.Y.Z`-tag pipeline. No shippable code
+  changed since `0.13.0`.
+
+## [0.13.0] – 2026-06-26
+
 ### Added
 
 - **The e2e suite can verify agentic-deploy cancellation at near-zero gas and
