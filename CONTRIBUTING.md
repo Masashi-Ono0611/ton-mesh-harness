@@ -36,7 +36,7 @@ bun install
 Tooling runs on [Bun](https://bun.sh) (≥ 1.3.8) — install / build / test /
 lint all go through `bun run`. The published artifact still targets plain
 Node ≥ 18 (`engines.node`); consumers use `npx` / `node`, never Bun. The
-repo develops against Node 22 / 24.
+repo develops against Node 24.
 
 ## Quality bar (must pass before opening a PR)
 
