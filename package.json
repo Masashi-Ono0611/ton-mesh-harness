@@ -20,7 +20,7 @@
     "ton-mesh-harness-mcp": "dist/mcp.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "os": [
     "darwin",
